@@ -243,10 +243,10 @@ afterEach(() => {
 });
 
 function openPhoneTabs(): void {
-  const showTabsButton = screen.queryByRole("button", { name: /show tabs/i });
+  const closeMoreButton = screen.queryByRole("button", { name: /^close$/i });
 
-  if (showTabsButton) {
-    fireEvent.click(showTabsButton);
+  if (closeMoreButton) {
+    fireEvent.click(closeMoreButton);
   }
 }
 
@@ -958,7 +958,7 @@ describe("PhoneInventoryPanel", () => {
     });
   });
 
-  it("moves turn actions into the portrait bottom navigation", async () => {
+  it("keeps persistent navigation focused on operative information and auto-routes turn actions", async () => {
     const patch = createPatch({ encounter: null });
     render(
       <PortraitControllerView
@@ -975,30 +975,20 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/action/i);
-    openPhoneTabs();
-
+    expect(screen.getByLabelText(/essential phone navigation/i)).toHaveTextContent(/operative.*inventory.*objectives.*more/i);
     expect(screen.getByRole("tab", { name: /player card/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /move/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /battle/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /action/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /player card/i })).toHaveClass("phone-portrait-tab-player");
-    expect(screen.getByRole("tab", { name: /inventory/i })).toHaveClass("phone-portrait-tab-inventory");
-    expect(screen.getByRole("tab", { name: /objectives/i })).toHaveClass("phone-portrait-tab-quests");
-    expect(screen.getByRole("tab", { name: /move/i })).toHaveClass("phone-portrait-tab-move");
-    expect(screen.getByRole("tab", { name: /battle/i })).toHaveClass("phone-portrait-tab-battle");
-    expect(screen.getByRole("tab", { name: /shop/i })).toHaveClass("phone-portrait-tab-shop");
-    expect(screen.getByRole("tab", { name: /action/i })).toHaveClass("phone-portrait-tab-action");
+    expect(screen.getByRole("tab", { name: /inventory/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /objectives/i })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /move/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /battle/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /shop/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /action/i })).not.toBeInTheDocument();
     expect(screen.getByRole("tablist", { name: /phone navigation/i })).toHaveClass("phone-portrait-bottom-nav");
-    expect(screen.queryByRole("tab", { name: /log/i })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: /battle/i }));
-    await waitFor(() => expect(screen.getByTestId("phone-action-screen")).toHaveClass("phone-portrait-screen-command"));
-    expect(screen.getByText(/no battle active/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-action-screen")).toHaveClass("phone-portrait-screen-command");
 
     fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
 
-    expect(screen.getByLabelText("Inventory")).toHaveTextContent(/black route fuse/i);
+    expect(document.querySelector(".phone-inventory-panel")).toHaveTextContent(/black route fuse/i);
 
     fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
 
@@ -1084,6 +1074,7 @@ describe("PhoneInventoryPanel", () => {
 
   it("keeps top chrome and bottom tab dock visibility independent", async () => {
     const onIntent = vi.fn();
+    const onLeave = vi.fn();
 
     render(
       <PortraitControllerView
@@ -1096,7 +1087,7 @@ describe("PhoneInventoryPanel", () => {
         patch={createPatch({ encounter: null, phase: "broadcast" })}
         characters={characters}
         onIntent={onIntent}
-        onLeave={vi.fn()}
+        onLeave={onLeave}
       />
     );
 
@@ -1111,18 +1102,25 @@ describe("PhoneInventoryPanel", () => {
     expect(tablist).toHaveClass("phone-portrait-bottom-nav");
     expect(tablist).toHaveClass("phone-bottomdock--compact");
     expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "false");
-    expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/action/i);
-    expect(screen.getByRole("button", { name: /hide ui/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/essential phone navigation/i)).toHaveTextContent(/operative.*inventory.*objectives.*more/i);
+    expect(screen.queryByRole("button", { name: /open phone navigation and room controls/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /show tabs/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
+    await waitFor(() => expect(document.querySelector(".phone-inventory-panel")).toHaveTextContent(/black route fuse/i));
+
+    fireEvent.click(screen.getByRole("button", { name: /show all phone sections/i }));
 
     expect(shell).toHaveClass("phone-shell--chrome-visible");
     expect(shell).toHaveClass("phone-shell--bottomdock-expanded");
     expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "true");
     expect(screen.getByRole("button", { name: /hide ui/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /hide tabs/i })).toHaveClass("phone-portrait-tab-utility");
-    fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
-    await waitFor(() => expect(screen.getByLabelText("Inventory")).toHaveTextContent(/black route fuse/i));
+    expect(screen.getByRole("button", { name: /^close$/i })).toHaveClass("phone-portrait-tab-utility");
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /leave room/i }));
+    expect(screen.getByRole("alert", { name: /leave room confirmation/i })).toBeInTheDocument();
+    expect(onLeave).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    expect(screen.queryByRole("alert", { name: /leave room confirmation/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
 
     expect(shell).toHaveClass("phone-shell--immersive");
@@ -1135,31 +1133,54 @@ describe("PhoneInventoryPanel", () => {
     expect(compactStatus).toHaveTextContent(/0 wounds \| 0 Salvage \| 0 scars/i);
     expect(compactStatus.querySelector("img")).not.toBeInTheDocument();
     expect(screen.getByRole("banner")).toHaveClass("phone-topbar--compact");
-    expect(screen.getByRole("tab", { name: /player card/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /inventory/i })).toHaveAttribute("aria-selected", "true");
-    expect(screen.queryByRole("button", { name: /leave/i })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Inventory")).toHaveTextContent(/black route fuse/i);
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /leave room/i })).toBeInTheDocument();
+    expect(document.querySelector(".phone-inventory-panel")).toHaveTextContent(/black route fuse/i);
     expect(screen.getByLabelText(/phone content/i)).toHaveClass("phone-content--expanded");
     expect(document.querySelectorAll(".phone-portrait-scroll")).toHaveLength(1);
     expect(onIntent).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: /hide tabs/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
 
     expect(shell).toHaveClass("phone-shell--immersive");
     expect(shell).toHaveClass("phone-shell--bottomdock-compact");
     expect(shell).toHaveAttribute("data-phone-chrome-visible", "false");
     expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "false");
-    expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/inventory/i);
-    expect(screen.getByRole("button", { name: /show tabs/i })).toHaveClass("phone-chrome-restore");
+    expect(screen.getByLabelText(/essential phone navigation/i)).toHaveTextContent(/operative.*inventory.*objectives.*more/i);
 
-    fireEvent.click(screen.getByRole("button", { name: /show tabs/i }));
+    fireEvent.click(screen.getByRole("button", { name: /show all phone sections/i }));
 
     expect(shell).toHaveClass("phone-shell--immersive");
     expect(shell).toHaveClass("phone-shell--bottomdock-expanded");
     expect(window.localStorage.getItem("ashenreach.phoneChromeVisible")).toBe("false");
-    expect(screen.getByRole("tab", { name: /inventory/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /inventory/i })).toHaveAttribute("aria-selected", "true");
-    expect(screen.queryByRole("button", { name: /hide ui/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /show ui/i })).toBeInTheDocument();
+  });
+
+  it("requires confirmation before leaving the room", () => {
+    const onLeave = vi.fn();
+    const patch = createPatch({ encounter: null, phase: "broadcast" });
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={onLeave}
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: /leave room/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /show all phone sections/i }));
+    fireEvent.click(screen.getByRole("button", { name: /leave room/i }));
+    expect(onLeave).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /confirm leave/i }));
+    expect(onLeave).toHaveBeenCalledTimes(1);
   });
 
   it("renders compact expandable player card stats without label value collision", () => {
@@ -1254,13 +1275,14 @@ describe("PhoneInventoryPanel", () => {
 
     const shell = document.querySelector(".phone-portrait-controller");
 
+    fireEvent.click(screen.getByRole("button", { name: /show all phone sections/i }));
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
     expect(shell).toHaveClass("phone-shell--immersive");
 
     fireEvent.keyDown(window, { key: "Escape" });
 
     expect(shell).toHaveClass("phone-shell--chrome-visible");
-    expect(screen.getByRole("tablist", { name: /phone navigation/i })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: /more phone controls/i })).toBeInTheDocument();
   });
 
   it("keeps the focused battle action usable while global navigation is replaced", async () => {
@@ -1514,9 +1536,9 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
+    expect(screen.getByTestId("phone-movement-view")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /more/i }));
-    expect(screen.getByRole("tab", { name: /move/i })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tab", { name: /move/i })).toHaveClass("phone-portrait-tab-required");
+    expect(screen.queryByRole("tab", { name: /move/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
     expect(screen.getByTestId("phone-movement-view")).toBeInTheDocument();
 
@@ -1577,8 +1599,9 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    openPhoneTabs();
-    expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /show all phone sections/i }));
+    expect(screen.queryByRole("tab", { name: /shop/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
     expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument();
 
@@ -1685,8 +1708,7 @@ describe("PhoneInventoryPanel", () => {
         characters={characters} onIntent={vi.fn()} onLeave={vi.fn()} />
     );
 
-    openPhoneTabs();
-    await waitFor(() => expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute("aria-selected", "true"));
+    await waitFor(() => expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
     expect(screen.getByRole("tab", { name: /player card/i })).toHaveAttribute("aria-selected", "true");
 
@@ -1706,7 +1728,7 @@ describe("PhoneInventoryPanel", () => {
         activeSeatId="seat-1" activeContractCard={null} patch={nextShopPatch} patchSequence={12}
         characters={characters} onIntent={vi.fn()} onLeave={vi.fn()} />
     );
-    await waitFor(() => expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute("aria-selected", "true"));
+    await waitFor(() => expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument());
   });
 
   it("locks the projected command tree immediately after one submission", async () => {

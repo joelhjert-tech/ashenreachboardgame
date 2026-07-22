@@ -4,7 +4,6 @@ import { describeContractObjective as describeObjective, formatContractProgress 
 import { getEquippedGearItem } from "../../game/engine/gear.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
-import { GameButton } from "../shared/GameButton.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import {
   buildCompletedContractPresentations,
@@ -334,46 +333,6 @@ function PortraitStatCard({
       )}
     </button>
   );
-}
-
-function getActionTabState(
-  tab: TurnActionTab,
-  patch: PhonePatchPayload | null
-): { disabled: boolean; locked?: boolean } {
-  if (!patch?.self) {
-    return { disabled: true };
-  }
-
-  const isActiveSeat = patch.turnOrder[patch.activeSeatIndex] === patch.self.seatId;
-  const shopLocked = Boolean(
-    patch.shopEncounter &&
-      (patch.shopEncounter.status === "locked" || patch.shopEncounter.blockingThreats.length > 0)
-  );
-
-  switch (tab) {
-    case "move":
-      return {
-        disabled: false,
-        locked: !(
-          (patch.movementPlanner?.active && patch.movementPlanner.destinations.length > 0) ||
-          (isActiveSeat && patch.phase === "navigation")
-        )
-      };
-    case "battle":
-      return {
-        disabled: false,
-        locked: !(patch.activeResolution || patch.pendingEnemyRoll || patch.encounter)
-      };
-    case "shop":
-      return {
-        disabled: false,
-        locked: !patch.shopEncounter || shopLocked
-      };
-    case "action":
-      return {
-        disabled: false
-      };
-  }
 }
 
 function scenarioQuestDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
@@ -765,6 +724,7 @@ export function PortraitControllerView({
   const [activeTab, setActiveTab] = useState<PortraitTab>("player");
   const [phoneChromeVisible, setPhoneChromeVisible] = useState(readStoredPhoneChromeVisible);
   const [bottomDockExpanded, setBottomDockExpanded] = useState(false);
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
   const [expandedStat, setExpandedStat] = useState<Stat | null>(null);
   const [choosingStartingMission, setChoosingStartingMission] = useState(false);
   const [pendingStartingContract, setPendingStartingContract] = useState<{ id: string; sequence: number } | null>(null);
@@ -819,10 +779,12 @@ export function PortraitControllerView({
   };
 
   const showBottomDock = () => {
+    setConfirmingLeave(false);
     setBottomDockExpanded(true);
   };
 
   const hideBottomDock = () => {
+    setConfirmingLeave(false);
     setBottomDockExpanded(false);
   };
 
@@ -1206,15 +1168,9 @@ export function PortraitControllerView({
     (patch?.phase === "navigation" || patch?.movementPlanner?.active || patch?.outcomeSummary?.movedToSectorId)
   );
   const scarSelectorActive = Boolean(patch?.pendingScarChoice);
-  const battleNavigationLabel = patch?.activeResolution?.card?.type === "asset" || patch?.encounter?.presentationType === "asset"
-    ? "Discovery"
-    : patch?.activeResolution?.card?.type === "event" || patch?.encounter?.presentationType === "event"
-      ? "Event"
-      : patch?.activeResolution?.card?.type === "hazard" || patch?.encounter?.presentationType === "hazard"
-        ? "Hazard"
-        : "Battle";
   const rootClassName = [
     "phone-portrait-controller",
+    "phone-ui-streamlined",
     phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--immersive",
     bottomDockExpanded ? "phone-shell--bottomdock-expanded" : "phone-shell--bottomdock-compact",
     focusedResolutionActive ? "phone-shell--battle-active" : "",
@@ -1329,18 +1285,6 @@ export function PortraitControllerView({
                 <span>Health</span>
                 <strong>{self.character.wounds} wounds</strong>
                 <small>{self.character.salvage ?? 0} Salvage · {scarCount} scar{scarCount === 1 ? "" : "s"}</small>
-              </div>
-              <div className="phone-portrait-header-actions">
-                <button
-                  type="button"
-                  className="phone-button phone-button-secondary phone-chrome-toggle"
-                  onClick={hidePhoneChrome}
-                >
-                  Hide UI
-                </button>
-                <button type="button" className="phone-button phone-button-secondary phone-portrait-leave-button" onClick={handleLeave}>
-                  Leave Room
-                </button>
               </div>
             </>
           ) : (
@@ -1566,7 +1510,7 @@ export function PortraitControllerView({
           )}
 
           {!focusedResolutionActive && activeTab === "quests" && (
-            <div className="phone-portrait-screen">
+            <div className="phone-portrait-screen phone-objectives-screen">
               {renderRequiredAction(undefined, true)}
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Shared Mission</div>
@@ -1697,82 +1641,75 @@ export function PortraitControllerView({
           )}
         </main>
 
-        {!focusedResolutionActive && !scarSelectorActive && (!movementFlowActive || bottomDockExpanded) ? <nav className={bottomNavClassName} role="tablist" aria-label="Phone navigation">
+        {!focusedResolutionActive && !scarSelectorActive && (!movementFlowActive || bottomDockExpanded) ? <nav
+          className={bottomNavClassName}
+          role={bottomDockExpanded ? "navigation" : "tablist"}
+          aria-label={bottomDockExpanded ? "More phone controls" : "Phone navigation"}
+        >
           {bottomDockExpanded ? (
-            <>
-              {[
-                ["player", "Player Card"],
-                ["inventory", "Inventory"],
-                ["quests", "Objectives"],
-                ["move", "Move"],
-                ["battle", battleNavigationLabel],
-                ["shop", "Shop"],
-                ["action", "Action"]
-              ].map(([key, label]) => (
-                (() => {
-                  const typedKey = key as PortraitTab;
-                  const actionState = isTurnActionTab(typedKey) ? getActionTabState(typedKey, patch) : { disabled: false };
-                  const tone = isTurnActionTab(typedKey)
-                    ? typedKey === "move"
-                      ? "move"
-                      : typedKey === "battle"
-                        ? "battle"
-                        : typedKey === "shop"
-                          ? "shop"
-                          : "action"
-                    : typedKey === "inventory"
-                      ? "action"
-                      : typedKey === "quests"
-                        ? "shop"
-                        : "neutral";
-
-                  return (
-                    <GameButton
-                      key={key}
-                      type="button"
-                      tone={tone}
-                      role="tab"
-                      aria-selected={activeTab === typedKey}
-                      selected={activeTab === typedKey}
-                      className={`${activeTab === typedKey ? "phone-portrait-tab phone-portrait-tab-active" : "phone-portrait-tab"} phone-portrait-tab-${typedKey}${actionGuidance?.requiredTab === typedKey ? " phone-portrait-tab-required" : ""}${
-                        actionState.locked ? " phone-portrait-tab-locked" : ""
-                      }`}
-                      data-tab={typedKey}
-                      disabled={actionState.disabled}
-                      disabledReason={actionState.disabled ? "Unavailable" : actionState.locked ? "Blocked" : undefined}
-                      onClick={() => setActiveTab(typedKey)}
-                    >
-                      {label}
-                    </GameButton>
-                  );
-                })()
-              ))}
+            <div className="phone-more-menu">
+              <div className="phone-more-menu__heading">
+                <strong>More</strong>
+                <span>Display and room controls</span>
+              </div>
               <button
                 type="button"
                 className="phone-portrait-tab phone-portrait-tab-utility phone-tabs-collapse"
                 onClick={hideBottomDock}
               >
-                Hide Tabs
+                Close
               </button>
-            </>
+              <button
+                type="button"
+                className="phone-portrait-tab phone-portrait-tab-utility phone-room-menu-action"
+                onClick={() => setConfirmingLeave(true)}
+              >
+                Leave Room
+              </button>
+              <button
+                type="button"
+                className="phone-portrait-tab phone-portrait-tab-utility phone-display-menu-action"
+                onClick={phoneChromeVisible ? hidePhoneChrome : showPhoneChrome}
+              >
+                {phoneChromeVisible ? "Hide UI" : "Show UI"}
+              </button>
+              {confirmingLeave ? (
+                <div className="phone-leave-confirmation" role="alert" aria-label="Leave room confirmation">
+                  <strong>Leave this room?</strong>
+                  <p>Your seat remains in the game until the host removes or replaces it.</p>
+                  <div>
+                    <button type="button" className="phone-button phone-button-secondary" onClick={() => setConfirmingLeave(false)}>
+                      Cancel
+                    </button>
+                    <button type="button" className="phone-button phone-button-danger" onClick={handleLeave}>
+                      Confirm Leave
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           ) : (
-            <div className="phone-compact-tab-dock" aria-label="Compact phone navigation">
+            <div className="phone-clean-tab-dock" aria-label="Essential phone navigation">
+              {(["player", "inventory", "quests"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={`phone-clean-tab${activeTab === tab ? " is-active" : ""}`}
+                  role="tab"
+                  aria-selected={activeTab === tab}
+                  aria-label={tab === "player" ? "Operative — Player Card" : portraitTabLabels[tab]}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab === "player" ? "Operative" : portraitTabLabels[tab]}
+                </button>
+              ))}
               <button
                 type="button"
-                className="phone-compact-active-tab"
-                role="tab"
-                aria-selected="true"
-                aria-current="page"
+                className="phone-clean-tab phone-clean-tab-more"
                 onClick={showBottomDock}
+                aria-label="Show all phone sections"
               >
-                {activeTab === "battle" ? battleNavigationLabel : portraitTabLabels[activeTab]}
-              </button>
-              <button
-                type="button"
-                className="phone-button phone-button-secondary phone-chrome-restore"
-                onClick={showBottomDock}
-              >
-                Show Tabs
+                More
               </button>
             </div>
           )}

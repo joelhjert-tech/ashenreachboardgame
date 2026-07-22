@@ -24950,6 +24950,165 @@ body {
   text-transform: uppercase;
 }
 
+/* Streamlined phone Action, Objectives, and navigation. */
+.phone-objectives-screen .phone-sheet-section-heading {
+  min-height: 0;
+  padding: 0.35rem 0;
+  border: 0;
+  border-bottom: 1px solid rgba(194, 149, 83, 0.28);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.phone-ui-streamlined .phone-required-action-shell:has(.phone-priority-stack) .phone-required-action-shell__header,
+.phone-ui-streamlined .phone-priority-stack__header {
+  border: 0;
+  border-left: 3px solid #c67745;
+  padding: 0.56rem 0.68rem;
+  background: linear-gradient(90deg, rgba(31, 26, 23, 0.78), transparent);
+  box-shadow: none;
+}
+
+.phone-ui-streamlined .phone-required-action-shell:has(.phone-required-action-shell__header:not(.phone-required-action-shell__header--state-only)) .phone-priority-stack__header {
+  display: none;
+}
+
+.phone-ui-streamlined .phone-required-action-shell:has(.phone-priority-stack) .phone-required-action-shell__header--state-only {
+  display: none;
+}
+
+.phone-ui-streamlined .phone-priority-action {
+  border: 0;
+  border-left: 3px solid #87664d;
+  padding: 0.56rem 0.62rem;
+  background: linear-gradient(90deg, rgba(24, 25, 26, 0.84), rgba(10, 12, 14, 0.34));
+}
+
+.phone-ui-streamlined .phone-priority-action.is-required,
+.phone-ui-streamlined .phone-priority-action.is-advance {
+  border-left-color: #ee8c43;
+  box-shadow: none;
+}
+
+.phone-objectives-screen .phone-sheet-mission-target,
+.phone-objectives-screen .phone-sheet-mission-details > div,
+.phone-objectives-screen .phone-sheet-shared-progress,
+.phone-objectives-screen .phone-sheet-objective-list li,
+.phone-objectives-screen .phone-shared-mission-progress,
+.phone-objectives-screen .phone-objective-condition-list li {
+  border-radius: 0;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  box-shadow: none;
+}
+
+.phone-clean-tab-dock {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.22rem;
+}
+
+.phone-clean-tab {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.42rem 0.15rem;
+  border: 0;
+  border-top: 2px solid transparent;
+  background: transparent;
+  color: #aab4bb;
+  border-right: 1px solid rgba(143, 183, 218, 0.28);
+  font: 800 clamp(0.54rem, 2.2vw, 0.65rem)/1.05 var(--font-sans);
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.phone-clean-tab:last-child {
+  border-right: 0;
+}
+
+.phone-clean-tab.is-active {
+  border-top-color: #d29458;
+  color: #f0debd;
+  background: linear-gradient(180deg, rgba(198, 119, 69, 0.13), transparent);
+}
+
+.phone-clean-tab-more {
+  color: #d1b07a;
+}
+
+.phone-ui-streamlined .phone-room-menu-action {
+  color: #d8a896;
+  border-color: rgba(180, 91, 69, 0.42);
+}
+
+.phone-more-menu {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+.phone-more-menu__heading {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: 0.12rem 0.08rem 0.38rem;
+  border-bottom: 1px solid rgba(194, 149, 83, 0.28);
+}
+
+.phone-more-menu__heading strong {
+  color: #f0debd;
+  font: 800 0.78rem/1 var(--font-sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.phone-more-menu__heading span {
+  color: #9da9b1;
+  font-size: 0.64rem;
+}
+
+.phone-leave-confirmation {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.42rem;
+  padding: 0.62rem;
+  border: 1px solid rgba(190, 83, 58, 0.58);
+  border-left: 3px solid #c45f45;
+  background: linear-gradient(110deg, rgba(42, 21, 18, 0.96), rgba(9, 11, 15, 0.98));
+}
+
+.phone-leave-confirmation strong {
+  color: #f1c0ad;
+  text-transform: uppercase;
+}
+
+.phone-leave-confirmation p {
+  margin: 0;
+  color: #c6cdd1;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.phone-leave-confirmation > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.42rem;
+}
+
+.phone-leave-confirmation .phone-button-danger {
+  border-color: rgba(209, 94, 68, 0.74);
+  color: #ffe2d7;
+  background: linear-gradient(180deg, rgba(115, 42, 31, 0.9), rgba(46, 18, 17, 0.96));
+}
+
 .phone-priority-action .game-button {
   width: 100%;
   min-width: 0;
