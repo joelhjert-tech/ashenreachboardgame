@@ -1,0 +1,386 @@
+{
+  "captures": [
+    {
+      "surface": "tv",
+      "state": "lobby",
+      "file": "lobby-1600x900.png",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [
+        "Start requirementsWaiting for player to joinNeed at least 2 players"
+      ],
+      "activeElement": "\u25a4Library\u2318Map InspectorASHEN REACHWaiting for PlayersWaiting for player to join.Room Code3I5A3Join On"
+    },
+    {
+      "surface": "phone",
+      "state": "setup-selection",
+      "file": "setup-selection-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "3I5A3P8OwnerHost PhoneSelect operativeRecommendedAll OperativesAdvancedBjornisFirebreak ConquerorBru"
+    },
+    {
+      "surface": "phone",
+      "state": "required-action",
+      "file": "required-action-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "End turn"
+    },
+    {
+      "surface": "phone",
+      "state": "movement-selection",
+      "file": "movement-selection-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Aouter reachGlass Signal Pier1 stepThreat riskSector opportunityMission"
+    },
+    {
+      "surface": "phone",
+      "state": "battle-comparison",
+      "file": "battle-comparison-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Continue without help"
+    },
+    {
+      "surface": "phone",
+      "state": "battle-result",
+      "file": "battle-result-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [
+        "BattleSuccess"
+      ],
+      "activeElement": "View details"
+    },
+    {
+      "surface": "phone",
+      "state": "end-turn",
+      "file": "end-turn-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "End turn"
+    },
+    {
+      "surface": "phone",
+      "state": "player-card",
+      "file": "player-card-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Player Card"
+    },
+    {
+      "surface": "phone",
+      "state": "relevant-now",
+      "file": "relevant-now-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Continue without help"
+    },
+    {
+      "surface": "phone",
+      "state": "full-inventory",
+      "file": "full-inventory-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Inventory"
+    },
+    {
+      "surface": "phone",
+      "state": "long-rules",
+      "file": "long-rules-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Inventory"
+    },
+    {
+      "surface": "phone",
+      "state": "missing-art",
+      "file": "missing-art-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Inventory"
+    },
+    {
+      "surface": "phone",
+      "state": "blocked-state",
+      "file": "blocked-state-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Inventory"
+    },
+    {
+      "surface": "phone",
+      "state": "shop-offer",
+      "file": "shop-offer-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Inventory"
+    },
+    {
+      "surface": "phone",
+      "state": "shop-result",
+      "file": "shop-result-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "ItemsField supplies and expendable necessities"
+    },
+    {
+      "surface": "tv",
+      "state": "movement-markers",
+      "file": "movement-markers-1600x900.png",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "BorderlightNorth Dock Bastion\u25c6Green GuileBorderlightAnchor Market\u25c6Green Guile!BorderlightColdwind Wh"
+    },
+    {
+      "surface": "tv",
+      "state": "encounter-focus",
+      "file": "encounter-focus-1600x900.png",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "BjornisP8OwnerFirebreak ConquerorRelevant stat\u2694Grit 5-Roll -Base5Roll-Modifiers+0Total-Grit 5 + Roll"
+    },
+    {
+      "surface": "tv",
+      "state": "battle-comparison",
+      "file": "battle-comparison-1600x900.png",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "BjornisP8OwnerFirebreak ConquerorRelevant stat\u2694Grit 5-Roll -Base5Roll-Modifiers+0Total-Grit 5 + Roll"
+    },
+    {
+      "surface": "tv",
+      "state": "battle-result",
+      "file": "battle-result-1600x900.png",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "BjornisP8OwnerFirebreak ConquerorRelevant stat\u2694Grit 534Roll 7Base5Roll7Modifiers+0Total12Grit 5 + Ro"
+    },
+    {
+      "surface": "tv",
+      "state": "operative-handoff",
+      "file": "operative-handoff-1600x900.png",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [
+        "TURN COMPLETEP8Owner\u2192NEXT OPERATIVEP8Guest"
+      ],
+      "activeElement": "Operatives1P8OwnerONLINEW 0S 0T 0251342P8GuestACTIVEW 0S 0T 013425WoundsScarsTrophiesBorderlightNort"
+    },
+    {
+      "surface": "tv",
+      "state": "public-operative-summary",
+      "file": "public-operative-summary-1600x900.png",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Operatives1P8OwnerACTIVEW 1S 0T 0251342P8GuestONLINEW 0S 0T 013425WoundsScarsTrophiesBorderlightNort"
+    },
+    {
+      "surface": "tv",
+      "state": "missing-art-fallback",
+      "file": "missing-art-fallback-1600x900.png",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Operatives1P8OwnerACTIVEW 1S 0T 0251342P8GuestONLINEW 0S 0T 013425WoundsScarsTrophiesBorderlightNort"
+    },
+    {
+      "surface": "phone",
+      "state": "reduced-motion",
+      "file": "reduced-motion-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Inventory"
+    },
+    {
+      "surface": "tv",
+      "state": "reduced-motion",
+      "file": "reduced-motion-1600x900.png",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "BorderlightNorth Dock Bastion\u25c6Green GuileBorderlightAnchor Market\u25c6Green Guile!BorderlightColdwind Wh"
+    },
+    {
+      "surface": "tv",
+      "state": "shop-overlay",
+      "file": "shop-overlay-1600x900.png",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Operatives1P8OwnerACTIVEW 1S 0T 0251342P8GuestONLINEW 0S 0T 013425WoundsScarsTrophiesBorderlightNort"
+    },
+    {
+      "surface": "phone",
+      "state": "reconnecting-restored",
+      "file": "reconnecting-restored-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Ashen Reach ControllerJoin RoomEnter the room code and your player name to join the table.Step 1Room"
+    },
+    {
+      "surface": "tv",
+      "state": "reconnecting-restored",
+      "file": "reconnecting-restored-1600x900.png",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [],
+      "activeElement": "Ashen ReachHost command boardAshen Reach TVRoom Code3I5A3ModeCo-op\u2726Win ProgressSeal Restoration Mark"
+    },
+    {
+      "surface": "phone",
+      "state": "shared-missing-art-and-long-copy",
+      "file": "shared-missing-art-and-long-copy-360x800.png",
+      "viewport": "360x800",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [
+        "Presentation fixture ready"
+      ],
+      "activeElement": "P8 deterministic fixturePresentation recovery statesDevelopment-only rendering of shared image, acti"
+    },
+    {
+      "surface": "phone",
+      "state": "shared-missing-art-and-long-copy",
+      "file": "shared-missing-art-and-long-copy-390x844.png",
+      "viewport": "390x844",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [
+        "Presentation fixture ready"
+      ],
+      "activeElement": "P8 deterministic fixturePresentation recovery statesDevelopment-only rendering of shared image, acti"
+    },
+    {
+      "surface": "phone",
+      "state": "shared-missing-art-and-long-copy",
+      "file": "shared-missing-art-and-long-copy-430x932.png",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [
+        "Presentation fixture ready"
+      ],
+      "activeElement": "P8 deterministic fixturePresentation recovery statesDevelopment-only rendering of shared image, acti"
+    },
+    {
+      "surface": "tv",
+      "state": "shared-missing-art-and-long-copy",
+      "file": "shared-missing-art-and-long-copy-1366x768.png",
+      "viewport": "1366x768",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [
+        "Presentation fixture ready"
+      ],
+      "activeElement": "P8 deterministic fixturePresentation recovery statesDevelopment-only rendering of shared image, acti"
+    },
+    {
+      "surface": "tv",
+      "state": "shared-missing-art-and-long-copy",
+      "file": "shared-missing-art-and-long-copy-1600x900.png",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [
+        "Presentation fixture ready"
+      ],
+      "activeElement": "P8 deterministic fixturePresentation recovery statesDevelopment-only rendering of shared image, acti"
+    },
+    {
+      "surface": "tv",
+      "state": "shared-missing-art-and-long-copy",
+      "file": "shared-missing-art-and-long-copy-1920x1080.png",
+      "viewport": "1920x1080",
+      "horizontalOverflow": 0,
+      "imageOverflow": [],
+      "undersizedTouchTargets": [],
+      "liveRegions": [
+        "Presentation fixture ready"
+      ],
+      "activeElement": "P8 deterministic fixturePresentation recovery statesDevelopment-only rendering of shared image, acti"
+    }
+  ],
+  "consoleErrors": []
+}

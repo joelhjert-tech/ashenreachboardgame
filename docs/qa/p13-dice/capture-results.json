@@ -1,0 +1,406 @@
+{
+  "captures": [
+    {
+      "filename": "movement-roll-ready-360x800.png",
+      "surface": "phone",
+      "state": "movement-roll-ready",
+      "viewport": "360x800",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "pending"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "movement-roll-ready-390x844.png",
+      "surface": "phone",
+      "state": "movement-roll-ready",
+      "viewport": "390x844",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "pending"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "movement-roll-ready-430x932.png",
+      "surface": "phone",
+      "state": "movement-roll-ready",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "pending"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "movement-roll-result-360x800.png",
+      "surface": "phone",
+      "state": "movement-roll-result",
+      "viewport": "360x800",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "1"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "movement-roll-result-390x844.png",
+      "surface": "phone",
+      "state": "movement-roll-result",
+      "viewport": "390x844",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "1"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "movement-roll-result-430x932.png",
+      "surface": "phone",
+      "state": "movement-roll-result",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "1"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "battle-roll-ready-360x800.png",
+      "surface": "phone",
+      "state": "battle-roll-ready",
+      "viewport": "360x800",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "pending",
+        "pending"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "battle-roll-ready-390x844.png",
+      "surface": "phone",
+      "state": "battle-roll-ready",
+      "viewport": "390x844",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "pending",
+        "pending"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "battle-roll-ready-430x932.png",
+      "surface": "phone",
+      "state": "battle-roll-ready",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "pending",
+        "pending"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "battle-two-die-result-360x800.png",
+      "surface": "phone",
+      "state": "battle-two-die-result",
+      "viewport": "360x800",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "3",
+        "4"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "battle-two-die-result-390x844.png",
+      "surface": "phone",
+      "state": "battle-two-die-result",
+      "viewport": "390x844",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "3",
+        "4"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "battle-two-die-result-430x932.png",
+      "surface": "phone",
+      "state": "battle-two-die-result",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "3",
+        "4"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "event-test-result-360x800.png",
+      "surface": "phone",
+      "state": "event-test-result",
+      "viewport": "360x800",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "1",
+        "1"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "event-test-result-390x844.png",
+      "surface": "phone",
+      "state": "event-test-result",
+      "viewport": "390x844",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "1",
+        "1"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "event-test-result-430x932.png",
+      "surface": "phone",
+      "state": "event-test-result",
+      "viewport": "430x932",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "1",
+        "1"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "reconnect-stable-result-390x844.png",
+      "surface": "phone",
+      "state": "reconnect-stable-result",
+      "viewport": "390x844",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "3",
+        "4"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "reduced-motion-result-390x844.png",
+      "surface": "phone",
+      "state": "reduced-motion-result",
+      "viewport": "390x844",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "3",
+        "4"
+      ],
+      "reducedMotion": true
+    },
+    {
+      "filename": "movement-roll-result-1366x768.png",
+      "surface": "host",
+      "state": "movement-roll-result",
+      "viewport": "1366x768",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "1"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "movement-roll-result-1600x900.png",
+      "surface": "host",
+      "state": "movement-roll-result",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "1"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "movement-roll-result-1920x1080.png",
+      "surface": "host",
+      "state": "movement-roll-result",
+      "viewport": "1920x1080",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "1"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "battle-roll-ready-1366x768.png",
+      "surface": "host",
+      "state": "battle-roll-ready",
+      "viewport": "1366x768",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "pending",
+        "pending"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "battle-roll-ready-1600x900.png",
+      "surface": "host",
+      "state": "battle-roll-ready",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "pending",
+        "pending"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "battle-roll-ready-1920x1080.png",
+      "surface": "host",
+      "state": "battle-roll-ready",
+      "viewport": "1920x1080",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "pending",
+        "pending"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "battle-two-die-result-1366x768.png",
+      "surface": "host",
+      "state": "battle-two-die-result",
+      "viewport": "1366x768",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "3",
+        "4"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "battle-two-die-result-1600x900.png",
+      "surface": "host",
+      "state": "battle-two-die-result",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "3",
+        "4"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "battle-two-die-result-1920x1080.png",
+      "surface": "host",
+      "state": "battle-two-die-result",
+      "viewport": "1920x1080",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "3",
+        "4"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "event-test-result-1366x768.png",
+      "surface": "host",
+      "state": "event-test-result",
+      "viewport": "1366x768",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "1",
+        "1"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "event-test-result-1600x900.png",
+      "surface": "host",
+      "state": "event-test-result",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "1",
+        "1"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "event-test-result-1920x1080.png",
+      "surface": "host",
+      "state": "event-test-result",
+      "viewport": "1920x1080",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "1",
+        "1"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "reconnect-stable-result-1920x1080.png",
+      "surface": "host",
+      "state": "reconnect-stable-result",
+      "viewport": "1920x1080",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "3",
+        "4"
+      ],
+      "reducedMotion": false
+    },
+    {
+      "filename": "reduced-motion-result-1366x768.png",
+      "surface": "host",
+      "state": "reduced-motion-result",
+      "viewport": "1366x768",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "3",
+        "4"
+      ],
+      "reducedMotion": true
+    },
+    {
+      "filename": "reduced-motion-result-1600x900.png",
+      "surface": "host",
+      "state": "reduced-motion-result",
+      "viewport": "1600x900",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "3",
+        "4"
+      ],
+      "reducedMotion": true
+    },
+    {
+      "filename": "reduced-motion-result-1920x1080.png",
+      "surface": "host",
+      "state": "reduced-motion-result",
+      "viewport": "1920x1080",
+      "horizontalOverflow": 0,
+      "diceValues": [
+        "3",
+        "4"
+      ],
+      "reducedMotion": true
+    },
+    {
+      "filename": "waiting-for-owner-roll-390x844.png",
+      "surface": "waiting-phone",
+      "state": "waiting-for-owner-roll",
+      "viewport": "390x844",
+      "horizontalOverflow": 0,
+      "diceValues": [],
+      "reducedMotion": false
+    }
+  ],
+  "browserErrors": [],
+  "unsupported": [
+    "Three-or-more operative dice: no canonical current fixture resolves three operative dice; no synthetic roll was fabricated.",
+    "Movement die on the TV before the authoritative result: the established map-first TV does not enter movement focus until a planner/result exists.",
+    "Forced branch dice: P13 preserves canonical calculated outcomes and does not fabricate branch-only dice."
+  ]
+}

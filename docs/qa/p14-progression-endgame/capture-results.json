@@ -1,0 +1,1034 @@
+{
+  "captures": [
+    {
+      "surface": "phone",
+      "state": "early-progress",
+      "viewport": "360x800",
+      "filename": "early-progress-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "early-progress",
+      "viewport": "390x844",
+      "filename": "early-progress-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "early-progress",
+      "viewport": "430x932",
+      "filename": "early-progress-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "near-victory",
+      "viewport": "360x800",
+      "filename": "near-victory-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "near-victory",
+      "viewport": "390x844",
+      "filename": "near-victory-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "near-victory",
+      "viewport": "430x932",
+      "filename": "near-victory-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "progress-gain",
+      "viewport": "360x800",
+      "filename": "progress-gain-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "progress-gain",
+      "viewport": "390x844",
+      "filename": "progress-gain-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "progress-gain",
+      "viewport": "430x932",
+      "filename": "progress-gain-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "early-pressure",
+      "viewport": "360x800",
+      "filename": "early-pressure-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "early-pressure",
+      "viewport": "390x844",
+      "filename": "early-pressure-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "early-pressure",
+      "viewport": "430x932",
+      "filename": "early-pressure-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "near-defeat",
+      "viewport": "360x800",
+      "filename": "near-defeat-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "near-defeat",
+      "viewport": "390x844",
+      "filename": "near-defeat-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "near-defeat",
+      "viewport": "430x932",
+      "filename": "near-defeat-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "pressure-gain",
+      "viewport": "360x800",
+      "filename": "pressure-gain-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "pressure-gain",
+      "viewport": "390x844",
+      "filename": "pressure-gain-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "pressure-gain",
+      "viewport": "430x932",
+      "filename": "pressure-gain-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "critical-warning",
+      "viewport": "360x800",
+      "filename": "critical-warning-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "critical-warning",
+      "viewport": "390x844",
+      "filename": "critical-warning-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "critical-warning",
+      "viewport": "430x932",
+      "filename": "critical-warning-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "final-stage-entry",
+      "viewport": "360x800",
+      "filename": "final-stage-entry-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "final-stage-entry",
+      "viewport": "390x844",
+      "filename": "final-stage-entry-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "final-stage-entry",
+      "viewport": "430x932",
+      "filename": "final-stage-entry-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "final-objective",
+      "viewport": "360x800",
+      "filename": "final-objective-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "final-objective",
+      "viewport": "390x844",
+      "filename": "final-objective-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "final-objective",
+      "viewport": "430x932",
+      "filename": "final-objective-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "coop-victory",
+      "viewport": "360x800",
+      "filename": "coop-victory-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "coop-victory",
+      "viewport": "390x844",
+      "filename": "coop-victory-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "coop-victory",
+      "viewport": "430x932",
+      "filename": "coop-victory-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "coop-defeat",
+      "viewport": "360x800",
+      "filename": "coop-defeat-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "coop-defeat",
+      "viewport": "390x844",
+      "filename": "coop-defeat-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "coop-defeat",
+      "viewport": "430x932",
+      "filename": "coop-defeat-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "solo-victory",
+      "viewport": "360x800",
+      "filename": "solo-victory-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "solo-victory",
+      "viewport": "390x844",
+      "filename": "solo-victory-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "solo-victory",
+      "viewport": "430x932",
+      "filename": "solo-victory-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "solo-defeat",
+      "viewport": "360x800",
+      "filename": "solo-defeat-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "solo-defeat",
+      "viewport": "390x844",
+      "filename": "solo-defeat-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "solo-defeat",
+      "viewport": "430x932",
+      "filename": "solo-defeat-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "rivalry-public-result",
+      "viewport": "360x800",
+      "filename": "rivalry-public-result-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "rivalry-public-result",
+      "viewport": "390x844",
+      "filename": "rivalry-public-result-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "rivalry-public-result",
+      "viewport": "430x932",
+      "filename": "rivalry-public-result-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "nemesis-relay-result",
+      "viewport": "360x800",
+      "filename": "nemesis-relay-result-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "nemesis-relay-result",
+      "viewport": "390x844",
+      "filename": "nemesis-relay-result-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "nemesis-relay-result",
+      "viewport": "430x932",
+      "filename": "nemesis-relay-result-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "match-summary",
+      "viewport": "360x800",
+      "filename": "match-summary-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "match-summary",
+      "viewport": "390x844",
+      "filename": "match-summary-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "match-summary",
+      "viewport": "430x932",
+      "filename": "match-summary-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "return-to-lobby",
+      "viewport": "360x800",
+      "filename": "return-to-lobby-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "return-to-lobby",
+      "viewport": "390x844",
+      "filename": "return-to-lobby-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "return-to-lobby",
+      "viewport": "430x932",
+      "filename": "return-to-lobby-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "leave-room",
+      "viewport": "360x800",
+      "filename": "leave-room-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "leave-room",
+      "viewport": "390x844",
+      "filename": "leave-room-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "leave-room",
+      "viewport": "430x932",
+      "filename": "leave-room-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "long-mission-title",
+      "viewport": "360x800",
+      "filename": "long-mission-title-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "long-mission-title",
+      "viewport": "390x844",
+      "filename": "long-mission-title-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "long-mission-title",
+      "viewport": "430x932",
+      "filename": "long-mission-title-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "long-defeat-reason",
+      "viewport": "360x800",
+      "filename": "long-defeat-reason-360x800.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "long-defeat-reason",
+      "viewport": "390x844",
+      "filename": "long-defeat-reason-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "long-defeat-reason",
+      "viewport": "430x932",
+      "filename": "long-defeat-reason-430x932.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "early-progression",
+      "viewport": "1366x768",
+      "filename": "early-progression-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "early-progression",
+      "viewport": "1600x900",
+      "filename": "early-progression-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "early-progression",
+      "viewport": "1920x1080",
+      "filename": "early-progression-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "near-win-state",
+      "viewport": "1366x768",
+      "filename": "near-win-state-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "near-win-state",
+      "viewport": "1600x900",
+      "filename": "near-win-state-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "near-win-state",
+      "viewport": "1920x1080",
+      "filename": "near-win-state-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "progress-gain",
+      "viewport": "1366x768",
+      "filename": "progress-gain-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "progress-gain",
+      "viewport": "1600x900",
+      "filename": "progress-gain-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "progress-gain",
+      "viewport": "1920x1080",
+      "filename": "progress-gain-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "near-loss-state",
+      "viewport": "1366x768",
+      "filename": "near-loss-state-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "near-loss-state",
+      "viewport": "1600x900",
+      "filename": "near-loss-state-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "near-loss-state",
+      "viewport": "1920x1080",
+      "filename": "near-loss-state-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "pressure-gain",
+      "viewport": "1366x768",
+      "filename": "pressure-gain-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "pressure-gain",
+      "viewport": "1600x900",
+      "filename": "pressure-gain-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "pressure-gain",
+      "viewport": "1920x1080",
+      "filename": "pressure-gain-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "critical-warning",
+      "viewport": "1366x768",
+      "filename": "critical-warning-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "critical-warning",
+      "viewport": "1600x900",
+      "filename": "critical-warning-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "critical-warning",
+      "viewport": "1920x1080",
+      "filename": "critical-warning-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "final-stage-announcement",
+      "viewport": "1366x768",
+      "filename": "final-stage-announcement-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "final-stage-announcement",
+      "viewport": "1600x900",
+      "filename": "final-stage-announcement-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "final-stage-announcement",
+      "viewport": "1920x1080",
+      "filename": "final-stage-announcement-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "final-objective-on-board",
+      "viewport": "1366x768",
+      "filename": "final-objective-on-board-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "final-objective-on-board",
+      "viewport": "1600x900",
+      "filename": "final-objective-on-board-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "final-objective-on-board",
+      "viewport": "1920x1080",
+      "filename": "final-objective-on-board-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "coop-victory",
+      "viewport": "1366x768",
+      "filename": "coop-victory-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "coop-victory",
+      "viewport": "1600x900",
+      "filename": "coop-victory-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "coop-victory",
+      "viewport": "1920x1080",
+      "filename": "coop-victory-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "coop-defeat",
+      "viewport": "1366x768",
+      "filename": "coop-defeat-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "coop-defeat",
+      "viewport": "1600x900",
+      "filename": "coop-defeat-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "coop-defeat",
+      "viewport": "1920x1080",
+      "filename": "coop-defeat-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "rivalry-winner",
+      "viewport": "1366x768",
+      "filename": "rivalry-winner-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "rivalry-winner",
+      "viewport": "1600x900",
+      "filename": "rivalry-winner-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "rivalry-winner",
+      "viewport": "1920x1080",
+      "filename": "rivalry-winner-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "rivalry-private-details-hidden",
+      "viewport": "1366x768",
+      "filename": "rivalry-private-details-hidden-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "rivalry-private-details-hidden",
+      "viewport": "1600x900",
+      "filename": "rivalry-private-details-hidden-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "rivalry-private-details-hidden",
+      "viewport": "1920x1080",
+      "filename": "rivalry-private-details-hidden-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "nemesis-relay-result",
+      "viewport": "1366x768",
+      "filename": "nemesis-relay-result-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "nemesis-relay-result",
+      "viewport": "1600x900",
+      "filename": "nemesis-relay-result-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "nemesis-relay-result",
+      "viewport": "1920x1080",
+      "filename": "nemesis-relay-result-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "match-summary",
+      "viewport": "1366x768",
+      "filename": "match-summary-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "match-summary",
+      "viewport": "1600x900",
+      "filename": "match-summary-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "match-summary",
+      "viewport": "1920x1080",
+      "filename": "match-summary-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "missing-art-fallback",
+      "viewport": "1366x768",
+      "filename": "missing-art-fallback-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "missing-art-fallback",
+      "viewport": "1600x900",
+      "filename": "missing-art-fallback-1600x900.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "missing-art-fallback",
+      "viewport": "1920x1080",
+      "filename": "missing-art-fallback-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "reconnect-during-victory",
+      "viewport": "390x844",
+      "filename": "reconnect-during-victory-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "phone",
+      "state": "reduced-motion",
+      "viewport": "390x844",
+      "filename": "reduced-motion-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": true
+    },
+    {
+      "surface": "host",
+      "state": "reconnect-restored-result",
+      "viewport": "1920x1080",
+      "filename": "reconnect-restored-result-1920x1080.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "host",
+      "state": "reduced-motion-result",
+      "viewport": "1366x768",
+      "filename": "reduced-motion-result-1366x768.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": true
+    },
+    {
+      "surface": "waiting-phone",
+      "state": "public-progress",
+      "viewport": "390x844",
+      "filename": "public-progress-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "waiting-phone",
+      "state": "threshold-warning",
+      "viewport": "390x844",
+      "filename": "threshold-warning-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "waiting-phone",
+      "state": "final-stage",
+      "viewport": "390x844",
+      "filename": "final-stage-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    },
+    {
+      "surface": "waiting-phone",
+      "state": "rivalry-result-public-only",
+      "viewport": "390x844",
+      "filename": "rivalry-result-public-only-390x844.png",
+      "horizontalOverflow": 0,
+      "verticalClipping": 0,
+      "reducedMotion": false
+    }
+  ],
+  "consoleErrors": [],
+  "timings": {
+    "progressUpdateMs": 420,
+    "pressureUpdateMs": 420,
+    "finalStageAnnouncementMs": 1100,
+    "resultRevealMs": 1200,
+    "postGameActionAvailableWithResult": true
+  },
+  "unsupported": [
+    "Canonical rematch is not implemented, so no Rematch action or screenshot was fabricated.",
+    "Canonical aggregate Rivalry ranking/tie calculation is not implemented; P14 shows the shared result and owner-private Agenda conclusion only.",
+    "Canonical draw result is not implemented; missing result data is never converted into a draw."
+  ]
+}

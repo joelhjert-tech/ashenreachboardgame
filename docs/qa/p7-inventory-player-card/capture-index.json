@@ -1,0 +1,464 @@
+{
+  "captures": [
+    {
+      "file": "basic-player-card-390x844.png",
+      "surface": "phone",
+      "state": "basic-player-card",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "basic-player-card-360x800.png",
+      "surface": "phone",
+      "state": "basic-player-card",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "relevant-battle-stat-390x844.png",
+      "surface": "phone",
+      "state": "relevant-battle-stat",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "relevant-battle-stat-360x800.png",
+      "surface": "phone",
+      "state": "relevant-battle-stat",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "relevant-movement-stat-390x844.png",
+      "surface": "phone",
+      "state": "relevant-movement-stat",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "relevant-movement-stat-360x800.png",
+      "surface": "phone",
+      "state": "relevant-movement-stat",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "wounds-and-scars-390x844.png",
+      "surface": "phone",
+      "state": "wounds-and-scars",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "wounds-and-scars-360x800.png",
+      "surface": "phone",
+      "state": "wounds-and-scars",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "equipped-summary-390x844.png",
+      "surface": "phone",
+      "state": "equipped-summary",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "equipped-summary-360x800.png",
+      "surface": "phone",
+      "state": "equipped-summary",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "contextual-relevant-now-390x844.png",
+      "surface": "phone",
+      "state": "contextual-relevant-now",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "contextual-relevant-now-360x800.png",
+      "surface": "phone",
+      "state": "contextual-relevant-now",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "no-relevant-objects-390x844.png",
+      "surface": "phone",
+      "state": "no-relevant-objects",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "no-relevant-objects-360x800.png",
+      "surface": "phone",
+      "state": "no-relevant-objects",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "equipped-equipment-390x844.png",
+      "surface": "phone",
+      "state": "equipped-equipment",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "equipped-equipment-360x800.png",
+      "surface": "phone",
+      "state": "equipped-equipment",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "carried-equipment-390x844.png",
+      "surface": "phone",
+      "state": "carried-equipment",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "carried-equipment-360x800.png",
+      "surface": "phone",
+      "state": "carried-equipment",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "consumable-item-390x844.png",
+      "surface": "phone",
+      "state": "consumable-item",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "consumable-item-360x800.png",
+      "surface": "phone",
+      "state": "consumable-item",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "charged-item-390x844.png",
+      "surface": "phone",
+      "state": "charged-item",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "charged-item-360x800.png",
+      "surface": "phone",
+      "state": "charged-item",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "exhausted-item-390x844.png",
+      "surface": "phone",
+      "state": "exhausted-item",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "exhausted-item-360x800.png",
+      "surface": "phone",
+      "state": "exhausted-item",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "wrong-timing-item-390x844.png",
+      "surface": "phone",
+      "state": "wrong-timing-item",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "wrong-timing-item-360x800.png",
+      "surface": "phone",
+      "state": "wrong-timing-item",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "passive-artifact-390x844.png",
+      "surface": "phone",
+      "state": "passive-artifact",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "passive-artifact-360x800.png",
+      "surface": "phone",
+      "state": "passive-artifact",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "active-artifact-390x844.png",
+      "surface": "phone",
+      "state": "active-artifact",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "active-artifact-360x800.png",
+      "surface": "phone",
+      "state": "active-artifact",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "empty-inventory-390x844.png",
+      "surface": "phone",
+      "state": "empty-inventory",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "empty-inventory-360x800.png",
+      "surface": "phone",
+      "state": "empty-inventory",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "many-owned-objects-390x844.png",
+      "surface": "phone",
+      "state": "many-owned-objects",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "many-owned-objects-360x800.png",
+      "surface": "phone",
+      "state": "many-owned-objects",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "long-rules-and-lore-390x844.png",
+      "surface": "phone",
+      "state": "long-rules-and-lore",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "long-rules-and-lore-360x800.png",
+      "surface": "phone",
+      "state": "long-rules-and-lore",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "missing-art-390x844.png",
+      "surface": "phone",
+      "state": "missing-art",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "missing-art-360x800.png",
+      "surface": "phone",
+      "state": "missing-art",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "relevant-now-one-390x844.png",
+      "surface": "phone",
+      "state": "relevant-now-one",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "relevant-now-one-360x800.png",
+      "surface": "phone",
+      "state": "relevant-now-one",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "relevant-now-many-390x844.png",
+      "surface": "phone",
+      "state": "relevant-now-many",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "relevant-now-many-360x800.png",
+      "surface": "phone",
+      "state": "relevant-now-many",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "use-result-390x844.png",
+      "surface": "phone",
+      "state": "use-result",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "use-result-360x800.png",
+      "surface": "phone",
+      "state": "use-result",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "reconnect-after-use-390x844.png",
+      "surface": "phone",
+      "state": "reconnect-after-use",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "reconnect-after-use-360x800.png",
+      "surface": "phone",
+      "state": "reconnect-after-use",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "return-to-required-action-390x844.png",
+      "surface": "phone",
+      "state": "return-to-required-action",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "return-to-required-action-360x800.png",
+      "surface": "phone",
+      "state": "return-to-required-action",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "own-inventory-during-wait-390x844.png",
+      "surface": "waiting-phone",
+      "state": "own-inventory-during-wait",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "own-inventory-during-wait-360x800.png",
+      "surface": "waiting-phone",
+      "state": "own-inventory-during-wait",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "private-inventory-hidden-1920x1080.png",
+      "surface": "tv",
+      "state": "private-inventory-hidden",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "private-inventory-hidden-1366x768.png",
+      "surface": "tv",
+      "state": "private-inventory-hidden",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "reduced-motion-inspection-390x844.png",
+      "surface": "phone",
+      "state": "reduced-motion-inspection",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "reduced-motion-inspection-360x800.png",
+      "surface": "phone",
+      "state": "reduced-motion-inspection",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "reduced-motion-summary-1920x1080.png",
+      "surface": "tv",
+      "state": "reduced-motion-summary",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "reduced-motion-summary-1366x768.png",
+      "surface": "tv",
+      "state": "reduced-motion-summary",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "missing-art-fallback-1920x1080.png",
+      "surface": "tv",
+      "state": "missing-art-fallback",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "missing-art-fallback-1366x768.png",
+      "surface": "tv",
+      "state": "missing-art-fallback",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "public-wounds-and-scars-1920x1080.png",
+      "surface": "tv",
+      "state": "public-wounds-and-scars",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "public-wounds-and-scars-1366x768.png",
+      "surface": "tv",
+      "state": "public-wounds-and-scars",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "public-operative-summary-1920x1080.png",
+      "surface": "tv",
+      "state": "public-operative-summary",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "public-operative-summary-1366x768.png",
+      "surface": "tv",
+      "state": "public-operative-summary",
+      "viewport": "1366x768",
+      "overflow": 0
+    }
+  ],
+  "errors": [],
+  "timings": {
+    "fixture-basic": 103,
+    "open-player-card": 267,
+    "fixture-battle": 290,
+    "fixture-movement": 68,
+    "fixture-wounds-scars": 42,
+    "fixture-equipped": 36,
+    "open-inventory": 370,
+    "fixture-none-relevant": 25,
+    "fixture-carried": 83,
+    "fixture-consumable": 44,
+    "fixture-charged": 43,
+    "fixture-exhausted": 279,
+    "fixture-wrong-timing": 52,
+    "fixture-passive-artifact": 45,
+    "fixture-active-artifact": 47,
+    "fixture-empty": 29,
+    "fixture-many": 125,
+    "fixture-long-copy": 36,
+    "fixture-missing-art": 29,
+    "fixture-relevant-one": 274,
+    "fixture-relevant-many": 292,
+    "fixture-use-result": 48,
+    "fixture-reconnect": 53
+  }
+}

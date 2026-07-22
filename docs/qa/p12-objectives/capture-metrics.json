@@ -1,0 +1,318 @@
+{
+  "roomCode": "U09K6",
+  "metrics": [
+    {
+      "surface": "phone",
+      "state": "shared",
+      "viewport": "360x800",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "shared",
+      "viewport": "390x844",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "shared",
+      "viewport": "430x932",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "contract",
+      "viewport": "360x800",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "contract",
+      "viewport": "390x844",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "contract",
+      "viewport": "430x932",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "contract-near",
+      "viewport": "360x800",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "contract-near",
+      "viewport": "390x844",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "contract-near",
+      "viewport": "430x932",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "replacement",
+      "viewport": "360x800",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "replacement",
+      "viewport": "390x844",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "replacement",
+      "viewport": "430x932",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "agenda-locked",
+      "viewport": "360x800",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "agenda-locked",
+      "viewport": "390x844",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "agenda-locked",
+      "viewport": "430x932",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "agenda-revealed",
+      "viewport": "360x800",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "agenda-revealed",
+      "viewport": "390x844",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "agenda-revealed",
+      "viewport": "430x932",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "agenda-complete",
+      "viewport": "360x800",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "agenda-complete",
+      "viewport": "390x844",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "agenda-complete",
+      "viewport": "430x932",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "long-content",
+      "viewport": "360x800",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "long-content",
+      "viewport": "390x844",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "long-content",
+      "viewport": "430x932",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "waiting-phone",
+      "state": "private-resolution",
+      "viewport": "390x844",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "tv",
+      "state": "shared",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "tv",
+      "state": "shared",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "tv",
+      "state": "shared",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "tv",
+      "state": "private-resolution",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "tv",
+      "state": "private-resolution",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "tv",
+      "state": "private-resolution",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "tv",
+      "state": "agenda-revealed",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "tv",
+      "state": "agenda-revealed",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "tv",
+      "state": "agenda-revealed",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "tv",
+      "state": "long-content",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "tv",
+      "state": "long-content",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "tv",
+      "state": "long-content",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "reconnect-contract-near",
+      "viewport": "390x844",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    },
+    {
+      "surface": "phone",
+      "state": "reduced-motion",
+      "viewport": "390x844",
+      "overflowX": 0,
+      "horizontalControlClipping": 0,
+      "forbidden": []
+    }
+  ],
+  "browserErrors": []
+}

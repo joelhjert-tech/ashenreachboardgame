@@ -1,0 +1,921 @@
+{
+  "captures": [
+    {
+      "file": "categories-390x844.png",
+      "surface": "phone",
+      "state": "categories",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "categories-360x800.png",
+      "surface": "phone",
+      "state": "categories",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "categories-430x932.png",
+      "surface": "phone",
+      "state": "categories",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 23,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "categories-390x844.png",
+      "surface": "waiting-phone",
+      "state": "categories",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "categories-360x800.png",
+      "surface": "waiting-phone",
+      "state": "categories",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "categories-430x932.png",
+      "surface": "waiting-phone",
+      "state": "categories",
+      "viewport": "430x932",
+      "overflow": 0
+    },
+    {
+      "file": "categories-1920x1080.png",
+      "surface": "tv",
+      "state": "categories",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "categories-1366x768.png",
+      "surface": "tv",
+      "state": "categories",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "equipment-390x844.png",
+      "surface": "phone",
+      "state": "equipment",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": 23.2,
+        "leaveToDock": 21.1,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "equipment-360x800.png",
+      "surface": "phone",
+      "state": "equipment",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "equipment-430x932.png",
+      "surface": "phone",
+      "state": "equipment",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": 23.2,
+        "leaveToDock": 23.4,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "equipment-390x844.png",
+      "surface": "waiting-phone",
+      "state": "equipment",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "equipment-360x800.png",
+      "surface": "waiting-phone",
+      "state": "equipment",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "equipment-430x932.png",
+      "surface": "waiting-phone",
+      "state": "equipment",
+      "viewport": "430x932",
+      "overflow": 0
+    },
+    {
+      "file": "equipment-1920x1080.png",
+      "surface": "tv",
+      "state": "equipment",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "equipment-1366x768.png",
+      "surface": "tv",
+      "state": "equipment",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "items-390x844.png",
+      "surface": "phone",
+      "state": "items",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": 23.2,
+        "leaveToDock": 21.1,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "items-360x800.png",
+      "surface": "phone",
+      "state": "items",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "items-430x932.png",
+      "surface": "phone",
+      "state": "items",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": 23.2,
+        "leaveToDock": 23,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "items-390x844.png",
+      "surface": "waiting-phone",
+      "state": "items",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "items-360x800.png",
+      "surface": "waiting-phone",
+      "state": "items",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "items-430x932.png",
+      "surface": "waiting-phone",
+      "state": "items",
+      "viewport": "430x932",
+      "overflow": 0
+    },
+    {
+      "file": "items-1920x1080.png",
+      "surface": "tv",
+      "state": "items",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "items-1366x768.png",
+      "surface": "tv",
+      "state": "items",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "services-390x844.png",
+      "surface": "phone",
+      "state": "services",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 21.1,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "services-360x800.png",
+      "surface": "phone",
+      "state": "services",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "services-430x932.png",
+      "surface": "phone",
+      "state": "services",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 69.3,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "services-390x844.png",
+      "surface": "waiting-phone",
+      "state": "services",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "services-360x800.png",
+      "surface": "waiting-phone",
+      "state": "services",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "services-430x932.png",
+      "surface": "waiting-phone",
+      "state": "services",
+      "viewport": "430x932",
+      "overflow": 0
+    },
+    {
+      "file": "services-1920x1080.png",
+      "surface": "tv",
+      "state": "services",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "services-1366x768.png",
+      "surface": "tv",
+      "state": "services",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "artifacts-390x844.png",
+      "surface": "phone",
+      "state": "artifacts",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 120.5,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "artifacts-360x800.png",
+      "surface": "phone",
+      "state": "artifacts",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 58.5,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "artifacts-430x932.png",
+      "surface": "phone",
+      "state": "artifacts",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 252.5,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "artifacts-390x844.png",
+      "surface": "waiting-phone",
+      "state": "artifacts",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "artifacts-360x800.png",
+      "surface": "waiting-phone",
+      "state": "artifacts",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "artifacts-430x932.png",
+      "surface": "waiting-phone",
+      "state": "artifacts",
+      "viewport": "430x932",
+      "overflow": 0
+    },
+    {
+      "file": "artifacts-1920x1080.png",
+      "surface": "tv",
+      "state": "artifacts",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "artifacts-1366x768.png",
+      "surface": "tv",
+      "state": "artifacts",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "sell-390x844.png",
+      "surface": "phone",
+      "state": "sell",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 65.2,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "sell-360x800.png",
+      "surface": "phone",
+      "state": "sell",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 21.1,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "sell-430x932.png",
+      "surface": "phone",
+      "state": "sell",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 145.9,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "sell-390x844.png",
+      "surface": "waiting-phone",
+      "state": "sell",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "sell-360x800.png",
+      "surface": "waiting-phone",
+      "state": "sell",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "sell-430x932.png",
+      "surface": "waiting-phone",
+      "state": "sell",
+      "viewport": "430x932",
+      "overflow": 0
+    },
+    {
+      "file": "sell-1920x1080.png",
+      "surface": "tv",
+      "state": "sell",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "sell-1366x768.png",
+      "surface": "tv",
+      "state": "sell",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "insufficient-390x844.png",
+      "surface": "phone",
+      "state": "insufficient",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "insufficient-360x800.png",
+      "surface": "phone",
+      "state": "insufficient",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "insufficient-430x932.png",
+      "surface": "phone",
+      "state": "insufficient",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": 23.2,
+        "leaveToDock": 23,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "insufficient-390x844.png",
+      "surface": "waiting-phone",
+      "state": "insufficient",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "insufficient-360x800.png",
+      "surface": "waiting-phone",
+      "state": "insufficient",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "insufficient-430x932.png",
+      "surface": "waiting-phone",
+      "state": "insufficient",
+      "viewport": "430x932",
+      "overflow": 0
+    },
+    {
+      "file": "insufficient-1920x1080.png",
+      "surface": "tv",
+      "state": "insufficient",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "insufficient-1366x768.png",
+      "surface": "tv",
+      "state": "insufficient",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "sold-out-390x844.png",
+      "surface": "phone",
+      "state": "sold-out",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "sold-out-360x800.png",
+      "surface": "phone",
+      "state": "sold-out",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "sold-out-430x932.png",
+      "surface": "phone",
+      "state": "sold-out",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": 23.2,
+        "leaveToDock": 23,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "sold-out-390x844.png",
+      "surface": "waiting-phone",
+      "state": "sold-out",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "sold-out-360x800.png",
+      "surface": "waiting-phone",
+      "state": "sold-out",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "sold-out-430x932.png",
+      "surface": "waiting-phone",
+      "state": "sold-out",
+      "viewport": "430x932",
+      "overflow": 0
+    },
+    {
+      "file": "sold-out-1920x1080.png",
+      "surface": "tv",
+      "state": "sold-out",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "sold-out-1366x768.png",
+      "surface": "tv",
+      "state": "sold-out",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "locked-390x844.png",
+      "surface": "phone",
+      "state": "locked",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "locked-360x800.png",
+      "surface": "phone",
+      "state": "locked",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "locked-430x932.png",
+      "surface": "phone",
+      "state": "locked",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 47,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "locked-390x844.png",
+      "surface": "waiting-phone",
+      "state": "locked",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "locked-360x800.png",
+      "surface": "waiting-phone",
+      "state": "locked",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "locked-430x932.png",
+      "surface": "waiting-phone",
+      "state": "locked",
+      "viewport": "430x932",
+      "overflow": 0
+    },
+    {
+      "file": "locked-1920x1080.png",
+      "surface": "tv",
+      "state": "locked",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "locked-1366x768.png",
+      "surface": "tv",
+      "state": "locked",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "long-lore-390x844.png",
+      "surface": "phone",
+      "state": "long-lore",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": 23.2,
+        "leaveToDock": 21.1,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "long-lore-360x800.png",
+      "surface": "phone",
+      "state": "long-lore",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "long-lore-430x932.png",
+      "surface": "phone",
+      "state": "long-lore",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": 23.2,
+        "leaveToDock": 23.4,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "long-lore-390x844.png",
+      "surface": "waiting-phone",
+      "state": "long-lore",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "long-lore-360x800.png",
+      "surface": "waiting-phone",
+      "state": "long-lore",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "long-lore-430x932.png",
+      "surface": "waiting-phone",
+      "state": "long-lore",
+      "viewport": "430x932",
+      "overflow": 0
+    },
+    {
+      "file": "long-lore-1920x1080.png",
+      "surface": "tv",
+      "state": "long-lore",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "long-lore-1366x768.png",
+      "surface": "tv",
+      "state": "long-lore",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "leave-shop-clearance-360x800.png",
+      "surface": "phone",
+      "state": "leave-shop-clearance",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 201.4,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "leave-shop-clearance-390x844.png",
+      "surface": "phone",
+      "state": "leave-shop-clearance",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 201.1,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "leave-shop-clearance-430x932.png",
+      "surface": "phone",
+      "state": "leave-shop-clearance",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": 203.1,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "purchase-result-390x844.png",
+      "surface": "phone",
+      "state": "purchase-result",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "purchase-result-360x800.png",
+      "surface": "phone",
+      "state": "purchase-result",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "purchase-result-430x932.png",
+      "surface": "phone",
+      "state": "purchase-result",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "purchase-result-390x844.png",
+      "surface": "waiting-phone",
+      "state": "purchase-result",
+      "viewport": "390x844",
+      "overflow": 0
+    },
+    {
+      "file": "purchase-result-360x800.png",
+      "surface": "waiting-phone",
+      "state": "purchase-result",
+      "viewport": "360x800",
+      "overflow": 0
+    },
+    {
+      "file": "purchase-result-430x932.png",
+      "surface": "waiting-phone",
+      "state": "purchase-result",
+      "viewport": "430x932",
+      "overflow": 0
+    },
+    {
+      "file": "purchase-result-1920x1080.png",
+      "surface": "tv",
+      "state": "purchase-result",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "purchase-result-1366x768.png",
+      "surface": "tv",
+      "state": "purchase-result",
+      "viewport": "1366x768",
+      "overflow": 0
+    },
+    {
+      "file": "reconnect-browsing-390x844.png",
+      "surface": "phone",
+      "state": "reconnect-browsing",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": 23.2,
+        "leaveToDock": 21.1,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "reconnect-browsing-360x800.png",
+      "surface": "phone",
+      "state": "reconnect-browsing",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "reconnect-browsing-430x932.png",
+      "surface": "phone",
+      "state": "reconnect-browsing",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": 23.2,
+        "leaveToDock": 23.4,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "reduced-motion-390x844.png",
+      "surface": "phone",
+      "state": "reduced-motion",
+      "viewport": "390x844",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": 23.2,
+        "leaveToDock": 21.1,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "reduced-motion-360x800.png",
+      "surface": "phone",
+      "state": "reduced-motion",
+      "viewport": "360x800",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": null,
+        "leaveToDock": null,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "reduced-motion-430x932.png",
+      "surface": "phone",
+      "state": "reduced-motion",
+      "viewport": "430x932",
+      "overflow": 0,
+      "shopControlClearance": {
+        "offerToLeave": 23.2,
+        "leaveToDock": 23.4,
+        "minimumTouchTarget": 44
+      }
+    },
+    {
+      "file": "reduced-motion-1920x1080.png",
+      "surface": "tv",
+      "state": "reduced-motion",
+      "viewport": "1920x1080",
+      "overflow": 0
+    },
+    {
+      "file": "reduced-motion-1366x768.png",
+      "surface": "tv",
+      "state": "reduced-motion",
+      "viewport": "1366x768",
+      "overflow": 0
+    }
+  ],
+  "errors": [],
+  "timings": {
+    "fixture-categories": 33,
+    "fixture-equipment": 30,
+    "fixture-items": 31,
+    "fixture-services": 42,
+    "fixture-artifacts": 28,
+    "fixture-sell": 45,
+    "fixture-insufficient": 23,
+    "fixture-sold-out": 59,
+    "fixture-locked": 26,
+    "fixture-long-lore": 15,
+    "buyResponse": 357
+  }
+}

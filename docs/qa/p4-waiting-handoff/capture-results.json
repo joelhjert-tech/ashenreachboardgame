@@ -1,0 +1,488 @@
+{
+  "captures": [
+    {
+      "file": "result-390x844.png",
+      "surface": "phone",
+      "state": "result",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room RESULT READY Current required action controls TILE ARRIVAL Ashwalk Bridge 1 MANDATORY A scorched bridge leans over the perimeter gap, bright with furnace wind and old warning lamps. 100 Yellow Threat Draw and resolve one Yellow Threat before optional tile actions. NEXT VIEW 1 REMAINING EFFECT 0 MANDATORY · 1 OPTIONAL MANDATORY · Finish the current encounter resolution. HAZARD Signal test · Target "
+    },
+    {
+      "file": "result-360x800.png",
+      "surface": "phone",
+      "state": "result",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room RESULT READY Current required action controls TILE ARRIVAL Ashwalk Bridge 1 MANDATORY A scorched bridge leans over the perimeter gap, bright with furnace wind and old warning lamps. 100 Yellow Threat Draw and resolve one Yellow Threat before optional tile actions. NEXT VIEW 1 REMAINING EFFECT 0 MANDATORY · 1 OPTIONAL MANDATORY · Finish the current encounter resolution. HAZARD Signal test · Target "
+    },
+    {
+      "file": "waiting-result-390x844.png",
+      "surface": "waiting-phone",
+      "state": "waiting-result",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "DEEPDALE P4Waitin Deep Route Delver · Seat 2 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room RESOLVING P4Owner is acting Waiting for P4Owner to review the Ashfall Shear result. Waiting for P4Owner to review the Ashfall Shear result. STANDBY P4Waitin Deepdale · Deep Route Delver 9M5XQ P4WAITIN OPEN ACTIVE WOUNDS 0 · SCARS 0 · SALVAGE 3 · STATUS ACTIVE WOUNDS 0 SCARS 0 SALVAGE 3 STATUS active SIGNAL TEST SIGNAL RELEVANT NOW 4 BASE 4 COMMAND 1 BASE 1 GRIT 3 BASE 3 GUILE 2 BASE 2 FORGE 5 BASE"
+    },
+    {
+      "file": "waiting-result-360x800.png",
+      "surface": "waiting-phone",
+      "state": "waiting-result",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "DEEPDALE P4Waitin Deep Route Delver · Seat 2 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room RESOLVING P4Owner is acting Waiting for P4Owner to review the Ashfall Shear result. Waiting for P4Owner to review the Ashfall Shear result. STANDBY P4Waitin Deepdale · Deep Route Delver 9M5XQ P4WAITIN OPEN ACTIVE WOUNDS 0 · SCARS 0 · SALVAGE 3 · STATUS ACTIVE WOUNDS 0 SCARS 0 SALVAGE 3 STATUS active SIGNAL TEST SIGNAL RELEVANT NOW 4 BASE 4 COMMAND 1 BASE 1 GRIT 3 BASE 3 GUILE 2 BASE 2 FORGE 5 BASE"
+    },
+    {
+      "file": "result-1920x1080.png",
+      "surface": "tv",
+      "state": "result",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4OWNER Waiting for P4Owner to review the Ashfall Shear result. OFF North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉ Broken Census Hall ROUTE ⚔ Colony Outskirts ◆ Deadwater Marsh ◉ Votive "
+    },
+    {
+      "file": "result-1366x768.png",
+      "surface": "tv",
+      "state": "result",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4OWNER Waiting for P4Owner to review the Ashfall Shear result. OFF North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉ Broken Census Hall ROUTE ⚔ Colony Outskirts ◆ Deadwater Marsh ◉ Votive "
+    },
+    {
+      "file": "long-result-390x844.png",
+      "surface": "phone",
+      "state": "long-result",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room RESULT READY Current required action controls TILE ARRIVAL Ashwalk Bridge 1 MANDATORY A scorched bridge leans over the perimeter gap, bright with furnace wind and old warning lamps. 100 Yellow Threat Draw and resolve one Yellow Threat before optional tile actions. NEXT VIEW 1 REMAINING EFFECT 0 MANDATORY · 1 OPTIONAL MANDATORY · Finish the current encounter resolution. HAZARD Signal test · Target "
+    },
+    {
+      "file": "long-result-360x800.png",
+      "surface": "phone",
+      "state": "long-result",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room RESULT READY Current required action controls TILE ARRIVAL Ashwalk Bridge 1 MANDATORY A scorched bridge leans over the perimeter gap, bright with furnace wind and old warning lamps. 100 Yellow Threat Draw and resolve one Yellow Threat before optional tile actions. NEXT VIEW 1 REMAINING EFFECT 0 MANDATORY · 1 OPTIONAL MANDATORY · Finish the current encounter resolution. HAZARD Signal test · Target "
+    },
+    {
+      "file": "waiting-long-result-390x844.png",
+      "surface": "waiting-phone",
+      "state": "waiting-long-result",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "DEEPDALE P4Waitin Deep Route Delver · Seat 2 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room RESOLVING P4Owner is acting Waiting for P4Owner to review the Ashfall Shear result. Waiting for P4Owner to review the Ashfall Shear result. STANDBY P4Waitin Deepdale · Deep Route Delver 9M5XQ P4WAITIN OPEN ACTIVE WOUNDS 0 · SCARS 0 · SALVAGE 3 · STATUS ACTIVE WOUNDS 0 SCARS 0 SALVAGE 3 STATUS active SIGNAL TEST SIGNAL RELEVANT NOW 4 BASE 4 COMMAND 1 BASE 1 GRIT 3 BASE 3 GUILE 2 BASE 2 FORGE 5 BASE"
+    },
+    {
+      "file": "waiting-long-result-360x800.png",
+      "surface": "waiting-phone",
+      "state": "waiting-long-result",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "DEEPDALE P4Waitin Deep Route Delver · Seat 2 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room RESOLVING P4Owner is acting Waiting for P4Owner to review the Ashfall Shear result. Waiting for P4Owner to review the Ashfall Shear result. STANDBY P4Waitin Deepdale · Deep Route Delver 9M5XQ P4WAITIN OPEN ACTIVE WOUNDS 0 · SCARS 0 · SALVAGE 3 · STATUS ACTIVE WOUNDS 0 SCARS 0 SALVAGE 3 STATUS active SIGNAL TEST SIGNAL RELEVANT NOW 4 BASE 4 COMMAND 1 BASE 1 GRIT 3 BASE 3 GUILE 2 BASE 2 FORGE 5 BASE"
+    },
+    {
+      "file": "long-result-1920x1080.png",
+      "surface": "tv",
+      "state": "long-result",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4OWNER Waiting for P4Owner to review the Ashfall Shear result. OFF North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉ Broken Census Hall ROUTE ⚔ Colony Outskirts ◆ Deadwater Marsh ◉ Votive "
+    },
+    {
+      "file": "long-result-1366x768.png",
+      "surface": "tv",
+      "state": "long-result",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4OWNER Waiting for P4Owner to review the Ashfall Shear result. OFF North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉ Broken Census Hall ROUTE ⚔ Colony Outskirts ◆ Deadwater Marsh ◉ Votive "
+    },
+    {
+      "file": "result-with-continue-390x844.png",
+      "surface": "phone",
+      "state": "result-with-continue",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room RESULT READY Current required action controls TILE ARRIVAL Ashwalk Bridge 1 MANDATORY A scorched bridge leans over the perimeter gap, bright with furnace wind and old warning lamps. 100 Yellow Threat Draw and resolve one Yellow Threat before optional tile actions. NEXT VIEW 1 REMAINING EFFECT 0 MANDATORY · 1 OPTIONAL MANDATORY · Finish the current encounter resolution. HAZARD Signal test · Target "
+    },
+    {
+      "file": "result-with-continue-360x800.png",
+      "surface": "phone",
+      "state": "result-with-continue",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room TURN READY Current required action controls CURRENT CONTEXT ACTION PHASE Choose one legal action or end the turn. END TURN ADVANCE Pass control to next operative END TURN ACTION Show Tabs"
+    },
+    {
+      "file": "continue-submitting-390x844.png",
+      "surface": "phone",
+      "state": "continue-submitting",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room SUBMITTING CONTINUING CONTINUING Current required action controls CURRENT CONTEXT ACTION PHASE Choose one legal action or end the turn. END TURN ADVANCE Pass control to next operative END TURN ACTION Show Tabs"
+    },
+    {
+      "file": "continue-submitting-360x800.png",
+      "surface": "phone",
+      "state": "continue-submitting",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room SUBMITTING CONTINUING CONTINUING Current required action controls CURRENT CONTEXT ACTION PHASE Choose one legal action or end the turn. END TURN ADVANCE Pass control to next operative END TURN ACTION Show Tabs"
+    },
+    {
+      "file": "private-reward-390x844.png",
+      "surface": "phone",
+      "state": "private-reward",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room YOUR TURN Current required action controls CURRENT CONTEXT EVENT · BREACH HALBERD Forge test · Difficulty 6 REQUIRED NOW · 2 PRIMARY Replace Field Lens in the Utility slot. The current item stays carried. EQUIP BRIDGE SPIKE PRIMARY Bridge Spike remains in Inventory. Field Lens stays equipped. KEEP CARRIED PASSIVE / ALREADY APPLIED · 1 BLOCKED · 1 ACTION Show Tabs"
+    },
+    {
+      "file": "private-reward-360x800.png",
+      "surface": "phone",
+      "state": "private-reward",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room YOUR TURN Current required action controls CURRENT CONTEXT EVENT · BREACH HALBERD Forge test · Difficulty 6 REQUIRED NOW · 2 PRIMARY Replace Field Lens in the Utility slot. The current item stays carried. EQUIP BRIDGE SPIKE PRIMARY Bridge Spike remains in Inventory. Field Lens stays equipped. KEEP CARRIED PASSIVE / ALREADY APPLIED · 1 BLOCKED · 1 ACTION Show Tabs"
+    },
+    {
+      "file": "private-reward-waiting-390x844.png",
+      "surface": "waiting-phone",
+      "state": "private-reward-waiting",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "DEEPDALE P4Waitin Deep Route Delver · Seat 2 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room WAITING P4Owner is acting Waiting for P4Owner to resolve a private Equipment choice. Waiting for P4Owner to resolve a private Equipment choice. STANDBY P4Waitin Deepdale · Deep Route Delver 9M5XQ P4WAITIN OPEN ACTIVE WOUNDS 0 · SCARS 0 · SALVAGE 3 · STATUS ACTIVE WOUNDS 0 SCARS 0 SALVAGE 3 STATUS active FORGE TEST FORGE RELEVANT NOW 5 BASE 5 COMMAND 1 BASE 1 GRIT 3 BASE 3 SIGNAL 4 BASE 4 GUILE 2 B"
+    },
+    {
+      "file": "private-reward-waiting-360x800.png",
+      "surface": "waiting-phone",
+      "state": "private-reward-waiting",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "DEEPDALE P4Waitin Deep Route Delver · Seat 2 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room WAITING P4Owner is acting Waiting for P4Owner to resolve a private Equipment choice. Waiting for P4Owner to resolve a private Equipment choice. STANDBY P4Waitin Deepdale · Deep Route Delver 9M5XQ P4WAITIN OPEN ACTIVE WOUNDS 0 · SCARS 0 · SALVAGE 3 · STATUS ACTIVE WOUNDS 0 SCARS 0 SALVAGE 3 STATUS active FORGE TEST FORGE RELEVANT NOW 5 BASE 5 COMMAND 1 BASE 1 GRIT 3 BASE 3 SIGNAL 4 BASE 4 GUILE 2 B"
+    },
+    {
+      "file": "public-damage-390x844.png",
+      "surface": "phone",
+      "state": "public-damage",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner 1 wounds · 3 Salvage RESULT READY Current required action controls BATTLE FAILURE OPERATIVE Bjornis P4OWNER VS THREAT Lantern-Ash Ghoul BASE GRIT 5 ROLL TOTAL 2 MODIFIER +0 OPPONENT 12 TOTAL 7 : 12 TEST FAILED ! Blocker remains: Lantern-Ash Ghoul Lantern-Ash Ghoul remains unresolved. ◇ Suffer 1 Wound. “The ghoul drives you back from the lamp.” VIEW DETAILS CONTINUE OPERATIVE GEAR BATTLE LOG"
+    },
+    {
+      "file": "public-damage-360x800.png",
+      "surface": "phone",
+      "state": "public-damage",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner 1 wounds · 3 Salvage RESULT READY Current required action controls BATTLE FAILURE OPERATIVE Bjornis P4OWNER VS THREAT Lantern-Ash Ghoul BASE GRIT 5 ROLL TOTAL 2 MODIFIER +0 OPPONENT 12 TOTAL 7 : 12 TEST FAILED ! Blocker remains: Lantern-Ash Ghoul Lantern-Ash Ghoul remains unresolved. ◇ Suffer 1 Wound. “The ghoul drives you back from the lamp.” VIEW DETAILS CONTINUE OPERATIVE GEAR BATTLE LOG"
+    },
+    {
+      "file": "public-consequence-1920x1080.png",
+      "surface": "tv",
+      "state": "public-consequence",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4OWNER Waiting for P4Owner to review the Lantern-Ash Ghoul result. OFF North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉ Broken Census Hall ROUTE ⚔ Colony Outskirts ◆ Deadwater Marsh ◉ Vot"
+    },
+    {
+      "file": "public-consequence-1366x768.png",
+      "surface": "tv",
+      "state": "public-consequence",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4OWNER Waiting for P4Owner to review the Lantern-Ash Ghoul result. OFF North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉ Broken Census Hall ROUTE ⚔ Colony Outskirts ◆ Deadwater Marsh ◉ Vot"
+    },
+    {
+      "file": "private-choice-390x844.png",
+      "surface": "phone",
+      "state": "private-choice",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner 1 wounds · 3 Salvage YOUR TURN Current required action controls BATTLE BATTLE OPERATIVE Bjornis P4OWNER VS THREAT Gate-Tax Collectors BASE COMMAND 2 ROLL — MODIFIER — OPPONENT 5 TOTAL Pending RESOLVE BEFORE CONTINUING PAY 1 SALVAGE Pay 1 Salvage or accept the authored consequence. Current Salvage: 3. ACCEPT LOSS Pay 1 Salvage or accept the authored consequence. Current Salvage: 3. VIEW DETAILS COMPLETE CHOICE ABOVE Complete choice above OPERATIVE GEAR BATTLE LOG"
+    },
+    {
+      "file": "private-choice-360x800.png",
+      "surface": "phone",
+      "state": "private-choice",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner 1 wounds · 3 Salvage YOUR TURN Current required action controls BATTLE BATTLE OPERATIVE Bjornis P4OWNER VS THREAT Gate-Tax Collectors BASE COMMAND 2 ROLL — MODIFIER — OPPONENT 5 TOTAL Pending RESOLVE BEFORE CONTINUING PAY 1 SALVAGE Pay 1 Salvage or accept the authored consequence. Current Salvage: 3. ACCEPT LOSS Pay 1 Salvage or accept the authored consequence. Current Salvage: 3. VIEW DETAILS COMPLETE CHOICE ABOVE Complete choice above OPERATIVE GEAR BATTLE LOG"
+    },
+    {
+      "file": "private-choice-waiting-390x844.png",
+      "surface": "waiting-phone",
+      "state": "private-choice-waiting",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "DEEPDALE P4Waitin Deep Route Delver · Seat 2 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room WAITING P4Owner is acting Waiting for P4Owner to resolve an encounter payment. Waiting for P4Owner to resolve an encounter payment. STANDBY P4Waitin Deepdale · Deep Route Delver 9M5XQ P4WAITIN OPEN ACTIVE WOUNDS 0 · SCARS 0 · SALVAGE 3 · STATUS ACTIVE WOUNDS 0 SCARS 0 SALVAGE 3 STATUS active COMMAND TEST COMMAND RELEVANT NOW 1 BASE 1 GRIT 3 BASE 3 SIGNAL 4 BASE 4 GUILE 2 BASE 2 FORGE 5 BASE 5 EQUI"
+    },
+    {
+      "file": "private-choice-waiting-360x800.png",
+      "surface": "waiting-phone",
+      "state": "private-choice-waiting",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "DEEPDALE P4Waitin Deep Route Delver · Seat 2 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room WAITING P4Owner is acting Waiting for P4Owner to resolve an encounter payment. Waiting for P4Owner to resolve an encounter payment. STANDBY P4Waitin Deepdale · Deep Route Delver 9M5XQ P4WAITIN OPEN ACTIVE WOUNDS 0 · SCARS 0 · SALVAGE 3 · STATUS ACTIVE WOUNDS 0 SCARS 0 SALVAGE 3 STATUS active COMMAND TEST COMMAND RELEVANT NOW 1 BASE 1 GRIT 3 BASE 3 SIGNAL 4 BASE 4 GUILE 2 BASE 2 FORGE 5 BASE 5 EQUI"
+    },
+    {
+      "file": "private-choice-public-safe-1920x1080.png",
+      "surface": "tv",
+      "state": "private-choice-public-safe",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4OWNER Waiting for P4Owner to resolve an encounter payment. OFF North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉ Broken Census Hall ROUTE ⚔ Colony Outskirts ◆ Deadwater Marsh ◉ Votive Eng"
+    },
+    {
+      "file": "private-choice-public-safe-1366x768.png",
+      "surface": "tv",
+      "state": "private-choice-public-safe",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4OWNER Waiting for P4Owner to resolve an encounter payment. OFF North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉ Broken Census Hall ROUTE ⚔ Colony Outskirts ◆ Deadwater Marsh ◉ Votive Eng"
+    },
+    {
+      "file": "end-turn-available-390x844.png",
+      "surface": "phone",
+      "state": "end-turn-available",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 1 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room TURN READY Current required action controls CURRENT CONTEXT ACTION PHASE Choose one legal action or end the turn. END TURN ADVANCE Pass control to next operative END TURN USEFUL NOW · 8 GEAR Weapon: +1 Grit EQUIP NAILSPIKE MAUL GEAR Armor: +1 Grit EQUIP RIVETPLATE VEST GEAR Utility: +1 Forge EQUIP BRIDGE SPIKE GEAR field-lens UNEQUIP UTILITY ITEM A brutal salvage maul that adds +1 Grit in battle. "
+    },
+    {
+      "file": "end-turn-available-360x800.png",
+      "surface": "phone",
+      "state": "end-turn-available",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 1 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room TURN READY Current required action controls CURRENT CONTEXT ACTION PHASE Choose one legal action or end the turn. END TURN ADVANCE Pass control to next operative END TURN USEFUL NOW · 8 GEAR Weapon: +1 Grit EQUIP NAILSPIKE MAUL GEAR Armor: +1 Grit EQUIP RIVETPLATE VEST GEAR Utility: +1 Forge EQUIP BRIDGE SPIKE GEAR field-lens UNEQUIP UTILITY ITEM A brutal salvage maul that adds +1 Grit in battle. "
+    },
+    {
+      "file": "end-turn-submitting-390x844.png",
+      "surface": "phone",
+      "state": "end-turn-submitting",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 1 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room SUBMITTING ENDING TURN ENDING TURN Current required action controls CURRENT CONTEXT ACTION PHASE Choose one legal action or end the turn. END TURN ADVANCE Pass control to next operative END TURN USEFUL NOW · 8 GEAR Weapon: +1 Grit EQUIP NAILSPIKE MAUL GEAR Armor: +1 Grit EQUIP RIVETPLATE VEST GEAR Utility: +1 Forge EQUIP BRIDGE SPIKE GEAR field-lens UNEQUIP UTILITY ITEM A brutal salvage maul that "
+    },
+    {
+      "file": "end-turn-submitting-360x800.png",
+      "surface": "phone",
+      "state": "end-turn-submitting",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 1 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room SUBMITTING ENDING TURN ENDING TURN Current required action controls CURRENT CONTEXT ACTION PHASE Choose one legal action or end the turn. END TURN ADVANCE Pass control to next operative END TURN USEFUL NOW · 8 GEAR Weapon: +1 Grit EQUIP NAILSPIKE MAUL GEAR Armor: +1 Grit EQUIP RIVETPLATE VEST GEAR Utility: +1 Forge EQUIP BRIDGE SPIKE GEAR field-lens UNEQUIP UTILITY ITEM A brutal salvage maul that "
+    },
+    {
+      "file": "turn-closing-390x844.png",
+      "surface": "phone",
+      "state": "turn-closing",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 1 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room SUBMITTING ENDING TURN ENDING TURN Current required action controls CURRENT CONTEXT ACTION PHASE Choose one legal action or end the turn. END TURN ADVANCE Pass control to next operative END TURN USEFUL NOW · 8 GEAR Weapon: +1 Grit EQUIP NAILSPIKE MAUL GEAR Armor: +1 Grit EQUIP RIVETPLATE VEST GEAR Utility: +1 Forge EQUIP BRIDGE SPIKE GEAR field-lens UNEQUIP UTILITY ITEM A brutal salvage maul that "
+    },
+    {
+      "file": "turn-closing-360x800.png",
+      "surface": "phone",
+      "state": "turn-closing",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 1 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room SUBMITTING ENDING TURN ENDING TURN Current required action controls CURRENT CONTEXT ACTION PHASE Choose one legal action or end the turn. END TURN ADVANCE Pass control to next operative END TURN USEFUL NOW · 8 GEAR Weapon: +1 Grit EQUIP NAILSPIKE MAUL GEAR Armor: +1 Grit EQUIP RIVETPLATE VEST GEAR Utility: +1 Forge EQUIP BRIDGE SPIKE GEAR field-lens UNEQUIP UTILITY ITEM A brutal salvage maul that "
+    },
+    {
+      "file": "end-turn-submitting-waiting-390x844.png",
+      "surface": "waiting-phone",
+      "state": "end-turn-submitting-waiting",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "DEEPDALE P4Waitin Deep Route Delver · Seat 2 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room WAITING P4Owner is acting Waiting for P4Owner to end the turn when ready. Waiting for P4Owner to end the turn when ready. STANDBY P4Waitin Deepdale · Deep Route Delver 9M5XQ P4WAITIN OPEN ACTIVE WOUNDS 0 · SCARS 0 · SALVAGE 3 · STATUS ACTIVE WOUNDS 0 SCARS 0 SALVAGE 3 STATUS active STATS COMMAND 1 BASE 1 GRIT 3 BASE 3 SIGNAL 4 BASE 4 GUILE 2 BASE 2 FORGE 5 BASE 5 EQUIPPED GEAR WEAPON Empty ARMOR E"
+    },
+    {
+      "file": "end-turn-submitting-waiting-360x800.png",
+      "surface": "waiting-phone",
+      "state": "end-turn-submitting-waiting",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "DEEPDALE P4Waitin Deep Route Delver · Seat 2 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room WAITING P4Owner is acting Waiting for P4Owner to end the turn when ready. Waiting for P4Owner to end the turn when ready. STANDBY P4Waitin Deepdale · Deep Route Delver 9M5XQ P4WAITIN OPEN ACTIVE WOUNDS 0 · SCARS 0 · SALVAGE 3 · STATUS ACTIVE WOUNDS 0 SCARS 0 SALVAGE 3 STATUS active STATS COMMAND 1 BASE 1 GRIT 3 BASE 3 SIGNAL 4 BASE 4 GUILE 2 BASE 2 FORGE 5 BASE 5 EQUIPPED GEAR WEAPON Empty ARMOR E"
+    },
+    {
+      "file": "turn-handoff-1920x1080.png",
+      "surface": "tv",
+      "state": "turn-handoff",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4WAITIN Waiting for P4Waitin to roll movement. OFF TURN COMPLETE P4OWNER → NEXT OPERATIVE P4WAITIN OPERATIVES 1 P4Owner ONLINE W 1 S 0 T 0 2 P4Waitin ACTIVE W 0 S 0 T 0 1 3 4 2 5 North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier CURRENT ROUTE ◉ P Pilgr"
+    },
+    {
+      "file": "turn-handoff-1366x768.png",
+      "surface": "tv",
+      "state": "turn-handoff",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4WAITIN Waiting for P4Waitin to roll movement. OFF OPERATIVES 1 P4Owner ONLINE W 1 S 0 T 0 2 P4Waitin ACTIVE W 0 S 0 T 0 1 3 4 2 5 North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier CURRENT ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉"
+    },
+    {
+      "file": "previous-player-waiting-390x844.png",
+      "surface": "waiting-phone",
+      "state": "previous-player-waiting",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 1 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room WAITING P4Waitin is acting Waiting for P4Waitin to roll movement. Waiting for P4Waitin to roll movement. ACTION Show Tabs"
+    },
+    {
+      "file": "previous-player-waiting-360x800.png",
+      "surface": "waiting-phone",
+      "state": "previous-player-waiting",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "BJORNIS P4Owner Firebreak Conqueror · Seat 1 HEALTH 1 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room WAITING P4Waitin is acting Waiting for P4Waitin to roll movement. Waiting for P4Waitin to roll movement. ACTION Show Tabs"
+    },
+    {
+      "file": "next-turn-ready-390x844.png",
+      "surface": "phone",
+      "state": "next-turn-ready",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "DEEPDALE P4Waitin Deep Route Delver · Seat 2 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room YOUR TURN Current required action controls MOVEMENT Roll required Glass Signal Pier AWAITING MOVEMENT ROLL Roll once to reveal your legal destinations. ⬡ ROLL MOVEMENT OPERATIVE INVENTORY MORE ⌃"
+    },
+    {
+      "file": "next-turn-ready-360x800.png",
+      "surface": "phone",
+      "state": "next-turn-ready",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "DEEPDALE P4Waitin Deep Route Delver · Seat 2 HEALTH 0 wounds 3 SALVAGE · 0 SCARS Hide UI Leave Room YOUR TURN Current required action controls MOVEMENT Roll required Glass Signal Pier AWAITING MOVEMENT ROLL Roll once to reveal your legal destinations. ⬡ ROLL MOVEMENT OPERATIVE INVENTORY MORE ⌃"
+    },
+    {
+      "file": "next-required-action-1920x1080.png",
+      "surface": "tv",
+      "state": "next-required-action",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4WAITIN Waiting for P4Waitin to roll movement. OFF OPERATIVES 1 P4Owner ONLINE W 1 S 0 T 0 2 P4Waitin ACTIVE W 0 S 0 T 0 1 3 4 2 5 North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier CURRENT ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉"
+    },
+    {
+      "file": "next-required-action-1366x768.png",
+      "surface": "tv",
+      "state": "next-required-action",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4WAITIN Waiting for P4Waitin to roll movement. OFF OPERATIVES 1 P4Owner ONLINE W 1 S 0 T 0 2 P4Waitin ACTIVE W 0 S 0 T 0 1 3 4 2 5 North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier CURRENT ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉"
+    },
+    {
+      "file": "reconnect-restored-handoff-1920x1080.png",
+      "surface": "tv",
+      "state": "reconnect-restored-handoff",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4WAITIN Waiting for P4Waitin to roll movement. OFF OPERATIVES 1 P4Owner ONLINE W 1 S 0 T 0 2 P4Waitin ACTIVE W 0 S 0 T 0 1 3 4 2 5 North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier CURRENT ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉"
+    },
+    {
+      "file": "reconnect-restored-handoff-1366x768.png",
+      "surface": "tv",
+      "state": "reconnect-restored-handoff",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4WAITIN Waiting for P4Waitin to roll movement. OFF OPERATIVES 1 P4Owner ONLINE W 1 S 0 T 0 2 P4Waitin ACTIVE W 0 S 0 T 0 1 3 4 2 5 North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier CURRENT ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROUTE ◆ ◉"
+    },
+    {
+      "file": "reconnect-result-390x844.png",
+      "surface": "phone",
+      "state": "reconnect-result",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "ASHEN REACH CONTROLLER Join Room Enter the room code and your player name to join the table. STEP 1 Room code Player name Join Game"
+    },
+    {
+      "file": "reconnect-result-360x800.png",
+      "surface": "phone",
+      "state": "reconnect-result",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "ASHEN REACH CONTROLLER Join Room Enter the room code and your player name to join the table. STEP 1 Room code Player name Join Game"
+    },
+    {
+      "file": "reconnect-end-turn-390x844.png",
+      "surface": "phone",
+      "state": "reconnect-end-turn",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "ASHEN REACH CONTROLLER Join Room Enter the room code and your player name to join the table. STEP 1 Room code Player name Join Game"
+    },
+    {
+      "file": "reconnect-end-turn-360x800.png",
+      "surface": "phone",
+      "state": "reconnect-end-turn",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "ASHEN REACH CONTROLLER Join Room Enter the room code and your player name to join the table. STEP 1 Room code Player name Join Game"
+    },
+    {
+      "file": "reduced-motion-result-390x844.png",
+      "surface": "phone",
+      "state": "reduced-motion-result",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "ASHEN REACH CONTROLLER Join Room Enter the room code and your player name to join the table. STEP 1 Room code Player name Join Game"
+    },
+    {
+      "file": "reduced-motion-result-360x800.png",
+      "surface": "phone",
+      "state": "reduced-motion-result",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "ASHEN REACH CONTROLLER Join Room Enter the room code and your player name to join the table. STEP 1 Room code Player name Join Game"
+    },
+    {
+      "file": "reduced-motion-handoff-1920x1080.png",
+      "surface": "tv",
+      "state": "reduced-motion-handoff",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4WAITIN Waiting for P4Waitin to roll movement. OFF TURN COMPLETE P4OWNER → NEXT OPERATIVE P4WAITIN OPERATIVES 1 P4Owner DISCONNECTED W 1 S 0 T 0 2 P4Waitin ACTIVE W 0 S 0 T 0 1 3 4 2 5 North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier CURRENT ROUTE ◉ P"
+    },
+    {
+      "file": "reduced-motion-handoff-1366x768.png",
+      "surface": "tv",
+      "state": "reduced-motion-handoff",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "text": "ASHEN REACH HOST COMMAND BOARD ASHEN REACH TV ROOM CODE 9M5XQ MODE Co-op ✦ WIN PROGRESS Seal Restoration Marks 0/2 ☠ LOSS PRESSURE Collapse 0/6 LIVE STATUS WAITING FOR P4WAITIN Waiting for P4Waitin to roll movement. OFF OPERATIVES 1 P4Owner DISCONNECTED W 1 S 0 T 0 2 P4Waitin ACTIVE W 0 S 0 T 0 1 3 4 2 5 North Dock Bastion ◆ Anchor Market ◆ ! Coldwind Wharf ◉ Dock Nine Wreckage ◆ ⚔ Ember Stair ⚔ ◉ Cinder Fields ⚔ Glass Signal Pier CURRENT ROUTE ◉ P Pilgrim Lock Gate ROUTE Rusted Transit Gate ROU"
+    },
+    {
+      "file": "stale-end-turn-recovery-390x844.png",
+      "surface": "phone",
+      "state": "stale-end-turn-recovery",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "ASHEN REACH CONTROLLER Join Room Enter the room code and your player name to join the table. STEP 1 Room code Player name Join Game"
+    },
+    {
+      "file": "stale-end-turn-recovery-360x800.png",
+      "surface": "phone",
+      "state": "stale-end-turn-recovery",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "ASHEN REACH CONTROLLER Join Room Enter the room code and your player name to join the table. STEP 1 Room code Player name Join Game"
+    },
+    {
+      "file": "stale-continue-recovery-390x844.png",
+      "surface": "phone",
+      "state": "stale-continue-recovery",
+      "viewport": "390x844",
+      "overflow": 0,
+      "text": "ASHEN REACH CONTROLLER Join Room Enter the room code and your player name to join the table. STEP 1 Room code Player name Join Game"
+    },
+    {
+      "file": "stale-continue-recovery-360x800.png",
+      "surface": "phone",
+      "state": "stale-continue-recovery",
+      "viewport": "360x800",
+      "overflow": 0,
+      "text": "ASHEN REACH CONTROLLER Join Room Enter the room code and your player name to join the table. STEP 1 Room code Player name Join Game"
+    }
+  ],
+  "errors": [],
+  "unavailable": [
+    "AI turn: no canonical AI-seat turn system exists; no state was fabricated."
+  ]
+}

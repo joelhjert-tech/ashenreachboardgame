@@ -1,0 +1,526 @@
+{
+  "captures": [
+    {
+      "file": "join-room-390x844.png",
+      "surface": "phone",
+      "state": "join-room",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": null
+    },
+    {
+      "file": "join-room-360x800.png",
+      "surface": "phone",
+      "state": "join-room",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": null
+    },
+    {
+      "file": "invalid-room-390x844.png",
+      "surface": "phone",
+      "state": "invalid-room",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": null
+    },
+    {
+      "file": "invalid-room-360x800.png",
+      "surface": "phone",
+      "state": "invalid-room",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": null
+    },
+    {
+      "file": "operative-selection-390x844.png",
+      "surface": "phone",
+      "state": "operative-selection",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-character-option"
+    },
+    {
+      "file": "operative-selection-360x800.png",
+      "surface": "phone",
+      "state": "operative-selection",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-character-option"
+    },
+    {
+      "file": "one-joined-player-1920x1080.png",
+      "surface": "tv",
+      "state": "one-joined-player",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "one-joined-player-1366x768.png",
+      "surface": "tv",
+      "state": "one-joined-player",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "mode-selection-390x844.png",
+      "surface": "phone",
+      "state": "mode-selection",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "mode-selection-360x800.png",
+      "surface": "phone",
+      "state": "mode-selection",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "scenario-selection-1920x1080.png",
+      "surface": "tv",
+      "state": "scenario-selection",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "scenario-selection-1366x768.png",
+      "surface": "tv",
+      "state": "scenario-selection",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "co-op-selected-390x844.png",
+      "surface": "phone",
+      "state": "co-op-selected",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-host-scenario-card"
+    },
+    {
+      "file": "co-op-selected-360x800.png",
+      "surface": "phone",
+      "state": "co-op-selected",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-host-scenario-card"
+    },
+    {
+      "file": "rivalry-selected-390x844.png",
+      "surface": "phone",
+      "state": "rivalry-selected",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": "phone-host-scenario-card"
+    },
+    {
+      "file": "rivalry-selected-360x800.png",
+      "surface": "phone",
+      "state": "rivalry-selected",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": "phone-host-scenario-card"
+    },
+    {
+      "file": "single-player-selected-390x844.png",
+      "surface": "phone",
+      "state": "single-player-selected",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-host-scenario-card"
+    },
+    {
+      "file": "single-player-selected-360x800.png",
+      "surface": "phone",
+      "state": "single-player-selected",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-host-scenario-card"
+    },
+    {
+      "file": "operative-selection-restored-390x844.png",
+      "surface": "phone",
+      "state": "operative-selection-restored",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-character-option"
+    },
+    {
+      "file": "operative-selection-restored-360x800.png",
+      "surface": "phone",
+      "state": "operative-selection-restored",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-character-option"
+    },
+    {
+      "file": "mission-selection-390x844.png",
+      "surface": "phone",
+      "state": "mission-selection",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-button"
+    },
+    {
+      "file": "mission-selection-360x800.png",
+      "surface": "phone",
+      "state": "mission-selection",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-button"
+    },
+    {
+      "file": "mission-selection-1920x1080.png",
+      "surface": "tv",
+      "state": "mission-selection",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "mission-selection-1366x768.png",
+      "surface": "tv",
+      "state": "mission-selection",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "ready-check-390x844.png",
+      "surface": "phone",
+      "state": "ready-check",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-setup-ready-action"
+    },
+    {
+      "file": "ready-check-360x800.png",
+      "surface": "phone",
+      "state": "ready-check",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-setup-ready-action"
+    },
+    {
+      "file": "ready-check-1920x1080.png",
+      "surface": "tv",
+      "state": "ready-check",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "ready-check-1366x768.png",
+      "surface": "tv",
+      "state": "ready-check",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "start-blocked-390x844.png",
+      "surface": "phone",
+      "state": "start-blocked",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "start-blocked-360x800.png",
+      "surface": "phone",
+      "state": "start-blocked",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "start-blocked-1920x1080.png",
+      "surface": "tv",
+      "state": "start-blocked",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "start-blocked-1366x768.png",
+      "surface": "tv",
+      "state": "start-blocked",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "start-available-390x844.png",
+      "surface": "phone",
+      "state": "start-available",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-setup-start-action"
+    },
+    {
+      "file": "start-available-360x800.png",
+      "surface": "phone",
+      "state": "start-available",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-setup-start-action"
+    },
+    {
+      "file": "start-available-1920x1080.png",
+      "surface": "tv",
+      "state": "start-available",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "start-available-1366x768.png",
+      "surface": "tv",
+      "state": "start-available",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "reconnect-start-available-390x844.png",
+      "surface": "phone",
+      "state": "reconnect-start-available",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": null
+    },
+    {
+      "file": "reconnect-start-available-360x800.png",
+      "surface": "phone",
+      "state": "reconnect-start-available",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": null
+    },
+    {
+      "file": "maximum-player-slots-1920x1080.png",
+      "surface": "tv",
+      "state": "maximum-player-slots",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "maximum-player-slots-1366x768.png",
+      "surface": "tv",
+      "state": "maximum-player-slots",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "room-full-390x844.png",
+      "surface": "phone",
+      "state": "room-full",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "room-full-360x800.png",
+      "surface": "phone",
+      "state": "room-full",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "reduced-motion-ready-390x844.png",
+      "surface": "phone",
+      "state": "reduced-motion-ready",
+      "viewport": "390x844",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-setup-ready-action"
+    },
+    {
+      "file": "reduced-motion-ready-360x800.png",
+      "surface": "phone",
+      "state": "reduced-motion-ready",
+      "viewport": "360x800",
+      "overflow": 0,
+      "primaryVisible": true,
+      "focusedControl": "phone-setup-ready-action"
+    },
+    {
+      "file": "reduced-motion-lobby-1920x1080.png",
+      "surface": "tv",
+      "state": "reduced-motion-lobby",
+      "viewport": "1920x1080",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    },
+    {
+      "file": "reduced-motion-lobby-1366x768.png",
+      "surface": "tv",
+      "state": "reduced-motion-lobby",
+      "viewport": "1366x768",
+      "overflow": 0,
+      "primaryVisible": false,
+      "focusedControl": null
+    }
+  ],
+  "browserErrors": [],
+  "timings": [
+    {
+      "action": "join-room",
+      "milliseconds": 216,
+      "measurement": "Join submission to authoritative operative-selection projection"
+    },
+    {
+      "action": "scenario-selection",
+      "milliseconds": 27,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "operative-selection",
+      "milliseconds": 23,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "mission-selection",
+      "milliseconds": 19,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "ready-check",
+      "milliseconds": 20,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "start-blocked",
+      "milliseconds": 13,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "start-available",
+      "milliseconds": 15,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "maximum-players",
+      "milliseconds": 19,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "ready-check",
+      "milliseconds": 10,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "operative-selection",
+      "milliseconds": 8,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "mission-selection",
+      "milliseconds": 10,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "ready-check",
+      "milliseconds": 9,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "scenario-selection",
+      "milliseconds": 6,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "operative-selection",
+      "milliseconds": 8,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "operative-selection",
+      "milliseconds": 9,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "mission-selection",
+      "milliseconds": 5,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "start-blocked",
+      "milliseconds": 6,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "start-available",
+      "milliseconds": 6,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "start-available",
+      "milliseconds": 7,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "ready-check",
+      "milliseconds": 8,
+      "measurement": "fixture request accepted by the authoritative server"
+    },
+    {
+      "action": "start-available",
+      "milliseconds": 14,
+      "measurement": "fixture request accepted by the authoritative server"
+    }
+  ]
+}

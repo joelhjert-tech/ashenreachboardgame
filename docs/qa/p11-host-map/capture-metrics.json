@@ -1,0 +1,305 @@
+{
+  "metrics": [
+    {
+      "state": "board-overview-current-sector",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 296,
+        "height": 159.546875
+      }
+    },
+    {
+      "state": "board-overview-current-sector",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 248.671875
+      }
+    },
+    {
+      "state": "board-overview-current-sector",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 290.578125
+      }
+    },
+    {
+      "state": "destination-abc",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 296,
+        "height": 159.546875
+      }
+    },
+    {
+      "state": "destination-abc",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 248.671875
+      }
+    },
+    {
+      "state": "destination-abc",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 290.578125
+      }
+    },
+    {
+      "state": "selected-destination-route-context",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 296,
+        "height": 162.984375
+      }
+    },
+    {
+      "state": "selected-destination-route-context",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 258.375
+      }
+    },
+    {
+      "state": "selected-destination-route-context",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 287.75
+      }
+    },
+    {
+      "state": "cross-ring-gate-context",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 296,
+        "height": 174.296875
+      }
+    },
+    {
+      "state": "cross-ring-gate-context",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 259
+      }
+    },
+    {
+      "state": "cross-ring-gate-context",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 301.78125
+      }
+    },
+    {
+      "state": "bridge-current-location",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 296,
+        "height": 159.546875
+      }
+    },
+    {
+      "state": "bridge-current-location",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 248.671875
+      }
+    },
+    {
+      "state": "bridge-current-location",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 290.578125
+      }
+    },
+    {
+      "state": "public-shop-sector",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 296,
+        "height": 159.546875
+      }
+    },
+    {
+      "state": "public-shop-sector",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 248.671875
+      }
+    },
+    {
+      "state": "public-shop-sector",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 290.578125
+      }
+    },
+    {
+      "state": "long-sector-name",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 296,
+        "height": 159.546875
+      }
+    },
+    {
+      "state": "long-sector-name",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 248.671875
+      }
+    },
+    {
+      "state": "long-sector-name",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 290.578125
+      }
+    },
+    {
+      "state": "reconnect-restored-map",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 296,
+        "height": 159.546875
+      }
+    },
+    {
+      "state": "reconnect-restored-map",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 248.671875
+      }
+    },
+    {
+      "state": "reconnect-restored-map",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 290.578125
+      }
+    },
+    {
+      "state": "reduced-motion-map",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 296,
+        "height": 159.546875
+      }
+    },
+    {
+      "state": "reduced-motion-map",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 248.671875
+      }
+    },
+    {
+      "state": "reduced-motion-map",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 290.578125
+      }
+    },
+    {
+      "state": "six-operatives-stacked-active",
+      "viewport": "1366x768",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 296,
+        "height": 266.65625
+      }
+    },
+    {
+      "state": "six-operatives-stacked-active",
+      "viewport": "1600x900",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 367.015625
+      }
+    },
+    {
+      "state": "six-operatives-stacked-active",
+      "viewport": "1920x1080",
+      "overflowX": 0,
+      "overflowY": 0,
+      "brief": {
+        "width": 352,
+        "height": 405.5
+      }
+    }
+  ],
+  "browserErrors": []
+}

@@ -1,0 +1,432 @@
+{
+  "metrics": [
+    {
+      "filename": "phone-movement-result-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-many-legal-destinations-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-long-sector-names-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-destination-selected-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-destination-submitting-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-movement-result-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-many-legal-destinations-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-long-sector-names-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-destination-selected-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-destination-submitting-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-public-warning-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-public-warning-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-reconnect-destination-selection-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-reconnect-destination-selection-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-reduced-motion-selection-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-reduced-motion-selection-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-two-legal-destinations-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-two-legal-destinations-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-current-operative-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-legal-destination-markers-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-multiple-routes-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-current-operative-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-legal-destination-markers-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-multiple-routes-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-selected-route-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-selected-route-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-movement-in-progress-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-movement-in-progress-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-first-movement-step-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-intermediate-movement-step-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-final-movement-step-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-arrival-emphasis-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-encounter-handoff-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-reconnect-after-submission-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-reconnect-after-submission-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-first-movement-step-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-intermediate-movement-step-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-final-movement-step-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-arrival-emphasis-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-encounter-handoff-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-first-movement-step-1600x900.png",
+      "width": 1600,
+      "height": 900,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-intermediate-movement-step-1600x900.png",
+      "width": 1600,
+      "height": 900,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-final-movement-step-1600x900.png",
+      "width": 1600,
+      "height": 900,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-arrival-emphasis-1600x900.png",
+      "width": 1600,
+      "height": 900,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-encounter-handoff-1600x900.png",
+      "width": 1600,
+      "height": 900,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-special-connection-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-special-connection-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-reconnect-restored-state-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-reconnect-restored-state-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-reduced-motion-arrival-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-reduced-motion-arrival-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-reduced-motion-arrival-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-reduced-motion-arrival-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-stale-action-recovery-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-stale-action-recovery-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-waiting-selection-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-waiting-selection-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-waiting-during-movement-390x844.png",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "phone-waiting-during-movement-360x800.png",
+      "width": 360,
+      "height": 800,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-waiting-player-context-1366x768.png",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "browserErrors": 0
+    },
+    {
+      "filename": "tv-waiting-player-context-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "browserErrors": 0
+    }
+  ],
+  "errors": []
+}
