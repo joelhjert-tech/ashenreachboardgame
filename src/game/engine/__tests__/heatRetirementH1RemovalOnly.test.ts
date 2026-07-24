@@ -136,7 +136,9 @@ describe("Heat Retirement H1 removal-only Threats", () => {
       });
       expect(card.successEffect).toBeUndefined();
       expect(card.failEffect).toEqual(
-        target.failureWounds === 2
+        target.id === "mirror-rot-interference"
+          ? { type: "sequence", effects: [{ type: "draw_affliction", amount: 1 }] }
+          : target.failureWounds === 2
           ? { type: "take_wound", amount: 2 }
           : { type: "sequence", effects: [{ type: "take_wound", amount: 1 }] }
       );
@@ -223,14 +225,21 @@ describe("Heat Retirement H1 removal-only Threats", () => {
     expect(state.escalationLevel).toBe(0);
   });
 
-  it.each(TARGETS)("$id keeps its existing failure Wound and no other consequence", (target) => {
+  it.each(TARGETS)("$id keeps its approved failure consequence and no other consequence", (target) => {
     const server = resolveCheck(requireTarget(target.id), true);
     expect(server.getState().pendingEffect).toEqual(requireTarget(target.id).failEffect);
     server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
     server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
     (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
     const state = server.getState();
-    expect(state.players[0]!.character).toMatchObject({ wounds: target.failureWounds, salvage: 4, scars: [] });
+    const expectsAffliction = target.id === "mirror-rot-interference";
+    expect(state.players[0]!.character).toMatchObject({
+      wounds: expectsAffliction ? 0 : target.failureWounds,
+      salvage: 4,
+      scars: []
+    });
+    expect(state.players[0]!.afflictionDrawHistory).toHaveLength(expectsAffliction ? 1 : 0);
+    expect(countEvents(state, "AFFLICTION_DRAWN")).toBe(expectsAffliction ? 1 : 0);
     expect(state.pendingNextNonBattleTestModifiers).toEqual([]);
     expect(state.pendingNextNormalMovementRollModifiers).toEqual([]);
     expect(countEvents(state, "RESOLUTION_APPLIED")).toBe(1);

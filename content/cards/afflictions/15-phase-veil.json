@@ -5,9 +5,9 @@
   "category": "mutationBoon",
   "duration": "ongoing",
   "trigger": "While faceup.",
-  "rulesText": "You may evade enemies unless another effect says you cannot evade.",
-  "effectKind": "mutationBoon",
-  "effectPayload": { "canEvadeEnemies": true },
+  "rulesText": "Gain +1 Guile on tests.",
+  "effectKind": "testModifier",
+  "effectPayload": { "stat": "guile", "amount": 1 },
   "flipFacedownAfterResolve": false,
   "isFaceupOngoing": true
 }

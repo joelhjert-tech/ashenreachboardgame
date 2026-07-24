@@ -340,6 +340,38 @@ export interface AfflictionDrawnAction extends BaseAction {
   deltas?: string[];
 }
 
+export interface AfflictionDrawPreparedAction extends BaseAction {
+  type: "AFFLICTION_DRAW_PREPARED";
+  resolutionId: string;
+  afflictionId: string;
+  die: number;
+}
+
+export interface AfflictionStatChosenAction extends BaseAction {
+  type: "AFFLICTION_STAT_CHOSEN";
+  resolutionId: string;
+  stat: Stat;
+}
+
+export interface AfflictionReactionOpenedAction extends BaseAction {
+  type: "AFFLICTION_REACTION_OPENED";
+  reactionId: string;
+  afflictionId: "blood-fury" | "future-sickness" | "bile-spit";
+  kind: "battleReroll" | "turnReroll" | "arrivalWound";
+  targetSeatId?: string;
+  originalRoll: number[];
+  sourceEventId?: string;
+  pendingResult?: CheckRolledAction | CombatResolvedAction;
+}
+
+export interface AfflictionReactionResolvedAction extends BaseAction {
+  type: "AFFLICTION_REACTION_RESOLVED";
+  reactionId: string;
+  use: boolean;
+  dieIndex?: number;
+  reroll?: number;
+}
+
 export interface TableInteractionAction extends BaseAction {
   type: "TABLE_INTERACTION";
   interactionKind: "trade" | "aid" | "duel" | "interfere";
@@ -765,6 +797,10 @@ export type GameAction =
   | UseGearAction
   | UseFollowerAction
   | AfflictionDrawnAction
+  | AfflictionDrawPreparedAction
+  | AfflictionStatChosenAction
+  | AfflictionReactionOpenedAction
+  | AfflictionReactionResolvedAction
   | TableInteractionAction
   | ShopServiceResolvedAction
   | ShopStockRevealedAction
@@ -937,6 +973,19 @@ export type ClientIntent =
       seatId: string;
     }
   | {
+      type: "AFFLICTION_STAT_CHOSEN";
+      seatId: string;
+      resolutionId: string;
+      stat: Stat;
+    }
+  | {
+      type: "AFFLICTION_REACTION_RESOLVED";
+      seatId: string;
+      reactionId: string;
+      use: boolean;
+      dieIndex?: number;
+    }
+  | {
       type: "CONTINUE_RESOLUTION";
       seatId: string;
     }
@@ -1019,6 +1068,8 @@ export type ClientIntent =
       followerId: string;
       escalate?: boolean;
     }
+  | { type: "AFFLICTION_STAT_CHOSEN"; seatId: string; resolutionId: string; stat: Stat }
+  | { type: "AFFLICTION_REACTION_RESOLVED"; seatId: string; reactionId: string; use: boolean; dieIndex?: number }
   | {
       type: "USE_CHARACTER_ABILITY";
       seatId: string;

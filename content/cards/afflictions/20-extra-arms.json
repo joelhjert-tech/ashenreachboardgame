@@ -4,10 +4,10 @@
   "severity": 2,
   "category": "mutationBoon",
   "duration": "ongoing",
-  "trigger": "During battle.",
-  "rulesText": "You may use 1 additional weapon during battle.",
-  "effectKind": "mutationBoon",
-  "effectPayload": { "battleWeaponSlotModifier": 1 },
+  "trigger": "While faceup during battle.",
+  "rulesText": "Gain +1 to your battle total.",
+  "effectKind": "battleBonus",
+  "effectPayload": { "innateBattleBonus": 1 },
   "flipFacedownAfterResolve": false,
   "isFaceupOngoing": true
 }

@@ -1326,6 +1326,11 @@ export interface PublicPatchPayload {
   pendingTileChallenge?: PublicPendingTileChallenge | null;
   pendingEncounterDecision?: { seatId: string; sourceCardId: string; sourceTitle: string; status: "waiting" } | null;
   pendingMemoryTaxChoice?: { ownerSeatId: string; sourceId: "memory-tax-gate"; sourceTitle: string; status: "waiting" } | null;
+  pendingAfflictionStatus?: {
+    ownerSeatId: string;
+    kind: "draw" | "battleReroll" | "turnReroll" | "arrivalWound";
+    status: "waiting" | "choice" | "resolving";
+  } | null;
   pendingForcedDestinationChoice?: { ownerSeatId: string; sourceId: "false-route-procession"; sourceTitle: string; status: "waiting" } | null;
   pendingDisplacement?: { seatId: string; sourceId: string; sourceTitle: string; originSectorId: string; destinationSectorId: string; destinationSectorName?: string; direction?: "clockwise" | "counterclockwise"; status: "waiting" } | null;
   pendingOrderedConsequence?: {
@@ -1541,6 +1546,20 @@ export interface PhonePatchPayload extends PublicPatchPayload {
       detail: string;
     }>;
   } | null;
+  pendingAfflictionChoicePrivate?: {
+    resolutionId: string;
+    sourceTitle: "Runaway Growth";
+    prompt: string;
+    options: Stat[];
+  } | null;
+  pendingAfflictionReactionPrivate?: {
+    reactionId: string;
+    afflictionId: "blood-fury" | "future-sickness" | "bile-spit";
+    kind: "battleReroll" | "turnReroll" | "arrivalWound";
+    originalRoll: number[];
+    targetSeatId: string | null;
+    targetName: string | null;
+  } | null;
   pendingEquipmentSuppressionChoice?: {
     choiceId: string;
     sourceTitle: string;
@@ -1708,6 +1727,8 @@ export type ClientIntent =
       type: "SOLO_REROLL_REQUESTED";
       seatId: string;
     }
+  | { type: "AFFLICTION_STAT_CHOSEN"; seatId: string; resolutionId: string; stat: Stat }
+  | { type: "AFFLICTION_REACTION_RESOLVED"; seatId: string; reactionId: string; use: boolean; dieIndex?: number }
   | {
       type: "CONTINUE_RESOLUTION";
       seatId: string;

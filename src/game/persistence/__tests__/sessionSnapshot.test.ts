@@ -171,6 +171,51 @@ describe("versioned session snapshot migration", () => {
     expect(snapshot.state.players.every((player) => !("heat" in player.character))).toBe(true);
   });
 
+  it("persists interruption-safe Affliction queues and reactions without changing save version", () => {
+    const state = createInitialSessionState("affliction-reconnect", "single-player");
+    state.pendingAfflictionResolution = {
+      id: "affliction-queue-1",
+      ownerSeatId: "seat-1",
+      sourceCardId: "smoke-leech-clutch",
+      remainingDraws: 2,
+      status: "awaitingStatChoice",
+      nextAfflictionId: "mind-fog",
+      nextDie: 4,
+      chosenStat: null,
+      excludedCardIds: ["oath-to-the-breach"],
+      createdAt: "2026-07-24T00:00:00.000Z"
+    };
+    state.pendingAfflictionReaction = {
+      id: "reaction-1",
+      ownerSeatId: "seat-1",
+      afflictionId: "future-sickness",
+      kind: "turnReroll",
+      sourceEventId: "check-1",
+      targetSeatId: null,
+      originalRoll: [1, 2],
+      createdAt: "2026-07-24T00:00:01.000Z"
+    };
+
+    const restored = parseAndMigrateSessionSnapshot(serializeSessionSnapshotV2(state));
+
+    expect(restored.saveVersion).toBe(2);
+    expect(restored.state.pendingAfflictionResolution).toEqual(state.pendingAfflictionResolution);
+    expect(restored.state.pendingAfflictionReaction).toEqual(state.pendingAfflictionReaction);
+  });
+
+  it("supplies safe empty Affliction state when parsing an older v2 snapshot", () => {
+    const snapshot = serializeSessionSnapshotV2(createInitialSessionState("pre-p23-v2", "single-player"));
+    const legacyState = structuredClone(snapshot.state) as Record<string, unknown>;
+    delete legacyState.pendingAfflictionResolution;
+    delete legacyState.pendingAfflictionReaction;
+
+    const restored = parseAndMigrateSessionSnapshot({ ...snapshot, state: legacyState });
+
+    expect(restored.saveVersion).toBe(2);
+    expect(restored.state.pendingAfflictionResolution ?? null).toBeNull();
+    expect(restored.state.pendingAfflictionReaction ?? null).toBeNull();
+  });
+
   it("accepts the historical inert Nemesis special-rule identifier without changing save version", () => {
     const state = createInitialSessionState("legacy-nemesis-rule", "single-player", undefined, "co-op", "nemesis_relay");
     const champion = createNemesisChampionsForSeats(state, ["seat-1"])[0]!;

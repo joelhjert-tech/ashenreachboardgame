@@ -223,7 +223,11 @@ describe("authoritative forced displacement foundation", () => {
     const spike = loadArtifactCards().get("artifact-rift-anchor-spike");
     const definition = loadGear().get("rift-anchor-spike");
     if (!definition) throw new Error("Missing Rift Anchor Spike gear definition");
-    expect(spike?.resolveEffect).toEqual({ type: "gain_gear", gearId: "rift-anchor-spike" });
+    expect(spike?.resolveEffect).toEqual({
+      type: "gain_gear",
+      gearId: "rift-anchor-spike",
+      sourceArtifactCardId: "artifact-rift-anchor-spike"
+    });
     expect(JSON.stringify(spike)).not.toMatch(/veil-hook|gain_note/i);
     expect(definition).toMatchObject({ effectModel: "charged", maxCharges: 2, startingCharges: 2, chargeCost: 1, rechargeRule: "none", chargedEffect: "suppressForcedDisplacement", activationTiming: ["pendingForcedDisplacement"] });
     expect(gearItemSchema.safeParse(definition).success).toBe(true);

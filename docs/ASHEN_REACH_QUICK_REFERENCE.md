@@ -81,6 +81,20 @@ Automatic Salvage loss is not payment: lose up to the stated amount, minimum 0, 
 - After all seats, round completion applies round pressure and refreshes round-exhaust effects.
 - Charged Artifacts do **not** recharge.
 
+## Afflictions
+
+- Approved draw sources: Smoke-Leech Clutch, Void-Salt Sickness, Mirror-Rot Interference, and Cinder Lattice Maw.
+- Each operative draws from a server-owned 30-card cycle without replacement.
+- Oath to the Breach adds one draw; Condemned Echoes replaces facedown cards one-for-one; Runaway Growth asks its owner for a stat.
+- Blood Fury: one failed-battle die reroll per battle. Matching result: 1 Wound.
+- Future Sickness: one failed check/battle die reroll per turn. Matching result: draw 1 Affliction.
+- Bile Spit: optional arrival reaction outside the inner reach.
+- Reconnect resumes pending choices and never repeats a completed draw or reaction.
+
+## Passive Equipment
+
+The sixteen standard passive +1 cards use the same rule: while the exact copy is equipped and not suppressed, add +1 to its printed stat. Carried, sold, and suppressed copies add nothing.
+
 ## Timing terms
 
 | Term | Meaning |

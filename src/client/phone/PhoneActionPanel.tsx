@@ -2761,6 +2761,10 @@ function PhoneMovePanel({
   movementPlanner,
   currentTile,
   movementTravel,
+  approachResolution,
+  approachOutcome,
+  canContinueApproach,
+  onContinueApproach,
   seatId,
   activeContract,
   onIntent,
@@ -2774,6 +2778,10 @@ function PhoneMovePanel({
   movementPlanner: PublicMovementPlannerState | null | undefined;
   currentTile: CurrentTileViewModel;
   movementTravel: PhoneMovementTravelState | null;
+  approachResolution: ActiveResolution | null;
+  approachOutcome: OutcomeSummary | null;
+  canContinueApproach: boolean;
+  onContinueApproach: () => void;
   seatId: string;
   activeContract: ContractCard | null;
   onIntent: (intent: ClientIntent) => void;
@@ -2799,6 +2807,51 @@ function PhoneMovePanel({
         : null
     );
   }, [movementPlanner?.currentSectorId, movementPlanner?.movementValue, movementPlanner?.selectedDestinationId]);
+
+  const approachTotal = approachResolution?.roll?.finalTotal ?? approachOutcome?.checkTotal ?? null;
+  const approachTarget = approachResolution?.roll?.target ?? approachOutcome?.difficulty ?? null;
+  const approachSuccess = approachResolution?.roll?.success ?? approachOutcome?.success ?? null;
+  if ((approachResolution?.roll || approachOutcome) && approachTotal !== null && approachTarget !== null) {
+    const destination = approachResolution?.card?.title ?? approachOutcome?.encounterTitle ?? currentTile.name;
+    const outcomeText = approachResolution?.outcome?.text ?? approachOutcome?.summary;
+    return (
+      <section
+        className={`phone-approach-result${approachSuccess ? " is-success" : " is-setback"}`}
+        aria-label="Approach result"
+        aria-live="polite"
+        data-testid="phone-approach-result"
+      >
+        <header>
+          <span>Approach Result</span>
+          <strong>{destination}</strong>
+        </header>
+        <div className="phone-approach-result__totals" aria-label={`Player total ${approachTotal}, difficulty ${approachTarget}`}>
+          <div>
+            <span>Player total</span>
+            <strong>{approachTotal}</strong>
+          </div>
+          <i aria-hidden="true">/</i>
+          <div>
+            <span>Difficulty</span>
+            <strong>{approachTarget}</strong>
+          </div>
+        </div>
+        <div className="phone-approach-result__outcome">
+          <strong>{approachSuccess ? "Approach held" : "Approach setback"}</strong>
+          <p>{outcomeText ?? (approachSuccess ? `Moved into ${destination}.` : `Failed to enter ${destination}.`)}</p>
+        </div>
+        <button
+          type="button"
+          className="phone-button phone-button-primary phone-approach-result__continue"
+          data-testid="phone-resolution-continue"
+          disabled={!canContinueApproach}
+          onClick={onContinueApproach}
+        >
+          {canContinueApproach ? "Continue" : "Resolving…"}
+        </button>
+      </section>
+    );
+  }
 
   return (
     <PhoneMovementView
@@ -3020,6 +3073,8 @@ export function PhoneActionPanel({
     !!activeResolution &&
     !patch.pendingEncounterDecisionPrivate &&
     !patch.pendingMemoryTaxChoicePrivate &&
+    !patch.pendingAfflictionChoicePrivate &&
+    !patch.pendingAfflictionReactionPrivate &&
     !patch.pendingForcedDestinationChoicePrivate &&
     !patch.pendingDisplacementPrivate &&
     ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
@@ -3484,6 +3539,72 @@ export function PhoneActionPanel({
         type: "FORCED_DISPLACEMENT_ACCEPTED",
         seatId: self.seatId,
         reactionId: displacement.reactionId
+      })
+    });
+  }
+
+  if (patch.pendingAfflictionChoicePrivate) {
+    const choice = patch.pendingAfflictionChoicePrivate;
+    for (const stat of choice.options) {
+      resolveActions.push({
+        key: `affliction-stat-${choice.resolutionId}-${stat}`,
+        label: `Gain +1 ${toTitleCase(stat)}`,
+        detail: choice.prompt,
+        tone: "primary",
+        onClick: () => onIntent({
+          type: "AFFLICTION_STAT_CHOSEN",
+          seatId: self.seatId,
+          resolutionId: choice.resolutionId,
+          stat
+        })
+      });
+    }
+  }
+
+  if (patch.pendingAfflictionReactionPrivate) {
+    const reaction = patch.pendingAfflictionReactionPrivate;
+    if (reaction.kind === "arrivalWound") {
+      resolveActions.push({
+        key: `affliction-reaction-use-${reaction.reactionId}`,
+        label: "Use Bile Spit",
+        detail: `${reaction.targetName ?? "The arriving operative"} suffers 1 wound.`,
+        tone: "primary",
+        onClick: () => onIntent({
+          type: "AFFLICTION_REACTION_RESOLVED",
+          seatId: self.seatId,
+          reactionId: reaction.reactionId,
+          use: true
+        })
+      });
+    } else {
+      reaction.originalRoll.forEach((face, dieIndex) => {
+        resolveActions.push({
+          key: `affliction-reroll-${reaction.reactionId}-${dieIndex}`,
+          label: `Reroll die ${dieIndex + 1} (${face})`,
+          detail: reaction.afflictionId === "blood-fury"
+            ? "A matching result causes 1 wound."
+            : "A matching result draws 1 Affliction.",
+          tone: "primary",
+          onClick: () => onIntent({
+            type: "AFFLICTION_REACTION_RESOLVED",
+            seatId: self.seatId,
+            reactionId: reaction.reactionId,
+            use: true,
+            dieIndex
+          })
+        });
+      });
+    }
+    resolveActions.push({
+      key: `affliction-reaction-decline-${reaction.reactionId}`,
+      label: reaction.kind === "arrivalWound" ? "Do not spit" : "Keep current result",
+      detail: "Decline this reaction and continue with the authoritative result.",
+      tone: "secondary",
+      onClick: () => onIntent({
+        type: "AFFLICTION_REACTION_RESOLVED",
+        seatId: self.seatId,
+        reactionId: reaction.reactionId,
+        use: false
       })
     });
   }
@@ -4009,6 +4130,8 @@ export function PhoneActionPanel({
       patch.pendingGearEquipChoice ||
       patch.pendingEncounterDecisionPrivate ||
       patch.pendingMemoryTaxChoicePrivate ||
+      patch.pendingAfflictionChoicePrivate ||
+      patch.pendingAfflictionReactionPrivate ||
       patch.pendingForcedDestinationChoicePrivate ||
       patch.pendingDisplacementPrivate ||
       patch.pendingScarConsequence ||
@@ -4044,8 +4167,18 @@ export function PhoneActionPanel({
       : patch.phase === "broadcast"
         ? "Review the result, upgrade with trophies, or end your turn."
         : "Waiting for the server to resolve the current step.";
-  const hasMoveContent = Boolean(movementPlanner?.active && movementPlanner.destinations.length > 0) || moveActions.length > 0;
-  const hasBattleContent = Boolean(activeResolution || orphanResolutionOutcome || battleAssist) || threatActions.length > 0;
+  const movementApproachResolution = activeResolution?.source === "movement" ? activeResolution : null;
+  const movementApproachOutcome = orphanResolutionOutcome?.movedToSectorId ? orphanResolutionOutcome : null;
+  const hasMoveContent =
+    Boolean(movementPlanner?.active && movementPlanner.destinations.length > 0)
+    || Boolean(movementApproachResolution)
+    || Boolean(movementApproachOutcome)
+    || moveActions.length > 0;
+  const hasBattleContent =
+    Boolean(activeResolution && activeResolution.source !== "movement")
+    || Boolean(orphanResolutionOutcome && !orphanResolutionOutcome.movedToSectorId)
+    || Boolean(battleAssist)
+    || threatActions.length > 0;
   const hasShopContent = Boolean(shopEncounter);
   const shopLocked = Boolean(shopEncounter && (shopEncounter.status === "locked" || shopEncounter.blockingThreats.length > 0));
   const shopLockReasonText = shopEncounter?.blockedReasonText ?? formatShopDisabledReason(shopEncounter?.blockedReason);
@@ -4058,7 +4191,12 @@ export function PhoneActionPanel({
       contractActions.length +
       advanceActions.length >
     0;
-  const battleRequiresResolution = Boolean(patch.encounter || activeResolution || orphanResolutionOutcome || battleAssist);
+  const battleRequiresResolution = Boolean(
+    patch.encounter
+    || (activeResolution && activeResolution.source !== "movement")
+    || (orphanResolutionOutcome && !orphanResolutionOutcome.movedToSectorId)
+    || battleAssist
+  );
   const battleBlocksNonBattleTabs = battleRequiresResolution && hasBattleContent;
   const moveBlockedReason = hasMoveContent
     ? undefined
@@ -4123,7 +4261,7 @@ export function PhoneActionPanel({
   ];
   const canShowSelectedTab = (tab: TurnActionTabDefinition) =>
     !hasBattleContent || tab.id === "battle" || tab.enabled || tab.locked === true;
-  const fallbackTab = movementPlanner?.active
+  const fallbackTab = movementPlanner?.active || movementApproachResolution || movementApproachOutcome
     ? "move"
     : hasBattleContent
       ? "battle"
@@ -4241,6 +4379,10 @@ export function PhoneActionPanel({
         movementPlanner={movementPlanner}
         currentTile={currentTile}
         movementTravel={movementTravelPresentation}
+        approachResolution={movementApproachResolution}
+        approachOutcome={movementApproachOutcome}
+        canContinueApproach={canContinueResolution || Boolean(movementApproachOutcome)}
+        onContinueApproach={continueResolution}
         seatId={self.seatId}
         activeContract={activeContract}
         onIntent={onIntent}

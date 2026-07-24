@@ -69,9 +69,7 @@ describe("passive Equipment catalog guard", () => {
     expect(validatePassiveEquipmentCatalog(catalog(base), [deferral(base.id)])).toContainEqual(expect.stringContaining("is obsolete"));
   });
 
-  it("keeps the canonical deferral list unique and removable item by item", () => {
-    expect(PASSIVE_EQUIPMENT_DEFERRALS).toHaveLength(16);
-    expect(new Set(PASSIVE_EQUIPMENT_DEFERRALS.map(({ id }) => id)).size).toBe(16);
-    expect(PASSIVE_EQUIPMENT_DEFERRALS.every(({ reason, futurePhase }) => reason.length > 0 && futurePhase.length > 0)).toBe(true);
+  it("retires the canonical deferral list after every passive gains a typed model", () => {
+    expect(PASSIVE_EQUIPMENT_DEFERRALS).toEqual([]);
   });
 });

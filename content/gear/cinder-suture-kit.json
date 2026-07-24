@@ -4,6 +4,8 @@
   "slot": "utility",
   "subtype": "medical",
   "category": "passive",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "statBonus": {
     "stat": "forge",
     "amount": 1
@@ -14,7 +16,7 @@
   "tier": "standard",
   "progressionWeight": 1,
   "flavor": "Field sutures that add +1 Forge during recovery work.",
-  "activeText": "Field sutures that add +1 Forge during recovery work.",
+  "activeText": "While equipped, gain +1 Forge.",
   "shopCategories": [
     "medicae-shrine",
     "market"

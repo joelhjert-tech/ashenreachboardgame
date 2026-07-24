@@ -17,6 +17,7 @@
     "test:rules": "vitest run src/game/rules/__tests__",
     "test:integration": "vitest run src/server/__tests__",
     "validate:content": "tsx scripts/validate-content.ts",
+    "audit:card-lifecycle": "tsx scripts/generate-p23-card-lifecycle-audit.ts",
     "analyze:play-feel": "tsx scripts/analyze-play-feel.ts",
     "analyze:economy": "tsx scripts/analyze-economy.ts",
     "analyze:cooperative-assistance": "tsx scripts/analyze-cooperative-assistance.ts",

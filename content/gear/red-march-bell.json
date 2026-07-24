@@ -4,6 +4,8 @@
   "slot": "utility",
   "subtype": "utility",
   "category": "passive",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "statBonus": {
     "stat": "grit",
     "amount": 1
@@ -14,7 +16,7 @@
   "tier": "standard",
   "progressionWeight": 1,
   "flavor": "A warning bell that adds +1 Grit when danger closes.",
-  "activeText": "A warning bell that adds +1 Grit when danger closes.",
+  "activeText": "While equipped, gain +1 Grit.",
   "shopCategories": [
     "market"
   ],

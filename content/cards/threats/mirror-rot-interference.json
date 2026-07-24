@@ -13,7 +13,7 @@
     "type": "sequence",
     "effects": [
       {
-        "type": "take_wound",
+        "type": "draw_affliction",
         "amount": 1
       }
     ]

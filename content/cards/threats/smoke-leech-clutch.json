@@ -13,7 +13,7 @@
     "text": "You stamped out the clutch before it marked your trail."
   },
   "failEffect": {
-    "type": "take_wound",
+    "type": "draw_affliction",
     "amount": 1
   },
   "enemyFamily": "vermin",

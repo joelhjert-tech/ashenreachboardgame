@@ -969,6 +969,61 @@ describe("PhoneActionPanel", () => {
     });
   });
 
+  it("presents movement approach totals on Move without Battle Assist", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        selectedTurnTab="move"
+        patch={createPatch({
+          phase: "resolution",
+          activeResolution: {
+            id: "seat-1:movement:glassmere-spindle:test",
+            playerId: "seat-1",
+            source: "movement",
+            stage: "outcome_summary",
+            card: {
+              id: "glassmere-spindle",
+              title: "Glassmere Spindle",
+              type: "movement",
+              flavor: "Approach check"
+            },
+            battle: {
+              stat: "guile",
+              difficulty: 7,
+              modifiers: [{ label: "Guile", value: 2 }]
+            },
+            roll: {
+              dice: [5],
+              baseTotal: 5,
+              modifierTotal: 2,
+              finalTotal: 7,
+              target: 7,
+              success: true
+            },
+            outcome: {
+              title: "Movement success",
+              text: "Moved into Glassmere Spindle.",
+              effects: []
+            }
+          }
+        })}
+      />
+    );
+
+    const result = screen.getByTestId("phone-approach-result");
+    expect(result).toHaveTextContent(/Approach Result/i);
+    expect(result).toHaveTextContent(/Glassmere Spindle/i);
+    expect(result).toHaveTextContent(/Player total\s*7/i);
+    expect(result).toHaveTextContent(/Difficulty\s*7/i);
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Enemy Movement/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(onIntent).toHaveBeenCalledWith({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
+  });
+
   it("lets the player inspect a route without committing movement, then confirm", () => {
     const onIntent = vi.fn<(intent: ClientIntent) => void>();
 
@@ -2787,14 +2842,12 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 3 \+ 2 \+ 1 = 6/i);
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/failure/i);
+    const result = screen.getByTestId("phone-approach-result");
+    expect(result).toHaveTextContent(/player total\s*6/i);
+    expect(result).toHaveTextContent(/difficulty\s*7/i);
+    expect(result).toHaveTextContent(/approach setback/i);
     expect(screen.getAllByText(/failed to enter red march outpost/i).length).toBeGreaterThan(0);
-    expect(
-      screen.getByTestId("phone-resolution-continue").compareDocumentPosition(screen.getByTestId("phone-roll-result")) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
+    expect(within(result).getByTestId("phone-resolution-continue")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 

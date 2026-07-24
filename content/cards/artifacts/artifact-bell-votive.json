@@ -1,10 +1,6 @@
 {
   "id": "artifact-bell-votive",
   "type": "artifact",
-  "missionRewardEligible": true,
-  "eliteThreatRewardEligible": true,
-  "rareShopEligible": true,
-  "scenarioRewardEligible": true,
   "startingEligible": false,
   "normalShopCommon": false,
   "title": "Bell Votive Casket",
@@ -12,5 +8,8 @@
   "flavor": "The dead packed for this crossing like they knew no one else would return for them.",
   "charge": 0,
   "resolutionSummary": "Claimed the sealed Bell Votive Casket for later use.",
-  "resolveEffect": { "type": "gain_gear", "gearId": "artifact-bell-votive" }
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "artifact-bell-votive"
+  }
 }

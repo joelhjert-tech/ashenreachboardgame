@@ -7,24 +7,7 @@ export type PassiveEquipmentDeferral = {
   compatibility: "canonical-playable" | "legacy" | "qa";
 };
 
-export const PASSIVE_EQUIPMENT_DEFERRALS: readonly PassiveEquipmentDeferral[] = [
-  { id: "chainhook-blade", reason: "Fighting for position has no approved typed context.", futurePhase: "conditional context design", compatibility: "canonical-playable" },
-  { id: "route-compass", reason: "Movement-test modifiers need an approved typed context.", futurePhase: "movement condition normalization", compatibility: "canonical-playable" },
-  { id: "field-lens", reason: "Inspecting hazards is not yet an authoritative condition.", futurePhase: "tile-challenge condition normalization", compatibility: "canonical-playable" },
-  { id: "lockjaw-kit", reason: "Locks and bargains do not share a supported typed context.", futurePhase: "interaction condition normalization", compatibility: "canonical-playable" },
-  { id: "bridge-spike", reason: "Route work is not yet an authoritative condition.", futurePhase: "movement condition normalization", compatibility: "canonical-playable" },
-  { id: "static-probe", reason: "Anomaly-only Equipment modifiers need a supported context.", futurePhase: "tile-challenge condition normalization", compatibility: "canonical-playable" },
-  { id: "surveyor-chalk", reason: "Coordinating movement may imply unsupported assistance.", futurePhase: "movement condition design", compatibility: "canonical-playable" },
-  { id: "cinder-suture-kit", reason: "Recovery work is not a supported typed context.", futurePhase: "recovery condition normalization", compatibility: "canonical-playable" },
-  { id: "saintwire-splint", reason: "Holding together is poetic rather than actionable.", futurePhase: "recovery condition design", compatibility: "canonical-playable" },
-  { id: "salt-gauze-wrap", reason: "Recovery is not a supported typed context.", futurePhase: "recovery condition normalization", compatibility: "canonical-playable" },
-  { id: "ember-poultice", reason: "Authored reusable passive identity conflicts with consumable presentation.", futurePhase: "recovery item redesign", compatibility: "canonical-playable" },
-  { id: "salvage-ledger", reason: "Shop dealings do not currently use the generic modifier path.", futurePhase: "shop condition normalization", compatibility: "canonical-playable" },
-  { id: "mirror-token", reason: "Contested tests are not a supported typed context.", futurePhase: "test condition normalization", compatibility: "canonical-playable" },
-  { id: "oath-chain", reason: "Holding a vow lacks an approved contract-state mapping.", futurePhase: "contract condition design", compatibility: "canonical-playable" },
-  { id: "red-march-bell", reason: "Danger closes is not an authoritative condition.", futurePhase: "threat condition design", compatibility: "canonical-playable" },
-  { id: "signal-lantern", reason: "Unstable sector is undefined and must not introduce Heat-era state.", futurePhase: "sector condition design", compatibility: "canonical-playable" }
-] as const;
+export const PASSIVE_EQUIPMENT_DEFERRALS: readonly PassiveEquipmentDeferral[] = [];
 
 type PassiveEquipmentRecord = Pick<GearItem, "id" | "name" | "category" | "tier" | "normalShopCommon" | "effectModel" | "requiresEquipped" | "conditionType" | "statBonus"> &
   Partial<Pick<GearItem, "activationTiming" | "consumeOnUse" | "consumableEffect" | "resetWindow" | "exhaustEffect" | "maxCharges" | "startingCharges" | "chargeCost" | "chargedEffect">>;

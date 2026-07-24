@@ -4,6 +4,8 @@
   "slot": "utility",
   "subtype": "supply",
   "category": "passive",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "statBonus": {
     "stat": "forge",
     "amount": 1
@@ -14,7 +16,7 @@
   "tier": "starter",
   "progressionWeight": 1,
   "flavor": "A warming field pack that adds +1 Forge during recovery.",
-  "activeText": "A warming field pack that adds +1 Forge during recovery.",
+  "activeText": "While equipped, gain +1 Forge.",
   "shopCategories": [
     "market"
   ],

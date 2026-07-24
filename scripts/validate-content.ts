@@ -724,6 +724,18 @@ function validateCanonicalDecks(): void {
   };
   const tileChallengeArtIds = new Set([...tileChallenges.values()].map((challenge) => challenge.artCardId));
 
+  for (const lane of ["red", "blue", "yellow"] as const) {
+    const reachableEnemies = [...threats.values()].filter(
+      (card) =>
+        card.cardType === "enemy" &&
+        card.threatLane === lane &&
+        canonicalDeckIds.threat.has(card.id)
+    );
+    if (reachableEnemies.length === 0) {
+      errors.push(`Production ${lane} threat lane must retain at least one reachable enemy card`);
+    }
+  }
+
   for (const card of threats.values()) {
     if (!canonicalDeckIds.threat.has(card.id) && !tileChallengeArtIds.has(card.id)) {
       errors.push(`Threat ${card.id} is not reachable from a canonical sector deck or recurring tile challenge`);

@@ -4,6 +4,8 @@
   "slot": "utility",
   "subtype": "tool",
   "category": "passive",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "statBonus": {
     "stat": "signal",
     "amount": 1
@@ -14,7 +16,7 @@
   "tier": "standard",
   "progressionWeight": 1,
   "flavor": "A grounded detector that adds +1 Signal against anomalies.",
-  "activeText": "A grounded detector that adds +1 Signal against anomalies.",
+  "activeText": "While equipped, gain +1 Signal.",
   "shopCategories": [
     "market"
   ],

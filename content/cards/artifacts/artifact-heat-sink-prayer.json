@@ -1,10 +1,6 @@
 {
   "id": "artifact-heat-sink-prayer",
   "type": "artifact",
-  "missionRewardEligible": true,
-  "eliteThreatRewardEligible": true,
-  "rareShopEligible": true,
-  "scenarioRewardEligible": true,
   "startingEligible": false,
   "normalShopCommon": false,
   "artifactKind": "chargedRelic",

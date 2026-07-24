@@ -82,11 +82,17 @@ type GainScarChoiceEffect = {
 type GainGearEffect = {
   type: "gain_gear";
   gearId: string;
+  sourceArtifactCardId?: string;
   gear?: GearItem;
 };
 
 type DrawArtifactEffect = {
   type: "draw_artifact";
+};
+
+type DrawAfflictionEffect = {
+  type: "draw_affliction";
+  amount: number;
 };
 
 type ConsumeArtifactEffect = {
@@ -178,6 +184,7 @@ type AuthoredSimpleEncounterEffect =
   | GainScarChoiceEffect
   | GainGearEffect
   | DrawArtifactEffect
+  | DrawAfflictionEffect
   | ConsumeArtifactEffect
   | GainFollowerEffect
   | GainNoteEffect
@@ -249,10 +256,15 @@ const authoredSimpleEffectSchema: z.ZodType<AuthoredSimpleEncounterEffect> = z.u
   z.object({
     type: z.literal("gain_gear"),
     gearId: z.string().min(1),
+    sourceArtifactCardId: z.string().min(1).optional(),
     gear: gearItemSchema.optional()
   }),
   z.object({
     type: z.literal("draw_artifact")
+  }),
+  z.object({
+    type: z.literal("draw_affliction"),
+    amount: z.number().int().positive()
   }),
   z.object({
     type: z.literal("consume_artifact"),
@@ -586,18 +598,23 @@ export const artifactKindSchema = z.enum([
   "burdenRelic"
 ]);
 
-export const artifactCardSchema = cardBaseSchema.extend({
+const canonicalArtifactCardSchema = cardBaseSchema.extend({
   type: z.literal("artifact"),
   artifactKind: artifactKindSchema.optional(),
-  missionRewardEligible: z.boolean().optional(),
-  eliteThreatRewardEligible: z.boolean().optional(),
-  rareShopEligible: z.boolean().optional(),
-  scenarioRewardEligible: z.boolean().optional(),
   startingEligible: z.literal(false).optional(),
   normalShopCommon: z.literal(false).optional(),
   charge: z.number().int().min(0),
   resolutionSummary: z.string().min(1),
   resolveEffect: authoredEffectSchema
+});
+
+export const artifactCardSchema = canonicalArtifactCardSchema;
+
+export const legacyCompatibleArtifactCardSchema = canonicalArtifactCardSchema.extend({
+  missionRewardEligible: z.boolean().optional(),
+  eliteThreatRewardEligible: z.boolean().optional(),
+  rareShopEligible: z.boolean().optional(),
+  scenarioRewardEligible: z.boolean().optional()
 });
 
 export const scarRuleKeySchema = z.enum([

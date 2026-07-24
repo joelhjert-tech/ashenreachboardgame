@@ -9,7 +9,13 @@ import {
   legacyCompatibleCharacterSchema,
   statSchema
 } from "./character.schema.js";
-import { afflictionCardSchema, afflictionInstanceSchema, afflictionUsageStateSchema } from "./affliction.schema.js";
+import {
+  afflictionCardSchema,
+  afflictionInstanceSchema,
+  afflictionUsageStateSchema,
+  pendingAfflictionReactionSchema,
+  pendingAfflictionResolutionSchema
+} from "./affliction.schema.js";
 import {
   effectSchema,
   legacyCompatibleEffectSchema,
@@ -464,6 +470,8 @@ export const gameStateSchema = z.object({
   players: z.array(playerStateSchema),
   availableContracts: z.array(contractCardSchema),
   availableAfflictions: z.array(afflictionCardSchema).optional(),
+  pendingAfflictionResolution: pendingAfflictionResolutionSchema.nullable().optional(),
+  pendingAfflictionReaction: pendingAfflictionReactionSchema.nullable().optional(),
   nemesisChampions: z.array(nemesisChampionSchema).default([]),
   nemesisNexusCountdowns: z.array(nemesisNexusCountdownSchema).default([]),
   shopStockReveals: z.array(shopStockRevealSchema).default([]),

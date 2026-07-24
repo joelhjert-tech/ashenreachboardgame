@@ -1,5 +1,7 @@
 # Encounter Card Lifecycle
 
+> Historical baseline. P23 supersedes the current lifecycle specification with `docs/design/ASHENREACH_CARD_CATEGORY_LIFECYCLE_SPEC.md`.
+
 ## Authoritative arrival sequence
 
 Movement completes → destination entry/gate resolves → persistent tile challenge resolves → named sector text resolves → authored sector action selects a deck → server draws deterministically → identity and origin enter activeResolution → category mechanic resolves → typed effects apply once → card is consumed/discarded/persisted by its owner system → broadcast completes.

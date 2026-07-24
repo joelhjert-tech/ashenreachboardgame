@@ -4,6 +4,8 @@
   "slot": "utility",
   "subtype": "medical",
   "category": "passive",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "statBonus": {
     "stat": "grit",
     "amount": 1
@@ -14,7 +16,7 @@
   "tier": "starter",
   "progressionWeight": 1,
   "flavor": "A sealed wound wrap that adds +1 Grit while recovering.",
-  "activeText": "A sealed wound wrap that adds +1 Grit while recovering.",
+  "activeText": "While equipped, gain +1 Grit.",
   "shopCategories": [
     "medicae-shrine",
     "market"

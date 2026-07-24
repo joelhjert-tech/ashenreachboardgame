@@ -82,6 +82,7 @@ const gearItemFields = {
   effectModel: gearEffectModelSchema.optional(),
   requiresEquipped: z.boolean().optional(),
   conditionType: gearConditionTypeSchema.optional()
+  ,sourceArtifactCardId: z.string().min(1).optional()
   ,activationTiming: z.array(gearTimingWindowSchema).min(1).optional()
   ,consumeOnUse: z.boolean().optional()
   ,consumableEffect: consumableEffectSchema.optional()

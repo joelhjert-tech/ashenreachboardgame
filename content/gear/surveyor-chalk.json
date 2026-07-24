@@ -4,6 +4,8 @@
   "slot": "utility",
   "subtype": "tool",
   "category": "passive",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "statBonus": {
     "stat": "command",
     "amount": 1
@@ -14,7 +16,7 @@
   "tier": "starter",
   "progressionWeight": 1,
   "flavor": "Route marks that add +1 Command when coordinating movement.",
-  "activeText": "Route marks that add +1 Command when coordinating movement.",
+  "activeText": "While equipped, gain +1 Command.",
   "shopCategories": [
     "market"
   ],

@@ -4,6 +4,8 @@
   "slot": "utility",
   "subtype": "utility",
   "category": "passive",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "statBonus": {
     "stat": "command",
     "amount": 1
@@ -14,7 +16,7 @@
   "tier": "standard",
   "progressionWeight": 1,
   "flavor": "A witnessed chain that adds +1 Command when holding a vow.",
-  "activeText": "A witnessed chain that adds +1 Command when holding a vow.",
+  "activeText": "While equipped, gain +1 Command.",
   "shopCategories": [
     "market"
   ],

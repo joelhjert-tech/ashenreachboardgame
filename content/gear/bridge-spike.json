@@ -4,6 +4,8 @@
   "slot": "utility",
   "subtype": "tool",
   "category": "passive",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "statBonus": {
     "stat": "forge",
     "amount": 1
@@ -14,7 +16,7 @@
   "tier": "standard",
   "progressionWeight": 1,
   "flavor": "A load-bearing anchor that adds +1 Forge on route work.",
-  "activeText": "A load-bearing anchor that adds +1 Forge on route work.",
+  "activeText": "While equipped, gain +1 Forge.",
   "shopCategories": [
     "market"
   ],

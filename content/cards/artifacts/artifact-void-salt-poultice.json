@@ -1,10 +1,6 @@
 {
   "id": "artifact-void-salt-poultice",
   "type": "artifact",
-  "missionRewardEligible": true,
-  "eliteThreatRewardEligible": true,
-  "rareShopEligible": true,
-  "scenarioRewardEligible": true,
   "startingEligible": false,
   "normalShopCommon": false,
   "title": "Void-Salt Poultice",
@@ -13,5 +9,8 @@
   "artifactKind": "consumableSalvage",
   "charge": 0,
   "resolutionSummary": "Claimed a Void-Salt Poultice for a later recovery window.",
-  "resolveEffect": { "type": "gain_gear", "gearId": "artifact-void-salt-poultice" }
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "artifact-void-salt-poultice"
+  }
 }

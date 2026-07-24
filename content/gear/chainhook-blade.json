@@ -4,6 +4,8 @@
   "slot": "weapon",
   "subtype": "weapon",
   "category": "passive",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "statBonus": {
     "stat": "guile",
     "amount": 1
@@ -14,7 +16,7 @@
   "tier": "standard",
   "progressionWeight": 1,
   "flavor": "A hooked cutter that adds +1 Guile when fighting for position.",
-  "activeText": "A hooked cutter that adds +1 Guile when fighting for position.",
+  "activeText": "While equipped, gain +1 Guile.",
   "shopCategories": [
     "forge-armoury",
     "market"

@@ -1,10 +1,6 @@
 {
   "id": "artifact-yard",
   "type": "artifact",
-  "missionRewardEligible": true,
-  "eliteThreatRewardEligible": true,
-  "rareShopEligible": true,
-  "scenarioRewardEligible": true,
   "startingEligible": false,
   "normalShopCommon": false,
   "title": "Yard Bellframe Core",
@@ -12,5 +8,8 @@
   "flavor": "It remembers every convoy that died under its watch.",
   "charge": 0,
   "resolutionSummary": "Recovered the sealed Yard Bellframe Core for later use.",
-  "resolveEffect": { "type": "gain_gear", "gearId": "artifact-yard" }
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "artifact-yard"
+  }
 }

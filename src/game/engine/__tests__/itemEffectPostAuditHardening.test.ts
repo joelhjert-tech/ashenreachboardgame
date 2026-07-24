@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { GameRoomServer, createPhoneProjection } from "../../../server/roomServer.js";
 import { createInitialSessionState } from "../../../server/sessionState.js";
 import { loadArtifactCards } from "../../content/artifacts.js";
@@ -146,16 +146,16 @@ describe("post-audit direct item-effect regressions", () => {
   it("Ashen Route Compass acquisition and phone projection contain only the approved movement rule", () => {
     const artifact = loadArtifactCards().get("artifact-ashen-route-compass")!;
     const serialized = JSON.stringify(artifact);
-    expect(serialized).toContain("adjust the exact movement distance by −1 or +1");
+    expect(serialized).toContain("adjust the exact movement distance by -1 or +1");
     expect(serialized).not.toMatch(/anomaly failures|soften movement/i);
 
     const state = acquireArtifact("artifact-ashen-route-compass");
     const player = state.players[0]!;
-    expect(player.private.notes).toContain("Ashen Route Compass acquired. Spend 1 charge after rolling movement to adjust the exact movement distance by −1 or +1.");
+    expect(player.private.notes).toContain("Ashen Route Compass acquired. Spend 1 charge after rolling movement to adjust the exact movement distance by -1 or +1.");
     const projection = createPhoneProjection(state, player.seatId);
     const phoneText = JSON.stringify(projection);
-    expect(phoneText).toContain("After rolling for movement");
-    expect(phoneText).toContain("exact required movement distance");
+    expect(phoneText).toContain("After your movement roll");
+    expect(phoneText).toContain("exact movement distance");
     expect(phoneText).not.toMatch(/anomaly failures|soften movement/i);
   });
 });

@@ -183,6 +183,8 @@ export function createInitialSessionState(
     ),
     availableContracts,
     availableAfflictions,
+    pendingAfflictionResolution: null,
+    pendingAfflictionReaction: null,
     nemesisChampions: [],
     nemesisNexusCountdowns: [],
     shopStockReveals: [],

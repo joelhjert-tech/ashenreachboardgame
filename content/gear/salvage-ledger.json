@@ -4,6 +4,8 @@
   "slot": "utility",
   "subtype": "utility",
   "category": "passive",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "statBonus": {
     "stat": "guile",
     "amount": 1
@@ -14,7 +16,7 @@
   "tier": "standard",
   "progressionWeight": 1,
   "flavor": "A trade ledger that adds +1 Guile during shop dealings.",
-  "activeText": "A trade ledger that adds +1 Guile during shop dealings.",
+  "activeText": "While equipped, gain +1 Guile.",
   "shopCategories": [
     "market"
   ],

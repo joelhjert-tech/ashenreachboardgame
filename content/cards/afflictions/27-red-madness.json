@@ -2,12 +2,12 @@
   "id": "red-madness",
   "name": "Red Madness",
   "severity": 2,
-  "category": "restriction",
+  "category": "testPenalty",
   "duration": "ongoing",
   "trigger": "While faceup.",
-  "rulesText": "You cannot evade enemies.",
-  "effectKind": "restriction",
-  "effectPayload": { "cannotEvadeEnemies": true },
+  "rulesText": "Suffer -2 Signal on tests, to a minimum Signal of 1.",
+  "effectKind": "testModifier",
+  "effectPayload": { "stat": "signal", "amount": -2, "floor": 1 },
   "flipFacedownAfterResolve": false,
   "isFaceupOngoing": true
 }

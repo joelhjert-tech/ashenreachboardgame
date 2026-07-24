@@ -179,6 +179,7 @@ import {
 } from "../game/rules/statUpgrades.js";
 import type {
   AcceptContractAction,
+  CheckRolledAction,
   CheckRequestedAction,
   CombatRequestedAction,
   CompleteContractAction,
@@ -227,6 +228,11 @@ import type {
   UnequipGearAction,
   UseFollowerAction,
   UseGearAction,
+  AfflictionDrawPreparedAction,
+  AfflictionDrawnAction,
+  AfflictionStatChosenAction,
+  AfflictionReactionOpenedAction,
+  AfflictionReactionResolvedAction,
   RollModifierSource
 } from "../game/engine/actions.js";
 import { getCharacterStatBreakdown, getEquippedGearItem, getEquippedGearModifierSources } from "../game/engine/gear.js";
@@ -313,6 +319,16 @@ function getScenarioProgressThreshold(scenarioId: string | null | undefined, def
   return getLinkedNemesis(scenarioId)?.stats.life ?? defaultThreshold;
 }
 
+function collectArtifactGearLinks(effect: AuthoredEncounterEffect): Array<{ gearId: string; artifactCardId: string }> {
+  if (effect.type === "gain_gear" && effect.sourceArtifactCardId) {
+    return [{ gearId: effect.gearId, artifactCardId: effect.sourceArtifactCardId }];
+  }
+  if (effect.type === "sequence") {
+    return effect.effects.flatMap(collectArtifactGearLinks);
+  }
+  return [];
+}
+
 function getScenarioSeatCounterKey(prefix: string, seatId: string): string {
   return `${prefix}:${seatId}`;
 }
@@ -393,6 +409,8 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "COMBAT_REQUESTED",
   "ENEMY_ROLL_REQUESTED",
   "SOLO_REROLL_REQUESTED",
+  "AFFLICTION_STAT_CHOSEN",
+  "AFFLICTION_REACTION_RESOLVED",
   "CONTINUE_RESOLUTION",
   "SELECT_EQUIPMENT_SUPPRESSION_TARGET",
   "ENCOUNTER_DECISION_REQUESTED",
@@ -604,6 +622,17 @@ export class GameRoomServer {
     this.anomalies = anomalies ?? loadAnomalyCards();
     this.artifacts = artifacts ?? loadArtifactCards();
     this.escalations = escalations ?? loadEscalationCards();
+    for (const artifact of this.artifacts.values()) {
+      for (const link of collectArtifactGearLinks(artifact.resolveEffect)) {
+        const definition = this.gear.get(link.gearId);
+        if (definition?.tier === "artifact") {
+          this.gear.set(link.gearId, {
+            ...definition,
+            sourceArtifactCardId: link.artifactCardId
+          });
+        }
+      }
+    }
     this.reconcileNamedPlayerRules({ autoSelectPopelord: true });
   }
 
@@ -864,6 +893,22 @@ export class GameRoomServer {
 
       if (intent.type === "CONTINUE_RESOLUTION") {
         this.resolveContinueResolutionIntent(intent);
+        return;
+      }
+
+      if (intent.type === "AFFLICTION_STAT_CHOSEN") {
+        this.applyAction({
+          ...intent,
+          createdAt: new Date().toISOString()
+        } satisfies AfflictionStatChosenAction);
+        this.runAutomaticPhases(intent.seatId);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "AFFLICTION_REACTION_RESOLVED") {
+        this.resolveAfflictionReactionIntent(intent);
+        this.broadcastPatch();
         return;
       }
 
@@ -1843,6 +1888,17 @@ export class GameRoomServer {
       case "COMBAT_REQUESTED":
       case "RAISE_STAT_REQUESTED":
         requireEnumField(message, "stat", STAT_VALUES, type);
+        break;
+      case "AFFLICTION_STAT_CHOSEN":
+        requireStringField(message, "resolutionId", type);
+        requireEnumField(message, "stat", STAT_VALUES, type);
+        break;
+      case "AFFLICTION_REACTION_RESOLVED":
+        requireStringField(message, "reactionId", type);
+        if (typeof message.use !== "boolean") throw new IntentRejectedError(type, "Affliction reaction must be accepted or declined");
+        if (message.dieIndex !== undefined && message.dieIndex !== 0 && message.dieIndex !== 1) {
+          throw new IntentRejectedError(type, "Affliction reroll die must be 0 or 1");
+        }
         break;
       case "COOPERATIVE_ASSISTANCE_REQUESTED":
         requireStringField(message, "sourceId", type);
@@ -3883,7 +3939,9 @@ export class GameRoomServer {
   private applyAction(action: GameAction): void {
     this.executionServices.onActionAttempt?.(action, this.state);
     const previousState = this.state;
-    const previousTotalWounds = this.getTotalWounds(previousState);
+    const previousWoundsBySeat = new Map(
+      previousState.players.map((player) => [player.seatId, player.character.wounds])
+    );
     const previousHeldGearCount = this.getHeldGearCount(action.seatId, previousState);
     const result = reduceGameState(this.state, action);
 
@@ -3895,16 +3953,19 @@ export class GameRoomServer {
     this.events.push(action, ...result.emitted);
     this.applyAutomaticScarRules(action, previousState);
 
-    const woundDelta = this.getTotalWounds(this.state) - previousTotalWounds;
     const gainedGearCount = this.getHeldGearCount(action.seatId, this.state) - previousHeldGearCount;
 
-    if (previousState.status === "active" && woundDelta > 0) {
-      this.feedEscalation(
-        action.seatId,
-        woundDelta * ESCALATION_FEEDERS.woundTaken,
-        "wounds taken"
-      );
-      this.applyScenarioOnWoundsTaken(action.seatId, woundDelta);
+    if (previousState.status === "active") {
+      for (const player of this.state.players) {
+        const woundDelta = player.character.wounds - (previousWoundsBySeat.get(player.seatId) ?? player.character.wounds);
+        if (woundDelta <= 0) continue;
+        this.feedEscalation(
+          player.seatId,
+          woundDelta * ESCALATION_FEEDERS.woundTaken,
+          "wounds taken"
+        );
+        this.applyScenarioOnWoundsTaken(player.seatId, woundDelta);
+      }
     }
 
     if (previousState.status === "active" && gainedGearCount > 0) {
@@ -6380,6 +6441,72 @@ export class GameRoomServer {
     return combinedEffect ? this.resolveEffect(combinedEffect, seatId, card.id) : null;
   }
 
+  private resolveNextAfflictionDraw(): void {
+    const pending = this.state.pendingAfflictionResolution;
+    if (!pending || pending.status !== "queued") return;
+
+    const player = this.state.players.find((entry) => entry.seatId === pending.ownerSeatId);
+    if (!player) {
+      throw new Error(`Missing Affliction owner ${pending.ownerSeatId}`);
+    }
+
+    const cards = [...getAfflictionCatalog(this.state).values()].sort((left, right) => left.id.localeCompare(right.id));
+    if (cards.length === 0) {
+      throw new Error("Affliction deck is unavailable");
+    }
+
+    let affliction = pending.nextAfflictionId
+      ? cards.find((entry) => entry.id === pending.nextAfflictionId) ?? null
+      : null;
+    let die = pending.nextDie ?? null;
+
+    if (!affliction) {
+      const usedInCycle = new Set<string>();
+      for (const cardId of player.afflictionDrawHistory ?? []) {
+        if (usedInCycle.has(cardId)) usedInCycle.clear();
+        usedInCycle.add(cardId);
+        if (usedInCycle.size >= cards.length) usedInCycle.clear();
+      }
+      const excluded = new Set(pending.excludedCardIds);
+      let eligible = cards.filter((entry) => !usedInCycle.has(entry.id) && !excluded.has(entry.id));
+      if (eligible.length === 0) {
+        eligible = cards.filter((entry) => !excluded.has(entry.id));
+      }
+      if (eligible.length === 0) {
+        eligible = cards;
+      }
+      affliction = eligible[this.randomSource.nextInt(eligible.length)] ?? null;
+      die = this.randomSource.nextInt(6) + 1;
+    }
+
+    if (!affliction || die === null) {
+      throw new Error("Affliction draw could not be prepared");
+    }
+
+    const hasRunawayGrowth = (player.faceupAfflictions ?? []).some((entry) => entry.cardId === "runaway-growth");
+    if (hasRunawayGrowth && pending.chosenStat === null) {
+      this.applyAction({
+        type: "AFFLICTION_DRAW_PREPARED",
+        seatId: pending.ownerSeatId,
+        resolutionId: pending.id,
+        afflictionId: affliction.id,
+        die,
+        createdAt: new Date().toISOString()
+      } satisfies AfflictionDrawPreparedAction);
+      return;
+    }
+
+    this.applyAction({
+      type: "AFFLICTION_DRAWN",
+      seatId: pending.ownerSeatId,
+      afflictionId: affliction.id,
+      affliction,
+      die,
+      chosenStat: pending.chosenStat ?? undefined,
+      createdAt: new Date().toISOString()
+    } satisfies AfflictionDrawnAction);
+  }
+
   private runAutomaticPhases(
     seatId: string,
     options: { applyVisibleOutcomeEffect?: boolean } = {}
@@ -6388,6 +6515,19 @@ export class GameRoomServer {
 
     while (progressMade) {
       progressMade = false;
+
+      if (this.state.pendingAfflictionReaction) {
+        return;
+      }
+
+      if (this.state.pendingAfflictionResolution) {
+        if (this.state.pendingAfflictionResolution.status === "awaitingStatChoice") {
+          return;
+        }
+        this.resolveNextAfflictionDraw();
+        progressMade = true;
+        continue;
+      }
 
       if (
         this.state.activeResolution &&
@@ -7628,6 +7768,240 @@ export class GameRoomServer {
     });
   }
 
+  private maybeOpenAfflictionRollReaction(
+    seatId: string,
+    pendingResult: CheckRolledAction | CombatResolvedAction
+  ): boolean {
+    if (pendingResult.success || this.state.pendingAfflictionReaction) return false;
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    if (!player) return false;
+    const faceup = new Set((player.faceupAfflictions ?? []).map((entry) => entry.cardId));
+    const usage = player.afflictionUsageState ?? {
+      oncePerTurnUsed: {},
+      oncePerBattleUsed: {},
+      reactionUsed: {}
+    };
+    const isBattle = pendingResult.type === "COMBAT_RESOLVED";
+    const afflictionId =
+      isBattle && faceup.has("blood-fury") && usage.oncePerBattleUsed["blood-fury"] !== true
+        ? "blood-fury"
+        : faceup.has("future-sickness") && usage.oncePerTurnUsed["future-sickness"] !== true
+          ? "future-sickness"
+          : null;
+    if (!afflictionId) return false;
+
+    const createdAt = new Date().toISOString();
+    this.applyAction({
+      type: "AFFLICTION_REACTION_OPENED",
+      seatId,
+      reactionId: `${seatId}:${pendingResult.cardId}:${afflictionId}:${createdAt}`,
+      afflictionId,
+      kind: afflictionId === "blood-fury" ? "battleReroll" : "turnReroll",
+      originalRoll: [...pendingResult.roll.faces],
+      pendingResult,
+      createdAt
+    } satisfies AfflictionReactionOpenedAction);
+    return true;
+  }
+
+  private maybeOpenBileSpitReaction(targetSeatId: string, sectorId: string, sourceEventId: string): boolean {
+    if (this.state.pendingAfflictionReaction) return true;
+    if (["inner", "center"].includes(getBoardSpace(sectorId)?.tier ?? "")) return false;
+    const owner = this.state.turnOrder
+      .map((seatId) => this.state.players.find((entry) => entry.seatId === seatId))
+      .find((entry) => {
+        if (!entry || entry.seatId === targetSeatId || entry.sectorId !== sectorId) return false;
+        if (!(entry.faceupAfflictions ?? []).some((affliction) => affliction.cardId === "bile-spit")) return false;
+        return entry.afflictionUsageState?.reactionUsed?.[sourceEventId] !== true;
+      });
+    if (!owner) return false;
+    const createdAt = new Date().toISOString();
+    this.applyAction({
+      type: "AFFLICTION_REACTION_OPENED",
+      seatId: owner.seatId,
+      reactionId: `${sourceEventId}:bile-spit:${owner.seatId}`,
+      afflictionId: "bile-spit",
+      kind: "arrivalWound",
+      targetSeatId,
+      originalRoll: [1],
+      sourceEventId,
+      createdAt
+    } satisfies AfflictionReactionOpenedAction);
+    return true;
+  }
+
+  private finishResolvedCheck(action: CheckRolledAction): void {
+    const encounter = this.state.currentEncounter;
+    if (!encounter || encounter.cardType !== "hazard" || encounter.id !== action.cardId) {
+      throw new Error("Affliction reroll no longer matches the authoritative check");
+    }
+    this.applyAction(action);
+    this.finishAssistedRoll(action.seatId, encounter.id, action.success);
+    this.markFirstEligibleCharacterAbility(action.seatId, action.stat, "check", encounter);
+    this.applyScenarioOnSkillResolved(action.seatId, action.stat, action.success);
+    this.maybeTriggerAbilityOnCheckResolved(action.seatId, action.stat, action.success);
+    this.runAutomaticPhases(action.seatId);
+  }
+
+  private finishResolvedCombat(action: CombatResolvedAction): void {
+    const encounter = this.state.currentEncounter;
+    const player = this.state.players.find((entry) => entry.seatId === action.seatId);
+    if (!encounter || encounter.cardType !== "enemy" || encounter.id !== action.cardId || !player) {
+      throw new Error("Affliction reroll no longer matches the authoritative battle");
+    }
+    this.applyAction(action);
+    this.finishAssistedRoll(action.seatId, encounter.id, action.success);
+    this.markFirstEligibleCharacterAbility(action.seatId, action.stat, "battle", encounter);
+    if (action.success) {
+      this.maybeTriggerAbilityOnCombatVictory(action.seatId);
+      this.applyScenarioOnEnemyDefeat(action.seatId);
+      this.applyScenarioObjectiveTrigger(action.seatId, {
+        type: "threatDefeated",
+        threatId: encounter.id,
+        threatLane: encounter.threatLane,
+        enemyFamily: encounter.enemyFamily,
+        sectorId: player.sectorId
+      });
+      this.applyRivalryAgendaProgressTrigger(action.seatId, {
+        type: "threatDefeated",
+        seatId: action.seatId,
+        threatId: encounter.id,
+        threatLane: encounter.threatLane,
+        enemyFamily: encounter.enemyFamily,
+        sectorId: player.sectorId
+      });
+    }
+    this.runAutomaticPhases(action.seatId);
+  }
+
+  private resolveAfflictionReactionIntent(
+    intent: Extract<ClientIntent, { type: "AFFLICTION_REACTION_RESOLVED" }>
+  ): void {
+    const pending = this.state.pendingAfflictionReaction;
+    if (!pending || pending.id !== intent.reactionId || pending.ownerSeatId !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "This Affliction reaction is stale or belongs to another operative");
+    }
+    const opened = [...this.state.eventLog].reverse().find((entry) => {
+      const candidate = entry as Partial<AfflictionReactionOpenedAction>;
+      return candidate.type === "AFFLICTION_REACTION_OPENED" && candidate.reactionId === pending.id;
+    }) as AfflictionReactionOpenedAction | undefined;
+    if (!opened) throw new IntentRejectedError(intent.type, "The authoritative Affliction reaction source is unavailable");
+
+    if (pending.kind === "arrivalWound") {
+      this.applyAction({
+        type: "AFFLICTION_REACTION_RESOLVED",
+        seatId: intent.seatId,
+        reactionId: intent.reactionId,
+        use: intent.use,
+        createdAt: new Date().toISOString()
+      } satisfies AfflictionReactionResolvedAction);
+      const targetSeatId = pending.targetSeatId;
+      const target = targetSeatId ? this.state.players.find((entry) => entry.seatId === targetSeatId) : null;
+      if (
+        targetSeatId &&
+        target &&
+        this.maybeOpenBileSpitReaction(targetSeatId, target.sectorId, pending.sourceEventId)
+      ) {
+        return;
+      }
+      this.runAutomaticPhases(targetSeatId ?? intent.seatId);
+      return;
+    }
+
+    const pendingResult = opened.pendingResult;
+    if (!pendingResult) throw new IntentRejectedError(intent.type, "The authoritative reroll result is unavailable");
+    const dieIndex = intent.dieIndex ?? (pending.originalRoll[0] <= (pending.originalRoll[1] ?? 7) ? 0 : 1);
+    const reroll = intent.use ? this.randomSource.nextInt(6) + 1 : undefined;
+    this.applyAction({
+      type: "AFFLICTION_REACTION_RESOLVED",
+      seatId: intent.seatId,
+      reactionId: intent.reactionId,
+      use: intent.use,
+      dieIndex: intent.use ? dieIndex : undefined,
+      reroll,
+      createdAt: new Date().toISOString()
+    } satisfies AfflictionReactionResolvedAction);
+
+    let finalResult: CheckRolledAction | CombatResolvedAction = pendingResult;
+    if (intent.use && reroll !== undefined) {
+      const faces = [...pendingResult.roll.faces];
+      const originalFace = faces[dieIndex] ?? faces[0] ?? 1;
+      faces[dieIndex] = reroll;
+      const roll = { faces, total: faces.reduce((sum, face) => sum + face, 0) };
+      const total = roll.total + pendingResult.statBonus;
+      const target = pendingResult.type === "COMBAT_RESOLVED" ? pendingResult.enemyTotal : pendingResult.difficulty;
+      const success = total >= target;
+      const encounter = this.state.currentEncounter;
+      if (!encounter || encounter.id !== pendingResult.cardId) {
+        throw new IntentRejectedError(intent.type, "The encounter changed before the Affliction reroll resolved");
+      }
+      const keyedModifiers = this.resolveThreatEffectKeys(
+        intent.seatId,
+        encounter,
+        encounter.combatEffectKeys,
+        "beforeCombat"
+      );
+      const authoredEffect =
+        encounter.cardType === "enemy"
+          ? success
+            ? encounter.defeatReward
+            : encounter.woundOnLoss
+          : success
+            ? encounter.successEffect
+            : encounter.failEffect;
+      const baseEffect = this.combineEffects(
+        [keyedModifiers.effect, authoredEffect].filter((entry): entry is EncounterEffect => Boolean(entry))
+      ) ?? authoredEffect;
+      const outcomeEffect =
+        success === pendingResult.success
+          ? pendingResult.effect
+          : this.maybeApplyKerWoundPrevention(
+              intent.seatId,
+              this.maybeApplyFandiablosWoundPrevention(
+                intent.seatId,
+                this.resolveThreatOutcomeEffect(
+                  intent.seatId,
+                  encounter,
+                  baseEffect,
+                  success
+                    ? encounter.cardType === "enemy"
+                      ? encounter.defeatEffectKey
+                      : encounter.successEffectKey
+                    : encounter.failEffectKey,
+                  success ? (encounter.cardType === "enemy" ? "onDefeat" : "onSuccess") : "onFailure"
+                )
+              )
+            );
+      const matchedOriginal = reroll === originalFace;
+      const reactionEffect: EncounterEffect | null =
+        matchedOriginal && pending.afflictionId === "blood-fury"
+          ? { type: "take_wound", amount: 1 }
+          : matchedOriginal && pending.afflictionId === "future-sickness"
+            ? { type: "draw_affliction", amount: 1 }
+            : null;
+      const effect = this.combineEffects(
+        [outcomeEffect, reactionEffect].filter((entry): entry is EncounterEffect => Boolean(entry))
+      );
+      finalResult = {
+        ...pendingResult,
+        roll,
+        total,
+        success,
+        effect: effect ?? (pendingResult.type === "COMBAT_RESOLVED" ? { type: "sequence", effects: [] } : null),
+        createdAt: new Date().toISOString()
+      } as CheckRolledAction | CombatResolvedAction;
+    }
+
+    if (this.maybeOpenAfflictionRollReaction(intent.seatId, finalResult)) {
+      return;
+    }
+    if (finalResult.type === "COMBAT_RESOLVED") {
+      this.finishResolvedCombat(finalResult);
+    } else {
+      this.finishResolvedCheck(finalResult);
+    }
+  }
+
   resolveCheckIntent(intent: Extract<ClientIntent, { type: "CHECK_REQUESTED" }>): void {
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
 
@@ -7690,7 +8064,7 @@ export class GameRoomServer {
       this.maybeApplyFandiablosWoundPrevention(intent.seatId, resolvedOutcomeEffect)
     );
 
-    this.applyAction({
+    const action = {
       type: "CHECK_ROLLED",
       seatId: intent.seatId,
       stat: intent.stat,
@@ -7704,12 +8078,9 @@ export class GameRoomServer {
       effect: outcomeEffect,
       cardId: encounter.id,
       createdAt: new Date().toISOString()
-    });
-    this.finishAssistedRoll(intent.seatId, encounter.id, success);
-    this.markFirstEligibleCharacterAbility(intent.seatId, intent.stat, "check", encounter);
-    this.applyScenarioOnSkillResolved(intent.seatId, intent.stat, success);
-    this.maybeTriggerAbilityOnCheckResolved(intent.seatId, intent.stat, success);
-    this.runAutomaticPhases(intent.seatId);
+    } satisfies CheckRolledAction;
+    if (this.maybeOpenAfflictionRollReaction(intent.seatId, action)) return;
+    this.finishResolvedCheck(action);
   }
 
   private resolveStartTileEncounterIntent(intent: Extract<ClientIntent, { type: "START_TILE_ENCOUNTER" }>): void {
@@ -7947,6 +8318,7 @@ export class GameRoomServer {
     );
     const difficulty = this.shouldPreventMovementFailure() ? Math.min(routeDifficulty, total) : routeDifficulty;
     const success = total >= difficulty;
+    const movementCreatedAt = new Date().toISOString();
 
     this.applyAction({
       type: "MOVEMENT_RESOLVED",
@@ -7960,7 +8332,7 @@ export class GameRoomServer {
       total,
       success,
       effect: success ? null : this.resolveEffect({ type: "gain_note", text: "Failed route entry: lasting harm is handled by Scars." }, intent.seatId),
-      createdAt: new Date().toISOString()
+      createdAt: movementCreatedAt
     } satisfies MovementResolvedAction);
     if (success) {
       const destination = getBoardSpace(intent.toSectorId);
@@ -7972,6 +8344,13 @@ export class GameRoomServer {
     this.maybeTriggerAbilityOnMovementResolved(intent.seatId, intent.toSectorId, success);
     if (success) {
       this.applyScenarioOnSectorEntered(intent.seatId, intent.toSectorId);
+    }
+    if (success && this.maybeOpenBileSpitReaction(
+      intent.seatId,
+      intent.toSectorId,
+      `movement-arrival:${intent.seatId}:${movementCreatedAt}`
+    )) {
+      return;
     }
     this.runAutomaticPhases(intent.seatId);
     this.emitMovementDiagnostic("movement-committed", intent.seatId, {
@@ -9188,7 +9567,7 @@ export class GameRoomServer {
       this.maybeApplyFandiablosWoundPrevention(fighterSeatId, afflictionOutcomeEffect)
     );
 
-    this.applyAction({
+    const action = {
       type: "COMBAT_RESOLVED",
       seatId: fighterSeatId,
       stat,
@@ -9206,29 +9585,9 @@ export class GameRoomServer {
       cardId: encounter.id,
       enemyRollerSeatId,
       createdAt: new Date().toISOString()
-    } satisfies CombatResolvedAction);
-    this.finishAssistedRoll(fighterSeatId, encounter.id, success);
-    this.markFirstEligibleCharacterAbility(fighterSeatId, stat, "battle", encounter);
-    if (success) {
-      this.maybeTriggerAbilityOnCombatVictory(fighterSeatId);
-      this.applyScenarioOnEnemyDefeat(fighterSeatId);
-      this.applyScenarioObjectiveTrigger(fighterSeatId, {
-        type: "threatDefeated",
-        threatId: encounter.id,
-        threatLane: encounter.threatLane,
-        enemyFamily: encounter.enemyFamily,
-        sectorId: player.sectorId
-      });
-      this.applyRivalryAgendaProgressTrigger(fighterSeatId, {
-        type: "threatDefeated",
-        seatId: fighterSeatId,
-        threatId: encounter.id,
-        threatLane: encounter.threatLane,
-        enemyFamily: encounter.enemyFamily,
-        sectorId: player.sectorId
-      });
-    }
-    this.runAutomaticPhases(fighterSeatId);
+    } satisfies CombatResolvedAction;
+    if (this.maybeOpenAfflictionRollReaction(fighterSeatId, action)) return;
+    this.finishResolvedCombat(action);
   }
 
   private resolveEffect(effect: AuthoredEncounterEffect, seatId?: string, sourceCardId?: string): AuthoredEncounterEffect;
@@ -9237,7 +9596,17 @@ export class GameRoomServer {
     if (effect.type === "gain_gear") {
       return {
         ...effect,
-        gear: this.gear.get(effect.gearId) ? (() => { const definition = this.gear.get(effect.gearId)!; return { ...definition, instanceId: `${effect.gearId}:${seatId ?? "table"}:${this.state.sequence}`, exhausted: false, currentCharges: definition.startingCharges ?? definition.charges, maxCharges: definition.maxCharges ?? definition.charges }; })() : undefined
+        gear: this.gear.get(effect.gearId) ? (() => {
+          const definition = this.gear.get(effect.gearId)!;
+          return {
+            ...definition,
+            sourceArtifactCardId: effect.sourceArtifactCardId ?? definition.sourceArtifactCardId,
+            instanceId: `${effect.gearId}:${seatId ?? "table"}:${this.state.sequence}`,
+            exhausted: false,
+            currentCharges: definition.startingCharges ?? definition.charges,
+            maxCharges: definition.maxCharges ?? definition.charges
+          };
+        })() : undefined
       };
     }
 
@@ -12222,6 +12591,8 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
     ? operativeTotal !== null && opponentTotal !== null && operativeTotal === opponentTotal ? "draw" : null
     : success ? "success" : "failure";
   const privateDecisionOwner = state.pendingEncounterDecision?.seatId
+    ?? state.pendingAfflictionResolution?.ownerSeatId
+    ?? state.pendingAfflictionReaction?.ownerSeatId
     ?? state.pendingMemoryTaxChoice?.ownerSeatId
     ?? state.pendingEquipmentSuppressionChoice?.ownerSeatId
     ?? state.pendingGearEquipChoice?.ownerSeatId
@@ -12546,6 +12917,36 @@ export function buildRequiredActionProjection(
     });
   }
 
+  if (state.pendingAfflictionResolution?.status === "awaitingStatChoice") {
+    return present({
+      id: `affliction-stat:${state.pendingAfflictionResolution.id}:${state.sequence}`,
+      kind: "consequence",
+      actorSeatId: state.pendingAfflictionResolution.ownerSeatId,
+      requiredTab: "action",
+      label: "Choose Runaway Growth stat",
+      ownerDetail: "Choose the stat that gains +1 before the Affliction draw resolves.",
+      publicAction: "resolve a private Affliction choice",
+      sourceId: "runaway-growth",
+      transitionStage: "private-resolution"
+    });
+  }
+
+  if (state.pendingAfflictionReaction) {
+    return present({
+      id: `affliction-reaction:${state.pendingAfflictionReaction.id}:${state.sequence}`,
+      kind: "consequence",
+      actorSeatId: state.pendingAfflictionReaction.ownerSeatId,
+      requiredTab: state.pendingAfflictionReaction.kind === "arrivalWound" ? "action" : "battle",
+      label: state.pendingAfflictionReaction.kind === "arrivalWound" ? "Bile Spit reaction" : "Affliction reroll",
+      ownerDetail: state.pendingAfflictionReaction.kind === "arrivalWound"
+        ? "Choose whether to make the arriving operative suffer 1 wound."
+        : "Reroll one die or keep the current failed result.",
+      publicAction: "resolve an Affliction reaction",
+      sourceId: state.pendingAfflictionReaction.afflictionId,
+      transitionStage: "private-resolution"
+    });
+  }
+
   if (state.pendingScarChoice) {
     return present({
       id: `scar-choice:${state.pendingScarChoice.ownerSeatId}:${state.sequence}`,
@@ -12758,6 +13159,9 @@ export function buildRequiredActionProjection(
       ?? state.pendingEnemyRoll?.fighterSeatId
       ?? activeSeatId;
     const sourceId = state.activeResolution?.id ?? state.pendingTileChallenge?.id ?? state.currentEncounter?.id ?? "encounter";
+    const isMovementResolution =
+      state.activeResolution?.source === "movement"
+      || state.activeResolution?.card?.type === "movement";
     const isBattle = state.currentEncounter?.cardType === "enemy" || Boolean(state.pendingEnemyRoll);
     const title = state.activeResolution?.card?.title ?? state.currentEncounter?.title ?? "current test";
     const resultVisible = state.activeResolution?.stage === "roll_result" || state.activeResolution?.stage === "outcome_summary" || state.activeResolution?.stage === "awaiting_continue";
@@ -12768,9 +13172,13 @@ export function buildRequiredActionProjection(
       id: `${isBattle ? "battle" : "test"}:${sourceId}:${state.activeResolution?.stage ?? "pending"}`,
       kind: isBattle ? "battle" : "test",
       actorSeatId,
-      requiredTab: "battle",
-      label: resultVisible ? outcomeTitle : isBattle ? "Resolve battle" : "Resolve test",
-      ownerDetail: resultVisible ? outcomeDetail : `Resolve ${title}.`,
+      requiredTab: isMovementResolution ? "move" : "battle",
+      label: isMovementResolution
+        ? resultVisible ? outcomeTitle : "Resolve approach"
+        : resultVisible ? outcomeTitle : isBattle ? "Resolve battle" : "Resolve test",
+      ownerDetail: isMovementResolution
+        ? resultVisible ? outcomeDetail : `Resolve the approach to ${title}.`
+        : resultVisible ? outcomeDetail : `Resolve ${title}.`,
       publicAction: ownerPrivateResolution
         ? resultVisible ? "review a private objective result" : "resolve a private objective"
         : resultVisible ? `review the ${title} result` : `resolve ${title}`,
@@ -13073,6 +13481,19 @@ export function createTvProjection(
       sourceTitle: state.currentEncounter?.title ?? "Memory Tax Gate",
       status: "waiting"
     } : null,
+    pendingAfflictionStatus: state.pendingAfflictionReaction
+      ? {
+          ownerSeatId: state.pendingAfflictionReaction.ownerSeatId,
+          kind: state.pendingAfflictionReaction.kind,
+          status: "waiting" as const
+        }
+      : state.pendingAfflictionResolution
+        ? {
+            ownerSeatId: state.pendingAfflictionResolution.ownerSeatId,
+            kind: "draw" as const,
+            status: state.pendingAfflictionResolution.status === "awaitingStatChoice" ? "choice" as const : "resolving" as const
+          }
+        : null,
     pendingForcedDestinationChoice: state.pendingForcedDestinationChoice ? {
       ownerSeatId: state.pendingForcedDestinationChoice.ownerSeatId,
       sourceId: state.pendingForcedDestinationChoice.sourceId,
@@ -13453,6 +13874,12 @@ export function createPhoneProjection(
   const pendingMemoryTaxChoice = state.pendingMemoryTaxChoice?.ownerSeatId === seatId
     ? state.pendingMemoryTaxChoice
     : null;
+  const pendingAfflictionResolution = state.pendingAfflictionResolution?.ownerSeatId === seatId
+    ? state.pendingAfflictionResolution
+    : null;
+  const pendingAfflictionReaction = state.pendingAfflictionReaction?.ownerSeatId === seatId
+    ? state.pendingAfflictionReaction
+    : null;
   const pendingGearEquipChoice = state.pendingGearEquipChoice?.ownerSeatId === seatId
     ? state.pendingGearEquipChoice
     : null;
@@ -13558,6 +13985,28 @@ export function createPhoneProjection(
       currentItemName: player.character.heldGear.find((item) => item.instanceId === pendingGearEquipChoice.currentItemInstanceId)?.name ?? pendingGearEquipChoice.currentItemCatalogId
     } : null,
     pendingMemoryTaxChoice: publicProjection.pendingMemoryTaxChoice,
+    pendingAfflictionStatus: publicProjection.pendingAfflictionStatus,
+    pendingAfflictionChoicePrivate:
+      pendingAfflictionResolution?.status === "awaitingStatChoice"
+        ? {
+            resolutionId: pendingAfflictionResolution.id,
+            sourceTitle: "Runaway Growth",
+            prompt: "Choose one stat to gain +1 before the draw resolves.",
+            options: [...STAT_VALUES]
+          }
+        : null,
+    pendingAfflictionReactionPrivate: pendingAfflictionReaction
+      ? {
+          reactionId: pendingAfflictionReaction.id,
+          afflictionId: pendingAfflictionReaction.afflictionId,
+          kind: pendingAfflictionReaction.kind,
+          originalRoll: pendingAfflictionReaction.originalRoll,
+          targetSeatId: pendingAfflictionReaction.targetSeatId,
+          targetName: pendingAfflictionReaction.targetSeatId
+            ? getProjectedPlayerName(state, pendingAfflictionReaction.targetSeatId)
+            : null
+        }
+      : null,
     pendingMemoryTaxChoicePrivate: pendingMemoryTaxChoice ? {
       choiceId: pendingMemoryTaxChoice.choiceId,
       choiceVersion: pendingMemoryTaxChoice.choiceVersion,

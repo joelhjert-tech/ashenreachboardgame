@@ -7,6 +7,10 @@ import type {
   ActivateGateSaintAction,
   UseMarrowDetourAction,
   AfflictionDrawnAction,
+  AfflictionDrawPreparedAction,
+  AfflictionStatChosenAction,
+  AfflictionReactionOpenedAction,
+  AfflictionReactionResolvedAction,
   CheckRequestedAction,
   CombatRequestedAction,
   CompleteContractAction,
@@ -392,6 +396,8 @@ function summarizeEffect(effect: EncounterEffect | null, success: boolean | null
       return `${prefix} gain ${effect.gear?.name ?? "Equipment"}.`;
     case "draw_artifact":
       return `${prefix} draw 1 local artifact.`;
+    case "draw_affliction":
+      return `${prefix} draw ${effect.amount} Affliction${effect.amount === 1 ? "" : "s"}.`;
     case "consume_artifact":
       return `${prefix} artifact ${effect.artifactId} leaves ${effect.sourceSectorId ?? "this space"}.`;
     case "gain_follower":
@@ -495,6 +501,7 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
     case "gain_gear":
       return addHeldGearToPlayer(player, effect);
     case "draw_artifact":
+    case "draw_affliction":
     case "consume_artifact":
       return player;
     case "gain_follower":
@@ -557,6 +564,13 @@ function addHeldGearToPlayer(
       heldGear: [...player.character.heldGear, effect.gear]
     }
   };
+}
+
+function countAfflictionDraws(effect: EncounterEffect | null): number {
+  if (!effect) return 0;
+  if (effect.type === "draw_affliction") return effect.amount;
+  if (effect.type !== "sequence") return 0;
+  return effect.effects.reduce((total, entry) => total + countAfflictionDraws(entry), 0);
 }
 
 function applyEncounterPaymentResult(state: GameState, seatId: string, result: EncounterPaymentResult): GameState {
@@ -1031,6 +1045,10 @@ export function applyEffectToState(state: GameState, seatId: string, effect: Enc
   }
 
   if (effect.type === "draw_artifact") {
+    return state;
+  }
+
+  if (effect.type === "draw_affliction") {
     return state;
   }
 
@@ -2095,6 +2113,18 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       return succeed({
         ...suppressionReadyState,
         sequence: state.sequence + 1,
+        players: suppressionReadyState.players.map((entry) =>
+          entry.seatId === combatRequest.seatId
+            ? {
+                ...entry,
+                afflictionUsageState: {
+                  oncePerTurnUsed: { ...(entry.afflictionUsageState?.oncePerTurnUsed ?? {}) },
+                  oncePerBattleUsed: {},
+                  reactionUsed: { ...(entry.afflictionUsageState?.reactionUsed ?? {}) }
+                }
+              }
+            : entry
+        ),
         resolutionSource: state.resolutionSource,
         activeResolution: {
           ...(state.activeResolution ?? {
@@ -3023,6 +3053,22 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         appliedEffectSummaries.splice(0, appliedEffectSummaries.length, "No Salvage to lose.");
       }
       const containsSalvageLoss = JSON.stringify(state.pendingEffect).includes('"lose_salvage"');
+      const afflictionDrawCount = countAfflictionDraws(state.pendingEffect as EncounterEffect);
+      const pendingAfflictionResolution =
+        afflictionDrawCount > 0
+          ? {
+              id: `${state.activeResolution?.id ?? resolutionAction.createdAt}:affliction`,
+              ownerSeatId: resolutionAction.seatId,
+              sourceCardId: resolutionAction.sourceCardId ?? state.currentEncounter?.id ?? "unknown-affliction-source",
+              remainingDraws: afflictionDrawCount,
+              status: "queued" as const,
+              nextAfflictionId: null,
+              nextDie: null,
+              chosenStat: null,
+              excludedCardIds: [],
+              createdAt: resolutionAction.createdAt
+            }
+          : state.pendingAfflictionResolution;
 
       const stateAfterEffect = isShatteredBarricadeEscalation || isGateblindPulseEscalation
         ? state
@@ -3034,6 +3080,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         phase: "resolution",
         resolutionSource: state.resolutionSource,
         pendingEffect: null,
+        pendingAfflictionResolution,
         pendingDisplacement: null,
         pendingDisplacementArrival: null,
         pendingFailureReaction: null,
@@ -4143,6 +4190,147 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         eventLog: [...finalState.eventLog, action]
       });
     }
+    case "AFFLICTION_REACTION_OPENED": {
+      const openedAction = action as AfflictionReactionOpenedAction;
+      if (state.pendingAfflictionReaction) {
+        return reject(state, action, "Another Affliction reaction is already pending");
+      }
+      const owner = state.players.find((entry) => entry.seatId === openedAction.seatId);
+      if (!owner) return reject(state, action, `Unknown seat ${openedAction.seatId}`);
+      if (!(owner.faceupAfflictions ?? []).some((entry) => entry.cardId === openedAction.afflictionId)) {
+        return reject(state, action, "Affliction reaction is not owned faceup");
+      }
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingAfflictionReaction: {
+          id: openedAction.reactionId,
+          ownerSeatId: openedAction.seatId,
+          afflictionId: openedAction.afflictionId,
+          kind: openedAction.kind,
+          sourceEventId: openedAction.sourceEventId ?? openedAction.createdAt,
+          targetSeatId: openedAction.targetSeatId ?? null,
+          originalRoll: openedAction.originalRoll,
+          createdAt: openedAction.createdAt
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "AFFLICTION_REACTION_RESOLVED": {
+      const reactionAction = action as AfflictionReactionResolvedAction;
+      const pending = state.pendingAfflictionReaction;
+      if (!pending) return reject(state, action, "No Affliction reaction is pending");
+      if (pending.id !== reactionAction.reactionId) return reject(state, action, "Affliction reaction is stale");
+      if (pending.ownerSeatId !== reactionAction.seatId) return reject(state, action, "Affliction reaction belongs to another seat");
+      if (reactionAction.use && (pending.kind === "battleReroll" || pending.kind === "turnReroll")) {
+        if (reactionAction.dieIndex !== 0 && reactionAction.dieIndex !== 1) {
+          return reject(state, action, "Choose one authoritative die to reroll");
+        }
+        if (typeof reactionAction.reroll !== "number") {
+          return reject(state, action, "Affliction reroll result must be server-authored");
+        }
+      }
+      let players = state.players.map((entry) => {
+        if (entry.seatId !== pending.ownerSeatId) return entry;
+        const usage = entry.afflictionUsageState ?? {
+          oncePerTurnUsed: {},
+          oncePerBattleUsed: {},
+          reactionUsed: {}
+        };
+        return {
+          ...entry,
+          afflictionUsageState: {
+            oncePerTurnUsed:
+              pending.kind === "turnReroll"
+                ? { ...usage.oncePerTurnUsed, [pending.afflictionId]: true }
+                : usage.oncePerTurnUsed,
+            oncePerBattleUsed:
+              pending.kind === "battleReroll"
+                ? { ...usage.oncePerBattleUsed, [pending.afflictionId]: true }
+                : usage.oncePerBattleUsed,
+            reactionUsed:
+              pending.kind === "arrivalWound"
+                ? { ...usage.reactionUsed, [pending.sourceEventId]: true }
+                : usage.reactionUsed
+          }
+        };
+      });
+      if (reactionAction.use && pending.kind === "arrivalWound" && pending.targetSeatId) {
+        players = players.map((entry) =>
+          entry.seatId === pending.targetSeatId
+            ? {
+                ...entry,
+                character: {
+                  ...entry.character,
+                  wounds: entry.character.wounds + 1
+                }
+              }
+            : entry
+        );
+      }
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players,
+        pendingAfflictionReaction: null,
+        lastOutcomeSummary:
+          reactionAction.use && pending.kind === "arrivalWound" && state.lastOutcomeSummary
+            ? {
+                ...state.lastOutcomeSummary,
+                summary: `${state.lastOutcomeSummary.summary} Bile Spit caused 1 wound.`
+              }
+            : state.lastOutcomeSummary,
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "AFFLICTION_DRAW_PREPARED": {
+      const preparedAction = action as AfflictionDrawPreparedAction;
+      const pending = state.pendingAfflictionResolution;
+      if (!pending) return reject(state, action, "No Affliction draw is pending");
+      if (pending.id !== preparedAction.resolutionId) return reject(state, action, "Affliction draw preparation is stale");
+      if (pending.ownerSeatId !== preparedAction.seatId) return reject(state, action, "Affliction draw belongs to another seat");
+      if (pending.status !== "queued") return reject(state, action, "Affliction draw is already awaiting a choice");
+      if (pending.excludedCardIds.includes(preparedAction.afflictionId)) {
+        return reject(state, action, "Affliction was already resolved in this draw chain");
+      }
+      const player = state.players.find((entry) => entry.seatId === preparedAction.seatId);
+      if (!player) return reject(state, action, `Unknown seat ${preparedAction.seatId}`);
+      if (!(player.faceupAfflictions ?? []).some((entry) => entry.cardId === "runaway-growth")) {
+        return reject(state, action, "Runaway Growth is not available to modify this draw");
+      }
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingAfflictionResolution: {
+          ...pending,
+          status: "awaitingStatChoice",
+          nextAfflictionId: preparedAction.afflictionId,
+          nextDie: preparedAction.die,
+          chosenStat: null
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "AFFLICTION_STAT_CHOSEN": {
+      const choiceAction = action as AfflictionStatChosenAction;
+      const pending = state.pendingAfflictionResolution;
+      if (!pending) return reject(state, action, "No Affliction stat choice is pending");
+      if (pending.id !== choiceAction.resolutionId) return reject(state, action, "Affliction stat choice is stale");
+      if (pending.ownerSeatId !== choiceAction.seatId) return reject(state, action, "Affliction stat choice belongs to another seat");
+      if (pending.status !== "awaitingStatChoice" || !pending.nextAfflictionId || !pending.nextDie) {
+        return reject(state, action, "Affliction stat choice is not currently available");
+      }
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingAfflictionResolution: {
+          ...pending,
+          status: "queued",
+          chosenStat: choiceAction.stat
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
     case "AFFLICTION_DRAWN": {
       const afflictionAction = action as AfflictionDrawnAction;
       const player = state.players.find((entry) => entry.seatId === afflictionAction.seatId);
@@ -4160,12 +4348,33 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Unknown Affliction ${afflictionAction.afflictionId}`);
       }
 
+      const pending = state.pendingAfflictionResolution;
+      if (pending) {
+        if (pending.ownerSeatId !== afflictionAction.seatId) {
+          return reject(state, action, "Affliction draw belongs to another seat");
+        }
+        if (pending.nextAfflictionId && pending.nextAfflictionId !== afflictionAction.afflictionId) {
+          return reject(state, action, "Affliction draw does not match the server-prepared card");
+        }
+        if (pending.excludedCardIds.includes(afflictionAction.afflictionId)) {
+          return reject(state, action, "Affliction was already resolved in this draw chain");
+        }
+        if (
+          pending.nextAfflictionId &&
+          pending.chosenStat === null &&
+          (player.faceupAfflictions ?? []).some((entry) => entry.cardId === "runaway-growth")
+        ) {
+          return reject(state, action, "Runaway Growth requires an owner stat choice");
+        }
+      }
+
       const catalog = new Map((state.availableAfflictions ?? [affliction]).map((entry) => [entry.id, entry]));
       catalog.set(affliction.id, affliction);
+      const replacedFacedownCount = (player.facedownAfflictions ?? []).length;
       const result = resolveAfflictionDraw(player, affliction, catalog, {
         createdAt: afflictionAction.createdAt,
         die: afflictionAction.die,
-        chosenStat: afflictionAction.chosenStat
+        chosenStat: afflictionAction.chosenStat ?? pending?.chosenStat ?? undefined
       });
 
       const nextAction: AfflictionDrawnAction = {
@@ -4175,11 +4384,33 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         privateSummary: afflictionAction.privateSummary ?? result.privateSummary,
         deltas: afflictionAction.deltas ?? result.deltas
       };
+      const chainedDraws =
+        affliction.id === "oath-to-the-breach"
+          ? 1
+          : affliction.id === "condemned-echoes"
+            ? replacedFacedownCount
+            : 0;
+      const nextRemainingDraws = pending
+        ? pending.remainingDraws - 1 + chainedDraws
+        : 0;
+      const nextPendingAfflictionResolution =
+        pending && nextRemainingDraws > 0
+          ? {
+              ...pending,
+              remainingDraws: nextRemainingDraws,
+              status: "queued" as const,
+              nextAfflictionId: null,
+              nextDie: null,
+              chosenStat: null,
+              excludedCardIds: [...pending.excludedCardIds, affliction.id]
+            }
+          : null;
 
       return succeed({
         ...state,
         sequence: state.sequence + 1,
         players: state.players.map((entry) => (entry.seatId === afflictionAction.seatId ? result.player : entry)),
+        pendingAfflictionResolution: nextPendingAfflictionResolution,
         lastOutcomeSummary: {
           seatId: afflictionAction.seatId,
           movedToSectorId: result.player.sectorId,
@@ -6110,7 +6341,19 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         activeResolution: null,
         resolutionSource: null,
         lastOutcomeSummary: null,
-        players: state.players.map((entry) => entry.seatId === action.seatId ? { ...entry, private: { ...entry.private, activeOathchainReveal: null } } : entry),
+        players: state.players.map((entry) =>
+          entry.seatId === action.seatId
+            ? {
+                ...entry,
+                private: { ...entry.private, activeOathchainReveal: null },
+                afflictionUsageState: {
+                  oncePerTurnUsed: {},
+                  oncePerBattleUsed: {},
+                  reactionUsed: {}
+                }
+              }
+            : entry
+        ),
         movementRolls: clearMovementRollForSeat(state, action.seatId),
         movementAdjustments: clearMovementAdjustmentForSeat(state, action.seatId),
         routeStarChoices: state.routeStarChoices ? Object.fromEntries(Object.entries(state.routeStarChoices).filter(([seatId]) => seatId !== action.seatId)) : undefined,
@@ -6143,6 +6386,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (state.pendingMemoryTaxChoice) {
         return reject(state, action, "Memory Tax choice must be resolved before continuing");
       }
+      if (state.pendingAfflictionReaction) {
+        return reject(state, action, "Affliction reaction must be resolved before continuing");
+      }
+      if (state.pendingAfflictionResolution) {
+        return reject(state, action, "Affliction draw must be resolved before continuing");
+      }
 
       return succeed({
         ...state,
@@ -6160,6 +6409,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (state.pendingMemoryTaxChoice) {
         return reject(state, action, "Memory Tax choice must be resolved before advancing");
+      }
+      if (state.pendingAfflictionReaction || state.pendingAfflictionResolution) {
+        return reject(state, action, "Affliction resolution must finish before advancing");
       }
 
       if (!canAdvancePhase(state.phase, action.toPhase)) {

@@ -1,5 +1,7 @@
 # Card Category System Audit
 
+> Historical baseline. P23 supersedes current counts and lifecycle status with `docs/research/P23_CARD_CATEGORY_LIFECYCLE_AUDIT.md`.
+
 ## Executive boundary
 
 Enemies fight; Hazards test survival; Anomalies distort rules and information; Escalations worsen the shared world; authored Events use an immediate tested-event lifecycle; persistent Tile Challenges remain on the board until their own removal rule resolves. Player-owned and scenario-controlled cards stay outside ordinary Threat draws.

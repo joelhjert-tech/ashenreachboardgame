@@ -53,7 +53,7 @@ describe("equipment and artifact tier separation", () => {
     }
   });
 
-  it("keeps artifacts out of common shops and marks true artifact cards as rare rewards", () => {
+  it("keeps artifacts out of common shops and uses explicit acquisition paths instead of legacy eligibility flags", () => {
     const gear = loadGear();
     const commonStock = getAvailableShopStockForCategory(gear.values(), "market");
     const rareStock = getAvailableShopStockForCategory(gear.values(), "relic-dealer", { includeArtifacts: true });
@@ -76,12 +76,10 @@ describe("equipment and artifact tier separation", () => {
     for (const artifact of artifacts) {
       expect(artifact.startingEligible, artifact.id).toBe(false);
       expect(artifact.normalShopCommon, artifact.id).toBe(false);
-      expect([
-        artifact.missionRewardEligible,
-        artifact.eliteThreatRewardEligible,
-        artifact.rareShopEligible,
-        artifact.scenarioRewardEligible
-      ].some(Boolean), artifact.id).toBe(true);
+      expect(artifact).not.toHaveProperty("missionRewardEligible");
+      expect(artifact).not.toHaveProperty("eliteThreatRewardEligible");
+      expect(artifact).not.toHaveProperty("rareShopEligible");
+      expect(artifact).not.toHaveProperty("scenarioRewardEligible");
     }
   });
 });

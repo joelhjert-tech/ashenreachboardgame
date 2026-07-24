@@ -1,10 +1,6 @@
 {
   "id": "artifact-throne-crown-fragment",
   "type": "artifact",
-  "missionRewardEligible": true,
-  "eliteThreatRewardEligible": true,
-  "rareShopEligible": true,
-  "scenarioRewardEligible": true,
   "startingEligible": false,
   "normalShopCommon": false,
   "artifactKind": "burdenRelic",

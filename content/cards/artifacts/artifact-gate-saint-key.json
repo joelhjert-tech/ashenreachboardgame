@@ -1,10 +1,6 @@
 {
   "id": "artifact-gate-saint-key",
   "type": "artifact",
-  "missionRewardEligible": true,
-  "eliteThreatRewardEligible": true,
-  "rareShopEligible": true,
-  "scenarioRewardEligible": true,
   "startingEligible": false,
   "normalShopCommon": false,
   "artifactKind": "gateRelic",
@@ -13,5 +9,8 @@
   "flavor": "Every tooth is shaped like a promise someone broke.",
   "charge": 1,
   "resolutionSummary": "Recovered a Gate-Saint Key that may answer during the final confrontation.",
-  "resolveEffect": { "type": "gain_gear", "gearId": "gate-saint-key" }
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "gate-saint-key"
+  }
 }

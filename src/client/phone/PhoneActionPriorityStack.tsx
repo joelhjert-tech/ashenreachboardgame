@@ -130,6 +130,8 @@ function isBlockingPrompt(patch: PhonePatchPayload): boolean {
   return Boolean(
     patch.pendingEncounterDecisionPrivate ||
     patch.pendingMemoryTaxChoicePrivate ||
+    patch.pendingAfflictionChoicePrivate ||
+    patch.pendingAfflictionReactionPrivate ||
     patch.pendingForcedDestinationChoicePrivate ||
     patch.pendingDisplacementPrivate ||
     patch.pendingGearEquipChoice ||
@@ -179,6 +181,8 @@ export function buildPhoneActionViewModel(
       ? "mission-completion"
       : patch.pendingEncounterDecisionPrivate || patch.pendingMemoryTaxChoicePrivate
         ? "payment"
+        : patch.pendingAfflictionChoicePrivate || patch.pendingAfflictionReactionPrivate
+          ? "other-prompt"
         : patch.pendingForcedDestinationChoicePrivate || patch.pendingDisplacementPrivate
           ? "forced-destination"
           : ready
@@ -188,6 +192,7 @@ export function buildPhoneActionViewModel(
   const headline = context === "scar-choice" ? "Scar choice required"
     : context === "mission-completion" ? "Choose your next Mission"
     : context === "payment" ? "Payment required"
+    : context === "other-prompt" ? "Affliction choice required"
     : context === "forced-destination" ? "Destination required"
     : encounter ? `${kind === "battle" ? "Battle" : kind === "challenge" ? "Challenge" : kind === "event" ? "Event" : "Hazard"} · ${encounter.title}`
     : "Action phase";

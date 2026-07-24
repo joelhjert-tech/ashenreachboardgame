@@ -1,10 +1,6 @@
 {
   "id": "artifact-void-key",
   "type": "artifact",
-  "missionRewardEligible": true,
-  "eliteThreatRewardEligible": true,
-  "rareShopEligible": true,
-  "scenarioRewardEligible": true,
   "startingEligible": false,
   "normalShopCommon": false,
   "artifactKind": "gateRelic",

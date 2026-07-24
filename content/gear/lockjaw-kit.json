@@ -4,6 +4,8 @@
   "slot": "utility",
   "subtype": "tool",
   "category": "passive",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "statBonus": {
     "stat": "guile",
     "amount": 1
@@ -14,7 +16,7 @@
   "tier": "standard",
   "progressionWeight": 1,
   "flavor": "Quiet breach tools that add +1 Guile on locks and bargains.",
-  "activeText": "Quiet breach tools that add +1 Guile on locks and bargains.",
+  "activeText": "While equipped, gain +1 Guile.",
   "shopCategories": [
     "market"
   ],

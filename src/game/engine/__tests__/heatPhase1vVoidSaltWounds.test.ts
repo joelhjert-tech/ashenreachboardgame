@@ -48,8 +48,8 @@ function resolve(wounds: number, success: boolean, kerPrevention = false): GameR
   return server;
 }
 
-describe("Phase 1V Void-Salt Sickness Wound conversion", () => {
-  it("keeps the stable active card identity while replacing both Heat branches in place", () => {
+describe("Phase 1V/P23 Void-Salt Sickness lifecycle", () => {
+  it("keeps the stable active card identity while using the approved Affliction failure source", () => {
     expect(card).toMatchObject({
       id: "void-salt-sickness",
       title: "Void-Salt Sickness",
@@ -61,7 +61,7 @@ describe("Phase 1V Void-Salt Sickness Wound conversion", () => {
       region: "outer",
       rarity: "common",
       successEffect: { type: "heal_wound", amount: 1 },
-      failEffect: { type: "take_wound", amount: 1 }
+      failEffect: { type: "draw_affliction", amount: 1 }
     });
     expect(JSON.stringify(card)).not.toMatch(/gain_heat|lose_heat|\bHeat\b|\bRisk\b/i);
     expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(card.id)).toBe(false);
@@ -108,23 +108,26 @@ describe("Phase 1V Void-Salt Sickness Wound conversion", () => {
     }
   });
 
-  it("applies one Wound below threshold and invokes existing recall at the threshold", () => {
+  it("replaces the former Wound with one server-authored Affliction at every Wound level", () => {
     const below = resolve(0, false).getState();
-    expect(below.players[0]!.character).toMatchObject({ wounds: 1, status: "active" });
+    expect(below.players[0]!.character).toMatchObject({ wounds: 0, status: "active" });
+    expect(below.players[0]!.afflictionDrawHistory).toHaveLength(1);
+    expect(countEvents(below, "AFFLICTION_DRAWN")).toBe(1);
     expect(countEvents(below, "RESOLUTION_APPLIED")).toBe(1);
 
     const threshold = unresolvedState(0).woundThreshold;
-    const recalled = resolve(threshold - 1, false).getState();
-    expect(recalled.players[0]!.character).toMatchObject({ wounds: threshold, status: "recalled" });
-    expect(recalled.players[0]!.character.scars).toHaveLength(0);
-    expect(recalled.pendingScarChoice).toMatchObject({ ownerSeatId: "seat-1", source: "unbound" });
-    expect(countEvents(recalled, "WOUND_THRESHOLD_REACHED")).toBe(1);
+    const nearThreshold = resolve(threshold - 1, false).getState();
+    expect(nearThreshold.players[0]!.character).toMatchObject({ wounds: threshold - 1, status: "active" });
+    expect(nearThreshold.players[0]!.afflictionDrawHistory).toHaveLength(1);
+    expect(nearThreshold.pendingScarChoice).toBeNull();
+    expect(countEvents(nearThreshold, "WOUND_THRESHOLD_REACHED")).toBe(0);
   });
 
-  it("respects the existing Ker Wound prevention path without a false mutation", () => {
+  it("does not route the Affliction draw through Ker's Wound prevention", () => {
     const state = resolve(0, false, true).getState();
     expect(state.players[0]!.character.wounds).toBe(0);
-    expect(state.players[0]!.private.notes).toContain("Hold the Line prevented 1 Wound.");
+    expect(state.players[0]!.afflictionDrawHistory).toHaveLength(1);
+    expect(state.players[0]!.private.notes).not.toContain("Hold the Line prevented 1 Wound.");
     expect(countEvents(state, "WOUND_THRESHOLD_REACHED")).toBe(0);
   });
 

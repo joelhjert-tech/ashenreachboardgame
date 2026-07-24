@@ -1,10 +1,6 @@
 {
   "id": "artifact-rift-anchor-spike",
   "type": "artifact",
-  "missionRewardEligible": true,
-  "eliteThreatRewardEligible": true,
-  "rareShopEligible": true,
-  "scenarioRewardEligible": true,
   "startingEligible": false,
   "normalShopCommon": false,
   "title": "Rift Anchor Spike",

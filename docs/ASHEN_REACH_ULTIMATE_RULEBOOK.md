@@ -204,13 +204,15 @@ The TV battle chamber attaches dice, modifiers, and totals to the correct side. 
 
 Dice are server-generated. Base attributes, permanent improvements, equipped gear, temporary modifiers, and dice remain separate sources.
 
-A reroll occurs only when the server offers one. The new authoritative roll replaces the old result for that action. There is no universal Fate resource. Whether a rerolled result can receive another reroll is **Design decision required**; current play follows available prompts only.
+A reroll occurs only when the server offers one. The new authoritative roll replaces the old result for that action. There is no universal Fate resource. Blood Fury may offer one battle-die reroll per battle after a failed result; Future Sickness may offer one owner-die reroll per turn after a failed check or battle. If both are eligible in a failed battle, the server offers them in order and applies the battle only after the final choice. A matching replacement die applies the Affliction's printed Wound or chained draw.
 
 Modifiers do not alter resting/base values unless an effect explicitly grants a permanent change. The interface result, not mental arithmetic, is final.
 
 ## 22. Equipment and inventory
 
 Equipment uses weapon, armor, and utility slots. **Equipped** items can contribute where their typed rule permits. **Carried** items remain owned but are not automatically active. Artifacts, consumables, followers, and completed missions are presented separately.
+
+The sixteen standard passive Equipment cards with a printed +1 bonus now use one rule: **while equipped, gain the printed +1 stat bonus**. Their old situational flavor phrases do not create extra conditions. Unequipped, sold, or suppressed copies contribute nothing.
 
 No general carried-inventory limit is currently verified. Do not discard items because another game has an object limit.
 
@@ -224,7 +226,7 @@ Common states:
 
 ## 23. Artifacts and charged items
 
-Artifacts are a separate tier from normal Equipment. Implemented charged Artifacts track charges on the exact owned copy. Duplicate copies have independent balances. Reconnect preserves spent charges. There is no automatic recharge unless a future rule explicitly adds one.
+Artifacts are a separate tier from normal Equipment. Twenty-six Artifact presentations belong to canonical sector pools; Choir Lantern, Oathchain Lens, Route Star, and Void Key are relic-dealer-only presentations. These are distinct valid acquisition paths. Granted Artifact gear records its source Artifact card. Implemented charged Artifacts track charges on the exact owned copy. Duplicate copies have independent balances. Reconnect preserves spent charges. There is no automatic recharge unless a future rule explicitly adds one.
 
 Viewing or declining a prompt spends nothing. A rejected stale, wrong-seat, invalid-target, or mistimed request spends nothing. A successful use applies its effect and charge cost atomically.
 
@@ -281,6 +283,17 @@ When an effect applies Wounds, the server updates the operative and checks the w
 Recovery, healing, replacement, and retained inventory follow the active prompt and scenario. Do not assume every Wound can be healed or every Scar removed.
 
 Prevention acts before the selected pending consequence resolves. Replacement acts in its explicit result window. Already resolved consequences are not rolled back.
+
+### Affliction draws
+
+Only these current Threat failures introduce a new Affliction draw:
+
+- Smoke-Leech Clutch, Void-Salt Sickness, and Mirror-Rot Interference replace their former 1 Wound with 1 Affliction.
+- Cinder Lattice Maw replaces its former 2 Wounds with 1 Wound and 1 Affliction.
+
+The server draws without replacement from a separate 30-card cycle for each operative. It stores draw history, prepared choices, nested draws, and reactions. Reconnect continues that queue; it never redraws the resolved card.
+
+Runaway Growth asks its owner which stat gains +1 before the next draw resolves. Oath to the Breach adds one draw. Condemned Echoes replaces every facedown Affliction with the same number of new draws. Bile Spit may wound another operative who ends movement in its owner's sector outside the inner reach; the arrival and optional owner reaction resolve before the next sector action. Faceup conditions persist; immediate cards resolve and flip facedown.
 
 ## 29. Abilities and limits
 

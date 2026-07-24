@@ -1,10 +1,6 @@
 {
   "id": "artifact-marrow-route-key",
   "type": "artifact",
-  "missionRewardEligible": true,
-  "eliteThreatRewardEligible": true,
-  "rareShopEligible": true,
-  "scenarioRewardEligible": true,
   "startingEligible": false,
   "normalShopCommon": false,
   "title": "Marrow Route Key",
@@ -13,5 +9,8 @@
   "artifactKind": "gateRelic",
   "charge": 2,
   "resolutionSummary": "Claimed the Marrow Route Key and marked it as leverage for the final gate.",
-  "resolveEffect": { "type": "gain_gear", "gearId": "marrow-route-key" }
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "marrow-route-key"
+  }
 }

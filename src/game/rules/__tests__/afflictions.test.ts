@@ -61,10 +61,14 @@ describe("Afflictions", () => {
     expect(result.player.character.stats.guile).toBe(Math.max(1, player.character.stats.guile - 1));
   });
 
-  it("cannot-use restrictions block weapons and armor while allowing cannot evade to override may evade", () => {
+  it("cannot-use restrictions block weapons and armor without retaining retired evasion concepts", () => {
     const state = createInitialSessionState("affliction-test", "single-player");
     const player = {
       ...state.players[0]!,
+      character: {
+        ...state.players[0]!.character,
+        stats: { ...state.players[0]!.character.stats, signal: 4 }
+      },
       faceupAfflictions: ["brittle-frame", "severed-grip", "phase-veil", "red-madness"].map((cardId) => ({
         instanceId: `${cardId}:test`,
         cardId,
@@ -80,9 +84,17 @@ describe("Afflictions", () => {
     expect(restrictions.cannotUseArmorSource).toBe("Brittle Frame");
     expect(restrictions.cannotUseWeapons).toBe(true);
     expect(restrictions.cannotUseWeaponsSource).toBe("Severed Grip");
-    expect(restrictions.cannotEvadeEnemies).toBe(true);
-    expect(restrictions.cannotEvadeEnemiesSource).toBe("Red Madness");
+    expect(restrictions.cannotEvadeEnemies).toBe(false);
+    expect(restrictions.cannotEvadeEnemiesSource).toBeNull();
     expect(restrictions.canEvadeEnemies).toBe(false);
+    expect(getAfflictionModifierSources(player, "guile", "check", afflictions)).toContainEqual({
+      label: "Affliction: Phase Veil",
+      value: 1
+    });
+    expect(getAfflictionModifierSources(player, "signal", "check", afflictions)).toContainEqual({
+      label: "Affliction: Red Madness",
+      value: -2
+    });
   });
 
   it("test penalties apply with minimum 1 and battle bonus appears as a formula source", () => {
@@ -140,6 +152,64 @@ describe("Afflictions", () => {
     expect(getAfflictionWoundPrevention(player, "command", 5, afflictions)).toEqual({
       prevented: 0,
       source: null
+    });
+  });
+
+  it.each([...afflictions.values()].map((card) => [card.id, card] as const))(
+    "resolves authored Affliction %s through the owner-only draw function",
+    (_cardId, card) => {
+      const state = createInitialSessionState(`affliction-${card.id}`, "single-player");
+      const result = resolveAfflictionDraw(state.players[0]!, card, afflictions, {
+        createdAt: `2026-07-24T00:00:${String(card.severity).padStart(2, "0")}.000Z`,
+        die: 4,
+        chosenStat: "signal"
+      });
+      expect(result.player.afflictionDrawHistory?.at(-1)).toBe(card.id);
+      expect([
+        ...(result.player.faceupAfflictions ?? []),
+        ...(result.player.facedownAfflictions ?? [])
+      ].some((entry) => entry.cardId === card.id)).toBe(true);
+      expect(result.publicSummary).toContain(card.name);
+    }
+  );
+
+  it("implements the five supported rewrite modifiers", () => {
+    const state = createInitialSessionState("affliction-rewrites", "single-player");
+    const player = {
+      ...state.players[0]!,
+      character: {
+        ...state.players[0]!.character,
+        stats: { ...state.players[0]!.character.stats, signal: 4, forge: 4 }
+      },
+      faceupAfflictions: [
+        "overclocked-mind",
+        "crooked-spine",
+        "extra-arms",
+        "phase-veil",
+        "red-madness"
+      ].map((cardId) => ({
+        instanceId: `${cardId}:test`,
+        cardId,
+        drawnAt: "2026-07-24T00:00:00.000Z",
+        face: "faceup" as const,
+        resolved: false
+      }))
+    };
+    expect(getAfflictionModifierSources(player, "signal", "check", afflictions)).toEqual([
+      { label: "Affliction: Overclocked Mind", value: 1 },
+      { label: "Affliction: Red Madness", value: -2 }
+    ]);
+    expect(getAfflictionModifierSources(player, "forge", "check", afflictions)).toContainEqual({
+      label: "Affliction: Crooked Spine",
+      value: -2
+    });
+    expect(getAfflictionModifierSources(player, "guile", "check", afflictions)).toContainEqual({
+      label: "Affliction: Phase Veil",
+      value: 1
+    });
+    expect(getAfflictionModifierSources(player, "grit", "battle", afflictions)).toContainEqual({
+      label: "Affliction: Extra Arms",
+      value: 1
     });
   });
 });

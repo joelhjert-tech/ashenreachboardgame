@@ -112,6 +112,32 @@ export const afflictionUsageStateSchema = z.object({
   reactionUsed: z.record(z.string(), z.boolean()).default({})
 });
 
+export const pendingAfflictionResolutionSchema = z.object({
+  id: z.string().min(1),
+  ownerSeatId: z.string().min(1),
+  sourceCardId: z.string().min(1),
+  remainingDraws: z.number().int().min(1),
+  status: z.enum(["queued", "awaitingStatChoice"]),
+  nextAfflictionId: z.string().min(1).nullable(),
+  nextDie: z.number().int().min(1).max(6).nullable(),
+  chosenStat: statSchema.nullable().default(null),
+  excludedCardIds: z.array(z.string().min(1)).default([]),
+  createdAt: z.string().min(1)
+}).strict();
+
+export const pendingAfflictionReactionSchema = z.object({
+  id: z.string().min(1),
+  ownerSeatId: z.string().min(1),
+  afflictionId: z.enum(["blood-fury", "future-sickness", "bile-spit"]),
+  kind: z.enum(["battleReroll", "turnReroll", "arrivalWound"]),
+  sourceEventId: z.string().min(1),
+  targetSeatId: z.string().min(1).nullable(),
+  originalRoll: z.array(z.number().int().min(1).max(6)).min(1).max(2),
+  createdAt: z.string().min(1)
+}).strict();
+
 export type AfflictionCard = z.infer<typeof afflictionCardSchema>;
 export type AfflictionInstance = z.infer<typeof afflictionInstanceSchema>;
 export type AfflictionUsageState = z.infer<typeof afflictionUsageStateSchema>;
+export type PendingAfflictionResolution = z.infer<typeof pendingAfflictionResolutionSchema>;
+export type PendingAfflictionReaction = z.infer<typeof pendingAfflictionReactionSchema>;

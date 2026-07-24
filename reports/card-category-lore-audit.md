@@ -1,5 +1,7 @@
 # Card Category Lore Audit
 
+> Historical baseline. P23 provides the current individual record matrix in `docs/research/P23_CARD_CATEGORY_LIFECYCLE_AUDIT.md`.
+
 This inventory reviews every canonical record without performing a broad rewrite. “Complete” means the current card provides a concise identity and a fiction-to-mechanic bridge; it does not claim that every card has exhaustive faction genealogy.
 
 | Family | Stable ID | Display name | Status | Finding |

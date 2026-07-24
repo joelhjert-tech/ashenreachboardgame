@@ -33,7 +33,7 @@ const TARGETS: Entry[] = [
   { id: "iron-synod-chirurgeon", file: "cards/threats/iron-synod-chirurgeon.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 2 }] },
   { id: "lalla-bubu-crownling", file: "cards/threats/lalla-bubu-crownling.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "mirror-lord-envoy", file: "cards/threats/mirror-lord-envoy.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
-  { id: "mirror-rot-interference", file: "cards/threats/mirror-rot-interference.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
+  { id: "mirror-rot-interference", file: "cards/threats/mirror-rot-interference.json", branch: "failEffect.effects", survivingEffects: [{ type: "draw_affliction", amount: 1 }] },
   { id: "pale-cartel-shakedown", file: "cards/threats/pale-cartel-shakedown.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "reliquary-judge", file: "cards/threats/reliquary-judge.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "saint-of-ashes-echo", file: "cards/threats/saint-of-ashes-echo.json", branch: "failEffect.effects", survivingEffects: [{ type: "gain_scar_choice", amount: 1, source: "unbound", sourceCardId: "saint-of-ashes-echo" }] },
