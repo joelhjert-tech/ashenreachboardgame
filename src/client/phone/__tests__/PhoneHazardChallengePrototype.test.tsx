@@ -5,7 +5,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PhonePatchPayload } from "../../shared/types.js";
 import {
-  PhoneHazardChallengeView
+  PhoneHazardChallengeView,
+  isPhoneChallengeRelevantToSeat
 } from "../PhoneHazardChallengePrototype.js";
 
 function patch(): PhonePatchPayload {
@@ -124,17 +125,28 @@ function renderView(onClick = vi.fn()) {
   );
 }
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  window.sessionStorage.clear();
+});
 
 describe("PhoneHazardChallengeView", () => {
   it("renders the selected cinematic layout from canonical test and effect data", () => {
     const view = renderView();
-    expect(screen.getByText("Guile test · Target 4")).toBeVisible();
+    expect(screen.getByLabelText(/Anomaly trial: The Broken Processional/i)).toBeVisible();
+    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent("Guile test · Target 4");
     expect(screen.getByText("Pass safely and gain 1 Salvage.")).toBeVisible();
     expect(screen.getByText("Gain 1 Wound, lose 1 Salvage, then resolve the Scar warning.")).toBeVisible();
     expect(screen.getByTestId("phone-test-primary-action")).toHaveTextContent("Attempt Challenge");
     expect(view.container.querySelector(".phone-encounter-art")).toBeInTheDocument();
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-hazard-challenge-layout", "cinematic");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-hazard-challenge-layout", "trial-theatre");
+    expect(screen.getByTestId("phone-trial-cinematic-stage")).toHaveAccessibleName(/Sable Vey faces Anomaly/i);
+    expect(screen.getByAltText("Sable Vey")).toHaveAttribute("src", expect.stringContaining("/assets/riftfall/characters/"));
+    expect(view.container.querySelector(".phone-trial-rift img")).toHaveAttribute(
+      "src",
+      "/assets/riftfall/ui/signal-theatre/stat-seals/guile.png"
+    );
+    expect(screen.getByTestId("phone-trial-total-comparison")).toHaveTextContent(/Your total—AgainstAnomaly total4/i);
   });
 
   it("preserves the authoritative action and blocks duplicate submission", () => {
@@ -148,5 +160,64 @@ describe("PhoneHazardChallengeView", () => {
   it("keeps details collapsed by default", () => {
     renderView();
     expect(screen.queryByRole("region", { name: "Encounter details" })).not.toBeInTheDocument();
+  });
+
+  it("reveals authoritative totals and the custom result crest without repeating both stakes", () => {
+    const resolved = patch();
+    resolved.pendingTileChallenge = {
+      ...resolved.pendingTileChallenge!,
+      rolled: true
+    };
+    resolved.activeResolution = {
+      ...resolved.activeResolution!,
+      stage: "roll_result",
+      roll: {
+        dice: [4, 3],
+        baseTotal: 7,
+        modifierTotal: 1,
+        finalTotal: 8,
+        target: 4,
+        success: true
+      },
+      outcome: {
+        title: "Route broken",
+        text: "The Processional loses your trail.",
+        effects: ["Gain 1 Salvage."]
+      }
+    };
+
+    const view = render(
+      <PhoneHazardChallengeView
+        patch={resolved}
+        resolution={resolved.activeResolution}
+        actions={[]}
+        canContinue
+        onContinue={vi.fn()}
+        resultDeltas={[]}
+      />
+    );
+
+    expect(screen.getByTestId("phone-trial-total-comparison")).toHaveTextContent(/Your total8AgainstAnomaly total4/i);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/Route broken/i);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/Processional loses your trail/i);
+    expect(screen.getByTestId("phone-resolution-card").querySelector("img")).toHaveAttribute(
+      "src",
+      "/assets/riftfall/ui/signal-theatre/results/success.png"
+    );
+    expect(screen.queryByRole("region", { name: "Possible outcomes" })).not.toBeInTheDocument();
+    expect(view.container.querySelectorAll("canvas")).toHaveLength(0);
+  });
+
+  it("focuses the challenge only for its authoritative owner and suppresses a replay after restoration", () => {
+    const activePatch = patch();
+    expect(isPhoneChallengeRelevantToSeat(activePatch, "seat-1")).toBe(true);
+    expect(isPhoneChallengeRelevantToSeat(activePatch, "seat-2")).toBe(false);
+
+    const first = renderView();
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-trial-restored", "false");
+    first.unmount();
+
+    renderView();
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-trial-restored", "true");
   });
 });

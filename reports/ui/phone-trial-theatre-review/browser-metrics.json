@@ -1,0 +1,200 @@
+{
+  "hazard-ready-390x844.png": {
+    "rect": {
+      "left": 1,
+      "top": 94.96875,
+      "right": 389,
+      "bottom": 843
+    },
+    "action": {
+      "top": 783.421875,
+      "bottom": 843
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "page": {
+      "width": 390,
+      "height": 844
+    },
+    "scroll": {
+      "clientHeight": 688,
+      "scrollHeight": 688,
+      "overflowY": "auto"
+    },
+    "outerOverflow": "hidden",
+    "sealLoaded": true,
+    "portraitsLoaded": true,
+    "crestLoaded": null,
+    "bottomNavigationVisible": false,
+    "battleAssistVisible": false,
+    "canvasCount": 0,
+    "text": "Hazard trialAwaiting testGrit test \u00b7 Target 8OperativeBjornisTrial WiGritHazardSuture StormThe clouds have thread. The ground has needles.Your total\u2014AgainstHazard total8Dice detailsPendingRoll readySuture Storm \u00b7 Grit testTrial Wi \u00b7 2d6\u00b7Test die 1\u00b7Test die 2Roll - \u00b7 Result appears after the server accepts the roll.On successThe server reveals and applies the authored success effect after the test.On failureThe server reveals and applies the authored failure effect after the test.ChallengeUseful now: GritGritCurrent value 5. Use roll tools only in their timing window.Nailspike MaulEquip to apply +1 Grit in battles.Rivetplate VestEquip to apply +1 Grit.View detailsRoll check diceSuture Storm"
+  },
+  "hazard-success-390x844.png": {
+    "rect": {
+      "left": 1,
+      "top": 94.96875,
+      "right": 389,
+      "bottom": 843
+    },
+    "action": {
+      "top": 784.5625,
+      "bottom": 843
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "page": {
+      "width": 390,
+      "height": 844
+    },
+    "scroll": {
+      "clientHeight": 690,
+      "scrollHeight": 690,
+      "overflowY": "auto"
+    },
+    "outerOverflow": "hidden",
+    "sealLoaded": true,
+    "portraitsLoaded": true,
+    "crestLoaded": true,
+    "bottomNavigationVisible": false,
+    "battleAssistVisible": false,
+    "canvasCount": 0,
+    "text": "Hazard trialSuccessGrit test \u00b7 Target 8OperativeBjornisTrial WiGritHazardSuture StormThe clouds have thread. The ground has needles.Your total10AgainstHazard total8Die3Die4Roll: 3 + 4 + 3 = 10Target: 8SuccessTotal / Target10 / 8Dice result10 vs 8Authoritative resultSuture Storm \u00b7 Grit testTrial Wi \u00b7 2d63Test die 14Test die 2Raw roll 7Operative +3Other authoritative modifiers \u22125Final 10Target 8successSuture Storm \u00b7 Grit test. Test die 1 3, Test die 2 4. Raw total 7. Final value 10.Authoritative resultSuture Storm resolvedYou crossed the storm on the beat between stitches.ChallengeUseful now: GritGritCurrent value 5. Use roll tools only in their timing window.Rivetplate VestEquip to apply +1 Grit.Grave ScribeWait for an action window.View detailsContinue"
+  },
+  "hazard-failure-390x844.png": {
+    "rect": {
+      "left": 1,
+      "top": 94.96875,
+      "right": 389,
+      "bottom": 843
+    },
+    "action": {
+      "top": 783.421875,
+      "bottom": 843
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "page": {
+      "width": 390,
+      "height": 844
+    },
+    "scroll": {
+      "clientHeight": 688,
+      "scrollHeight": 688,
+      "overflowY": "auto"
+    },
+    "outerOverflow": "hidden",
+    "sealLoaded": true,
+    "portraitsLoaded": true,
+    "crestLoaded": true,
+    "bottomNavigationVisible": false,
+    "battleAssistVisible": false,
+    "canvasCount": 0,
+    "text": "Hazard trialFailureGrit test \u00b7 Target 8OperativeBjornisTrial WiGritHazardSuture StormThe clouds have thread. The ground has needles.Your total5AgainstHazard total8Die1Die1Roll: 1 + 1 + 3 = 5Target: 8FailureTotal / Target5 / 8Dice result5 vs 8Authoritative resultSuture Storm \u00b7 Grit testTrial Wi \u00b7 2d61Test die 11Test die 2Raw roll 2Operative +3Other authoritative modifiers \u22125Final 5Target 8failureSuture Storm \u00b7 Grit test. Test die 1 1, Test die 2 1. Raw total 2. Final value 5.Authoritative resultSuture Storm resolvedThe storm stitches flesh to road.Gain 1 Wound.Move 1 sector counterclockwise on this ring; if blocked, gain 1 additional Wound.ChallengeUseful now: GritGritCurrent value 5. Use roll tools only in their timing window.Rivetplate VestEquip to apply +1 Grit.View detailsReroll \u2014 spend 1 chargeOptional. Replaces the current roll. 1 charge remaining this round."
+  },
+  "anomaly-challenge-390x844.png": {
+    "rect": {
+      "left": 1,
+      "top": 94.96875,
+      "right": 389,
+      "bottom": 843
+    },
+    "action": {
+      "top": 784.5625,
+      "bottom": 843
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "page": {
+      "width": 390,
+      "height": 844
+    },
+    "scroll": {
+      "clientHeight": 690,
+      "scrollHeight": 690,
+      "overflowY": "auto"
+    },
+    "outerOverflow": "hidden",
+    "sealLoaded": true,
+    "portraitsLoaded": true,
+    "crestLoaded": true,
+    "bottomNavigationVisible": false,
+    "battleAssistVisible": false,
+    "canvasCount": 0,
+    "text": "Challenge trialSuccessSignal test \u00b7 Target 8OperativeBjornisTrial WiSignalChallengeRift WhispersA map is just a rumor with better posture.Your total10AgainstChallenge total8Die3Die4Roll: 3 + 4 + 3 = 10Target: 8SuccessTotal / Target10 / 8Dice result10 vs 8Authoritative resultRift Whispers \u00b7 Signal testTrial Wi \u00b7 2d63Test die 14Test die 2Raw roll 7Operative +3Other authoritative modifiers \u22121Final 10Target 8successRift Whispers \u00b7 Signal test. Test die 1 3, Test die 2 4. Raw total 7. Final value 10.Authoritative resultChallenge remainsThis authored tile challenge remains attached until its own removal condition is met.Canonical gain note effect resolved; the challenge remains attached.Blocker remainsCanonical gain note effect resolved; the challenge remains attached.ChallengeUseful now: SignalSignalCurrent value 1. Use roll tools only in their timing window.Rivetplate VestEquip to apply +1 Grit.Grave ScribeWait for an action window.View detailsContinue"
+  },
+  "hazard-ready-360x800.png": {
+    "rect": {
+      "left": 1,
+      "top": 94.65625,
+      "right": 359,
+      "bottom": 799
+    },
+    "action": {
+      "top": 739.421875,
+      "bottom": 799
+    },
+    "viewport": {
+      "width": 360,
+      "height": 800
+    },
+    "page": {
+      "width": 360,
+      "height": 800
+    },
+    "scroll": {
+      "clientHeight": 645,
+      "scrollHeight": 669,
+      "overflowY": "auto"
+    },
+    "outerOverflow": "hidden",
+    "sealLoaded": true,
+    "portraitsLoaded": true,
+    "crestLoaded": null,
+    "bottomNavigationVisible": false,
+    "battleAssistVisible": false,
+    "canvasCount": 0,
+    "text": "Hazard trialAwaiting testGrit test \u00b7 Target 8OperativeBjornisTrial WiGritHazardSuture StormThe clouds have thread. The ground has needles.Your total\u2014AgainstHazard total8Dice detailsPendingRoll readySuture Storm \u00b7 Grit testTrial Wi \u00b7 2d6\u00b7Test die 1\u00b7Test die 2Roll - \u00b7 Result appears after the server accepts the roll.On successThe server reveals and applies the authored success effect after the test.On failureThe server reveals and applies the authored failure effect after the test.ChallengeUseful now: GritGritCurrent value 5. Use roll tools only in their timing window.Nailspike MaulEquip to apply +1 Grit in battles.Rivetplate VestEquip to apply +1 Grit.View detailsRoll check diceSuture Storm"
+  },
+  "anomaly-challenge-430x932.png": {
+    "rect": {
+      "left": 1,
+      "top": 97.0625,
+      "right": 429,
+      "bottom": 931
+    },
+    "action": {
+      "top": 872.5625,
+      "bottom": 931
+    },
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "page": {
+      "width": 430,
+      "height": 932
+    },
+    "scroll": {
+      "clientHeight": 776,
+      "scrollHeight": 776,
+      "overflowY": "auto"
+    },
+    "outerOverflow": "hidden",
+    "sealLoaded": true,
+    "portraitsLoaded": true,
+    "crestLoaded": true,
+    "bottomNavigationVisible": false,
+    "battleAssistVisible": false,
+    "canvasCount": 0,
+    "text": "Challenge trialSuccessSignal test \u00b7 Target 8OperativeBjornisTrial WiSignalChallengeRift WhispersA map is just a rumor with better posture.Your total10AgainstChallenge total8Die3Die4Roll: 3 + 4 + 3 = 10Target: 8SuccessTotal / Target10 / 8Dice result10 vs 8Authoritative resultRift Whispers \u00b7 Signal testTrial Wi \u00b7 2d63Test die 14Test die 2Raw roll 7Operative +3Other authoritative modifiers \u22121Final 10Target 8successRift Whispers \u00b7 Signal test. Test die 1 3, Test die 2 4. Raw total 7. Final value 10.Authoritative resultChallenge remainsThis authored tile challenge remains attached until its own removal condition is met.Canonical gain note effect resolved; the challenge remains attached.Blocker remainsCanonical gain note effect resolved; the challenge remains attached.ChallengeUseful now: SignalSignalCurrent value 1. Use roll tools only in their timing window.Rivetplate VestEquip to apply +1 Grit.Grave ScribeWait for an action window.View detailsContinue"
+  }
+}

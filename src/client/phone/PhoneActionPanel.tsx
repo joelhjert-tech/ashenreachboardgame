@@ -68,7 +68,7 @@ import { CinderWattleAbilityPanel } from "./CinderWattleAbilityPanel.js";
 import { PhoneScarSelector } from "./PhoneScarSelector.js";
 import {
   PhoneHazardChallengeView,
-  isHazardChallengePresentation
+  isPhoneChallengeRelevantToSeat
 } from "./PhoneHazardChallengePrototype.js";
 import {
   PhoneActionPriorityStack,
@@ -1247,11 +1247,11 @@ function usefulNowForTurnTab(model: UsefulNowViewModel | null, tab: TurnActionTa
     case "move":
       return phaseLabel.includes("movement") ? model : null;
     case "battle":
-      return phaseLabel.includes("battle") ? model : null;
+      return phaseLabel.includes("battle") || phaseLabel.includes("challenge") ? model : null;
     case "shop":
       return phaseLabel.includes("shop") ? model : null;
     case "action":
-      return phaseLabel.includes("movement") || phaseLabel.includes("battle") || phaseLabel.includes("shop") ? null : model;
+      return phaseLabel.includes("movement") || phaseLabel.includes("battle") || phaseLabel.includes("challenge") || phaseLabel.includes("shop") ? null : model;
   }
 }
 
@@ -4272,6 +4272,9 @@ export function PhoneActionPanel({
           "action";
   const selectedTabDefinition = tabDefinitions.find((tab) => tab.id === selectedTurnTab && canShowSelectedTab(tab));
   const activeTurnTab: TurnActionTab = selectedTabDefinition?.id ?? fallbackTab;
+  const trialPresentationActive =
+    activeTurnTab === "battle"
+    && isPhoneChallengeRelevantToSeat(patch, self.seatId);
   const currentPrompt: CurrentPromptViewModel = currentPromptFromSharedPrompt(sharedPrompt, activeTurnTab);
   const showCurrentPrompt = !activeResolution && (!currentPrompt.targetTab || currentPrompt.targetTab === activeTurnTab);
   const activeUsefulNow = usefulNowForTurnTab(usefulNow, activeTurnTab);
@@ -4394,7 +4397,7 @@ export function PhoneActionPanel({
         diceCount={self.character.id === "char_ker_von_ker" ? 2 : 1}
       />
     ) : activeTurnTab === "battle" ? (
-      isHazardChallengePresentation(patch) ? (
+      trialPresentationActive ? (
         <PhoneHazardChallengeView
           patch={patch}
           resolution={activeResolution}
@@ -4402,7 +4405,12 @@ export function PhoneActionPanel({
           canContinue={canContinueResolution}
           onContinue={continueResolution}
           resultDeltas={visibleBattleDeltas}
-          supplemental={<UsefulNowPanel model={activeUsefulNow} variant="secondary" />}
+          supplemental={(
+            <>
+              <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
+              <UsefulNowPanel model={activeUsefulNow} variant="secondary" />
+            </>
+          )}
         />
       ) : <PhoneBattlePanel
         title={battleTitle}
@@ -4459,12 +4467,12 @@ export function PhoneActionPanel({
 
   return (
     <section
-      className={`phone-sheet-actions phone-action-panel phone-action-panel--${activeTurnTab}`}
+      className={`phone-sheet-actions phone-action-panel phone-action-panel--${activeTurnTab}${trialPresentationActive ? " phone-action-panel--trial-active" : ""}`}
       aria-label={`${activeTurnTab} command screen`}
       data-testid="phone-action-panel-root"
     >
       {!patch.requiredAction && !scarDecisionContent && showCurrentPrompt && activeTurnTab !== "move" && activeTurnTab !== "action" ? <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} /> : null}
-      {!scarDecisionContent && activeTurnTab !== "move" && activeTurnTab !== "shop" && activeTurnTab !== "action" && isActiveSeat ? (
+      {!scarDecisionContent && !trialPresentationActive && activeTurnTab !== "move" && activeTurnTab !== "shop" && activeTurnTab !== "action" && isActiveSeat ? (
         <PhoneTileArrivalSummary arrival={patch.tileArrival} compact={activeTurnTab === "battle" && Boolean(patch.activeResolution)} />
       ) : null}
       <div
@@ -4474,8 +4482,8 @@ export function PhoneActionPanel({
         aria-label={`${activeTurnTab} actions`}
         data-testid="phone-action-content-root"
       >
-        {scarDecisionContent ?? <>{activeTurnTab === "action" ? null : <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />}{activeTabContent}</>}
-        {scarDecisionContent || activeTurnTab === "move" || activeTurnTab === "action" ? null : (
+        {scarDecisionContent ?? <>{activeTurnTab === "action" || trialPresentationActive ? null : <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />}{activeTabContent}</>}
+        {scarDecisionContent || activeTurnTab === "move" || activeTurnTab === "action" || trialPresentationActive ? null : (
           <div className="phone-sheet-action-status phone-action-secondary-status" data-testid="phone-action-secondary-status">
             <span>{tabDefinitions.find((tab) => tab.id === activeTurnTab)?.label ?? portraitActionStatusLabel(activeTurnTab)}</span>
             <span>{activeStatusCopy}</span>

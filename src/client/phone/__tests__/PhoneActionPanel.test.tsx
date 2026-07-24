@@ -611,7 +611,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/resolve event/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/glass chime swarm/i);
     expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--battle");
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-trial-shell");
     expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/glass chime swarm/i);
     expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/hazard/i);
     expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/ringing tide skates/i);
@@ -619,6 +619,8 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/target 6/i);
     expect(screen.getByTestId("phone-battle-subject-art")).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//));
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/useful now: signal/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/challenge/i);
+    expect(screen.getByTestId("phone-useful-now")).not.toHaveTextContent(/^battle$/i);
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/current value 1/i);
     expect(screen.getByRole("button", { name: /attempt signal check/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
@@ -2745,7 +2747,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/failure/i);
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/total \/ target6 \/ 7/i);
     expect(screen.getByTestId("phone-roll-result")).not.toHaveTextContent(/attack|defense|A 6 \/ D 7/i);
-    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/affliction: hollow belly -2/i);
+    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/affliction: hollow belly [−-]2/i);
     expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-test-result", "true");
     expect(screen.getByRole("button", { name: /view details/i })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();

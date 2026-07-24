@@ -58,7 +58,7 @@ function formatSignedValue(value: number): string {
   return value >= 0 ? `+${value}` : String(value);
 }
 
-function afflictionBattleItems(afflictions: AfflictionSummary[], stat: Stat): UsefulNowItem[] {
+function afflictionBattleItems(afflictions: AfflictionSummary[], stat: Stat, opposed: boolean): UsefulNowItem[] {
   const items: UsefulNowItem[] = [];
 
   for (const affliction of afflictions) {
@@ -72,7 +72,7 @@ function afflictionBattleItems(afflictions: AfflictionSummary[], stat: Stat): Us
       });
     }
 
-    if (affliction.effectKind === "battleBonus" && typeof payload.innateBattleBonus === "number") {
+    if (opposed && affliction.effectKind === "battleBonus" && typeof payload.innateBattleBonus === "number") {
       items.push({
         label: "Affecting this battle",
         detail: `${affliction.name}: ${formatSignedValue(payload.innateBattleBonus)} battle bonus.`,
@@ -150,12 +150,23 @@ export function buildUsefulNowViewModel(patch: PhonePatchPayload): UsefulNowView
 
   if (patch.activeResolution?.battle || patch.encounter?.cardType === "enemy" || patch.encounter?.cardType === "hazard" || patch.pendingEnemyRoll) {
     const stat = relevantBattleStat(patch);
+    const opposed = Boolean(
+      patch.battlePresentation?.test.opposed
+      || patch.pendingEnemyRoll
+      || patch.encounter?.cardType === "enemy"
+      || patch.activeResolution?.card?.type === "enemy"
+      || Boolean(
+        patch.activeResolution?.battle
+        && patch.activeResolution.card
+        && ["threat", "enemy"].includes(patch.activeResolution.card.type)
+      )
+    );
     const battleItems = topCards([...usableCards, ...lockedCards, ...passiveCards], 4);
-    const afflictionItems = afflictionBattleItems(self.character.afflictions?.faceup ?? [], stat);
+    const afflictionItems = afflictionBattleItems(self.character.afflictions?.faceup ?? [], stat, opposed);
     const items = [...afflictionItems, ...battleItems].slice(0, 4);
 
     return {
-      phaseLabel: "Battle",
+      phaseLabel: opposed ? "Battle" : "Challenge",
       headline: `Useful now: ${statLabelById[stat]}`,
       detail: `Current value ${self.character.stats[stat]}. Use roll tools only in their timing window.`,
       relevantStat: stat,

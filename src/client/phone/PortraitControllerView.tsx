@@ -34,6 +34,7 @@ import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
 import { PhoneRequiredActionShell, type RequiredActionStatus } from "./PhoneRequiredActionShell.js";
 import type { MovementNavigationTarget } from "./PhoneMovementView.js";
 import { isPhoneBattleRelevantToSeat } from "./PhoneBattleView.js";
+import { isPhoneChallengeRelevantToSeat } from "./PhoneHazardChallengePrototype.js";
 import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
@@ -1071,6 +1072,7 @@ export function PortraitControllerView({
     (nemesis) => nemesis.boundPlayerId !== self.seatId && nemesis.sectorId === self.character.currentSpaceId && !nemesis.defeated
   );
   const opposedBattleActive = isPhoneBattleRelevantToSeat(patch, self.seatId);
+  const challengeTrialActive = isPhoneChallengeRelevantToSeat(patch, self.seatId);
   const cooperativeAssistanceActive = Boolean(
     patch?.cooperativeAssistance ||
       patch?.pendingCooperativeTest ||
@@ -1078,7 +1080,7 @@ export function PortraitControllerView({
       (patch?.activeResolution?.assistance && patch.activeResolution.assistance.activeSeatId === self.seatId)
   );
   const matchEnded = patch?.status === "ended";
-  const focusedResolutionActive = matchEnded || opposedBattleActive || cooperativeAssistanceActive;
+  const focusedResolutionActive = matchEnded || opposedBattleActive || challengeTrialActive || cooperativeAssistanceActive;
   const suppressedEquipmentInstanceIds = new Set(
     (patch?.equipmentSuppressions ?? [])
       .filter((suppression) => suppression.active)
@@ -1245,6 +1247,7 @@ export function PortraitControllerView({
     phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--immersive",
     bottomDockExpanded ? "phone-shell--bottomdock-expanded" : "phone-shell--bottomdock-compact",
     focusedResolutionActive ? "phone-shell--battle-active" : "",
+    challengeTrialActive ? "phone-shell--trial-active" : "",
     movementFlowActive ? "phone-shell--movement-active" : ""
   ]
     .filter(Boolean)
