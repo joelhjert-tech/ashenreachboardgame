@@ -392,7 +392,7 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(screen.getAllByRole("button", { name: /^continue$/i })).toHaveLength(1);
   });
 
-  it("keeps the pre-game locked character screen readable for MASTER ALPHA and hides bottom nav", () => {
+  it("keeps the mission step text-only for MASTER ALPHA and hides bottom navigation", () => {
     const patch = createMasterAlphaPhonePatch({
       phase: "start",
       status: "lobby",
@@ -419,10 +419,11 @@ describe("Ashen Reach UI validation stress states", () => {
       />
     );
 
-    expect(screen.getByText(/character locked/i)).toBeInTheDocument();
+    expect(screen.getByText(/mission · step 3 of 3/i)).toBeInTheDocument();
     expect(screen.getByText("MASTER ALPHA")).toBeInTheDocument();
-    expect(screen.getByText(/QA ONLY - The Broken Commander/i)).toBeInTheDocument();
-    expect(screen.getByText(longGearName)).toBeInTheDocument();
+    expect(screen.queryByText(/QA ONLY - The Broken Commander/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(longGearName)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/character stats/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: /inventory/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^ready$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^leave room$/i })).toBeInTheDocument();

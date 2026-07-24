@@ -704,11 +704,22 @@ export function getBattleAssistViewModel(patch: PhonePatchPayload): BattleAssist
   const resolution = getBattleResolution(patch);
   const encounter = patch.encounter;
   const activeSeatId = getActiveSeatId(patch);
+  const resolutionIsOpposed =
+    resolution?.source !== "movement"
+    && (
+      resolution?.card?.type === "enemy"
+      || resolution?.card?.type === "threat"
+      || encounter?.cardType === "enemy"
+    );
   const battleBelongsToSelf =
     resolution?.playerId === self.seatId ||
     (activeSeatId === self.seatId && encounter?.cardType === "enemy") ||
     patch.pendingEnemyRoll?.fighterSeatId === self.seatId;
-  const hasBattleWindow = battleBelongsToSelf && Boolean(resolution?.battle || encounter?.cardType === "enemy" || patch.pendingEnemyRoll);
+  const hasBattleWindow = battleBelongsToSelf && Boolean(
+    (resolution?.battle && resolutionIsOpposed)
+    || encounter?.cardType === "enemy"
+    || patch.pendingEnemyRoll
+  );
 
   if (!hasBattleWindow) {
     return null;

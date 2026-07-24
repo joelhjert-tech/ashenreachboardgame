@@ -193,6 +193,11 @@ function storeControllerAuth(): void {
   );
 }
 
+async function continueToOperativeSelection(): Promise<void> {
+  fireEvent.click(await screen.findByRole("button", { name: /continue to operative/i }));
+  await screen.findByRole("heading", { name: /choose operative/i });
+}
+
 function createConfirmedCharacterPatch(characterId: string): StatePatch<PhonePatchPayload> {
   const character = characters.find((entry) => entry.id === characterId);
 
@@ -386,6 +391,10 @@ describe("PhoneApp", () => {
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
     fireEvent.click(screen.getByRole("button", { name: /join game/i }));
 
+    expect(await screen.findByRole("heading", { name: /choose piece/i })).toBeInTheDocument();
+    expect(screen.getByText(/step 1 of 3/i)).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
+    await continueToOperativeSelection();
     const picker = await screen.findByRole("list", { name: /character/i });
 
     await waitFor(() => {
@@ -398,9 +407,9 @@ describe("PhoneApp", () => {
     for (const option of within(picker).getAllByRole("button")) {
       expect(option).toHaveClass("phone-character-option");
     }
-    expect(screen.getAllByRole("heading", { name: /select operative/i })).toHaveLength(1);
+    expect(screen.getAllByRole("heading", { name: /choose operative/i })).toHaveLength(1);
     expect(screen.queryByRole("heading", { name: /choose character/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/step 2/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/step 2 of 3/i)).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /recommended/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /all operatives/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /advanced/i })).toBeInTheDocument();
@@ -430,7 +439,7 @@ describe("PhoneApp", () => {
     });
 
     render(<PhoneApp />);
-    expect(await screen.findByRole("heading", { name: /select operative/i })).toBeInTheDocument();
+    await continueToOperativeSelection();
 
     fireEvent.popState(window);
     expect(screen.getByRole("dialog", { name: /leave the game/i })).toBeInTheDocument();
@@ -438,7 +447,7 @@ describe("PhoneApp", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /stay in game/i }));
     expect(screen.queryByRole("dialog", { name: /leave the game/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /select operative/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /choose operative/i })).toBeInTheDocument();
   });
 
   it("moves focus to the first operative when the authoritative setup stage changes", async () => {
@@ -475,6 +484,7 @@ describe("PhoneApp", () => {
 
     render(<PhoneApp />);
 
+    await continueToOperativeSelection();
     const picker = await screen.findByRole("list", { name: /character/i });
     const firstOperative = within(picker).getAllByRole("button")[0]!;
     await waitFor(() => expect(document.activeElement).toBe(firstOperative));
@@ -549,6 +559,7 @@ describe("PhoneApp", () => {
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
     fireEvent.click(screen.getByRole("button", { name: /join game/i }));
 
+    await continueToOperativeSelection();
     const presentations = await screen.findAllByTestId("phone-character-presentation");
     const firstGamePresentation = presentations.find((presentation) => /first-game pick/i.test(presentation.textContent ?? ""));
 
@@ -559,7 +570,7 @@ describe("PhoneApp", () => {
 
     const marshalCard = screen.getByRole("button", { name: /tarek voss.*void marshal/i });
     expect(within(marshalCard).queryByLabelText(/tarek voss stats/i)).not.toBeInTheDocument();
-    expect(within(marshalCard).getByText(/select character/i)).toBeInTheDocument();
+    expect(within(marshalCard).getByText(/select operative/i)).toBeInTheDocument();
   });
 
   it("sorts first-game characters before advanced operatives", async () => {
@@ -570,6 +581,7 @@ describe("PhoneApp", () => {
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
     fireEvent.click(screen.getByRole("button", { name: /join game/i }));
 
+    await continueToOperativeSelection();
     const picker = await screen.findByRole("list", { name: /character/i });
     const options = within(picker).getAllByRole("button");
     const firstGameIndex = options.findIndex((option) => /tarek voss/i.test(option.textContent ?? ""));
@@ -604,6 +616,7 @@ describe("PhoneApp", () => {
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
     fireEvent.click(screen.getByRole("button", { name: /join game/i }));
     fireEvent.click(await screen.findByRole("radio", { name: /compass/i }));
+    await continueToOperativeSelection();
     fireEvent.click(await screen.findByRole("button", { name: /deepdale.*deep route delver/i }));
 
     await waitFor(() => {
@@ -670,7 +683,8 @@ describe("PhoneApp", () => {
     render(<PhoneApp />);
 
     expect(await screen.findByText(/join game in progress/i)).toBeInTheDocument();
-    expect(screen.getByText(/end of the current turn order/i)).toBeInTheDocument();
+    await continueToOperativeSelection();
+    expect(screen.getByText(/before joining the turn order/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /deepdale.*deep route delver/i }));
     expect(sendIntent).toHaveBeenCalledWith({
       type: "SELECT_CHARACTER",
@@ -695,7 +709,8 @@ describe("PhoneApp", () => {
 
     const view = render(<PhoneApp />);
 
-    expect(await screen.findByText(/^joining game$/i)).toBeInTheDocument();
+    expect(await screen.findByText(/mission · step 3 of 3/i)).toBeInTheDocument();
+    expect(screen.getByText(/^deepdale$/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /join game/i })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: /select mission/i }));
     expect(sendIntent).toHaveBeenCalledWith({
@@ -841,8 +856,9 @@ describe("PhoneApp", () => {
     });
     view.rerender(<PhoneApp />);
 
+    await continueToOperativeSelection();
     const picker = await screen.findByRole("list", { name: /character/i });
-    expect(screen.getByRole("heading", { name: /select operative/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /choose operative/i })).toBeInTheDocument();
     expect(screen.queryByText(/^choose character$/i)).not.toBeInTheDocument();
     expect(picker.querySelector(".phone-character-option-selected")).toBeNull();
     expect(screen.queryByText(/selected starting mission/i)).not.toBeInTheDocument();
@@ -862,6 +878,7 @@ describe("PhoneApp", () => {
     });
 
     const view = render(<PhoneApp />);
+    await continueToOperativeSelection();
     const deepdale = await screen.findByRole("button", { name: /deepdale.*deep route delver/i });
     fireEvent.click(deepdale);
 
@@ -908,6 +925,7 @@ describe("PhoneApp", () => {
     });
 
     const view = render(<PhoneApp />);
+    await continueToOperativeSelection();
     fireEvent.click(await screen.findByRole("button", { name: /deepdale.*deep route delver/i }));
 
     vi.mocked(useRoomSubscription).mockReturnValue({
@@ -940,6 +958,7 @@ describe("PhoneApp", () => {
     });
 
     const view = render(<PhoneApp />);
+    await continueToOperativeSelection();
     fireEvent.click(await screen.findByRole("button", { name: /deepdale.*deep route delver/i }));
 
     vi.mocked(useRoomSubscription).mockReturnValue({
@@ -1044,7 +1063,8 @@ describe("PhoneApp", () => {
       );
     });
     expect(screen.queryByRole("button", { name: /join game/i })).not.toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: /select operative/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /choose piece/i })).toBeInTheDocument();
+    expect(screen.getByText(/step 1 of 3/i)).toBeInTheDocument();
   });
 
   it("does not reuse a stored seat when a direct link asks for a different seat", async () => {

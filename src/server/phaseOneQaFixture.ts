@@ -36,7 +36,17 @@ export type PhaseOneQaFixture =
   | { kind: "movement-journey"; stage: "ashen-chapel"; withChoirLantern?: boolean }
   | { kind: "tile-arrival"; stage: "challenge" | "multi-effect" | "optional-shop" | "single-next-turn" }
   | { kind: "phone-action"; stage: "free-action" | "many-actions" | "hazard-ready" | "challenge-ready" | "event-ready" | "blocked-start" }
-  | { kind: "phone-movement"; stage: "roll-required" | "four-routes" | "medium-routes" | "long-routes" | "confirmed" }
+  | {
+      kind: "phone-movement";
+      stage:
+        | "roll-required"
+        | "four-routes"
+        | "medium-routes"
+        | "long-routes"
+        | "confirmed"
+        | "approach-success"
+        | "approach-setback";
+    }
   | { kind: "map-transition"; stage: "guardian-locked" | "guardian-cleared" | "core-locked" | "core-cleared" }
   | { kind: "mission-reward"; stage: "progress" | "ready" }
   | {
@@ -1682,16 +1692,73 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
   }
 
   if (fixture.kind === "phone-movement") {
-    state.phase = "navigation";
-    state.movementRolls = fixture.stage === "roll-required" || fixture.stage === "confirmed"
+    const approachResult = fixture.stage === "approach-success" || fixture.stage === "approach-setback";
+    const approachSuccess = fixture.stage === "approach-success";
+    state.phase = approachResult ? "resolution" : "navigation";
+    state.movementRolls = fixture.stage === "roll-required" || fixture.stage === "confirmed" || approachResult
       ? undefined
       : {
           ...(state.movementRolls ?? {}),
           [seatId]: fixture.stage === "medium-routes" ? 2 : fixture.stage === "long-routes" ? 4 : 1
         };
     state.pendingTileChallenge = null;
-    placePlayer(state, seatId, fixture.stage === "confirmed" ? "votive-engine-room" : "ashwake-crossing");
+    placePlayer(state, seatId, fixture.stage === "confirmed" || approachSuccess ? "votive-engine-room" : "ashwake-crossing");
     setContract(state, seatId, routeContractId, 0);
+    if (approachResult) {
+      clearResolution(state);
+      state.phase = "resolution";
+      state.resolutionSource = "movement";
+      state.activeResolution = {
+        id: `qa-phone-movement:${seatId}:${fixture.stage}`,
+        playerId: seatId,
+        source: "movement",
+        stage: "outcome_summary",
+        card: {
+          id: "votive-engine-room",
+          title: "Votive Engine Room",
+          type: "movement",
+          artType: "encounter"
+        },
+        roll: {
+          dice: approachSuccess ? [4, 3] : [2, 2],
+          baseTotal: approachSuccess ? 7 : 4,
+          modifierTotal: 2,
+          finalTotal: approachSuccess ? 9 : 6,
+          target: 8,
+          success: approachSuccess
+        },
+        outcome: {
+          title: approachSuccess ? "Approach held" : "Approach setback",
+          text: approachSuccess
+            ? "You hold the route and enter Votive Engine Room."
+            : "The route rejects the approach. You remain at Ashwalk Bridge.",
+          effects: []
+        }
+      };
+      state.lastOutcomeSummary = {
+        seatId,
+        movedToSectorId: approachSuccess ? "votive-engine-room" : "ashwake-crossing",
+        encounterCardId: null,
+        encounterTitle: "Votive Engine Room",
+        encounterCardType: null,
+        checkStat: "guile",
+        die1: approachSuccess ? 4 : 2,
+        die2: approachSuccess ? 3 : 2,
+        statBonus: 2,
+        checkTotal: approachSuccess ? 9 : 6,
+        difficulty: 8,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: approachSuccess,
+        summary: approachSuccess
+          ? "You hold the route and enter Votive Engine Room."
+          : "The route rejects the approach. You remain at Ashwalk Bridge."
+      };
+      return;
+    }
     if (fixture.stage === "confirmed") {
       clearResolution(state);
       state.lastOutcomeSummary = {

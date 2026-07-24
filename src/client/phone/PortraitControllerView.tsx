@@ -116,6 +116,15 @@ function getPhoneActionGuidance(patch: PhonePatchPayload | null, self: PhoneSelf
     return { requiredTab: "battle", title: "Battle", detail, canAct: true };
   }
 
+  if (patch.activeResolution?.playerId === self.seatId && patch.activeResolution.source === "movement") {
+    return {
+      requiredTab: "move",
+      title: "Approach Result",
+      detail: "Review the authoritative movement total and continue.",
+      canAct: true
+    };
+  }
+
   if (patch.activeResolution?.playerId === self.seatId && patch.activeResolution.card) {
     const category = patch.activeResolution.card.type;
     const title = category === "anomaly"
@@ -728,6 +737,7 @@ export function PortraitControllerView({
   const [bottomDockExpanded, setBottomDockExpanded] = useState(false);
   const bottomDockCollapseTimerRef = useRef<number | null>(null);
   const bottomDockRef = useRef<HTMLElement | null>(null);
+  const bottomDockMoreButtonRef = useRef<HTMLButtonElement | null>(null);
   const bottomDockCollapsePendingRef = useRef(false);
   const fullscreen = usePhoneFullscreen();
   const [expandedStat, setExpandedStat] = useState<Stat | null>(null);
@@ -792,6 +802,7 @@ export function PortraitControllerView({
   usePhoneBackDismissal(true, () => {
     if (bottomDockExpanded) {
       setBottomDockExpanded(false);
+      window.setTimeout(() => bottomDockMoreButtonRef.current?.focus(), 0);
       return true;
     }
     if (expandedStat) {
@@ -855,17 +866,12 @@ export function PortraitControllerView({
 
   const chooseBottomDockTab = (tab: PortraitTab): void => {
     navigateToTab(tab, patch?.requiredAction?.requiredTab === tab ? "required" : "top");
-    if (bottomDockCollapseTimerRef.current !== null) window.clearTimeout(bottomDockCollapseTimerRef.current);
-    bottomDockCollapseTimerRef.current = window.setTimeout(() => {
-      const focused = document.activeElement;
-      if (focused instanceof HTMLElement && bottomDockRef.current?.contains(focused) && focused.matches(":focus-visible")) {
-        bottomDockCollapsePendingRef.current = true;
-        bottomDockCollapseTimerRef.current = null;
-        return;
-      }
-      setBottomDockExpanded(false);
-      bottomDockCollapseTimerRef.current = null;
-    }, 300);
+    hideBottomDock();
+    window.setTimeout(() => {
+      const persistentTab = bottomDockRef.current
+        ?.querySelector<HTMLButtonElement>(`.signal-phone-nav__primary [data-signal-phone-tab="${tab}"]`);
+      (persistentTab ?? bottomDockMoreButtonRef.current)?.focus();
+    }, 0);
   };
 
   const handleBottomDockBlur = (event: FocusEvent<HTMLElement>): void => {
@@ -873,6 +879,24 @@ export function PortraitControllerView({
     bottomDockCollapsePendingRef.current = false;
     setBottomDockExpanded(false);
   };
+
+  useEffect(() => {
+    if (!bottomDockExpanded) return;
+    const focusFrame = window.requestAnimationFrame(() => {
+      bottomDockRef.current?.querySelector<HTMLElement>(".phone-more-menu button:not([disabled])")?.focus();
+    });
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setBottomDockExpanded(false);
+      window.setTimeout(() => bottomDockMoreButtonRef.current?.focus(), 0);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [bottomDockExpanded]);
 
   useEffect(() => () => {
     if (bottomDockCollapseTimerRef.current !== null) window.clearTimeout(bottomDockCollapseTimerRef.current);
@@ -1063,8 +1087,6 @@ export function PortraitControllerView({
 
   if (isLobbyWaiting) {
     const isReady = ownSeat?.ready ?? false;
-    const abilityText = self.character.abilities.map((ability) => `${ability.name}: ${ability.text}`);
-    const startingGear = self.character.heldGear;
     const startingContractOptions = patch?.startingContractOptions ?? [];
     const selectedStartingContract = patch?.selectedStartingContract ?? null;
     const canReady = Boolean(patch?.canReady && selectedStartingContract && onIntent && !isReady && !choosingStartingMission && !pendingStartingContract);
@@ -1085,30 +1107,24 @@ export function PortraitControllerView({
     return (
       <section className="phone-portrait-controller">
         <div className="phone-portrait-panel phone-portrait-lobby-panel">
-          <main ref={lobbyScrollRef} className="phone-portrait-scroll phone-lobby-waiting-scroll" aria-label="Character waiting">
-              <section ref={setupStageRef} className="phone-lobby-ready-panel phone-character-waiting-panel">
-              <div className="phone-character-waiting-topline">
-                <span>{roomCode}</span>
-                <span>{displayName}</span>
-                <span>{connectionStatus}</span>
-              </div>
-
-              <div className="phone-character-waiting-hero">
-                <img src={getCharacterPortraitPath(self.character.id)} alt="" />
+          <main ref={lobbyScrollRef} className="phone-portrait-scroll phone-lobby-waiting-scroll phone-mission-setup-scroll" aria-label="Choose mission">
+              <section ref={setupStageRef} className="phone-lobby-ready-panel phone-character-waiting-panel phone-mission-setup-surface">
+              <header className="phone-mission-setup-header">
                 <div>
-                  <p className="phone-panel-kicker">{isLateJoinPending ? "Joining Game" : "Character locked"}</p>
+                  <span>{displayName}</span>
                   <strong>{self.character.name}</strong>
-                  <span>{self.character.archetype}</span>
-                  <small>{isLateJoinPending ? (selectedStartingContract ? "Ready to enter play" : "Choose starting mission") : isReady ? "You are ready. Watch the TV." : selectedStartingContract ? "Mission selected" : "Choose starting mission"}</small>
                 </div>
-              </div>
+                <small>Mission · Step 3 of 3</small>
+              </header>
 
               <section
                 ref={startingMissionSectionRef}
                 className="phone-character-waiting-section phone-starting-mission-section"
                 aria-label="Starting Mission"
               >
-                <h3>{selectedStartingContract && !choosingStartingMission ? "Selected Starting Mission" : "Choose Starting Mission"}</h3>
+                <h1 className="phone-mission-setup-title">
+                  {selectedStartingContract && !choosingStartingMission ? "Selected Starting Mission" : "Choose Starting Mission"}
+                </h1>
                 {selectedStartingContract && !choosingStartingMission ? (
                   <ContractMissionCard contract={selectedStartingContract} selected />
                 ) : startingContractOptions.length > 0 ? (
@@ -1210,42 +1226,6 @@ export function PortraitControllerView({
                 <span className="phone-character-waiting-status">Waiting for room sync</span>
               )}
 
-              <details className="phone-character-waiting-details">
-                <summary>Review operative details</summary>
-                <div className="phone-portrait-attributes" aria-label="Character stats">
-                  {statOrder.map((stat) => (
-                    <PortraitStatCard
-                      key={stat}
-                      self={self}
-                      stat={stat}
-                      suppressedInstanceIds={suppressedEquipmentInstanceIds}
-                      expanded={expandedStat === stat}
-                      onToggle={() => setExpandedStat((current) => (current === stat ? null : stat))}
-                    />
-                  ))}
-                </div>
-                <section className="phone-character-waiting-section">
-                  <h3>Special Abilities</h3>
-                {abilityText.length > 0 ? (
-                  abilityText.map((ability) => <p key={ability}>{ability}</p>)
-                ) : (
-                  <p>No special ability text is recorded for this character.</p>
-                )}
-                </section>
-
-                <section className="phone-character-waiting-section">
-                  <h3>Starting Equipment</h3>
-                {startingGear.length > 0 ? (
-                  <div className="phone-character-waiting-gear">
-                    {startingGear.map((item) => (
-                      <span key={item.id}>{item.name}</span>
-                    ))}
-                  </div>
-                ) : (
-                  <p>No starting equipment.</p>
-                )}
-                </section>
-              </details>
             </section>
           </main>
         </div>
@@ -1360,10 +1340,7 @@ export function PortraitControllerView({
             displayName={displayName}
             wounds={self.character.wounds}
             salvage={self.character.salvage ?? 0}
-            scars={scarCount}
             sectorId={self.sectorId}
-            connectionStatus={connectionStatus}
-            active={activeSeatId === self.seatId}
           />
         ) : (
           <header className="signal-phone-compact-status phone-topbar--compact" aria-label="Compact player status">
@@ -1374,7 +1351,13 @@ export function PortraitControllerView({
           </header>
         )}
 
-        <main ref={phoneScrollRef} className={contentClassName} aria-label="Phone content">
+        <main
+          ref={phoneScrollRef}
+          className={contentClassName}
+          aria-label="Phone content"
+          aria-hidden={bottomDockExpanded ? "true" : undefined}
+          inert={bottomDockExpanded ? true : undefined}
+        >
           {focusedResolutionActive && patch && onIntent ? (
             <div className="phone-portrait-screen phone-portrait-screen-command phone-portrait-screen-battle" data-testid="phone-action-screen">
               {matchEnded ? (
@@ -1725,7 +1708,7 @@ export function PortraitControllerView({
           onBlur={handleBottomDockBlur}
         >
           {bottomDockExpanded ? (
-            <div className="phone-more-menu">
+            <div className="phone-more-menu" role="region" aria-label="All phone controls">
               <SignalPhoneMoreHeading />
               <div className="phone-expanded-tab-grid" role="tablist" aria-label="All phone sections">
                 {(Object.keys(signalPhoneTabLabels) as PortraitTab[]).map((tab) => (
@@ -1746,7 +1729,10 @@ export function PortraitControllerView({
               <button
                 type="button"
                 className="phone-portrait-tab phone-portrait-tab-utility phone-tabs-collapse"
-                onClick={hideBottomDock}
+                onClick={() => {
+                  hideBottomDock();
+                  window.setTimeout(() => bottomDockMoreButtonRef.current?.focus(), 0);
+                }}
               >
                 Close
               </button>
@@ -1760,7 +1746,11 @@ export function PortraitControllerView({
               <button
                 type="button"
                 className="phone-portrait-tab phone-portrait-tab-utility phone-display-menu-action"
-                onClick={phoneChromeVisible ? hidePhoneChrome : showPhoneChrome}
+                onClick={() => {
+                  hideBottomDock();
+                  if (phoneChromeVisible) hidePhoneChrome();
+                  else showPhoneChrome();
+                }}
               >
                 {phoneChromeVisible ? "Hide UI" : "Show UI"}
               </button>
@@ -1779,7 +1769,15 @@ export function PortraitControllerView({
             commandTab={commandTab}
             expanded={bottomDockExpanded}
             onTab={(tab) => chooseBottomDockTab(tab)}
-            onMore={() => bottomDockExpanded ? hideBottomDock() : showBottomDock()}
+            onMore={() => {
+              if (bottomDockExpanded) {
+                hideBottomDock();
+                window.setTimeout(() => bottomDockMoreButtonRef.current?.focus(), 0);
+              } else {
+                showBottomDock();
+              }
+            }}
+            moreButtonRef={bottomDockMoreButtonRef}
           />
         </nav> : null}
       </div>

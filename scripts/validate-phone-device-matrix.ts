@@ -222,7 +222,7 @@ function validateMetrics(metrics: LayoutMetrics, mode: "portrait" | "landscape")
       failures.push("landscape card rendered in portrait");
     }
 
-    if (!metrics.hasPortraitStats) {
+    if (isInGameController && !metrics.hasPortraitStats) {
       failures.push("portrait missing stats/details");
     }
 
@@ -312,6 +312,7 @@ async function main(): Promise<void> {
             await page.getByRole("textbox", { name: "Room code" }).fill(roomCode);
             await page.getByRole("textbox", { name: "Player name" }).fill("QA");
             await page.getByRole("button", { name: "Join Game" }).click();
+            await page.getByRole("button", { name: "Continue to Operative" }).click();
             await page.getByRole("button", { name: /signal witch/i }).click();
             await page.getByRole("button", { name: "Select Mission" }).first().click();
             const readyButton = page.getByRole("button", { name: "Ready", exact: true });

@@ -578,10 +578,6 @@ export function PhoneMovementView({
             <strong>{travel.toSectorName}</strong>
             <p>{travel.fromSectorName} → {travel.toSectorName}</p>
           </div>
-        ) : !planner?.active ? (
-          <div className="phone-move-prototype__roll-state" aria-hidden="true">
-            <span aria-hidden="true">⬡</span>
-          </div>
         ) : planner?.active ? (
           <>
             <MovementAdjustments planner={planner} seatId={seatId} onIntent={onIntent} />
@@ -600,9 +596,7 @@ export function PhoneMovementView({
               <p className="phone-move-prototype__empty">No legal destinations are available.</p>
             )}
           </>
-        ) : (
-          <p className="phone-move-prototype__empty">No legal destinations are available.</p>
-        )}
+        ) : null}
       </div>
       <div className="phone-move-prototype__docks">
         {selectedModel ? <div className="phone-move-prototype__selection">Selected: <strong>{selectedModel.destination.name}</strong></div> : null}

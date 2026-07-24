@@ -1,3 +1,7 @@
+.phone-page-controller:has(.signal-phone-shell) {
+  padding: 0;
+}
+
 .signal-phone-shell {
   --signal-phone-ink: #05070a;
   --signal-phone-panel: #0b0f13;
@@ -65,18 +69,17 @@
 }
 
 .signal-phone-identity__rail {
-  min-height: 4.6rem;
+  min-height: 3.65rem;
   display: grid;
-  grid-template-columns: 4.15rem minmax(0, 1fr) auto auto;
+  grid-template-columns: 2.75rem minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.52rem;
-  padding: max(0.42rem, env(safe-area-inset-top)) 0.66rem 0.42rem;
-  border-bottom: 1px solid var(--signal-phone-rule);
+  gap: 0.42rem;
+  padding: max(0.28rem, env(safe-area-inset-top)) 0.5rem 0.3rem;
 }
 
 .signal-phone-identity__portrait {
   position: relative;
-  width: 3.72rem;
+  width: 2.5rem;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
@@ -113,12 +116,9 @@
 }
 
 .signal-phone-identity__name span,
-.signal-phone-identity__vitals dt,
-.signal-phone-identity__state span,
-.signal-phone-identity__sector span,
-.signal-phone-identity__sector small {
+.signal-phone-identity__vitals dt {
   color: var(--signal-phone-muted);
-  font-size: clamp(0.52rem, 2.25vw, 0.64rem);
+  font-size: clamp(0.48rem, 2.1vw, 0.59rem);
   font-weight: 900;
   letter-spacing: 0.13em;
   line-height: 1.08;
@@ -133,7 +133,7 @@
   margin: 0;
   min-width: 0;
   color: var(--signal-phone-bone);
-  font: 800 clamp(1rem, 4.7vw, 1.28rem)/0.98 var(--font-display);
+  font: 800 clamp(0.9rem, 4.2vw, 1.1rem)/1 var(--font-display);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -141,17 +141,17 @@
 
 .signal-phone-identity__vitals {
   display: grid;
-  grid-template-columns: repeat(2, minmax(2.8rem, auto));
+  grid-template-columns: repeat(2, minmax(2.35rem, auto));
   gap: 0;
   margin: 0;
 }
 
 .signal-phone-identity__vital {
-  min-width: 2.8rem;
+  min-width: 2.35rem;
   display: grid;
   place-items: center;
   gap: 0.12rem;
-  padding: 0.1rem 0.45rem;
+  padding: 0.08rem 0.3rem;
   border-left: 1px solid var(--signal-phone-rule);
   text-align: center;
 }
@@ -167,109 +167,12 @@
 .signal-phone-identity__vital dd {
   margin: 0;
   color: var(--signal-phone-mint);
-  font: 800 clamp(1.08rem, 5vw, 1.35rem)/1 var(--font-display);
+  font: 800 clamp(0.94rem, 4.4vw, 1.14rem)/1 var(--font-display);
 }
 
 .signal-phone-identity__vital--wound dd,
 .signal-phone-identity__vital--wound dt {
   color: var(--signal-phone-ember);
-}
-
-.signal-phone-identity__state {
-  min-width: 5.35rem;
-  display: grid;
-  justify-items: stretch;
-  gap: 0.32rem;
-}
-
-.signal-phone-identity__state span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.22rem;
-  color: var(--signal-phone-mint);
-  letter-spacing: 0.09em;
-  white-space: nowrap;
-}
-
-.signal-phone-identity__state span.is-disconnected {
-  color: var(--signal-phone-ember);
-}
-
-.signal-phone-identity__state strong {
-  min-height: 1.82rem;
-  display: grid;
-  place-items: center;
-  padding: 0.22rem 0.38rem;
-  border: 1px solid var(--signal-phone-brass);
-  color: #edd1a2;
-  background: #17130f;
-  font-size: clamp(0.54rem, 2.4vw, 0.66rem);
-  font-weight: 950;
-  letter-spacing: 0.1em;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.signal-phone-identity__state strong.is-waiting {
-  border-color: var(--signal-phone-rule);
-  color: var(--signal-phone-muted);
-  background: #0b0e10;
-}
-
-.signal-phone-identity__sector {
-  position: relative;
-  min-height: clamp(4.6rem, 20vw, 6rem);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  padding: 0.68rem 0.76rem 0.62rem;
-  overflow: hidden;
-  isolation: isolate;
-}
-
-.signal-phone-identity__sector > img {
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 48%;
-  opacity: 0.72;
-}
-
-.signal-phone-identity__sector::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: rgba(4, 7, 9, 0.48);
-  pointer-events: none;
-}
-
-.signal-phone-identity__sector > div {
-  min-width: 0;
-  display: grid;
-  gap: 0.14rem;
-}
-
-.signal-phone-identity__sector span {
-  color: #c5c3bd;
-}
-
-.signal-phone-identity__sector strong {
-  color: var(--signal-phone-bone);
-  font: 800 clamp(1.05rem, 5.2vw, 1.42rem)/0.98 var(--font-display);
-  overflow-wrap: anywhere;
-  text-transform: uppercase;
-  text-shadow: 0 2px 0.5rem #000;
-}
-
-.signal-phone-identity__sector small {
-  align-self: end;
-  color: #d5c29e;
-  white-space: nowrap;
 }
 
 .signal-phone-shell__content {
@@ -288,14 +191,31 @@
 }
 
 .signal-phone-shell__content > .phone-portrait-screen-command {
+  height: 100%;
+  min-height: 100%;
   padding: 0;
 }
 
 .signal-phone-shell .phone-required-action-shell {
+  display: flex;
+  flex-direction: column;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.signal-phone-shell .phone-required-action-shell__content {
+  flex: 1 1 auto;
+}
+
+.signal-phone-shell .phone-action-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.signal-phone-shell .phone-action-content-root {
+  flex: 1 1 auto;
 }
 
 .signal-phone-shell .phone-required-action-shell__header {
@@ -370,6 +290,11 @@
   box-shadow: 0 -0.8rem 2rem rgba(0, 0, 0, 0.62);
 }
 
+.phone-portrait-bottom-nav.signal-phone-nav {
+  display: block;
+  padding: 0;
+}
+
 .signal-phone-nav__primary {
   width: 100%;
   min-height: 4.55rem;
@@ -433,6 +358,7 @@
   gap: 0.48rem;
   padding: 0.76rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
   border-top: 1px solid var(--signal-phone-rule-strong);
   background: #090d10;
   box-shadow: 0 -1.4rem 3rem rgba(0, 0, 0, 0.8);
@@ -571,7 +497,7 @@
 }
 
 .signal-phone-shell .phone-move-prototype__content {
-  padding: 0.62rem 0.7rem 7.8rem;
+  padding: 0.62rem 0.7rem 0.8rem;
 }
 
 .signal-phone-shell .phone-move-option-a__list {
@@ -636,10 +562,6 @@
   color: #f3e6ce;
 }
 
-.signal-phone-shell .phone-move-prototype__docks {
-  bottom: calc(4.65rem + env(safe-area-inset-bottom));
-}
-
 @keyframes signal-phone-seal-activate {
   from {
     opacity: 0.35;
@@ -653,6 +575,12 @@
 
 .signal-phone-nav .phone-expanded-tab-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 360px) {
+  .signal-phone-nav .phone-expanded-tab-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .signal-phone-nav .phone-expanded-tab,
@@ -677,44 +605,28 @@
   place-items: center;
 }
 
-.phone-shell--immersive.signal-phone-shell .signal-phone-identity__sector {
-  display: none;
-}
-
 .phone-shell--immersive.signal-phone-shell .signal-phone-identity__rail {
-  min-height: 3.65rem;
-  padding-top: max(0.26rem, env(safe-area-inset-top));
+  min-height: 3.2rem;
+  padding-top: max(0.22rem, env(safe-area-inset-top));
 }
 
 .phone-shell--immersive.signal-phone-shell .signal-phone-identity__portrait {
-  width: 2.8rem;
+  width: 2.25rem;
 }
 
 @media (max-width: 480px), (max-height: 805px) {
   .signal-phone-identity__rail {
-    grid-template-columns: 3.55rem minmax(0, 1fr) auto;
-    gap: 0.34rem;
-    min-height: 4rem;
-    padding-inline: 0.46rem;
+    grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+    min-height: 3.45rem;
+    padding-inline: 0.42rem;
   }
 
   .signal-phone-identity__portrait {
-    width: 3.15rem;
+    width: 2.35rem;
   }
 
   .signal-phone-identity__vitals {
-    grid-template-columns: repeat(2, minmax(2.5rem, auto));
-  }
-
-  .signal-phone-identity__state {
-    grid-column: 2 / -1;
-    grid-row: 2;
-    min-width: 0;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .signal-phone-identity__sector {
-    min-height: 4.3rem;
+    grid-template-columns: repeat(2, minmax(2.2rem, auto));
   }
 
   .signal-phone-nav__primary,

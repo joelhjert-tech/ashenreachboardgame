@@ -9,7 +9,7 @@ import { ShieldChevronIcon } from "@phosphor-icons/react/dist/csr/ShieldChevron"
 import { StorefrontIcon } from "@phosphor-icons/react/dist/csr/Storefront";
 import { SwordIcon } from "@phosphor-icons/react/dist/csr/Sword";
 import { UserFocusIcon } from "@phosphor-icons/react/dist/csr/UserFocus";
-import type { ReactElement } from "react";
+import type { ReactElement, Ref } from "react";
 
 export type SignalPhoneTab = "player" | "inventory" | "quests" | "move" | "battle" | "shop" | "action";
 export type SignalPhoneCommandTab = Extract<SignalPhoneTab, "move" | "battle" | "shop" | "action">;
@@ -51,6 +51,7 @@ interface SignalPhoneNavigationProps {
   expanded: boolean;
   onTab: (tab: SignalPhoneTab) => void;
   onMore: () => void;
+  moreButtonRef?: Ref<HTMLButtonElement>;
 }
 
 export function SignalPhoneNavigation({
@@ -58,31 +59,32 @@ export function SignalPhoneNavigation({
   commandTab,
   expanded,
   onTab,
-  onMore
+  onMore,
+  moreButtonRef
 }: SignalPhoneNavigationProps): ReactElement {
   const primaryTabs: SignalPhoneTab[] = ["player", "inventory", "quests", commandTab];
   const activeLabel = activeTab === "player" ? "Operative — Player Card" : signalPhoneTabLabels[activeTab];
 
   return (
     <div
-      className={`signal-phone-nav__primary phone-portrait-bottom-nav ${
-        expanded ? "phone-bottomdock--expanded" : "phone-bottomdock--compact"
-      }`}
-      role={expanded ? undefined : "tablist"}
-      aria-label={expanded ? undefined : "Phone navigation"}
+      className="signal-phone-nav__primary"
+      role="tablist"
+      aria-label="Phone navigation"
+      aria-hidden={expanded ? "true" : undefined}
+      inert={expanded ? true : undefined}
       data-navigation-state={expanded ? "expanded" : "compact"}
     >
       {primaryTabs.map((tab) => {
-        const active = activeTab === tab && !expanded;
+        const active = activeTab === tab;
         return (
           <button
             key={tab}
             type="button"
-            role={expanded ? undefined : "tab"}
-            aria-selected={expanded ? undefined : active}
+            role="tab"
+            aria-selected={active}
+            data-signal-phone-tab={tab}
             aria-label={tab === "player" ? "Operative — Player Card" : signalPhoneTabLabels[tab]}
             className={active ? "is-active" : ""}
-            tabIndex={expanded ? -1 : undefined}
             onClick={() => onTab(tab)}
           >
             <SignalPhoneTabIcon tab={tab} />
@@ -93,9 +95,11 @@ export function SignalPhoneNavigation({
         );
       })}
       <button
+        ref={moreButtonRef}
         type="button"
         className={expanded ? "is-active" : ""}
         aria-expanded={expanded}
+        data-signal-phone-more
         aria-label={`${activeLabel}, current section; show all phone sections`}
         onClick={onMore}
       >

@@ -95,6 +95,36 @@ describe("server required-action projection", () => {
     expect(waiting.detail).toContain("Waiting for Joel to roll movement");
   });
 
+  it("keeps an authoritative approach result on Move instead of routing it to Battle", () => {
+    const state = activateMultiplayer();
+    const activeSeatId = state.turnOrder[state.activeSeatIndex]!;
+    state.phase = "resolution";
+    state.activeResolution = {
+      id: "seat-1:movement:glassmere-spindle:test",
+      playerId: activeSeatId,
+      source: "movement",
+      stage: "outcome_summary",
+      card: {
+        id: "glassmere-spindle",
+        title: "Glassmere Spindle",
+        type: "movement",
+        flavor: "Approach check"
+      },
+      battle: { stat: "guile", difficulty: 7, modifiers: [{ label: "Guile", value: 2 }] },
+      roll: { dice: [5], baseTotal: 5, modifierTotal: 2, finalTotal: 7, target: 7, success: true },
+      outcome: { title: "Movement success", text: "Moved into Glassmere Spindle.", effects: [] }
+    };
+
+    const owner = requiredAction(createPhoneProjection(state, activeSeatId));
+    expect(owner).toMatchObject({
+      kind: "test",
+      requiredTab: "move",
+      label: "Movement success",
+      allowedCommand: "continue",
+      canAct: true
+    });
+  });
+
   it("routes a help response only to the selected helper and survives projection reconnect", () => {
     const state = activateMultiplayer();
     const activeSeatId = state.turnOrder[0]!;

@@ -998,7 +998,7 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.queryByText(/turn console/i)).not.toBeInTheDocument();
   });
 
-  it("collapses the expanded section grid exactly 300 ms after touch-style selection", () => {
+  it("closes the expanded sheet immediately and restores focus after section selection", () => {
     vi.useFakeTimers();
     const patch = createPatch({ encounter: null });
     render(
@@ -1018,11 +1018,10 @@ describe("PhoneInventoryPanel", () => {
 
     openPhoneTabs();
     fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
-    act(() => vi.advanceTimersByTime(299));
-    expect(screen.getByRole("tablist", { name: /all phone sections/i })).toBeInTheDocument();
-    act(() => vi.advanceTimersByTime(1));
     expect(screen.queryByRole("tablist", { name: /all phone sections/i })).not.toBeInTheDocument();
+    act(() => vi.runAllTimers());
     expect(screen.getByRole("button", { name: /inventory, current section; show all phone sections/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /inventory/i })).toHaveFocus();
   });
 
   it("shows the owner-only Glass-Chime Swarm penalty as passive status with no controls", () => {
@@ -1127,8 +1126,11 @@ describe("PhoneInventoryPanel", () => {
     const phoneTopbar = document.querySelector(".phone-topbar");
     expect(within(phoneTopbar as HTMLElement).getByRole("heading", { name: /lane/i })).toBeInTheDocument();
     expect(phoneTopbar).toHaveTextContent(/sable vey/i);
-    expect(tablist).toHaveClass("phone-portrait-bottom-nav");
-    expect(tablist).toHaveClass("phone-bottomdock--compact");
+    const bottomNavigation = screen.getByRole("navigation", { name: /more phone controls/i });
+    expect(bottomNavigation).toHaveClass("phone-portrait-bottom-nav");
+    expect(bottomNavigation).toHaveClass("phone-bottomdock--compact");
+    expect(tablist).toHaveClass("signal-phone-nav__primary");
+    expect(tablist).not.toHaveClass("phone-bottomdock--compact");
     expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "false");
     expect(screen.getByRole("tablist", { name: /^phone navigation$/i })).toHaveTextContent(/act.*action/i);
     expect(screen.queryByRole("button", { name: /open phone navigation and room controls/i })).not.toBeInTheDocument();
@@ -1146,27 +1148,35 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("button", { name: /hide ui/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^close$/i })).toHaveClass("phone-portrait-tab-utility");
     expect(screen.getAllByRole("tab")).toHaveLength(7);
+    expect(tablist).toBeVisible();
+    expect(tablist).toHaveAttribute("data-navigation-state", "expanded");
+    expect(tablist).toHaveAttribute("aria-hidden", "true");
+    expect(tablist).toHaveAttribute("inert");
+    const phoneContent = document.querySelector("main[aria-label='Phone content']");
+    expect(phoneContent).toHaveAttribute("aria-hidden", "true");
+    expect(phoneContent).toHaveAttribute("inert");
     fireEvent.click(screen.getByRole("button", { name: /leave room/i }));
     expect(onLeave).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
 
     expect(shell).toHaveClass("phone-shell--immersive");
-    expect(shell).toHaveClass("phone-shell--bottomdock-expanded");
+    expect(shell).toHaveClass("phone-shell--bottomdock-compact");
     expect(shell).toHaveAttribute("data-phone-chrome-visible", "false");
-    expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "true");
+    expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "false");
     expect(window.localStorage.getItem("ashenreach.phoneChromeVisible")).toBe("false");
     const compactStatus = screen.getByLabelText(/compact player status/i);
     expect(compactStatus).toHaveTextContent(/sable vey/i);
     expect(compactStatus).toHaveTextContent(/0 wounds \| 0 Salvage \| 0 scars/i);
     expect(compactStatus.querySelector("img")).not.toBeInTheDocument();
     expect(screen.getByRole("banner")).toHaveClass("phone-topbar--compact");
-    expect(screen.getAllByRole("tab")).toHaveLength(7);
-    expect(screen.getByRole("button", { name: /leave room/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("tab")).toHaveLength(4);
+    expect(screen.queryByRole("button", { name: /leave room/i })).not.toBeInTheDocument();
     expect(document.querySelector(".phone-inventory-panel")).toHaveTextContent(/black route fuse/i);
     expect(screen.getByLabelText(/phone content/i)).toHaveClass("phone-content--expanded");
     expect(document.querySelectorAll(".phone-portrait-scroll")).toHaveLength(1);
     expect(onIntent).not.toHaveBeenCalled();
 
+    fireEvent.click(screen.getByRole("button", { name: /show all phone sections/i }));
     fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
 
     expect(shell).toHaveClass("phone-shell--immersive");
@@ -2426,12 +2436,18 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    expect(screen.getByText(/character locked/i)).toBeInTheDocument();
+    expect(screen.getByText(/mission · step 3 of 3/i)).toBeInTheDocument();
+    expect(screen.getByText(/^sable vey$/i)).toBeInTheDocument();
     expect(screen.getAllByText(/choose starting mission/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/quietus ledger/i)).toBeInTheDocument();
     expect(screen.getByTestId("phone-starting-mission-art")).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(contracts|fallbacks)\//));
     expect(screen.getByText(/silence one hunter/i)).toBeInTheDocument();
     expect(screen.getByText("Lane")).toBeInTheDocument();
+    expect(document.querySelector(".phone-character-waiting-hero")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/character stats/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/special abilities/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/starting equipment/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-starting-mission-art").closest(".artwork-frame")).toHaveClass("artwork-frame--contain");
     expect(screen.queryByRole("tab", { name: /inventory/i })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /select mission/i }));

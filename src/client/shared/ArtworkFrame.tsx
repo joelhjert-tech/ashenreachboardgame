@@ -82,6 +82,7 @@ export function ArtworkFrame({
           alt={status === "failed" ? "" : alt}
           aria-hidden={status === "failed" ? "true" : imageProps["aria-hidden"]}
           loading={priority ? "eager" : loading}
+          decoding={imageProps.decoding ?? "async"}
           fetchPriority={priority ? "high" : imageProps.fetchPriority}
           style={{ ...imageProps.style, objectPosition: focalPoint }}
           onLoad={(event) => {

@@ -168,6 +168,7 @@ function getCharacterSelectionRank(character: CharacterCatalogEntry): number {
 }
 
 type CharacterSelectionFilter = "recommended" | "all" | "advanced";
+type SetupSelectionStep = "piece" | "operative";
 
 function matchesCharacterFilter(character: CharacterCatalogEntry, filter: CharacterSelectionFilter): boolean {
   if (filter === "all") {
@@ -256,6 +257,7 @@ export function PhoneApp(): ReactElement {
   const [configuredPlayerCount, setConfiguredPlayerCount] = useState(6);
   const [pendingCharacterId, setPendingCharacterId] = useState<string | null>(null);
   const [selectedSignalPieceId, setSelectedSignalPieceId] = useState<SignalPieceId>("beacon");
+  const [setupSelectionStep, setSetupSelectionStep] = useState<SetupSelectionStep>("piece");
   const [signalPieceAnnouncement, setSignalPieceAnnouncement] = useState("");
   const [characterSelectionRetryRequired, setCharacterSelectionRetryRequired] = useState(false);
   const [auth, setAuth] = useState<PhoneSessionAuth | null>(() => readStoredAuth());
@@ -267,6 +269,7 @@ export function PhoneApp(): ReactElement {
   const operativeSelectionRef = useRef<HTMLElement | null>(null);
   const signalPiecePickerRef = useRef<HTMLDivElement | null>(null);
   const initializedSignalPieceSeatRef = useRef<string | null>(null);
+  const previousCharacterSelectedRef = useRef<boolean | null>(null);
   const joinUnavailable = joinError === "No open seats remain";
   const isLandscape = useLandscapeMode();
   const { patch, error, sendIntent, status, debugEvents, clearDebugEvents } = useRoomSubscription({
@@ -402,6 +405,14 @@ export function PhoneApp(): ReactElement {
     if (pendingCharacterId) {
       return;
     }
+    if (takenSignalPieceIds.has(selectedSignalPieceId)) {
+      const replacement = getFirstAvailableSignalPiece(takenSignalPieceIds);
+      setSelectedSignalPieceId(replacement);
+      setSetupSelectionStep("piece");
+      setSignalPieceAnnouncement(`${selectedSignalPieceId} became occupied. ${replacement} is now selected.`);
+      setJoinError("That Signal piece was just claimed. Review the replacement before continuing.");
+      return;
+    }
     setJoinError(null);
     setPendingCharacterId(characterId);
     setFormState((current) => ({ ...current, characterId }));
@@ -535,16 +546,36 @@ export function PhoneApp(): ReactElement {
   );
   useFocusOnRevision(
     operativeSelectionRef,
-    phonePatch?.payload.setup?.id,
-    Boolean(auth && phonePatch?.payload.setup?.stage === "operative-selection" && phonePatch.payload.setup.actorSeatId === auth.seatId),
+    phonePatch?.payload.setup?.id ? `${phonePatch.payload.setup.id}:${setupSelectionStep}` : null,
+    Boolean(
+      auth
+      && setupSelectionStep === "operative"
+      && phonePatch?.payload.setup?.stage === "operative-selection"
+      && phonePatch.payload.setup.actorSeatId === auth.seatId
+    ),
     ".phone-character-option:not([disabled])"
+  );
+  useFocusOnRevision(
+    operativeSelectionRef,
+    phonePatch?.payload.setup?.id ? `${phonePatch.payload.setup.id}:${setupSelectionStep}` : null,
+    Boolean(
+      auth
+      && setupSelectionStep === "piece"
+      && phonePatch?.payload.setup?.stage === "operative-selection"
+      && phonePatch.payload.setup.actorSeatId === auth.seatId
+    ),
+    '[role="radio"][aria-checked="true"]:not([disabled])'
   );
 
   useEffect(() => {
     if (!ownSeat) return;
 
+    const previousCharacterSelected = previousCharacterSelectedRef.current;
+    previousCharacterSelectedRef.current = ownSeat.characterSelected !== false;
+
     if (initializedSignalPieceSeatRef.current !== ownSeat.seatId) {
       initializedSignalPieceSeatRef.current = ownSeat.seatId;
+      setSetupSelectionStep(ownSeat.characterSelected === false ? "piece" : "operative");
       const seatIndex = phonePatch?.payload.seats.findIndex((seat) => seat.seatId === ownSeat.seatId) ?? 0;
       const projectedDefault = ownSeat.signalPieceId ?? getSignalPieceIdForSeat(seatIndex);
       const initialPiece = projectedDefault && !takenSignalPieceIds.has(projectedDefault)
@@ -557,6 +588,14 @@ export function PhoneApp(): ReactElement {
       return;
     }
 
+    if (previousCharacterSelected === true && ownSeat.characterSelected === false) {
+      setSetupSelectionStep("piece");
+      setPendingCharacterId(null);
+      setSignalPieceAnnouncement("");
+      setJoinError(null);
+      return;
+    }
+
     if (ownSeat.characterSelected !== false && ownSeat.signalPieceId) {
       setSelectedSignalPieceId(ownSeat.signalPieceId);
       return;
@@ -565,7 +604,9 @@ export function PhoneApp(): ReactElement {
     if (takenSignalPieceIds.has(selectedSignalPieceId)) {
       const replacement = getFirstAvailableSignalPiece(takenSignalPieceIds);
       setSelectedSignalPieceId(replacement);
+      setSetupSelectionStep("piece");
       setSignalPieceAnnouncement(`${selectedSignalPieceId} became occupied. ${replacement} is now selected.`);
+      setJoinError("That Signal piece was just claimed. Review the replacement before continuing.");
     }
   }, [ownSeat, phonePatch?.payload.seats, selectedSignalPieceId, takenSignalPieceIds]);
 
@@ -911,130 +952,176 @@ export function PhoneApp(): ReactElement {
       <main className="phone-page phone-page-controller">
         <section className="phone-portrait-controller phone-portrait-controller-empty">
           <div className="phone-portrait-panel phone-portrait-lobby-panel">
-            <main className="phone-portrait-scroll phone-lobby-waiting-scroll phone-character-select-scroll" aria-label="Choose character">
-              <section ref={operativeSelectionRef} className="phone-lobby-ready-panel phone-character-waiting-panel phone-character-select-surface">
-                <div className="phone-character-waiting-topline">
-                  <span>{auth.roomCode}</span>
-                  <span>{auth.displayName}</span>
-                  <span>{isSetupHost ? "Host Phone" : "Player"}</span>
-                </div>
-                {phonePatch.payload.lateJoinPending ? <p className="phone-panel-kicker">Join Game In Progress</p> : null}
-                <h1>Select operative</h1>
-                {phonePatch.payload.lateJoinPending ? (
-                  <p className="phone-muted-copy">Choose an available operative, select a starting mission, then join the end of the current turn order.</p>
-                ) : null}
-                <section className="phone-signal-piece-picker" aria-labelledby="phone-signal-piece-title">
-                  <div className="phone-signal-piece-picker__heading">
-                    <span id="phone-signal-piece-title">Choose your Signal piece</span>
-                    <small>Silhouette, symbol, and colour identify you on the TV.</small>
+            <main className="phone-portrait-scroll phone-lobby-waiting-scroll phone-character-select-scroll" aria-label={setupSelectionStep === "piece" ? "Choose piece" : "Choose operative"}>
+              <section
+                ref={operativeSelectionRef}
+                className={`phone-lobby-ready-panel phone-character-waiting-panel phone-character-select-surface phone-setup-step phone-setup-step--${setupSelectionStep}`}
+              >
+                <header className="phone-setup-step__header">
+                  <div>
+                    <span>{auth.displayName}</span>
+                    <h1>{setupSelectionStep === "piece" ? "Choose Piece" : "Choose Operative"}</h1>
                   </div>
-                  <div ref={signalPiecePickerRef} className="phone-signal-piece-picker__grid" role="radiogroup" aria-label="Signal piece">
-                    {SIGNAL_PIECES.map((piece) => {
-                      const selected = selectedSignalPieceId === piece.id;
-                      const unavailable = takenSignalPieceIds.has(piece.id);
-                      return (
+                  <small>{setupSelectionStep === "piece" ? "Step 1 of 3" : "Step 2 of 3"}</small>
+                </header>
+                {phonePatch.payload.lateJoinPending ? <p className="phone-panel-kicker">Join Game In Progress</p> : null}
+                {setupSelectionStep === "piece" ? (
+                  <>
+                    <p className="phone-muted-copy">Choose the silhouette, symbol, and colour that identify you on the TV.</p>
+                    <section className="phone-signal-piece-picker" aria-labelledby="phone-signal-piece-title">
+                      <div className="phone-signal-piece-picker__heading">
+                        <span id="phone-signal-piece-title">Your Signal piece</span>
+                        <small>Player identity remains stable through movement, handoff, and reconnect.</small>
+                      </div>
+                      <div ref={signalPiecePickerRef} className="phone-signal-piece-picker__grid" role="radiogroup" aria-label="Signal piece">
+                        {SIGNAL_PIECES.map((piece) => {
+                          const selected = selectedSignalPieceId === piece.id;
+                          const unavailable = takenSignalPieceIds.has(piece.id);
+                          return (
+                            <button
+                              key={piece.id}
+                              type="button"
+                              role="radio"
+                              aria-checked={selected}
+                              disabled={unavailable}
+                              tabIndex={selected && !unavailable ? 0 : -1}
+                              data-signal-piece-id={piece.id}
+                              className={`phone-signal-piece-option${selected ? " is-selected" : ""}`}
+                              onClick={() => {
+                                setSelectedSignalPieceId(piece.id);
+                                setSignalPieceAnnouncement(`${piece.name} selected.`);
+                                setJoinError(null);
+                              }}
+                              onKeyDown={(event: ReactKeyboardEvent<HTMLButtonElement>) => {
+                                const forward = event.key === "ArrowRight" || event.key === "ArrowDown";
+                                const backward = event.key === "ArrowLeft" || event.key === "ArrowUp";
+                                if (!forward && !backward && event.key !== "Home" && event.key !== "End") return;
+                                event.preventDefault();
+                                const available = SIGNAL_PIECES.filter((candidate) => !takenSignalPieceIds.has(candidate.id));
+                                const currentAvailableIndex = available.findIndex((candidate) => candidate.id === piece.id);
+                                const target = event.key === "Home"
+                                  ? available[0]
+                                  : event.key === "End"
+                                    ? available.at(-1)
+                                    : available[
+                                      (currentAvailableIndex + (forward ? 1 : -1) + available.length) % available.length
+                                    ];
+                                if (!target) return;
+                                setSelectedSignalPieceId(target.id);
+                                setSignalPieceAnnouncement(`${target.name} selected.`);
+                                setJoinError(null);
+                                signalPiecePickerRef.current
+                                  ?.querySelector<HTMLButtonElement>(`[data-signal-piece-id="${target.id}"]`)
+                                  ?.focus();
+                              }}
+                            >
+                              <img src={getSignalPieceAssetPath(piece.id)} width={768} height={768} alt="" aria-hidden="true" />
+                              <span>
+                                <strong>{piece.name}</strong>
+                                <small>{unavailable ? "In use at this table" : piece.shortDescription}</small>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="phone-signal-piece-picker__status" role="status" aria-live="polite">{signalPieceAnnouncement}</p>
+                    </section>
+                    {(joinError || error) && <p className="error" role="alert">{joinError ?? error}</p>}
+                    <div className="phone-setup-step__actions">
+                      <button
+                        type="button"
+                        className="phone-button phone-button-primary"
+                        onClick={() => {
+                          if (takenSignalPieceIds.has(selectedSignalPieceId)) {
+                            const replacement = getFirstAvailableSignalPiece(takenSignalPieceIds);
+                            setSelectedSignalPieceId(replacement);
+                            setSignalPieceAnnouncement(`${selectedSignalPieceId} became occupied. ${replacement} is now selected.`);
+                            setJoinError("That Signal piece was just claimed. Review the replacement before continuing.");
+                            return;
+                          }
+                          setJoinError(null);
+                          setSetupSelectionStep("operative");
+                        }}
+                      >
+                        Continue to Operative
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {phonePatch.payload.lateJoinPending ? (
+                      <p className="phone-muted-copy">Choose an available operative, then select a starting mission before joining the turn order.</p>
+                    ) : (
+                      <p className="phone-muted-copy">Choose the operative you will control.</p>
+                    )}
+                    <div className="phone-character-filter-row" role="tablist" aria-label="Character filters">
+                      {[
+                        ["recommended", "Recommended"],
+                        ["all", "All Operatives"],
+                        ["advanced", "Advanced"]
+                      ].map(([filter, label]) => (
                         <button
-                          key={piece.id}
+                          key={filter}
                           type="button"
-                          role="radio"
-                          aria-checked={selected}
-                          disabled={unavailable}
-                          tabIndex={selected && !unavailable ? 0 : -1}
-                          data-signal-piece-id={piece.id}
-                          className={`phone-signal-piece-option${selected ? " is-selected" : ""}`}
-                          onClick={() => {
-                            setSelectedSignalPieceId(piece.id);
-                            setSignalPieceAnnouncement(`${piece.name} selected.`);
-                          }}
-                          onKeyDown={(event: ReactKeyboardEvent<HTMLButtonElement>) => {
-                            const forward = event.key === "ArrowRight" || event.key === "ArrowDown";
-                            const backward = event.key === "ArrowLeft" || event.key === "ArrowUp";
-                            if (!forward && !backward && event.key !== "Home" && event.key !== "End") return;
-                            event.preventDefault();
-                            const available = SIGNAL_PIECES.filter((candidate) => !takenSignalPieceIds.has(candidate.id));
-                            const currentAvailableIndex = available.findIndex((candidate) => candidate.id === piece.id);
-                            const target = event.key === "Home"
-                              ? available[0]
-                              : event.key === "End"
-                                ? available.at(-1)
-                                : available[
-                                  (currentAvailableIndex + (forward ? 1 : -1) + available.length) % available.length
-                                ];
-                            if (!target) return;
-                            setSelectedSignalPieceId(target.id);
-                            setSignalPieceAnnouncement(`${target.name} selected.`);
-                            signalPiecePickerRef.current
-                              ?.querySelector<HTMLButtonElement>(`[data-signal-piece-id="${target.id}"]`)
-                              ?.focus();
-                          }}
+                          role="tab"
+                          aria-selected={characterFilter === filter}
+                          className={`phone-character-filter${characterFilter === filter ? " phone-character-filter-active" : ""}`}
+                          onClick={() => setCharacterFilter(filter as CharacterSelectionFilter)}
                         >
-                          <img src={getSignalPieceAssetPath(piece.id)} width={768} height={768} alt="" aria-hidden="true" />
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="phone-character-grid phone-character-snap-list" role="list" aria-label="Character">
+                      {displayCharacters.map((character) => {
+                        const projectedOption = characterOptionById.get(character.id);
+                        const unavailableReason = projectedOption?.eligible === false ? projectedOption.disabledReason : null;
+                        return (
+                        <button
+                          key={character.id}
+                          type="button"
+                          className={`phone-character-option${pendingCharacterId === character.id ? " phone-character-option-selected" : ""}`}
+                          disabled={pendingCharacterId !== null || Boolean(unavailableReason)}
+                          title={unavailableReason ?? undefined}
+                          aria-busy={pendingCharacterId === character.id ? "true" : undefined}
+                          onClick={() => handleCharacterSelected(character.id)}
+                        >
+                          <img src={getCharacterPortraitPath(character.id)} alt="" />
                           <span>
-                            <strong>{piece.name}</strong>
-                            <small>{unavailable ? "In use at this table" : piece.shortDescription}</small>
+                            <strong>{character.name}</strong>
+                            {projectedOption?.developerQa ? <em>Developer QA operative</em> : null}
+                            <small>{character.archetype}</small>
+                            {character.presentation && (
+                              <span className="phone-character-presentation" data-testid="phone-character-presentation">
+                                <span className="phone-character-role-row">
+                                  <small>{character.presentation.role}</small>
+                                  <small>{formatComplexity(character.presentation.complexity)}</small>
+                                  {character.presentation.recommendedForFirstGame ? <em>First-game pick</em> : null}
+                                </span>
+                                <small>{character.presentation.playstyleSummary}</small>
+                              </span>
+                            )}
+                            <small className="phone-character-select-label">
+                              {pendingCharacterId === character.id ? "Selecting…" : unavailableReason ?? "Select operative"}
+                            </small>
                           </span>
                         </button>
-                      );
-                    })}
-                  </div>
-                  <p className="phone-signal-piece-picker__status" role="status" aria-live="polite">{signalPieceAnnouncement}</p>
-                </section>
-                <div className="phone-character-filter-row" role="tablist" aria-label="Character filters">
-                  {[
-                    ["recommended", "Recommended"],
-                    ["all", "All Operatives"],
-                    ["advanced", "Advanced"]
-                  ].map(([filter, label]) => (
-                    <button
-                      key={filter}
-                      type="button"
-                      role="tab"
-                      aria-selected={characterFilter === filter}
-                      className={`phone-character-filter${characterFilter === filter ? " phone-character-filter-active" : ""}`}
-                      onClick={() => setCharacterFilter(filter as CharacterSelectionFilter)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <div className="phone-character-grid phone-character-snap-list" role="list" aria-label="Character">
-                  {displayCharacters.map((character) => {
-                    const projectedOption = characterOptionById.get(character.id);
-                    const unavailableReason = projectedOption?.eligible === false ? projectedOption.disabledReason : null;
-                    return (
-                    <button
-                      key={character.id}
-                      type="button"
-                      className={`phone-character-option${pendingCharacterId === character.id ? " phone-character-option-selected" : ""}`}
-                      disabled={pendingCharacterId !== null || Boolean(unavailableReason)}
-                      title={unavailableReason ?? undefined}
-                      aria-busy={pendingCharacterId === character.id ? "true" : undefined}
-                      onClick={() => handleCharacterSelected(character.id)}
-                    >
-                      <img src={getCharacterPortraitPath(character.id)} alt="" />
-                      <span>
-                        <strong>{character.name}</strong>
-                        {projectedOption?.developerQa ? <em>Developer QA operative</em> : null}
-                        <small>{character.archetype}</small>
-                        {character.presentation && (
-                          <span className="phone-character-presentation" data-testid="phone-character-presentation">
-                            <span className="phone-character-role-row">
-                              <small>{character.presentation.role}</small>
-                              <small>{formatComplexity(character.presentation.complexity)}</small>
-                              {character.presentation.recommendedForFirstGame ? <em>First-game pick</em> : null}
-                            </span>
-                            <small>{character.presentation.playstyleSummary}</small>
-                          </span>
-                        )}
-                        <small className="phone-character-select-label">
-                          {pendingCharacterId === character.id ? "Selecting..." : unavailableReason ?? "Select character"}
-                        </small>
-                      </span>
-                    </button>
-                    );
-                  })}
-                </div>
-                {(joinError || error) && <p className="error">{joinError ?? error}</p>}
+                        );
+                      })}
+                    </div>
+                    {(joinError || error) && <p className="error" role="alert">{joinError ?? error}</p>}
+                    <div className="phone-setup-step__actions">
+                      <button
+                        type="button"
+                        className="phone-button phone-button-secondary"
+                        disabled={pendingCharacterId !== null}
+                        onClick={() => setSetupSelectionStep("piece")}
+                      >
+                        Back to Pieces
+                      </button>
+                    </div>
+                  </>
+                )}
               </section>
             </main>
           </div>

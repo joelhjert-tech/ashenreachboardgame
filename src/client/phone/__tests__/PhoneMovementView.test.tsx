@@ -157,6 +157,7 @@ describe("PhoneMovementView", () => {
       />
     );
     expect(screen.getAllByRole("button", { name: "Roll movement" })).toHaveLength(1);
+    expect(document.querySelector(".phone-move-prototype__roll-state")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Roll movement" }));
     expect(onIntent).toHaveBeenCalledWith({ type: "MOVEMENT_ROLL_REQUESTED", seatId: "seat-1" });
   });
