@@ -4,7 +4,8 @@ import {
   getCardArtPath,
   getCharacterPortraitPathOrNull,
   getNemesisPortraitPath,
-  getSignalTheatreResultCrestPath
+  getSignalTheatreResultCrestPath,
+  getSignalTheatreStatSealPath
 } from "../shared/assetPaths.js";
 import { ArtworkFrame } from "../shared/ArtworkFrame.js";
 import type { SignalSectorResolutionModel } from "./signalSectorResolutionPresentation.js";
@@ -40,7 +41,14 @@ export function SignalSectorResolution({
     : null;
   const oppositionArt = oppositionArtPath(model);
   const resultVisible = model.outcomeLabel !== "RESOLVING";
-  const oppositionRole = model.mode === "battle" ? "Opposition" : "Challenge";
+  const resolutionRole = model.mode === "battle"
+    ? "Battle"
+    : model.mode === "tile-challenge"
+      ? "Tile challenge"
+      : "Sector challenge";
+  const oppositionRole = model.mode === "battle"
+    ? "Opposition"
+    : model.opposition.secondaryName ?? "Challenge";
   const resultCrest = model.outcomeLabel === "SUCCESS"
     ? getSignalTheatreResultCrestPath("success")
     : model.outcomeLabel === "FAILURE"
@@ -64,7 +72,7 @@ export function SignalSectorResolution({
   return (
     <section
       className={`signal-sector-resolution signal-sector-resolution--${model.mode} signal-sector-resolution--${model.tone}${restored ? " is-restored" : ""}`}
-      aria-label={`${model.mode === "battle" ? "Battle" : "Tile challenge"}: ${model.title}`}
+      aria-label={`${resolutionRole}: ${model.title}`}
       data-testid="signal-sector-resolution"
       data-resolution-mode={model.mode}
       data-resolution-stage={model.stage}
@@ -107,7 +115,14 @@ export function SignalSectorResolution({
         </article>
 
         <div className="signal-sector-resolution__fracture" aria-hidden="true">
-          <span>{model.statLabel}</span>
+          {model.mode === "battle" ? (
+            <span>{model.statLabel}</span>
+          ) : (
+            <div className="signal-sector-resolution__trial-seal">
+              <img src={getSignalTheatreStatSealPath(model.stat)} width={512} height={512} alt="" />
+              <span>{model.statLabel}</span>
+            </div>
+          )}
           <strong>{model.mode === "battle" ? "VS" : "AGAINST"}</strong>
           <i />
         </div>

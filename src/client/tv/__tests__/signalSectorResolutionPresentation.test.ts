@@ -150,14 +150,121 @@ describe("buildSignalSectorResolutionModel", () => {
     expect(model).toMatchObject({
       mode: "tile-challenge",
       title: "Ward Lock",
+      eyebrow: "Recurring hazard challenge",
       publicSummary: challenge.lore,
       operativeImageKey: "char_bjornis",
       oppositionImageKey: "ward-lock",
       oppositionArtKind: "threat",
       oppositionFixed: true,
-      outcomeCopy: "The seal opens."
+      outcomeCopy: "The seal opens.",
+      sequence: ["Hazard", "Test", "Totals", "Result"],
+      opposition: {
+        name: "Ward Lock",
+        secondaryName: "Hazard",
+        finalTotal: 8
+      }
     });
     expect(model?.opposition.finalTotal).toBe(8);
+  });
+
+  it("promotes a live Hazard card test into the Trial Theatre category treatment", () => {
+    const hazardPresentation = presentation({
+      encounter: {
+        name: "Mirror-Rot Interference",
+        category: "Hazard",
+        imageKey: "mirror-rot-interference",
+        publicSummary: "Your reflection acts one second late."
+      },
+      test: { stat: "guile", label: "Guile", opposed: false },
+      opponent: {
+        name: "Mirror-Rot Interference",
+        secondaryName: "Difficulty",
+        imageKey: "mirror-rot-interference",
+        baseValue: 11,
+        modifiers: [],
+        rawDice: [],
+        diceTotal: null,
+        finalTotal: 11
+      },
+      publicRewardSummary: null,
+      publicConsequence: "The delayed reflection locks back into step."
+    });
+    const model = buildSignalSectorResolutionModel(payload({
+      battlePresentation: hazardPresentation,
+      pendingTileChallenge: null,
+      activeResolution: {
+        origin: { sourceDeck: "threat" }
+      } as PublicPatchPayload["activeResolution"]
+    }));
+
+    expect(model).toMatchObject({
+      mode: "sector-test",
+      title: "Mirror-Rot Interference",
+      eyebrow: "Hazard trial",
+      stat: "guile",
+      oppositionImageKey: "mirror-rot-interference",
+      oppositionFixed: true,
+      sequence: ["Hazard", "Test", "Totals", "Result"],
+      opposition: {
+        name: "Mirror-Rot Interference",
+        secondaryName: "Hazard",
+        finalTotal: 11
+      }
+    });
+  });
+
+  it("labels Anomaly challenges without presenting them as enemies", () => {
+    const anomalyPresentation = presentation({
+      encounter: {
+        name: "Rift Whispers",
+        category: "Anomaly",
+        imageKey: "rift-whispers"
+      },
+      test: { stat: "signal", label: "Signal", opposed: false },
+      opponent: {
+        name: "Rift Whispers",
+        secondaryName: "Difficulty",
+        imageKey: "rift-whispers",
+        baseValue: 8,
+        modifiers: [],
+        rawDice: [],
+        diceTotal: null,
+        finalTotal: 8
+      }
+    });
+    const model = buildSignalSectorResolutionModel(payload({
+      sectors: [{
+        ...payload().sectors[0]!,
+        tileChallenges: [{
+          ...challenge,
+          id: "rift-whispers",
+          name: "Rift Whispers",
+          challengeType: "anomaly",
+          artCardId: "rift-whispers"
+        }]
+      }],
+      battlePresentation: anomalyPresentation,
+      pendingTileChallenge: {
+        challengeId: "rift-whispers",
+        sectorId: "scorched-road",
+        seatId: "seat-1",
+        challengeType: "anomaly",
+        testStat: "signal",
+        difficulty: 8,
+        authoredOrder: 0,
+        totalChallenges: 1,
+        rolled: true
+      }
+    }));
+
+    expect(model).toMatchObject({
+      mode: "tile-challenge",
+      eyebrow: "Recurring anomaly challenge",
+      sequence: ["Anomaly", "Test", "Totals", "Result"],
+      opposition: {
+        secondaryName: "Anomaly"
+      }
+    });
   });
 
   it("uses public waiting copy and never reads the private required-action detail", () => {

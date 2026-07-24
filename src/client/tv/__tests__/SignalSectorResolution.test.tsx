@@ -129,6 +129,51 @@ describe("SignalSectorResolution", () => {
     expect(screen.queryByText(/Relic blade|No public modifiers/)).not.toBeInTheDocument();
   });
 
+  it("presents a Hazard as a total-only Trial Theatre confrontation", () => {
+    const rendered = render(<SignalSectorResolution model={model({
+      id: "hazard-review",
+      mode: "sector-test",
+      title: "Mirror-Rot Interference",
+      eyebrow: "Hazard trial",
+      stat: "guile",
+      statLabel: "Guile",
+      operative: {
+        name: "Bjornis",
+        secondaryName: null,
+        baseValue: 5,
+        modifiers: [],
+        rawDice: [7],
+        diceTotal: 7,
+        finalTotal: 12
+      },
+      opposition: {
+        name: "Mirror-Rot Interference",
+        secondaryName: "Hazard",
+        baseValue: 11,
+        modifiers: [],
+        rawDice: [],
+        diceTotal: null,
+        finalTotal: 11
+      },
+      oppositionImageKey: "mirror-rot-interference",
+      oppositionFixed: true
+    })} />);
+
+    expect(screen.getByLabelText("Sector challenge: Mirror-Rot Interference")).toBeVisible();
+    expect(screen.getByText("Hazard")).toBeVisible();
+    expect(screen.getByAltText("Mirror-Rot Interference challenge artwork")).toHaveAttribute(
+      "src",
+      "/assets/cards/threats/blue/mirror-rot-interference.png"
+    );
+    expect(rendered.container.querySelector(".signal-sector-resolution__trial-seal img")).toHaveAttribute(
+      "src",
+      "/assets/riftfall/ui/signal-theatre/stat-seals/guile.png"
+    );
+    expect(screen.getAllByText("Total")).toHaveLength(2);
+    expect(screen.queryByText("Base")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dice")).not.toBeInTheDocument();
+  });
+
   it("marks a previously seen resolution as restored instead of replaying its entrance", () => {
     vi.useFakeTimers();
     const first = render(<SignalSectorResolution model={model()} />);
@@ -146,6 +191,7 @@ describe("SignalSectorResolution", () => {
     expect(css).toContain("@keyframes signal-duel-operative");
     expect(css).toContain("@keyframes signal-duel-opposition");
     expect(css).toContain("@keyframes signal-duel-fracture");
+    expect(css).toContain("@keyframes signal-trial-seal-activate");
     expect(css).toContain("@keyframes signal-duel-total");
     expect(css).toContain("--rift-accent: var(--challenge-color");
     expect(css).toContain("drop-shadow(-.22rem 0 .35rem var(--rift-accent))");

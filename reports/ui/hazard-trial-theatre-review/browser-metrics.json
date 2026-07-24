@@ -1,0 +1,71 @@
+{
+  "hazard-trial-1366x768.png": {
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "right": 1366,
+      "bottom": 768
+    },
+    "outcome": {
+      "left": 204.90625,
+      "top": 622.0625,
+      "right": 1161.09375,
+      "bottom": 732.265625,
+      "opacity": "1",
+      "visibility": "visible"
+    },
+    "totalLabels": 2,
+    "canvasCount": 0,
+    "pageWidth": 1366,
+    "pageHeight": 768,
+    "sealLoaded": true,
+    "challengeArtLoaded": true,
+    "text": "Hazard trialMirror-Rot InterferenceYour reflection acts one second late, then tries to make the delay your fault.OperativeBjornisTrial WiTotal12GuileAGAINSTHazardMirror-Rot InterferenceThe sector answersTotal11Authoritative resultSUCCESSThe delayed reflection locks back into step."
+  },
+  "hazard-trial-1600x900.png": {
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "right": 1600,
+      "bottom": 900
+    },
+    "outcome": {
+      "left": 336,
+      "top": 729,
+      "right": 1264,
+      "bottom": 855.59375,
+      "opacity": "1",
+      "visibility": "visible"
+    },
+    "totalLabels": 2,
+    "canvasCount": 0,
+    "pageWidth": 1600,
+    "pageHeight": 900,
+    "sealLoaded": true,
+    "challengeArtLoaded": true,
+    "text": "Hazard trialMirror-Rot InterferenceYour reflection acts one second late, then tries to make the delay your fault.OperativeBjornisTrial WiTotal12GuileAGAINSTHazardMirror-Rot InterferenceThe sector answersTotal11Authoritative resultSUCCESSThe delayed reflection locks back into step."
+  },
+  "hazard-trial-1920x1080.png": {
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "right": 1920,
+      "bottom": 1080
+    },
+    "outcome": {
+      "left": 496,
+      "top": 874.796875,
+      "right": 1424,
+      "bottom": 1009.390625,
+      "opacity": "1",
+      "visibility": "visible"
+    },
+    "totalLabels": 2,
+    "canvasCount": 0,
+    "pageWidth": 1920,
+    "pageHeight": 1080,
+    "sealLoaded": true,
+    "challengeArtLoaded": true,
+    "text": "Hazard trialMirror-Rot InterferenceYour reflection acts one second late, then tries to make the delay your fault.OperativeBjornisTrial WiTotal12GuileAGAINSTHazardMirror-Rot InterferenceThe sector answersTotal11Authoritative resultSUCCESSThe delayed reflection locks back into step."
+  }
+}

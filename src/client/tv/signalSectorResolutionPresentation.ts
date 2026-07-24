@@ -100,6 +100,19 @@ function waitingCopy(waiting: BattlePresentation["waiting"]): string | null {
     : `${waiting.actorDisplayName} is resolving ${waiting.publicAction}.`;
 }
 
+function challengeCategoryLabel(
+  presentation: BattlePresentation | null,
+  challenge: PublicTileChallenge | null,
+  pending: PublicPatchPayload["pendingTileChallenge"]
+): "Hazard" | "Anomaly" | "Challenge" {
+  const projectedCategory = presentation?.encounter.category.trim().toLowerCase();
+  const challengeType = challenge?.challengeType ?? pending?.challengeType ?? null;
+
+  if (projectedCategory === "hazard" || challengeType === "hazard") return "Hazard";
+  if (projectedCategory === "anomaly" || challengeType === "anomaly") return "Anomaly";
+  return "Challenge";
+}
+
 export function buildSignalSectorResolutionModel(
   payload: PublicPatchPayload
 ): SignalSectorResolutionModel | null {
@@ -120,6 +133,7 @@ export function buildSignalSectorResolutionModel(
     : tileChallenge
       ? "tile-challenge"
       : "sector-test";
+  const categoryLabel = challengeCategoryLabel(presentation, challenge, pending);
   const actorSeatId = presentation?.actorSeatId ?? pending?.seatId ?? null;
   const actorPlayer = actorSeatId
     ? payload.players.find((player) => player.seatId === actorSeatId) ?? null
@@ -158,7 +172,13 @@ export function buildSignalSectorResolutionModel(
     ?? null;
   const sequence = mode === "battle"
     ? ["Engage", "Dice", "Calculation", "Result"]
-    : ["Sector", "Test", "Calculation", "Result"];
+    : [categoryLabel, "Test", "Totals", "Result"];
+  const opposition = normalizeSide(presentation?.opponent, {
+    name: title,
+    secondaryName: mode === "battle" ? "Opposition" : categoryLabel,
+    baseValue: oppositionDifficulty,
+    finalTotal: oppositionDifficulty
+  });
 
   return {
     id: presentation?.id ?? `tile-challenge:${pending?.challengeId ?? title}:${actorSeatId ?? "table"}`,
@@ -172,8 +192,8 @@ export function buildSignalSectorResolutionModel(
     eyebrow: mode === "battle"
       ? "Hostile contact"
       : mode === "tile-challenge"
-        ? `Recurring ${challenge?.challengeType ?? pending?.challengeType ?? "sector"} challenge`
-        : "Sector test",
+        ? `Recurring ${categoryLabel.toLowerCase()} challenge`
+        : `${categoryLabel} trial`,
     publicSummary:
       challenge?.lore
       ?? presentation?.encounter.publicSummary
@@ -185,12 +205,9 @@ export function buildSignalSectorResolutionModel(
       secondaryName: actorPlayer?.character.name ?? null
     }),
     operativeImageKey: actorPlayer?.character.id ?? null,
-    opposition: normalizeSide(presentation?.opponent, {
-      name: title,
-      secondaryName: mode === "battle" ? "Opposition" : "Sector challenge",
-      baseValue: oppositionDifficulty,
-      finalTotal: oppositionDifficulty
-    }),
+    opposition: mode === "battle"
+      ? opposition
+      : { ...opposition, secondaryName: categoryLabel },
     oppositionImageKey:
       challenge?.artCardId
       ?? presentation?.opponent.imageKey
