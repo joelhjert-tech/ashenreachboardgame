@@ -4,7 +4,7 @@ import type { Stat } from "../shared/types.js";
 import type { HostMotionCueKind } from "./HostMotionCue.js";
 import "./SignalActionCoin.css";
 
-export type SignalActionCoinKind = HostMotionCueKind | "challenge" | "ended";
+export type SignalActionCoinKind = HostMotionCueKind | "challenge" | "mission" | "ended";
 
 interface SignalActionCoinProps {
   kind: SignalActionCoinKind;
@@ -20,6 +20,7 @@ const accentByKind: Record<SignalActionCoinKind, string> = {
   encounter: "#6ebbe8",
   battle: "#df624d",
   challenge: "#6ebbe8",
+  mission: "#caa566",
   reward: "#d8bd68",
   penalty: "#e05a45",
   waiting: "#aaa69d",
@@ -125,6 +126,16 @@ function ActionEngraving({ kind }: { kind: SignalActionCoinKind }): ReactElement
       <g className="signal-action-coin__engraving">
         <path d="m50 19 18 18-18 18-18-18zM27 68h46M34 77h32" />
         <path d="M50 55v20M42 66l8 9 8-9" />
+      </g>
+    );
+  }
+
+  if (kind === "mission") {
+    return (
+      <g className="signal-action-coin__engraving">
+        <path d="M27 21h36l10 10v48H27zM63 21v12h10" />
+        <path d="M36 43h28M36 53h28M36 63h17" />
+        <path d="m58 68 6 6 11-14" />
       </g>
     );
   }

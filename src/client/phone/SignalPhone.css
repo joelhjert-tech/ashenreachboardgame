@@ -22,6 +22,381 @@
   font-family: var(--font-body);
 }
 
+.phone-mission-replacement-shell {
+  --mission-brass: #caa566;
+  --mission-ember: #e46c4e;
+  --mission-ice: #9cf3d5;
+  display: block;
+  background:
+    linear-gradient(90deg, transparent 0 8%, rgba(202, 165, 102, 0.08) 8% 8.35%, transparent 8.35% 91.65%, rgba(202, 165, 102, 0.08) 91.65% 92%, transparent 92%),
+    #05070a;
+}
+
+.phone-mission-replacement {
+  position: relative;
+  width: min(100%, 33rem);
+  height: 100%;
+  min-height: 0;
+  margin: 0 auto;
+  padding:
+    max(0.55rem, env(safe-area-inset-top))
+    0.72rem
+    max(1rem, env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: var(--signal-phone-bone);
+  background:
+    linear-gradient(180deg, rgba(14, 18, 21, 0.98), rgba(5, 7, 10, 0.99) 28%),
+    #05070a;
+  border-inline: 1px solid rgba(202, 165, 102, 0.2);
+  scrollbar-gutter: stable;
+}
+
+.phone-mission-replacement::before {
+  content: "";
+  position: absolute;
+  top: 7.2rem;
+  right: -1rem;
+  left: -1rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(228, 108, 78, 0.78) 22%, rgba(202, 165, 102, 0.82) 58%, transparent);
+  box-shadow: 0 0 1rem rgba(228, 108, 78, 0.28);
+  pointer-events: none;
+}
+
+.phone-mission-replacement__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.38rem 0 0.62rem;
+  border-bottom: 1px solid rgba(202, 165, 102, 0.28);
+  text-transform: uppercase;
+}
+
+.phone-mission-replacement__header div {
+  display: grid;
+  min-width: 0;
+  gap: 0.08rem;
+}
+
+.phone-mission-replacement__header span,
+.phone-mission-replacement__header small,
+.phone-mission-replacement__completion span,
+.phone-mission-replacement__count span,
+.phone-mission-offer__copy > span {
+  color: #a8a39a;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.phone-mission-replacement__header strong {
+  overflow: hidden;
+  color: #eee4d2;
+  font: 800 clamp(0.92rem, 4.5vw, 1.12rem)/1 var(--font-display);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-mission-replacement__header small {
+  flex: 0 0 auto;
+  color: var(--mission-brass);
+  text-align: right;
+}
+
+.phone-mission-replacement__completion {
+  display: grid;
+  grid-template-columns: 4.2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 1rem 0 0.9rem;
+  animation: phone-mission-window-enter 380ms var(--ease-command, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.phone-mission-replacement__seal {
+  position: relative;
+  width: 4.2rem;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  color: var(--mission-brass);
+}
+
+.phone-mission-replacement__seal::before {
+  content: "";
+  position: absolute;
+  inset: 13%;
+  border-radius: 50%;
+  background: rgba(202, 165, 102, 0.12);
+  box-shadow:
+    0 0 0 1px rgba(202, 165, 102, 0.34),
+    0 0 1.1rem rgba(228, 108, 78, 0.24);
+}
+
+.phone-mission-replacement__seal svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: square;
+  stroke-linejoin: bevel;
+  stroke-width: 4;
+}
+
+.phone-mission-replacement__seal svg path:last-child {
+  color: var(--mission-ice);
+  stroke-width: 6;
+}
+
+.phone-mission-replacement__completion h1 {
+  margin: 0.16rem 0 0;
+  color: #f2e8d6;
+  font: 900 clamp(1.75rem, 8vw, 2.55rem)/0.92 var(--font-display);
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+}
+
+.phone-mission-replacement__completion p {
+  max-width: 39ch;
+  margin: 0.46rem 0 0;
+  color: #b7b1a7;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.phone-mission-replacement__count {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.15rem 0.48rem;
+  border-top: 1px solid rgba(202, 165, 102, 0.14);
+}
+
+.phone-mission-replacement__count strong {
+  color: var(--mission-ice);
+  font-size: 0.69rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phone-mission-offers {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.phone-mission-offer {
+  --mission-offer-index: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: clamp(5.8rem, 27vw, 7.4rem) minmax(0, 1fr);
+  gap: 0.68rem;
+  min-width: 0;
+  padding: 0.58rem;
+  overflow: hidden;
+  border: 1px solid rgba(202, 165, 102, 0.28);
+  border-left: 3px solid var(--mission-brass);
+  border-radius: 0.18rem;
+  background: #0b0f13;
+  box-shadow: 0 0.65rem 1.3rem rgba(0, 0, 0, 0.28);
+  animation: phone-mission-offer-reveal 420ms var(--ease-command, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation-delay: calc(110ms + var(--mission-offer-index) * 90ms);
+}
+
+.phone-mission-offer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-top: 1px solid rgba(156, 243, 213, 0.36);
+  border-right: 1px solid rgba(156, 243, 213, 0.36);
+  clip-path: polygon(44% 0, 100% 0, 100% 56%);
+  pointer-events: none;
+}
+
+.phone-mission-offer__art {
+  position: relative;
+  min-width: 0;
+  height: clamp(8.8rem, 34vw, 10.8rem);
+  overflow: hidden;
+  border: 1px solid rgba(202, 165, 102, 0.3);
+  background: #05070a;
+}
+
+.phone-mission-offer__art .phone-card-inspect-trigger,
+.phone-mission-offer__art .artwork-frame,
+.phone-mission-offer__art .artwork-frame__media,
+.phone-mission-offer__art img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.phone-mission-offer__art img {
+  object-fit: contain;
+  object-position: center;
+}
+
+.phone-mission-offer__art .phone-card-inspect-trigger__hint {
+  display: none;
+}
+
+.phone-mission-offer__art > span {
+  position: absolute;
+  right: 0.28rem;
+  bottom: 0.2rem;
+  padding: 0.1rem 0.28rem;
+  color: #f0e6d5;
+  background: rgba(5, 7, 10, 0.86);
+  border: 1px solid rgba(202, 165, 102, 0.34);
+  font: 900 0.62rem/1 var(--font-display);
+  letter-spacing: 0.12em;
+}
+
+.phone-mission-offer__copy {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+}
+
+.phone-mission-offer__copy > span {
+  color: var(--mission-brass);
+}
+
+.phone-mission-offer__copy h2 {
+  margin: 0.16rem 0 0;
+  overflow-wrap: anywhere;
+  color: #f0e7d7;
+  font: 850 clamp(1rem, 4.7vw, 1.25rem)/1.02 var(--font-display);
+}
+
+.phone-mission-offer__copy > p {
+  display: -webkit-box;
+  margin: 0.3rem 0 0;
+  overflow: hidden;
+  color: #aaa69e;
+  font-size: 0.68rem;
+  line-height: 1.28;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.phone-mission-offer__copy dl {
+  display: grid;
+  gap: 0.22rem;
+  margin: 0.42rem 0 0;
+}
+
+.phone-mission-offer__copy dl > div {
+  display: grid;
+  grid-template-columns: 3.7rem minmax(0, 1fr);
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.phone-mission-offer__copy dt,
+.phone-mission-offer__copy dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.61rem;
+  line-height: 1.2;
+}
+
+.phone-mission-offer__copy dt {
+  color: #7f817e;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phone-mission-offer__copy dd {
+  color: #c9c1b5;
+}
+
+.phone-mission-offer__select {
+  width: 100%;
+  min-height: 2.65rem;
+  margin-top: 0.52rem;
+  padding-inline: 0.55rem;
+  overflow: hidden;
+  border-color: rgba(202, 165, 102, 0.58);
+  background: #302719;
+  color: #f5ead7;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-mission-offer__select:focus-visible {
+  outline: 2px solid var(--mission-ice);
+  outline-offset: 2px;
+}
+
+.phone-mission-offer__select:disabled {
+  opacity: 0.58;
+}
+
+.phone-mission-replacement__privacy {
+  margin: 0.85rem 0 0;
+  padding: 0.62rem;
+  color: #8f938f;
+  border-top: 1px solid rgba(156, 243, 213, 0.18);
+  font-size: 0.66rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+@keyframes phone-mission-window-enter {
+  from { opacity: 0; transform: translateY(-0.55rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes phone-mission-offer-reveal {
+  from { opacity: 0; transform: translateY(0.8rem) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 350px) {
+  .phone-mission-replacement {
+    padding-inline: 0.5rem;
+  }
+
+  .phone-mission-replacement__completion {
+    grid-template-columns: 3.5rem minmax(0, 1fr);
+    gap: 0.62rem;
+  }
+
+  .phone-mission-replacement__seal {
+    width: 3.5rem;
+  }
+
+  .phone-mission-offer {
+    grid-template-columns: 5.2rem minmax(0, 1fr);
+    gap: 0.5rem;
+    padding: 0.48rem;
+  }
+
+  .phone-mission-offer__copy dl > div {
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone-mission-replacement__completion,
+  .phone-mission-offer {
+    animation: none;
+  }
+}
+
 .signal-phone-shell > .phone-portrait-panel {
   width: min(100%, 33rem);
   height: 100%;

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent, type ReactElement } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent, type ReactElement, type RefObject } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { describeContractObjective as describeObjective, formatContractProgress } from "../../game/contracts/objectives.js";
 import { getEquippedGearItem } from "../../game/engine/gear.js";
@@ -474,6 +474,118 @@ function ContractMissionCard({
   );
 }
 
+function PhoneMissionReplacementView({
+  displayName,
+  operativeName,
+  options,
+  pendingContractId,
+  stageRef,
+  onSelect
+}: {
+  displayName: string;
+  operativeName: string;
+  options: ContractCard[];
+  pendingContractId: string | null;
+  stageRef: RefObject<HTMLElement | null>;
+  onSelect: (contractId: string) => void;
+}): ReactElement {
+  const visibleOptions = options.slice(0, 3);
+
+  return (
+    <section
+      className="phone-portrait-controller phone-ui-streamlined signal-phone-shell phone-mission-replacement-shell"
+      data-testid="phone-mission-replacement"
+    >
+      <main
+        ref={stageRef}
+        className="phone-mission-replacement"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="phone-mission-replacement-title"
+        aria-describedby="phone-mission-replacement-detail"
+      >
+        <header className="phone-mission-replacement__header">
+          <div>
+            <span>{displayName}</span>
+            <strong>{operativeName}</strong>
+          </div>
+          <small>Private mission relay</small>
+        </header>
+
+        <section className="phone-mission-replacement__completion">
+          <div className="phone-mission-replacement__seal" aria-hidden="true">
+            <svg viewBox="0 0 100 100" focusable="false">
+              <path d="m50 7 11 8 14-1 4 13 12 7-5 13 5 13-12 7-4 13-14-1-11 8-11-8-14 1-4-13-12-7 5-13-5-13 12-7 4-13 14 1z" />
+              <path d="m29 52 13 13 30-34" />
+            </svg>
+          </div>
+          <div>
+            <span>Reward resolved · Contract archived</span>
+            <h1 id="phone-mission-replacement-title">Mission complete</h1>
+            <p id="phone-mission-replacement-detail">
+              Choose one new private mission. Only these sealed offers and your selection appear on this phone.
+            </p>
+          </div>
+        </section>
+
+        <div className="phone-mission-replacement__count" aria-label={`${visibleOptions.length} mission offers available`}>
+          <span>Choose next mission</span>
+          <strong>{visibleOptions.length} sealed offer{visibleOptions.length === 1 ? "" : "s"}</strong>
+        </div>
+
+        <section className="phone-mission-offers" aria-label="Choose new mission">
+          {visibleOptions.map((contract, index) => (
+            <article
+              key={contract.id}
+              className="phone-mission-offer"
+              style={{ "--mission-offer-index": index } as CSSProperties}
+            >
+              <div className="phone-mission-offer__art">
+                <PhoneInspectableCardArt
+                  cardType="contract"
+                  cardId={contract.id}
+                  title={contract.name}
+                  lore={contract.text}
+                  rules={`${describeContractObjective(contract)} ${describeContractProgress(contract)}`}
+                  testId="phone-replacement-mission-art"
+                />
+                <span aria-hidden="true">0{index + 1}</span>
+              </div>
+              <div className="phone-mission-offer__copy">
+                <span>{contract.factionGiver}</span>
+                <h2>{contract.name}</h2>
+                <p>{contract.text}</p>
+                <dl>
+                  <div>
+                    <dt>Objective</dt>
+                    <dd>{describeContractObjective(contract)}</dd>
+                  </div>
+                  <div>
+                    <dt>Reward</dt>
+                    <dd>{describeContractReward(contract)}</dd>
+                  </div>
+                </dl>
+                <button
+                  type="button"
+                  className="phone-button phone-button-primary phone-mission-offer__select"
+                  disabled={pendingContractId !== null}
+                  onClick={() => onSelect(contract.id)}
+                >
+                  {pendingContractId === contract.id ? "Accepting mission..." : `Choose ${contract.name}`}
+                </button>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <p className="phone-mission-replacement__privacy">
+          Mission details remain private until the rules reveal a public result.
+        </p>
+      </main>
+    </section>
+  );
+}
+
 function ActiveMissionQuestCard({
   activeContract,
   contract
@@ -753,13 +865,12 @@ export function PortraitControllerView({
   const [actionRecovery, setActionRecovery] = useState<{ message: string; sequence: number } | null>(null);
   const [qaRequiredActionState, setQaRequiredActionState] = useState<{ status: RequiredActionStatus; label: string } | null>(null);
   const startingMissionSectionRef = useRef<HTMLElement | null>(null);
+  const replacementMissionStageRef = useRef<HTMLElement | null>(null);
   const setupStageRef = useRef<HTMLElement | null>(null);
   const lobbyScrollRef = useRef<HTMLElement | null>(null);
   const phoneScrollRef = useRef<HTMLElement | null>(null);
   const pendingTabScrollRef = useRef<"top" | "required" | null>(null);
   const lastAutoRoutedActionRef = useRef<string | null>(null);
-  const previousCompletedContractCountRef = useRef(self?.character.completedContracts?.length ?? 0);
-  const awaitingReplacementMissionRef = useRef(false);
   const phoneChromeHidden = !phoneChromeVisible;
   const actionGuidance = self ? getPhoneActionGuidance(patch, self) : null;
 
@@ -1008,18 +1119,6 @@ export function PortraitControllerView({
   }, [pendingStartingContract]);
 
   useEffect(() => {
-    const completedCount = self?.character.completedContracts?.length ?? 0;
-    if (completedCount > previousCompletedContractCountRef.current && !self?.character.activeContract) {
-      awaitingReplacementMissionRef.current = true;
-    }
-    if (patch?.pendingMissionSelection?.status === "awaitingSelection" && !self?.character.activeContract) {
-      navigateToTab("quests");
-      awaitingReplacementMissionRef.current = false;
-    }
-    previousCompletedContractCountRef.current = completedCount;
-  }, [patch?.pendingMissionSelection?.status, self?.character.activeContract, self?.character.completedContracts?.length]);
-
-  useEffect(() => {
     if (!pendingActiveContract) return;
     if (self?.character.activeContract?.contractId === pendingActiveContract.id) {
       setPendingActiveContract(null);
@@ -1042,6 +1141,16 @@ export function PortraitControllerView({
     patch?.setup?.id,
     Boolean(self && patch?.setup?.actorSeatId === self.seatId && setupFocusSelector),
     setupFocusSelector
+  );
+  useFocusOnRevision(
+    replacementMissionStageRef,
+    patch?.pendingMissionSelection?.id,
+    Boolean(
+      self &&
+      patch?.pendingMissionSelection?.status === "awaitingSelection" &&
+      !self.character.activeContract
+    ),
+    ".phone-mission-offer__select:not([disabled])"
   );
 
   const handleLeave = () => {
@@ -1068,6 +1177,10 @@ export function PortraitControllerView({
   const ownSeat = patch?.seats.find((seat) => seat.seatId === self.seatId) ?? null;
   const isLateJoinPending = patch?.lateJoinPending === true;
   const isLobbyWaiting = patch?.status === "lobby" || isLateJoinPending || (!patch && Boolean(onLobbyBack));
+  const replacementMissionActive = Boolean(
+    patch?.pendingMissionSelection?.status === "awaitingSelection" &&
+    !self.character.activeContract
+  );
   const localUnboundNemeses = (patch?.nemesisChampions ?? []).filter(
     (nemesis) => nemesis.boundPlayerId !== self.seatId && nemesis.sectorId === self.character.currentSpaceId && !nemesis.defeated
   );
@@ -1232,6 +1345,27 @@ export function PortraitControllerView({
           </main>
         </div>
       </section>
+    );
+  }
+
+  if (replacementMissionActive && patch?.pendingMissionSelection) {
+    return (
+      <PhoneMissionReplacementView
+        displayName={displayName}
+        operativeName={self.character.name}
+        options={patch.pendingMissionSelection.options}
+        pendingContractId={pendingActiveContract?.id ?? null}
+        stageRef={replacementMissionStageRef}
+        onSelect={(contractId) => {
+          setPendingActiveContract({ id: contractId, sequence: patchSequence ?? 0 });
+          onIntent?.({
+            type: "SELECT_REPLACEMENT_CONTRACT",
+            seatId: self.seatId,
+            selectionId: patch.pendingMissionSelection!.id,
+            contractId
+          });
+        }}
+      />
     );
   }
 
@@ -1629,32 +1763,6 @@ export function PortraitControllerView({
                   <ResultDeltaRow deltas={scenarioDeltas} className="phone-scenario-deltas" />
                 </article>
               </section>
-              {!self.character.activeContract && patch?.pendingMissionSelection?.status === "awaitingSelection" ? (
-                <section className="phone-portrait-section phone-new-mission-section" aria-label="Choose new contract">
-                  <div className="phone-sheet-section-heading">Contract Complete</div>
-                  <p className="phone-muted-copy">Your reward is resolved and the completed Contract is archived. Choose your next private objective.</p>
-                  <div className="phone-starting-mission-list">
-                    {patch.pendingMissionSelection.options.map((contract) => (
-                      <ContractMissionCard
-                        key={contract.id}
-                        contract={contract}
-                        terminology="contract"
-                        pending={pendingActiveContract?.id === contract.id}
-                        disabled={!onIntent || Boolean(pendingActiveContract)}
-                        onSelect={() => {
-                          setPendingActiveContract({ id: contract.id, sequence: patchSequence ?? 0 });
-                          onIntent?.({
-                            type: "SELECT_REPLACEMENT_CONTRACT",
-                            seatId: self.seatId,
-                            selectionId: patch.pendingMissionSelection!.id,
-                            contractId: contract.id
-                          });
-                        }}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ) : null}
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">My Contract</div>
                 <ActiveMissionQuestCard activeContract={self.character.activeContract} contract={activeContractCard} />

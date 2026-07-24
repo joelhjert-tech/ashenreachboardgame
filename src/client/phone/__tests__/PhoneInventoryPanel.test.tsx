@@ -2165,7 +2165,7 @@ describe("PhoneInventoryPanel", () => {
     expect(within(mission).getByText("Gain 1 Salvage")).toBeInTheDocument();
   });
 
-  it("archives a completed mission in inventory and offers a new mission on the Quest tab", () => {
+  it("archives a completed mission and immediately opens a focused replacement window", () => {
     const completedContract = {
       id: "choir-hush-census",
       name: "Choir Hush Census",
@@ -2182,11 +2182,23 @@ describe("PhoneInventoryPanel", () => {
       objective: { type: "defeatCount" as const, target: 2 },
       reward: { type: "gain_salvage" as const, amount: 2 }
     };
-    const base = createPatch({ encounter: null, activeResolution: null, availableContracts: [completedContract, nextContract] });
+    const secondContract = { ...nextContract, id: "glass-choir-census", name: "Glass Choir Census" };
+    const thirdContract = { ...nextContract, id: "relay-witness", name: "Relay Witness" };
+    const fourthContract = { ...nextContract, id: "hidden-fourth-offer", name: "Hidden Fourth Offer" };
+    const base = createPatch({
+      encounter: null,
+      activeResolution: null,
+      availableContracts: [completedContract, nextContract, secondContract, thirdContract, fourthContract]
+    });
     const self = base.self!;
     const patch = {
       ...base,
-      pendingMissionSelection: { id: "replacement-1", completedContractId: completedContract.id, status: "awaitingSelection" as const, options: [nextContract] },
+      pendingMissionSelection: {
+        id: "replacement-1",
+        completedContractId: completedContract.id,
+        status: "awaitingSelection" as const,
+        options: [nextContract, secondContract, thirdContract, fourthContract]
+      },
       self: {
         ...self,
         character: { ...self.character, activeContract: null, completedContracts: [completedContract.id] }
@@ -2212,11 +2224,13 @@ describe("PhoneInventoryPanel", () => {
         onLeave={vi.fn()}
       />
     );
-    openPhoneTabs();
-    fireEvent.click(screen.getByRole("tab", { name: /^objectives$/i }));
-    const chooser = screen.getByRole("region", { name: /choose new contract/i });
+    const dialog = screen.getByRole("dialog", { name: /mission complete/i });
+    expect(screen.queryByRole("navigation", { name: /phone controls/i })).not.toBeInTheDocument();
+    const chooser = within(dialog).getByRole("region", { name: /choose new mission/i });
+    expect(within(chooser).getAllByRole("button", { name: /^choose /i })).toHaveLength(3);
+    expect(within(chooser).queryByText("Hidden Fourth Offer")).not.toBeInTheDocument();
     expect(within(chooser).queryByText("Choir Hush Census")).not.toBeInTheDocument();
-    fireEvent.click(within(chooser).getByRole("button", { name: /select contract/i }));
+    fireEvent.click(within(chooser).getByRole("button", { name: /choose ember courier/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "SELECT_REPLACEMENT_CONTRACT",
       seatId: "seat-1",
@@ -2280,7 +2294,9 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    expect(await screen.findByRole("region", { name: /choose new contract/i })).toBeInTheDocument();
+    const dialog = await screen.findByRole("dialog", { name: /mission complete/i });
+    expect(dialog).toBeInTheDocument();
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: /choose ember courier/i })).toHaveFocus());
   });
 
   it("shows public scenario sheet progress and pressure on the Quest tab without private agenda data", () => {

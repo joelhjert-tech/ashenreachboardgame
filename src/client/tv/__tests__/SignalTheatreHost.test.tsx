@@ -166,6 +166,42 @@ describe("SignalTheatreHost", () => {
     expect(screen.queryByText(/Secret Alpha|Secret Beta/)).not.toBeInTheDocument();
   });
 
+  it("shows a cinematic public-safe mission handoff while private choices stay on the owner phone", () => {
+    const rendered = renderSignal(makePatch({
+      movementPlanner: null,
+      pendingMissionSelectionStatus: {
+        ownerSeatId: "seat-1",
+        status: "awaitingSelection"
+      },
+      requiredAction: {
+        id: "mission:seat-1:15",
+        kind: "mission",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Nera",
+        requiredTab: null,
+        label: "Waiting for Nera",
+        detail: "Waiting for Nera to choose a new private Contract.",
+        canAct: false,
+        waiting: true,
+        privacy: "public",
+        transitionStage: "private-resolution",
+        revision: 15
+      }
+    }, 15));
+
+    const mission = screen.getByTestId("signal-mission-selection");
+    expect(mission).toHaveTextContent("Mission complete");
+    expect(mission).toHaveTextContent("Nera is choosing a new private mission");
+    expect(mission).toHaveTextContent("Mission details remain private");
+    expect(rendered.container.querySelectorAll(".signal-theatre__mission-dossiers article")).toHaveLength(3);
+    expect(rendered.container.querySelector(".signal-theatre__base")).toHaveAttribute("aria-hidden", "true");
+    expect(rendered.container.querySelector("[data-signal-action-coin]")).toHaveAttribute(
+      "data-signal-action-coin",
+      "mission"
+    );
+    expect(mission).not.toHaveTextContent(/objective|reward:|contract id/i);
+  });
+
   it("displays only server-authored totals without exposing the arithmetic breakdown", () => {
     const rendered = renderSignal(makePatch({
       movementPlanner: null,

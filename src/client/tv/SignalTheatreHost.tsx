@@ -158,6 +158,49 @@ function SignalScenarioReadout({ payload }: { payload: PublicPatchPayload }): Re
   );
 }
 
+function SignalMissionSelection({ ownerName }: { ownerName: string }): ReactElement {
+  return (
+    <section
+      className="signal-theatre__mission-selection"
+      data-testid="signal-mission-selection"
+      role="status"
+      aria-live="polite"
+      aria-labelledby="signal-mission-selection-title"
+    >
+      <div className="signal-theatre__mission-seal" aria-hidden="true">
+        <svg viewBox="0 0 100 100" focusable="false">
+          <path d="m50 5 12 8 14-1 5 13 12 7-4 14 5 12-12 8-4 14-14-1-12 9-12-9-14 1-5-13-12-7 4-14-5-12 12-8 4-14 14 1z" />
+          <path d="m30 52 13 13 29-34" />
+        </svg>
+      </div>
+      <header>
+        <span>Private mission relay</span>
+        <h1 id="signal-mission-selection-title">Mission complete</h1>
+        <p>
+          The reward is resolved. {ownerName} is choosing a new private mission on their phone.
+        </p>
+      </header>
+      <div className="signal-theatre__mission-dossiers" aria-hidden="true">
+        {[0, 1, 2].map((index) => (
+          <article
+            key={index}
+            style={{ "--signal-mission-index": index } as CSSProperties}
+          >
+            <i />
+            <span>Sealed offer</span>
+            <strong>0{index + 1}</strong>
+            <small>Owner access only</small>
+          </article>
+        ))}
+      </div>
+      <footer>
+        <span>Up to three offers</span>
+        <strong>Mission details remain private</strong>
+      </footer>
+    </section>
+  );
+}
+
 function SignalLobby({
   patch,
   roomCode,
@@ -241,6 +284,10 @@ export function SignalTheatreHost({
     ? null
     : getSignalSectorResolutionDevFixture(search, payload)
       ?? buildSignalSectorResolutionModel(payload);
+  const missionSelectionActive = payload.pendingMissionSelectionStatus?.status === "awaitingSelection";
+  const missionOwner = missionSelectionActive
+    ? payload.seats.find((seat) => seat.seatId === payload.pendingMissionSelectionStatus?.ownerSeatId) ?? null
+    : null;
   const resolutionPlayer = sectorResolution?.actorSeatId
     ? payload.players.find((player) => player.seatId === sectorResolution.actorSeatId) ?? null
     : null;
@@ -317,15 +364,21 @@ export function SignalTheatreHost({
   const routeLabel = journey
     ? journey.phase === "arrival" ? "Destination reached" : `Route ${journeyStep} / ${journeyStepTotal}`
     : route.selected ? "Route confirmed" : route.roll !== null ? `Movement ${route.roll}` : titleCase(model?.kind ?? "waiting");
-  const actionCoinKind: SignalActionCoinKind = sectorResolution
+  const actionCoinKind: SignalActionCoinKind = missionSelectionActive
+    ? "mission"
+    : sectorResolution
     ? sectorResolution.mode === "battle" ? "battle" : "challenge"
     : journey?.phase === "arrival"
       ? "arrival"
       : kind;
-  const actionCoinLabel = sectorResolution
+  const actionCoinLabel = missionSelectionActive
+    ? "Mission relay"
+    : sectorResolution
     ? `${sectorResolution.statLabel} ${sectorResolution.mode === "battle" ? "battle" : "challenge"}`
     : routeLabel;
-  const actionCoinDetail = sectorResolution
+  const actionCoinDetail = missionSelectionActive
+    ? "Private selection"
+    : sectorResolution
     ? sectorResolution.opposition.name
     : focusSector?.name ?? (endResult ? endResult.modeLabel : "Signal relay");
   const style = { "--signal-marker-position": `${markerPosition}%` } as CSSProperties;
@@ -354,7 +407,7 @@ export function SignalTheatreHost({
 
   return (
     <main
-      className={`signal-theatre signal-theatre--${kind} signal-theatre--tier-${environment?.tier ?? "unknown"}${journey || fixture?.motionPhase ? " signal-theatre--journey" : ""}${sectorResolution ? " signal-theatre--sector-resolution" : ""}${fixture?.endgameTone ? ` signal-theatre--fixture-${fixture.endgameTone}` : ""}`}
+      className={`signal-theatre signal-theatre--${kind} signal-theatre--tier-${environment?.tier ?? "unknown"}${journey || fixture?.motionPhase ? " signal-theatre--journey" : ""}${sectorResolution ? " signal-theatre--sector-resolution" : ""}${missionSelectionActive ? " signal-theatre--mission-selection" : ""}${fixture?.endgameTone ? ` signal-theatre--fixture-${fixture.endgameTone}` : ""}`}
       data-testid="signal-theatre-host"
       data-signal-state={kind}
       data-motion-id={journey?.eventId ?? model?.id ?? endResult?.id ?? "stable"}
@@ -362,9 +415,10 @@ export function SignalTheatreHost({
       data-piece-variant={pieceVariant}
       data-p22-fixture={fixture?.id ?? undefined}
       data-sector-resolution-mode={sectorResolution?.mode ?? undefined}
+      data-mission-selection={missionSelectionActive ? "true" : undefined}
       style={style}
     >
-      <div className="signal-theatre__base" aria-hidden={sectorResolution ? "true" : undefined}>
+      <div className="signal-theatre__base" aria-hidden={sectorResolution || missionSelectionActive ? "true" : undefined}>
         <section
           className="signal-theatre__environment"
           aria-label={`${focusSector?.name ?? "Unknown sector"}. ${occupants.length} operative${occupants.length === 1 ? "" : "s"} present.`}
@@ -494,7 +548,11 @@ export function SignalTheatreHost({
         />
       </aside>
 
-      {sectorResolution ? <SignalSectorResolution model={sectorResolution} /> : null}
+      {missionSelectionActive ? (
+        <SignalMissionSelection ownerName={missionOwner?.displayName ?? "The operative"} />
+      ) : sectorResolution ? (
+        <SignalSectorResolution model={sectorResolution} />
+      ) : null}
 
       {!synchronized ? (
         <section className="signal-theatre__network" role="status" aria-live="polite">

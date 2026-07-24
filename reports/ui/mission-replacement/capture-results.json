@@ -1,0 +1,16 @@
+{
+  "phone": {
+    "overflowX": 0,
+    "canvasCount": 0,
+    "offerCount": 3,
+    "dialogCount": 1,
+    "navigationCount": 0
+  },
+  "tv": {
+    "overflowX": 0,
+    "canvasCount": 0,
+    "dossierCount": 3
+  },
+  "privateOptionNamesOnTv": [],
+  "consoleErrors": []
+}
