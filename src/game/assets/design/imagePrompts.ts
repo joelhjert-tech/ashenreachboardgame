@@ -5,6 +5,7 @@ import { characterPortraitPrompts } from "./characterPortraitPrompts.js";
 import { generatedCardImagePrompts } from "./generatedCardImagePrompts.js";
 import { baseNegativePrompt } from "./negativePrompt.js";
 import { scenarioSheetPrompts } from "./scenarioSheetPrompts.js";
+import { signalTheatreEnvironmentPrompts } from "./signalTheatreEnvironmentPrompts.js";
 import { uiPrompts } from "./uiPrompts.js";
 
 export type ImagePromptSpec = {
@@ -56,6 +57,7 @@ export const requiredImageGenerationChecklist = [
   "9 route-note/artifact/wargear sample card images",
   "4 tokens",
   "4 UI frames/backgrounds",
+  "49 Signal Theatre sector environments",
   "6 printable scenario sheet illustrations"
 ] as const;
 
@@ -75,6 +77,7 @@ export const imagePrompts: ImagePromptSpec[] = [
     usage: prompt.usage
   })),
   ...scenarioSheetPrompts,
+  ...signalTheatreEnvironmentPrompts,
   ...uiPrompts
 ];
 

@@ -1,0 +1,1101 @@
+.signal-theatre {
+  --signal-bone: #ebe2d0;
+  --signal-muted: #aaa69e;
+  --signal-mint: #a4f8db;
+  --signal-red: #ff5b43;
+  --signal-ink: #07070d;
+  position: fixed;
+  inset: 0;
+  isolation: isolate;
+  overflow: hidden;
+  min-width: 100vw;
+  min-height: 100svh;
+  color: var(--signal-bone);
+  background: var(--signal-ink);
+  font-family: "Arial Narrow", "Bahnschrift Condensed", "Roboto Condensed", Arial, sans-serif;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.signal-theatre__world {
+  position: absolute;
+  z-index: -3;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  filter: brightness(0.75) contrast(1.08) saturate(0.84);
+}
+
+.signal-theatre::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  background: rgba(3, 3, 10, 0.2);
+  pointer-events: none;
+}
+
+.signal-theatre__brand {
+  position: absolute;
+  z-index: 4;
+  top: clamp(1.15rem, 3.1svh, 2.35rem);
+  left: clamp(1.45rem, 2.8vw, 3.35rem);
+  display: grid;
+  gap: 0.44rem;
+  max-width: 24vw;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgba(235, 226, 208, 0.72);
+}
+
+.signal-theatre__brand > span {
+  color: var(--signal-bone);
+  font-size: clamp(0.8rem, 1.25vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: 0.32em;
+}
+
+.signal-theatre__brand > small {
+  overflow: hidden;
+  color: #b7b0a5;
+  font-size: clamp(0.54rem, 0.62vw, 0.72rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signal-theatre__operative {
+  position: absolute;
+  z-index: 3;
+  top: clamp(5.2rem, 10svh, 8rem);
+  left: clamp(1.45rem, 2.8vw, 3.35rem);
+  width: min(23vw, 27rem);
+  max-height: 52svh;
+  padding: 0.85rem 1rem 1rem 0;
+  background: rgba(5, 5, 12, 0.46);
+  border-bottom: 1px solid rgba(164, 248, 219, 0.58);
+  text-shadow: 0 0.18rem 0.45rem #000;
+}
+
+.signal-theatre__operative h1 {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--signal-bone);
+  font-size: clamp(3rem, 4.8vw, 5.8rem);
+  font-stretch: condensed;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.86;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.signal-theatre__operative h2,
+.signal-theatre__operative span {
+  display: block;
+}
+
+.signal-theatre__operative h2 {
+  margin-top: clamp(0.8rem, 1.7svh, 1.4rem);
+  color: var(--signal-mint);
+  font-size: clamp(0.76rem, 1.12vw, 1.3rem);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.signal-theatre__operative span {
+  margin-top: 0.36rem;
+  color: #bdb6aa;
+  font-size: clamp(0.54rem, 0.72vw, 0.82rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.signal-theatre__command {
+  position: absolute;
+  z-index: 5;
+  top: clamp(1.25rem, 3.5svh, 2.8rem);
+  left: 25vw;
+  right: 23vw;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  text-shadow: 0 0.18rem 0.5rem #000;
+}
+
+.signal-theatre__command > span {
+  color: var(--signal-red);
+  font-size: clamp(0.66rem, 1.05vw, 1.2rem);
+  font-weight: 900;
+  letter-spacing: 0.24em;
+}
+
+.signal-theatre__command h2 {
+  max-width: 15ch;
+  margin: clamp(0.3rem, 0.8svh, 0.7rem) 0 0;
+  color: var(--signal-bone);
+  font-size: clamp(2rem, 3.65vw, 4.6rem);
+  font-stretch: condensed;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.88;
+}
+
+.signal-theatre__command > strong {
+  margin-top: clamp(0.45rem, 1svh, 0.85rem);
+  padding: 0.4rem 1.4rem;
+  color: var(--signal-red);
+  border-top: 1px solid rgba(255, 91, 67, 0.7);
+  border-bottom: 1px solid rgba(255, 91, 67, 0.7);
+  background: rgba(5, 5, 12, 0.42);
+  font-size: clamp(0.74rem, 1.08vw, 1.25rem);
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+.signal-theatre__command p {
+  max-width: 54ch;
+  margin: clamp(0.45rem, 0.8svh, 0.72rem) 0 0;
+  color: #d0c9bd;
+  font-size: clamp(0.62rem, 0.82vw, 0.94rem);
+  font-weight: 650;
+  letter-spacing: 0.045em;
+  line-height: 1.28;
+  text-transform: none;
+}
+
+.signal-theatre__command small {
+  max-width: 60ch;
+  margin-top: 0.32rem;
+  color: #9d9a95;
+  font-size: clamp(0.5rem, 0.62vw, 0.72rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+.signal-theatre__signal {
+  position: absolute;
+  z-index: 4;
+  top: clamp(1.35rem, 2.5svh, 2rem);
+  right: clamp(1rem, 2.4vw, 2.8rem);
+  display: grid;
+  justify-items: center;
+  width: clamp(8.5rem, 17vw, 20rem);
+  text-align: center;
+  text-shadow: 0 0.15rem 0.45rem #000;
+}
+
+.signal-theatre__scenario {
+  position: absolute;
+  z-index: 4;
+  top: min(39svh, 25rem);
+  right: clamp(1.3rem, 3vw, 3.7rem);
+  display: grid;
+  width: clamp(8.3rem, 14vw, 16rem);
+  margin: 0;
+  padding: 0.65rem 0;
+  background: rgba(5, 5, 12, 0.56);
+  border-top: 1px solid rgba(235, 226, 208, 0.38);
+  border-bottom: 1px solid rgba(235, 226, 208, 0.24);
+}
+
+.signal-theatre__scenario > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.35rem 0.55rem;
+}
+
+.signal-theatre__scenario dt {
+  overflow: hidden;
+  color: #a8a39b;
+  font-size: clamp(0.48rem, 0.6vw, 0.7rem);
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signal-theatre__scenario dd {
+  margin: 0;
+  color: var(--signal-bone);
+  font-size: clamp(0.78rem, 1vw, 1.2rem);
+  font-weight: 900;
+}
+
+.signal-theatre__journey {
+  position: absolute;
+  z-index: 3;
+  left: 2.2vw;
+  right: 2.2vw;
+  bottom: 13svh;
+  height: min(28svh, 18rem);
+  pointer-events: none;
+}
+
+.signal-theatre__route-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  filter: drop-shadow(0 0 0.65rem rgba(164, 248, 219, 0.35));
+}
+
+.signal-theatre__operative-beacon {
+  position: absolute;
+  z-index: 2;
+  bottom: 28%;
+  left: var(--signal-marker-position);
+  width: clamp(4.6rem, 8.7vw, 10.5rem);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0.55rem 1.15rem rgba(0, 0, 0, 0.82));
+  transform: translateX(-50%);
+  animation: signal-theatre-marker-enter 460ms var(--ease-command, ease-out) both;
+}
+
+.signal-theatre__route-labels {
+  position: absolute;
+  z-index: 3;
+  left: 4.5%;
+  right: 4.5%;
+  bottom: 17%;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.signal-theatre__route-labels li {
+  overflow: hidden;
+  color: #a9aaa5;
+  font-size: clamp(0.42rem, 0.54vw, 0.64rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 0 0.12rem 0.34rem #000, 0 0.12rem 0.34rem #000;
+  white-space: nowrap;
+}
+
+.signal-theatre__route-labels li.is-destination {
+  color: var(--signal-mint);
+}
+
+.signal-theatre__sequence {
+  position: absolute;
+  z-index: 6;
+  right: 29vw;
+  bottom: clamp(1.25rem, 3.2svh, 2.6rem);
+  left: 29vw;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 0.55rem 0.8rem;
+  background: rgba(5, 5, 12, 0.62);
+  border-top: 1px solid rgba(235, 226, 208, 0.26);
+  border-bottom: 1px solid rgba(235, 226, 208, 0.16);
+  list-style: none;
+}
+
+.signal-theatre__sequence li {
+  overflow: hidden;
+  padding: 0 0.45rem;
+  color: #74726f;
+  border-right: 1px solid rgba(235, 226, 208, 0.18);
+  font-size: clamp(0.55rem, 0.82vw, 0.94rem);
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signal-theatre__sequence li:last-child {
+  border-right: 0;
+}
+
+.signal-theatre__sequence li.is-complete {
+  color: #b4afa5;
+}
+
+.signal-theatre__sequence li.is-current {
+  color: var(--signal-mint);
+}
+
+.signal-theatre__roster {
+  position: absolute;
+  z-index: 5;
+  bottom: clamp(1rem, 2.2svh, 1.8rem);
+  left: clamp(1.25rem, 2.6vw, 3.2rem);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.32rem 0.75rem;
+  width: min(25vw, 29rem);
+  padding: 0.55rem 0.65rem;
+  background: rgba(5, 5, 12, 0.58);
+  border-left: 1px solid rgba(164, 248, 219, 0.38);
+}
+
+.signal-theatre__roster span {
+  display: grid;
+  min-width: 0;
+}
+
+.signal-theatre__roster b,
+.signal-theatre__roster small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signal-theatre__roster b {
+  color: #aaa69f;
+  font-size: clamp(0.5rem, 0.62vw, 0.72rem);
+}
+
+.signal-theatre__roster small {
+  color: #716f6c;
+  font-size: clamp(0.4rem, 0.48vw, 0.56rem);
+  font-weight: 700;
+}
+
+.signal-theatre__roster span.is-active b,
+.signal-theatre__roster span.is-active small {
+  color: var(--signal-mint);
+}
+
+.signal-theatre__battle {
+  position: absolute;
+  z-index: 6;
+  top: 31svh;
+  left: 22vw;
+  right: 22vw;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.85rem;
+  padding: clamp(0.75rem, 1.4vw, 1.5rem);
+  background: rgba(5, 5, 12, 0.82);
+  border-top: 1px solid rgba(255, 91, 67, 0.68);
+  border-bottom: 1px solid rgba(255, 91, 67, 0.42);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.48);
+  text-align: center;
+  text-shadow: 0 0.16rem 0.4rem #000;
+}
+
+.signal-theatre__battle article {
+  min-width: 0;
+}
+
+.signal-theatre__battle article > span,
+.signal-theatre__battle article > strong,
+.signal-theatre__battle article > small {
+  display: block;
+}
+
+.signal-theatre__battle article > span {
+  overflow: hidden;
+  color: #cbc3b6;
+  font-size: clamp(0.62rem, 0.84vw, 0.98rem);
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signal-theatre__battle article > strong {
+  margin-top: 0.25rem;
+  color: var(--signal-bone);
+  font-size: clamp(2.6rem, 4.6vw, 5.4rem);
+  font-weight: 900;
+  line-height: 0.9;
+}
+
+.signal-theatre__battle article > small {
+  margin-top: 0.35rem;
+  color: var(--signal-mint);
+  font-size: clamp(0.5rem, 0.66vw, 0.78rem);
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
+.signal-theatre__battle article > p {
+  margin: 0.32rem 0 0;
+  overflow: hidden;
+  color: #92908b;
+  font-size: clamp(0.46rem, 0.56vw, 0.65rem);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.signal-theatre__battle > div {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  min-width: clamp(4.5rem, 7vw, 8.5rem);
+  padding: 0 0.7rem;
+  border-right: 1px solid rgba(255, 91, 67, 0.28);
+  border-left: 1px solid rgba(255, 91, 67, 0.28);
+}
+
+.signal-theatre__battle > div span,
+.signal-theatre__battle > div b {
+  color: var(--signal-red);
+  font-size: clamp(0.48rem, 0.6vw, 0.72rem);
+  font-weight: 850;
+}
+
+.signal-theatre__battle > div strong {
+  color: var(--signal-bone);
+  font-size: clamp(1.35rem, 2.1vw, 2.5rem);
+  font-weight: 900;
+}
+
+.signal-theatre__delta {
+  position: absolute;
+  z-index: 7;
+  right: clamp(1.4rem, 3vw, 3.7rem);
+  bottom: 13svh;
+  display: grid;
+  width: min(20vw, 22rem);
+  gap: 0.3rem;
+  padding: 0.85rem 1rem;
+  background: rgba(5, 5, 12, 0.82);
+  border-right: 3px solid var(--signal-mint);
+  text-align: right;
+}
+
+.signal-theatre__delta--penalty {
+  border-color: var(--signal-red);
+}
+
+.signal-theatre__delta span,
+.signal-theatre__delta small {
+  color: var(--signal-muted);
+  font-size: clamp(0.46rem, 0.56vw, 0.65rem);
+}
+
+.signal-theatre__delta strong {
+  color: var(--signal-bone);
+  font-size: clamp(0.7rem, 0.95vw, 1.1rem);
+}
+
+.signal-theatre__delta b {
+  color: var(--signal-mint);
+  font-size: clamp(1.1rem, 1.7vw, 2rem);
+}
+
+.signal-theatre__delta--penalty b {
+  color: var(--signal-red);
+}
+
+.signal-theatre__network {
+  position: absolute;
+  z-index: 9;
+  right: 34vw;
+  bottom: 13svh;
+  left: 34vw;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem 1rem;
+  color: var(--signal-bone);
+  background: rgba(5, 5, 12, 0.9);
+  border: 1px solid rgba(255, 91, 67, 0.58);
+  text-align: center;
+}
+
+.signal-theatre__network span {
+  color: #a8a39a;
+  font-size: clamp(0.48rem, 0.6vw, 0.68rem);
+  text-transform: none;
+}
+
+.signal-theatre--battle .signal-theatre__world,
+.signal-theatre--penalty .signal-theatre__world,
+.signal-theatre--reward .signal-theatre__world,
+.signal-theatre--ended .signal-theatre__world {
+  filter: brightness(0.57) contrast(1.12) saturate(0.72);
+}
+
+.signal-theatre--battle .signal-theatre__command p,
+.signal-theatre--battle .signal-theatre__command small {
+  display: none;
+}
+
+.signal-theatre--ended .signal-theatre__command {
+  top: 9svh;
+  left: 24vw;
+  right: 24vw;
+}
+
+.signal-theatre--ended .signal-theatre__command h2 {
+  max-width: 18ch;
+  font-size: clamp(3rem, 6vw, 7rem);
+}
+
+.signal-theatre--ended .signal-theatre__operative {
+  opacity: 0.42;
+}
+
+.signal-theatre--lobby .signal-theatre__world {
+  filter: brightness(0.6) contrast(1.08) saturate(0.75);
+}
+
+.signal-theatre__lobby-command {
+  position: absolute;
+  z-index: 4;
+  top: 10svh;
+  left: 24vw;
+  right: 24vw;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  text-shadow: 0 0.2rem 0.55rem #000;
+}
+
+.signal-theatre__lobby-command > span {
+  color: var(--signal-red);
+  font-size: clamp(0.66rem, 1vw, 1.15rem);
+  font-weight: 900;
+  letter-spacing: 0.22em;
+}
+
+.signal-theatre__lobby-command h1 {
+  max-width: 14ch;
+  margin: 0.45rem 0 0;
+  color: var(--signal-bone);
+  font-size: clamp(2.4rem, 4.8vw, 5.7rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.9;
+}
+
+.signal-theatre__lobby-command p {
+  max-width: 50ch;
+  margin: 0.75rem 0 0;
+  color: #c4beb4;
+  font-size: clamp(0.65rem, 0.88vw, 1rem);
+  font-weight: 650;
+  line-height: 1.35;
+  text-transform: none;
+}
+
+.signal-theatre__room {
+  position: absolute;
+  z-index: 5;
+  top: 20svh;
+  right: clamp(2rem, 4.2vw, 5.4rem);
+  display: grid;
+  justify-items: center;
+  width: clamp(9rem, 16vw, 18rem);
+  padding: 0.9rem;
+  background: rgba(5, 5, 12, 0.72);
+  border-top: 1px solid rgba(255, 91, 67, 0.65);
+  border-bottom: 1px solid rgba(255, 91, 67, 0.36);
+  text-align: center;
+}
+
+.signal-theatre__room > span {
+  color: var(--signal-muted);
+  font-size: clamp(0.48rem, 0.62vw, 0.72rem);
+  font-weight: 850;
+}
+
+.signal-theatre__room > strong {
+  margin: 0.3rem 0 0.55rem;
+  color: var(--signal-bone);
+  font-size: clamp(1.45rem, 2.3vw, 2.8rem);
+  letter-spacing: 0.15em;
+}
+
+.signal-theatre__room .join-qr-card {
+  width: min(100%, 10rem);
+}
+
+.signal-theatre__journey--lobby {
+  --signal-marker-position: 50%;
+}
+
+.signal-theatre__lobby-roster {
+  position: absolute;
+  z-index: 5;
+  bottom: 11svh;
+  left: clamp(1.45rem, 2.8vw, 3.35rem);
+  display: grid;
+  max-width: min(30vw, 32rem);
+  gap: 0.32rem;
+  padding: 0.7rem 0.85rem;
+  background: rgba(5, 5, 12, 0.68);
+  border-left: 1px solid rgba(164, 248, 219, 0.54);
+}
+
+.signal-theatre__lobby-roster span,
+.signal-theatre__lobby-roster strong {
+  color: var(--signal-mint);
+  font-size: clamp(0.56rem, 0.72vw, 0.84rem);
+}
+
+.signal-theatre__lobby-roster p {
+  margin: 0;
+  overflow: hidden;
+  color: #b7b1a6;
+  font-size: clamp(0.5rem, 0.62vw, 0.72rem);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+@keyframes signal-theatre-marker-enter {
+  from { opacity: 0; transform: translateX(-50%) translateY(1.2rem) scale(0.92); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+@media (max-width: 1500px), (max-height: 820px) {
+  .signal-theatre__command {
+    left: 24vw;
+    right: 22vw;
+  }
+
+  .signal-theatre__operative {
+    width: 23vw;
+  }
+
+  .signal-theatre__operative h1 {
+    font-size: clamp(2.8rem, 4.25vw, 4.2rem);
+  }
+
+  .signal-theatre__signal {
+    width: clamp(7.2rem, 15vw, 12rem);
+  }
+
+  .signal-theatre__scenario {
+    top: 34svh;
+    width: 12vw;
+  }
+
+  .signal-theatre__battle {
+    top: 29svh;
+    left: 20vw;
+    right: 20vw;
+  }
+
+  .signal-theatre__journey {
+    bottom: 12svh;
+    height: 25svh;
+  }
+
+  .signal-theatre__sequence {
+    right: 27vw;
+    left: 27vw;
+  }
+
+  .signal-theatre__roster {
+    width: 24vw;
+  }
+}
+
+@media (max-aspect-ratio: 3 / 2) {
+  .signal-theatre__command {
+    left: 23vw;
+    right: 20vw;
+  }
+
+  .signal-theatre__command p,
+  .signal-theatre__command small {
+    display: none;
+  }
+
+  .signal-theatre__signal {
+    right: 1vw;
+  }
+
+  .signal-theatre__operative h1 {
+    font-size: clamp(2.4rem, 5.2vw, 4.5rem);
+  }
+
+  .signal-theatre__sequence {
+    right: 25vw;
+    left: 25vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-theatre *,
+  .signal-theatre *::before,
+  .signal-theatre *::after {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* P22: active-sector Signal Theatre. The environment is the board surface;
+   chrome stays sparse so location, occupant identity, and public resolution
+   remain readable from across the room. */
+.signal-theatre:not(.signal-theatre--lobby) {
+  background: #05070b;
+}
+
+.signal-theatre__environment {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+}
+
+.signal-theatre__environment-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  filter: brightness(.76) saturate(.86) contrast(1.08);
+  animation: signal-environment-enter 520ms cubic-bezier(.18,.78,.22,1) both;
+  will-change: opacity, transform;
+}
+
+.signal-theatre--tier-middle .signal-theatre__environment-image {
+  filter: brightness(.72) saturate(.82) contrast(1.1);
+}
+
+.signal-theatre--tier-inner .signal-theatre__environment-image,
+.signal-theatre--tier-center .signal-theatre__environment-image {
+  filter: brightness(.74) saturate(.92) contrast(1.12);
+}
+
+.signal-theatre__environment-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(2 4 8 / .74) 0%, rgb(2 4 8 / .16) 24%, transparent 48%, rgb(2 3 7 / .22) 70%, rgb(2 3 7 / .9) 100%),
+    linear-gradient(90deg, rgb(2 3 7 / .7), transparent 27%, transparent 73%, rgb(2 3 7 / .7));
+  pointer-events: none;
+}
+
+.signal-theatre__pieces {
+  position: absolute;
+  z-index: 4;
+  left: 22vw;
+  right: 19vw;
+  bottom: 7.2svh;
+  height: 54svh;
+  min-height: 20rem;
+  pointer-events: none;
+}
+
+.signal-theatre__destination-ring {
+  position: absolute;
+  z-index: 3;
+  left: 51.5%;
+  bottom: 10.5svh;
+  width: min(37vw, 44rem);
+  aspect-ratio: 4 / 1;
+  border: 1px solid rgb(198 181 145 / .25);
+  border-radius: 50%;
+  opacity: .55;
+  box-shadow: inset 0 0 2.6rem rgb(0 0 0 / .7);
+  transform: translateX(-50%);
+}
+
+.signal-theatre__destination-ring.is-arriving {
+  border-color: var(--signal-mint);
+  animation: signal-destination-arrival 600ms ease-out 1;
+  box-shadow: 0 0 2rem rgb(164 248 219 / .35), inset 0 0 2rem rgb(164 248 219 / .12);
+}
+
+.signal-theatre__occupant-summary {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.signal-theatre__occupant-count {
+  position: absolute;
+  z-index: 7;
+  right: 20vw;
+  bottom: 17svh;
+  padding: .28rem .6rem;
+  border: 1px solid rgb(235 226 208 / .35);
+  background: rgb(4 6 10 / .78);
+  color: var(--signal-bone);
+  font-size: clamp(.54rem, .65vw, .72rem);
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__brand {
+  z-index: 12;
+  max-width: 19vw;
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__operative {
+  z-index: 10;
+  top: clamp(5rem, 10svh, 7.2rem);
+  width: min(20vw, 22rem);
+  padding: .7rem .9rem .8rem 0;
+  border-bottom-color: rgb(235 226 208 / .45);
+  background: linear-gradient(90deg, rgb(3 5 9 / .82), rgb(3 5 9 / .32));
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__operative h1 {
+  max-width: 18ch;
+  font-size: clamp(1.7rem, 2.8vw, 3.4rem);
+  line-height: .94;
+  white-space: normal;
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__operative > span {
+  margin: 0 0 .4rem;
+  color: var(--signal-red);
+  letter-spacing: .2em;
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__operative > h2 {
+  margin-top: .65rem;
+  margin-bottom: 0;
+  color: var(--signal-bone);
+  font-size: clamp(.74rem, .95vw, 1.08rem);
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__operative > small {
+  display: block;
+  margin-top: .25rem;
+  color: var(--signal-mint);
+  font-size: clamp(.55rem, .7vw, .78rem);
+  font-weight: 800;
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command {
+  z-index: 11;
+  top: clamp(1rem, 2.4svh, 1.8rem);
+  left: 22vw;
+  right: 19vw;
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command h2 {
+  max-width: 18ch;
+  font-size: clamp(1.65rem, 2.8vw, 3.35rem);
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command > strong {
+  margin-top: .34rem;
+  padding: .28rem 1rem;
+  font-size: clamp(.66rem, .86vw, .98rem);
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command p {
+  max-width: 62ch;
+  margin-top: .38rem;
+  font-size: clamp(.58rem, .7vw, .8rem);
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command small {
+  font-size: clamp(.5rem, .58vw, .66rem);
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__signal {
+  z-index: 11;
+  top: 1.2svh;
+  right: 1.3vw;
+  width: clamp(7rem, 12vw, 12rem);
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__signal .signal-action-coin__disc {
+  width: min(100%, 8.6rem);
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__scenario {
+  z-index: 10;
+  top: 28svh;
+  right: 1.6vw;
+  width: clamp(8rem, 13.5vw, 15rem);
+  background: linear-gradient(90deg, rgb(3 5 9 / .32), rgb(3 5 9 / .84));
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__roster {
+  z-index: 10;
+  right: 1.4vw;
+  bottom: 8.8svh;
+  width: min(17vw, 20rem);
+  max-height: 40svh;
+  gap: .25rem;
+  padding: .45rem;
+  background: rgb(3 5 9 / .66);
+  border-right: 1px solid rgb(235 226 208 / .3);
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__roster span {
+  min-width: 0;
+  padding: .35rem .45rem;
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__roster b,
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__roster small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__sequence {
+  z-index: 11;
+  right: 21vw;
+  bottom: 2.3svh;
+  left: 22vw;
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__battle {
+  z-index: 20;
+  top: 25svh;
+  right: 18vw;
+  bottom: 20svh;
+  left: 18vw;
+  background: rgb(3 5 9 / .88);
+  backdrop-filter: none;
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__delta {
+  z-index: 19;
+}
+
+.signal-theatre:not(.signal-theatre--lobby) .signal-theatre__network {
+  z-index: 30;
+}
+
+.signal-theatre--journey .signal-theatre__environment-image {
+  animation-duration: 640ms;
+}
+
+.signal-theatre--sector-resolution .signal-theatre__environment-image {
+  filter: saturate(.72) brightness(.56) contrast(1.08);
+}
+
+.signal-theatre--sector-resolution .signal-theatre__environment-shade {
+  background:
+    linear-gradient(90deg, rgb(2 4 8 / .16) 0 25%, rgb(2 4 8 / .72) 43% 64%, rgb(2 4 8 / .22) 100%),
+    linear-gradient(180deg, rgb(2 4 8 / .24), transparent 44%, rgb(2 4 8 / .54));
+}
+
+.signal-theatre--sector-resolution .signal-theatre__pieces {
+  z-index: 19;
+  inset: 0;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.signal-theatre--sector-resolution .signal-theatre__pieces .operative-piece {
+  opacity: .12;
+  filter: saturate(.35) brightness(.58);
+}
+
+.signal-theatre--sector-resolution .signal-theatre__pieces .operative-piece.is-active {
+  opacity: 1;
+  filter: none;
+}
+
+.signal-theatre--sector-resolution .signal-theatre__occupant-summary,
+.signal-theatre--sector-resolution .signal-theatre__occupant-count {
+  opacity: 0;
+}
+
+.signal-theatre--sector-resolution .signal-theatre__scenario,
+.signal-theatre--sector-resolution .signal-theatre__roster,
+.signal-theatre--sector-resolution .signal-theatre__brand,
+.signal-theatre--sector-resolution .signal-theatre__operative,
+.signal-theatre--sector-resolution .signal-theatre__destination-ring {
+  opacity: 0;
+}
+
+.signal-theatre--sector-resolution .signal-theatre__signal {
+  z-index: 24;
+  top: clamp(.75rem, 1.5svh, 1.2rem);
+  right: clamp(.75rem, 1.4vw, 1.6rem);
+  width: clamp(7.5rem, 10vw, 10.5rem);
+}
+
+.signal-theatre--sector-resolution .signal-theatre__signal .signal-action-coin__disc {
+  width: min(100%, 7.8rem);
+}
+
+.signal-theatre--sector-resolution .signal-theatre__signal .signal-action-coin figcaption {
+  display: none;
+}
+
+@keyframes signal-environment-enter {
+  from { opacity: 0; transform: scale(1.025); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes signal-destination-arrival {
+  0% { opacity: 0; transform: translateX(-50%) scale(.72); }
+  45% { opacity: 1; transform: translateX(-50%) scale(1.08); }
+  100% { opacity: .8; transform: translateX(-50%) scale(1); }
+}
+
+@media (max-width: 1500px), (max-height: 820px) {
+  .signal-theatre__pieces {
+    left: 20vw;
+    right: 17vw;
+    bottom: 6svh;
+    height: 51svh;
+  }
+
+  .signal-theatre__destination-ring {
+    bottom: 9svh;
+  }
+
+  .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__operative {
+    width: 19vw;
+  }
+
+  .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command {
+    left: 20vw;
+    right: 17vw;
+  }
+
+  .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command p,
+  .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command small {
+    display: block;
+  }
+
+  .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__scenario {
+    top: 27svh;
+    width: 13vw;
+  }
+
+  .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__sequence {
+    right: 19vw;
+    left: 20vw;
+  }
+
+  .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__roster {
+    width: 16vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-theatre__environment-image,
+  .signal-theatre__destination-ring {
+    animation: none !important;
+    transition: none !important;
+  }
+}

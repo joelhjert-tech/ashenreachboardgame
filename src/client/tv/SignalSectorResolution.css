@@ -1,0 +1,603 @@
+.signal-sector-resolution {
+  --resolution-accent: #e15a43;
+  --resolution-accent-soft: #ffd0b9;
+  --rift-accent: var(--challenge-color, #e15a43);
+  position: absolute;
+  z-index: 18;
+  inset: 0;
+  display: grid;
+  grid-template-rows: minmax(7.5rem, 20svh) minmax(24rem, 61svh) minmax(6.5rem, 19svh);
+  color: #eee5d5;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.signal-sector-resolution--tile-challenge,
+.signal-sector-resolution--sector-test {
+  --resolution-accent: var(--challenge-color, #39a9ff);
+  --resolution-accent-soft: color-mix(in srgb, var(--challenge-color, #39a9ff) 46%, #ffffff);
+}
+
+.signal-sector-resolution--success {
+  --resolution-accent: #79d9b4;
+  --resolution-accent-soft: #c7ffe9;
+}
+
+.signal-sector-resolution--failure {
+  --resolution-accent: #e45943;
+  --resolution-accent-soft: #ffc5b8;
+}
+
+.signal-sector-resolution--draw {
+  --resolution-accent: #c7aa78;
+  --resolution-accent-soft: #f6dfb5;
+}
+
+.signal-sector-resolution__cinema-veil {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 48%, rgb(0 0 0 / .12), rgb(1 3 7 / .82) 42%, rgb(1 3 7 / .42) 72%),
+    linear-gradient(180deg, rgb(1 3 7 / .8), transparent 28%, transparent 68%, rgb(1 3 7 / .92));
+}
+
+.signal-sector-resolution__cinema-veil::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(2 4 8 / .5), transparent 22% 78%, rgb(2 4 8 / .5)),
+    repeating-linear-gradient(180deg, transparent 0 3px, rgb(255 255 255 / .013) 4px);
+  mix-blend-mode: screen;
+}
+
+.signal-sector-resolution__heading {
+  z-index: 4;
+  grid-row: 1;
+  align-self: start;
+  justify-self: center;
+  width: min(62vw, 72rem);
+  padding: clamp(.9rem, 2svh, 1.6rem) 1.5rem 0;
+  text-align: center;
+  text-shadow: 0 .18rem .7rem #000;
+}
+
+.signal-sector-resolution__heading > span,
+.signal-sector-resolution__outcome-copy > span,
+.signal-sector-resolution__identity > span,
+.signal-sector-resolution__total > span {
+  display: block;
+  color: var(--resolution-accent-soft);
+  font: 900 clamp(.56rem, .7vw, .8rem)/1 "Arial Narrow", sans-serif;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+
+.signal-sector-resolution__heading h2 {
+  max-width: 18ch;
+  margin: .3rem auto 0;
+  color: #f3ead9;
+  font-family: var(--font-display);
+  font-size: clamp(2.15rem, 3.35vw, 4rem);
+  line-height: .88;
+  text-transform: uppercase;
+}
+
+.signal-sector-resolution__heading p {
+  max-width: 62ch;
+  margin: .5rem auto 0;
+  color: #aaa398;
+  font-size: clamp(.55rem, .68vw, .78rem);
+  font-weight: 700;
+  line-height: 1.3;
+  text-transform: none;
+}
+
+.signal-sector-resolution__duel {
+  position: relative;
+  z-index: 2;
+  grid-row: 2;
+  align-self: stretch;
+  justify-self: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(6.5rem, 10vw, 11.5rem) minmax(0, 1fr);
+  width: min(91vw, 112rem);
+  min-height: 0;
+}
+
+.signal-sector-resolution__portrait {
+  position: relative;
+  align-self: stretch;
+  min-width: 0;
+  overflow: hidden;
+  background: rgb(2 4 8 / .72);
+  filter: drop-shadow(0 1rem 1.6rem rgb(0 0 0 / .58));
+}
+
+.signal-sector-resolution__portrait--operative {
+  grid-column: 1;
+  clip-path: polygon(0 0, 86% 0, 100% 18%, 93% 50%, 100% 82%, 86% 100%, 0 100%);
+}
+
+.signal-sector-resolution__portrait--opposition {
+  grid-column: 3;
+  clip-path: polygon(14% 0, 100% 0, 100% 100%, 14% 100%, 0 82%, 7% 50%, 0 18%);
+}
+
+.signal-sector-resolution__portrait::before {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+}
+
+.signal-sector-resolution__portrait--operative::before {
+  border-top: 1px solid rgb(235 226 208 / .42);
+  border-bottom: 1px solid rgb(235 226 208 / .24);
+  box-shadow: inset -.18rem 0 0 color-mix(in srgb, var(--resolution-accent) 58%, transparent);
+}
+
+.signal-sector-resolution__portrait--opposition::before {
+  border-top: 1px solid color-mix(in srgb, var(--resolution-accent) 68%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--resolution-accent) 35%, transparent);
+  box-shadow: inset .18rem 0 0 color-mix(in srgb, var(--resolution-accent) 58%, transparent);
+}
+
+.signal-sector-resolution__portrait-frame {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgb(2 4 8 / .72);
+}
+
+.signal-sector-resolution__portrait-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: contrast(1.08) saturate(.82) brightness(.78);
+  transform: scale(1.035);
+}
+
+.signal-sector-resolution__portrait--operative .signal-sector-resolution__portrait-frame img {
+  object-position: 50% 20%;
+}
+
+.signal-sector-resolution__portrait--opposition .signal-sector-resolution__portrait-frame img {
+  object-position: 50% 18%;
+}
+
+.signal-sector-resolution__portrait-shade {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(2 4 8 / .08) 0 32%, rgb(2 4 8 / .34) 58%, rgb(2 4 8 / .95) 100%),
+    radial-gradient(circle at 50% 28%, transparent 0 23%, rgb(1 3 7 / .46) 82%);
+}
+
+.signal-sector-resolution__portrait--operative .signal-sector-resolution__portrait-shade {
+  background:
+    linear-gradient(90deg, rgb(2 4 8 / .46), transparent 38%, rgb(2 4 8 / .15)),
+    linear-gradient(180deg, transparent 0 39%, rgb(2 4 8 / .92) 100%);
+}
+
+.signal-sector-resolution__portrait--opposition .signal-sector-resolution__portrait-shade {
+  background:
+    linear-gradient(270deg, rgb(2 4 8 / .46), transparent 38%, rgb(2 4 8 / .15)),
+    linear-gradient(180deg, transparent 0 39%, rgb(2 4 8 / .92) 100%);
+}
+
+.signal-sector-resolution__identity {
+  position: absolute;
+  z-index: 4;
+  bottom: clamp(1.2rem, 3.4svh, 3rem);
+  width: min(64%, 28rem);
+  text-shadow: 0 .18rem .6rem #000;
+}
+
+.signal-sector-resolution__portrait--operative .signal-sector-resolution__identity {
+  left: clamp(1.1rem, 2.8vw, 3.3rem);
+  text-align: left;
+}
+
+.signal-sector-resolution__portrait--opposition .signal-sector-resolution__identity {
+  right: clamp(1.1rem, 2.8vw, 3.3rem);
+  text-align: right;
+}
+
+.signal-sector-resolution__identity > strong {
+  display: block;
+  margin-top: .32rem;
+  overflow: hidden;
+  color: #f4ead8;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.2vw, 2.65rem);
+  line-height: .9;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.signal-sector-resolution__identity > small {
+  display: block;
+  margin-top: .32rem;
+  overflow: hidden;
+  color: #b4ada2;
+  font-size: clamp(.54rem, .68vw, .78rem);
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.signal-sector-resolution__total {
+  position: absolute;
+  z-index: 5;
+  bottom: clamp(.9rem, 2.4svh, 2rem);
+  display: grid;
+  place-items: center;
+  width: clamp(6.4rem, 9vw, 10.5rem);
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--resolution-accent) 62%, transparent);
+  background:
+    radial-gradient(circle, rgb(5 8 13 / .88), rgb(2 4 8 / .74) 68%, transparent 70%);
+  text-align: center;
+  text-shadow: 0 .2rem .6rem #000;
+}
+
+.signal-sector-resolution__portrait--operative .signal-sector-resolution__total {
+  right: clamp(1.8rem, 3.8vw, 4.4rem);
+}
+
+.signal-sector-resolution__portrait--opposition .signal-sector-resolution__total {
+  left: clamp(1.8rem, 3.8vw, 4.4rem);
+}
+
+.signal-sector-resolution__total > strong {
+  color: #fff4df;
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 6vw, 7rem);
+  line-height: .68;
+}
+
+.signal-sector-resolution__fracture {
+  position: relative;
+  z-index: 8;
+  grid-column: 2;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: .55rem;
+  text-align: center;
+  text-shadow: 0 .15rem .55rem #000;
+}
+
+.signal-sector-resolution__fracture::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -5%;
+  bottom: -5%;
+  left: 50%;
+  width: clamp(5.2rem, 7.4vw, 8.8rem);
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--rift-accent) 38%, #f7ead6) 8%,
+    var(--rift-accent) 24% 78%,
+    color-mix(in srgb, var(--rift-accent) 44%, #f7ead6) 92%,
+    transparent
+  );
+  clip-path: polygon(
+    41% 0, 63% 0, 69% 8%, 57% 16%, 76% 27%, 61% 39%,
+    79% 50%, 62% 61%, 72% 73%, 54% 84%, 63% 100%,
+    35% 100%, 29% 91%, 43% 81%, 25% 70%, 39% 58%,
+    21% 47%, 38% 35%, 27% 23%, 43% 12%
+  );
+  filter:
+    drop-shadow(-.22rem 0 .35rem var(--rift-accent))
+    drop-shadow(.22rem 0 .35rem var(--rift-accent))
+    drop-shadow(0 0 1.6rem color-mix(in srgb, var(--rift-accent) 68%, transparent));
+  opacity: .86;
+  transform: translateX(-50%);
+}
+
+.signal-sector-resolution__fracture::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -5%;
+  bottom: -5%;
+  left: 50%;
+  width: clamp(4.25rem, 6.25vw, 7.5rem);
+  background:
+    radial-gradient(ellipse at 43% 45%, color-mix(in srgb, var(--rift-accent) 15%, #010204), #010204 58%),
+    #010204;
+  clip-path: polygon(
+    42% 0, 61% 0, 67% 9%, 55% 17%, 73% 27%, 59% 39%,
+    75% 50%, 60% 61%, 69% 72%, 52% 84%, 60% 100%,
+    38% 100%, 32% 91%, 46% 81%, 29% 70%, 43% 58%,
+    26% 47%, 42% 35%, 31% 23%, 46% 12%
+  );
+  box-shadow: inset 0 0 1rem #000;
+  transform: translateX(-50%);
+}
+
+.signal-sector-resolution__fracture > span {
+  padding: .36rem .75rem;
+  border: 1px solid color-mix(in srgb, var(--challenge-color, #d84a32) 70%, transparent);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--challenge-color, #d84a32) 48%, #fff);
+  background: rgb(2 4 8 / .84);
+  font-size: clamp(.55rem, .72vw, .82rem);
+  font-weight: 950;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.signal-sector-resolution__fracture > strong {
+  color: #f6ead6;
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 3vw, 3.5rem);
+  letter-spacing: .08em;
+}
+
+.signal-sector-resolution__fracture > i {
+  display: block;
+  width: .42rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--rift-accent) 42%, #fff);
+  box-shadow: 0 0 1.4rem var(--rift-accent);
+}
+
+.signal-sector-resolution__outcome {
+  position: relative;
+  z-index: 5;
+  grid-row: 3;
+  align-self: start;
+  justify-self: center;
+  display: grid;
+  justify-items: center;
+  width: min(64vw, 58rem);
+  gap: .18rem;
+  padding: .6rem 2rem;
+  border-top: 1px solid color-mix(in srgb, var(--resolution-accent) 38%, transparent);
+  background: linear-gradient(90deg, transparent, rgb(2 4 8 / .92) 16% 84%, transparent);
+  text-align: center;
+  text-shadow: 0 .15rem .5rem #000;
+}
+
+.signal-sector-resolution__outcome-copy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: .18rem;
+}
+
+.signal-sector-resolution__outcome.has-result-crest {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: stretch;
+  gap: clamp(.5rem, 1vw, 1rem);
+  padding-top: .25rem;
+  text-align: left;
+}
+
+.signal-sector-resolution__outcome.has-result-crest .signal-sector-resolution__outcome-copy {
+  justify-items: start;
+}
+
+.signal-sector-resolution__result-crest {
+  position: relative;
+  z-index: 1;
+  width: clamp(4.8rem, 7vw, 7.5rem);
+  aspect-ratio: 1;
+  object-fit: contain;
+  filter: drop-shadow(0 0 .8rem color-mix(in srgb, var(--resolution-accent) 58%, transparent));
+}
+
+.signal-sector-resolution__result-crest--success {
+  animation: signal-result-success-enter 760ms 720ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.signal-sector-resolution__result-crest--failure {
+  animation: signal-result-defeat-enter 760ms 720ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.signal-sector-resolution__outcome-copy > strong {
+  color: var(--resolution-accent-soft);
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 2.4vw, 2.8rem);
+  letter-spacing: .16em;
+  line-height: .9;
+}
+
+.signal-sector-resolution__outcome-copy > p,
+.signal-sector-resolution__outcome-copy > small {
+  max-width: 66ch;
+  margin: 0;
+  color: #c7beb1;
+  font-size: clamp(.52rem, .64vw, .74rem);
+  font-weight: 750;
+  line-height: 1.3;
+  text-transform: none;
+}
+
+.signal-sector-resolution__outcome-copy > small {
+  color: var(--resolution-accent-soft);
+}
+
+.signal-sector-resolution:not(.is-restored) .signal-sector-resolution__heading {
+  animation: signal-duel-heading 420ms cubic-bezier(.18,.78,.22,1) both;
+}
+
+.signal-sector-resolution:not(.is-restored) .signal-sector-resolution__portrait--operative {
+  animation: signal-duel-operative 620ms 80ms cubic-bezier(.16,.82,.2,1) both;
+}
+
+.signal-sector-resolution:not(.is-restored) .signal-sector-resolution__portrait--opposition {
+  animation: signal-duel-opposition 680ms 160ms cubic-bezier(.16,.82,.2,1) both;
+}
+
+.signal-sector-resolution:not(.is-restored) .signal-sector-resolution__portrait-frame img {
+  animation: signal-duel-image-settle 900ms 80ms cubic-bezier(.18,.78,.22,1) both;
+}
+
+.signal-sector-resolution:not(.is-restored) .signal-sector-resolution__fracture {
+  animation: signal-duel-fracture 520ms 420ms ease-out both;
+}
+
+.signal-sector-resolution:not(.is-restored) .signal-sector-resolution__identity {
+  animation: signal-duel-identity 460ms 390ms ease-out both;
+}
+
+.signal-sector-resolution:not(.is-restored) .signal-sector-resolution__total {
+  animation: signal-duel-total 480ms 570ms cubic-bezier(.2,.9,.2,1) both;
+}
+
+.signal-sector-resolution:not(.is-restored) .signal-sector-resolution__outcome {
+  animation: signal-duel-outcome 520ms 690ms ease-out both;
+}
+
+.signal-sector-resolution--success:not(.is-restored)::after,
+.signal-sector-resolution--failure:not(.is-restored)::after {
+  content: "";
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 49%, color-mix(in srgb, var(--resolution-accent) 26%, transparent), transparent 34%);
+  animation: signal-duel-impact 860ms 560ms ease-out both;
+}
+
+@keyframes signal-duel-heading {
+  from { opacity: 0; transform: translateY(-.8rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes signal-duel-operative {
+  from { opacity: 0; transform: translateX(-8vw) scale(1.04); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes signal-duel-opposition {
+  from { opacity: 0; transform: translateX(8vw) scale(1.04); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes signal-duel-image-settle {
+  from { transform: scale(1.12); filter: contrast(1.18) saturate(.35) brightness(.44); }
+  to { transform: scale(1.035); filter: contrast(1.08) saturate(.82) brightness(.78); }
+}
+
+@keyframes signal-duel-fracture {
+  from { opacity: 0; transform: scaleY(.2); }
+  to { opacity: 1; transform: scaleY(1); }
+}
+
+@keyframes signal-duel-identity {
+  from { opacity: 0; transform: translateY(.8rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes signal-duel-total {
+  from { opacity: 0; transform: scale(.54); }
+  62% { opacity: 1; transform: scale(1.08); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes signal-duel-outcome {
+  from { opacity: 0; transform: translateY(.8rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes signal-duel-impact {
+  from { opacity: .9; transform: scale(.76); }
+  to { opacity: 0; transform: scale(1.18); }
+}
+
+@keyframes signal-result-success-enter {
+  from { opacity: 0; filter: grayscale(1) brightness(.35); transform: scale(.48) rotate(-12deg); }
+  60% { opacity: 1; filter: grayscale(0) brightness(1.35); transform: scale(1.08) rotate(2deg); }
+  to { opacity: 1; filter: brightness(1); transform: none; }
+}
+
+@keyframes signal-result-defeat-enter {
+  from { opacity: 0; filter: brightness(1.55); transform: scale(1.18); }
+  55% { opacity: 1; filter: brightness(.78); transform: scale(.94); }
+  to { opacity: 1; filter: brightness(.9); transform: none; }
+}
+
+@media (max-width: 1500px), (max-height: 820px) {
+  .signal-sector-resolution {
+    grid-template-rows: minmax(6.7rem, 18svh) minmax(22rem, 64svh) minmax(5.8rem, 18svh);
+  }
+
+  .signal-sector-resolution__heading {
+    padding-top: .72rem;
+  }
+
+  .signal-sector-resolution__heading h2 {
+    font-size: clamp(1.8rem, 2.9vw, 2.8rem);
+  }
+
+  .signal-sector-resolution__heading p {
+    max-width: 54ch;
+  }
+
+  .signal-sector-resolution__duel {
+    grid-template-columns: minmax(0, 1fr) clamp(5.6rem, 8.5vw, 7.5rem) minmax(0, 1fr);
+    width: 94vw;
+  }
+
+  .signal-sector-resolution__identity {
+    bottom: 1rem;
+    width: 58%;
+  }
+
+  .signal-sector-resolution__identity > strong {
+    font-size: clamp(1.05rem, 1.75vw, 1.65rem);
+  }
+
+  .signal-sector-resolution__total {
+    bottom: .75rem;
+    width: clamp(5.5rem, 8vw, 7rem);
+  }
+
+  .signal-sector-resolution__total > strong {
+    font-size: clamp(3rem, 5vw, 4.5rem);
+  }
+
+  .signal-sector-resolution__portrait--operative .signal-sector-resolution__total {
+    right: 2.3rem;
+  }
+
+  .signal-sector-resolution__portrait--opposition .signal-sector-resolution__total {
+    left: 2.3rem;
+  }
+
+  .signal-sector-resolution__outcome {
+    width: 70vw;
+    padding-top: .45rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-sector-resolution *,
+  .signal-sector-resolution *::before,
+  .signal-sector-resolution *::after,
+  .signal-sector-resolution::before,
+  .signal-sector-resolution::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

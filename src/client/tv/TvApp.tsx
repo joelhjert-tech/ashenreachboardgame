@@ -51,6 +51,12 @@ import { hostPresentationTimings } from "../shared/motionTokens.js";
 import { HostShopOverlay } from "./HostShopOverlay.js";
 import { isHostShopActive } from "./hostShopState.js";
 import { HostMovementJourney } from "./HostMovementJourney.js";
+import { HostMotionCue } from "./HostMotionCue.js";
+import { SignalTheatreHost } from "./SignalTheatreHost.js";
+import {
+  getMovementArrivalModel,
+  type MovementArrivalModel
+} from "./hostMovementPresentation.js";
 import { DiceRollScene } from "./DiceRollScene.js";
 import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
 import { JoinQrCard } from "./JoinQrCard.js";
@@ -2167,36 +2173,6 @@ interface TacticalMapPanelProps {
   onMovementPresentationChange?: (model: MovementArrivalModel | null) => void;
 }
 
-interface MovementArrivalModel {
-  eventId: string;
-  destination: PublicMoveDestination;
-  playerName: string;
-  originName: string;
-}
-
-function getMovementArrivalModel(
-  patch: PublicPatchPayload | null | undefined,
-  previousPatch: PublicPatchPayload | null | undefined,
-  sequence = 0
-): MovementArrivalModel | null {
-  const planner = previousPatch?.movementPlanner?.active ? previousPatch.movementPlanner : null;
-
-  if (!patch || !planner) {
-    return null;
-  }
-
-  const previousSectorBySeat = new Map((previousPatch?.players ?? []).map((player) => [player.seatId, player.sectorId] as const));
-  const movedPlayer = patch.players.find((player) => previousSectorBySeat.get(player.seatId) !== player.sectorId);
-  const destination = movedPlayer ? planner.destinations.find((entry) => entry.sectorId === movedPlayer.sectorId) ?? null : null;
-
-  return movedPlayer && destination ? {
-    eventId: `${sequence}:${movedPlayer.seatId}:${planner.currentSectorId}:${destination.sectorId}`,
-    destination,
-    playerName: patch.seats.find((seat) => seat.seatId === movedPlayer.seatId)?.displayName ?? movedPlayer.character.name,
-    originName: planner.currentSectorName
-  } : null;
-}
-
 function MovementFocusHud({
   planner,
   selectedDestination,
@@ -2382,6 +2358,7 @@ function TacticalMapPanel({
 }: TacticalMapPanelProps): ReactElement {
   const reducedMotion = useReducedMotion();
   const qaArrivalHold = import.meta.env.DEV && new URLSearchParams(window.location.search).get("qaArrivalHold") === "1";
+  const qaMovementHold = import.meta.env.DEV && new URLSearchParams(window.location.search).get("qaMovementHold") === "1";
   const battleMode = focusEnabled && !rareStateModel && isHostBattleActive(patch, battlePlayer);
   const shopMode = focusEnabled && !rareStateModel && activePlayer?.character.status !== "recalled" && activeSeat?.connected !== false && isHostShopActive(patch, activePlayer);
   const planner = focusEnabled && !rareStateModel && patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
@@ -2433,15 +2410,17 @@ function TacticalMapPanel({
       });
     }, reducedMotion
       ? visualTravel.arrived ? 160 : 90
-      : visualTravel.arrived
+        : visualTravel.arrived
         ? qaArrivalHold ? 10_000 : hostPresentationTimings.movementArrivalMs
+        : qaMovementHold
+          ? 4_500
         : visualTravel.step === 0
           ? hostPresentationTimings.movementStartMs
           : crossingRings
             ? hostPresentationTimings.movementCrossRingMs
             : hostPresentationTimings.movementSegmentMs);
     return () => window.clearTimeout(timeout);
-  }, [qaArrivalHold, reducedMotion, visualTravel]);
+  }, [qaArrivalHold, qaMovementHold, reducedMotion, visualTravel]);
   // A newly arrived authoritative patch may already contain the encounter that
   // follows movement. Preserve the movement presentation first; the battle
   // chamber opens only after the local, non-authoritative journey has settled.
@@ -2475,7 +2454,7 @@ function TacticalMapPanel({
             patch={patch?.payload ?? null}
             previousPatch={visualTravel?.previousPatch ?? previousPatch?.payload ?? null}
             phase={patch?.phase ?? "start"}
-            showContextBrief={!presentBattleChamber && !focusShopMode && !discoveryMode}
+            showContextBrief={!presentBattleChamber && !focusShopMode && !discoveryMode && !visualTravel}
           />
           {!movementFocusMode && <BoardLegend />}
       </div>
@@ -2938,7 +2917,6 @@ export function TvApp(): ReactElement {
   const [adminMapTileId, setAdminMapTileId] = useState<string | null>(null);
   const [returnLobbyConfirmOpen, setReturnLobbyConfirmOpen] = useState(false);
   const [movementPresentation, setMovementPresentation] = useState<MovementArrivalModel | null>(null);
-  const [visibleHandoffId, setVisibleHandoffId] = useState<string | null>(null);
   const restoreValidatedRef = useRef(false);
   const { patch, error, status, synchronized: subscriptionSynchronized, debugEvents, clearDebugEvents, sendIntent } = useRoomSubscription({
     view: "tv",
@@ -2948,17 +2926,6 @@ export function TvApp(): ReactElement {
   const previousPatchRef = useRef<StatePatch<PublicPatchPayload> | null>(null);
   const commandMainRef = useRef<HTMLElement | null>(null);
   const previousBattleModeRef = useRef(false);
-
-  useEffect(() => {
-    const handoff = patch?.payload.requiredAction?.handoff;
-    if (!handoff || typeof window === "undefined") return;
-    const storageKey = `ashenreach:tv:last-handoff:${roomCode ?? "room"}`;
-    if (window.sessionStorage.getItem(storageKey) === handoff.id) return;
-    window.sessionStorage.setItem(storageKey, handoff.id);
-    setVisibleHandoffId(handoff.id);
-    const timer = window.setTimeout(() => setVisibleHandoffId((current) => current === handoff.id ? null : current), 900);
-    return () => window.clearTimeout(timer);
-  }, [patch?.payload.requiredAction?.handoff?.id, roomCode]);
 
   useEffect(() => {
     fetchCharacters()
@@ -3243,9 +3210,6 @@ export function TvApp(): ReactElement {
         tone: "active"
       }
     : liveStatus;
-  const visibleHandoff = visibleHandoffId && publicPatch?.payload.requiredAction?.handoff?.id === visibleHandoffId
-    ? publicPatch.payload.requiredAction.handoff
-    : null;
   const rareStateModel = authoritativePresentationReady && rareStateActive ? displayedLiveStatus : null;
   const isPreRoomLobby = !effectiveRoomCode && !publicPatch;
 
@@ -3257,11 +3221,27 @@ export function TvApp(): ReactElement {
   const devAdminSurface = import.meta.env.DEV
     ? new URLSearchParams(window.location.search).get("admin")
     : null;
+  const signalTheatreMode = new URLSearchParams(window.location.search).get("hostDesign") !== "legacy";
   if (devAdminSurface === "library") {
     return <Suspense fallback={<div className="admin-library-loading">Opening archive…</div>}><AdminLibrary roomCode={effectiveRoomCode} hostToken={hostToken} initialCardId={adminLibraryCardId} onOpenMapTile={(tileId) => { setAdminMapTileId(tileId); setAdminSurface("map"); }} onClose={() => setAdminSurface(null)} /></Suspense>;
   }
   if (devAdminSurface === "map") {
     return <Suspense fallback={<div className="admin-library-loading">Opening tactical archive…</div>}><AdminMapInspector initialTileId={adminMapTileId} onOpenLibraryCard={(cardId) => { setAdminLibraryCardId(cardId); setAdminSurface("library"); }} onClose={() => setAdminSurface(null)} /></Suspense>;
+  }
+
+  if (signalTheatreMode) {
+    return (
+      <SignalTheatreHost
+        patch={publicPatch}
+        previousPatch={previousPatchRef.current}
+        roomCode={effectiveRoomCode}
+        activeSeat={activeSeat}
+        activePlayer={activePlayer}
+        currentStepCopy={currentStepCopy}
+        synchronized={authoritativePresentationReady}
+        connectionStatus={status}
+      />
+    );
   }
 
   if (!gameUiReady) {
@@ -3298,17 +3278,14 @@ export function TvApp(): ReactElement {
         <MatchProgressFeedback progress={publicPatch?.payload.matchProgress} />
         <FinalStageOverlay progress={publicPatch?.payload.matchProgress} />
         {!authoritativePresentationReady && <HostNetworkOverlay status={status} synchronized={synchronized} />}
-        {visibleHandoff ? (
-          <section className="tv-turn-handoff" role="status" aria-live="polite" data-testid="tv-turn-handoff">
-            <span>TURN COMPLETE</span>
-            <strong>{visibleHandoff.fromDisplayName}</strong>
-            <i aria-hidden="true">→</i>
-            <div>
-              <small>{visibleHandoff.roundWrapped ? "NEW ROUND" : "NEXT OPERATIVE"}</small>
-              <b>{visibleHandoff.toDisplayName ?? "Table resolving"}</b>
-            </div>
-          </section>
-        ) : null}
+        <HostMotionCue
+          patch={publicPatch}
+          activeSeat={activeSeat}
+          activePlayer={activePlayer}
+          currentStepCopy={currentStepCopy}
+          movementPresenting={movementFocusMode}
+          synchronized={authoritativePresentationReady}
+        />
 
         <section
           ref={commandMainRef}

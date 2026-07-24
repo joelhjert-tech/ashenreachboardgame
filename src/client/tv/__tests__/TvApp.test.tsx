@@ -313,6 +313,7 @@ describe("TvApp", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.localStorage.clear();
+    window.history.replaceState({}, "", "/tv?hostDesign=legacy");
     mockFetchCharacters.mockResolvedValue(characters);
     mockFetchScenarios.mockResolvedValue(scenarios);
     mockFetchSessionSummary.mockResolvedValue({
@@ -343,6 +344,26 @@ describe("TvApp", () => {
       debugEvents: [],
       clearDebugEvents: vi.fn()
     });
+  });
+
+  it("uses Signal Theatre as the default host design", async () => {
+    window.history.replaceState({}, "", "/tv");
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    mockUseRoomSubscription.mockReturnValue({
+      patch: createPatch(),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByTestId("signal-theatre-host")).toHaveAttribute("data-signal-state", "turn");
+    expect(screen.getByRole("heading", { name: "Tarek Voss" })).toBeVisible();
+    expect(screen.queryByText("Ashen Reach TV")).not.toBeInTheDocument();
   });
 
   it("enables the restored dashboard when host token and room code are stored", async () => {

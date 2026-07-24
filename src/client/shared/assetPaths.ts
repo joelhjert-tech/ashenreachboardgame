@@ -3,6 +3,7 @@ import {
   type CardImageType
 } from "../../game/assets/design/cardImageCatalog.js";
 import { getRuntimeCardArtPath } from "../../game/assets/runtime/cardArtRuntimeCatalog.js";
+import { getSignalTheatreEnvironmentPaths } from "../tv/signalTheatreEnvironmentManifest.js";
 import type { ContractCard, EncounterCard, GearTier, Stat } from "./types.js";
 
 const characterPortraitById: Record<string, string> = {
@@ -53,8 +54,27 @@ const statFrameByStat: Record<Stat, string> = {
   forge: "/assets/riftfall/ui/ui_card_frame_yellow.png"
 };
 
+const signalTheatreStatSealByStat: Record<Stat, string> = {
+  command: "/assets/riftfall/ui/signal-theatre/stat-seals/command.png",
+  grit: "/assets/riftfall/ui/signal-theatre/stat-seals/grit.png",
+  signal: "/assets/riftfall/ui/signal-theatre/stat-seals/signal.png",
+  guile: "/assets/riftfall/ui/signal-theatre/stat-seals/guile.png",
+  forge: "/assets/riftfall/ui/signal-theatre/stat-seals/forge.png"
+};
+
+const signalTheatreResultCrestByOutcome = {
+  success: "/assets/riftfall/ui/signal-theatre/results/success.png",
+  defeat: "/assets/riftfall/ui/signal-theatre/results/defeat.png"
+} as const;
+
 const uiAssetPaths = [
   "/assets/riftfall/ui/ashen-reach-lobby-stage.png",
+  "/assets/riftfall/ui/signal-theatre/world-stage.png",
+  "/assets/riftfall/ui/signal-theatre/operative-beacon.png",
+  "/assets/riftfall/ui/signal-theatre/arrival-seal.png",
+  "/assets/riftfall/ui/signal-theatre/journey-path.png",
+  ...Object.values(signalTheatreStatSealByStat),
+  ...Object.values(signalTheatreResultCrestByOutcome),
   "/assets/riftfall/ui/ui_scenario_frame.png",
   "/assets/riftfall/ui/ui_card_frame_red.png",
   "/assets/riftfall/ui/ui_card_frame_blue.png",
@@ -93,8 +113,34 @@ export function getLobbyStagePath(): string {
   return lobbyStagePath;
 }
 
+export function getSignalTheatreAssetPaths(): {
+  worldStage: string;
+  operativeBeacon: string;
+  arrivalSeal: string;
+  journeyPath: string;
+} {
+  return {
+    worldStage: "/assets/riftfall/ui/signal-theatre/world-stage.png",
+    operativeBeacon: "/assets/riftfall/ui/signal-theatre/operative-beacon.png",
+    arrivalSeal: "/assets/riftfall/ui/signal-theatre/arrival-seal.png",
+    journeyPath: "/assets/riftfall/ui/signal-theatre/journey-path.png"
+  };
+}
+
+export function getSignalTheatreStatSealPath(stat: Stat): string {
+  return signalTheatreStatSealByStat[stat];
+}
+
+export function getSignalTheatreResultCrestPath(outcome: "success" | "defeat"): string {
+  return signalTheatreResultCrestByOutcome[outcome];
+}
+
 export function getCharacterPortraitPath(characterId: string): string {
   return characterPortraitById[characterId] ?? "/assets/riftfall/characters/char_void_marshal_kael_dorn.png";
+}
+
+export function getCharacterPortraitPathOrNull(characterId: string): string | null {
+  return characterPortraitById[characterId] ?? null;
 }
 
 export function getCardFallbackArtPath(cardType: CardImageType): string {
@@ -211,7 +257,8 @@ export function getRuntimeAssetPaths(): string[] {
     ...Object.values(nemesisPortraitById),
     ...Object.values(statFrameByStat),
     ...Object.values(battleCardBackPaths),
-    ...uiAssetPaths
+    ...uiAssetPaths,
+    ...getSignalTheatreEnvironmentPaths()
   ].filter((value, index, paths) => paths.indexOf(value) === index);
 }
 
