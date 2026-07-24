@@ -38,6 +38,16 @@ import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
 import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
+import { SignalPhoneIdentityRail } from "./SignalPhoneIdentityRail.js";
+import {
+  SignalPhoneMoreHeading,
+  SignalPhoneNavigation,
+  SignalPhoneTabIcon,
+  signalPhoneTabLabels,
+  type SignalPhoneCommandTab,
+  type SignalPhoneTab
+} from "./SignalPhoneNavigation.js";
+import "./SignalPhone.css";
 
 interface PortraitControllerViewProps {
   self: PhoneSelfState | null;
@@ -57,7 +67,7 @@ interface PortraitControllerViewProps {
   startSubmitting?: boolean;
 }
 
-type PortraitTab = "player" | "inventory" | "quests" | TurnActionTab;
+type PortraitTab = SignalPhoneTab;
 
 const turnActionTabs: TurnActionTab[] = ["move", "battle", "shop", "action"];
 const gearSlots: GearSlot[] = ["weapon", "armor", "utility"];
@@ -69,26 +79,6 @@ function PhoneScenarioArt({ path, title }: { path?: string | null; title: string
   if (!path || failed) return null;
   return <img className="phone-scenario-summary-art" src={path} alt={`${title} scenario artwork`} onError={() => setFailed(true)} />;
 }
-
-const portraitTabLabels: Record<PortraitTab, string> = {
-  player: "Player Card",
-  inventory: "Inventory",
-  quests: "Objectives",
-  move: "Move",
-  battle: "Battle",
-  shop: "Shop",
-  action: "Action"
-};
-
-const portraitTabIcons: Record<PortraitTab, string> = {
-  player: "OP",
-  inventory: "KIT",
-  quests: "OBJ",
-  move: "MOVE",
-  battle: "TEST",
-  shop: "BUY",
-  action: "ACT"
-};
 
 function isTurnActionTab(tab: PortraitTab): tab is TurnActionTab {
   return turnActionTabs.includes(tab as TurnActionTab);
@@ -1271,6 +1261,7 @@ export function PortraitControllerView({
   const rootClassName = [
     "phone-portrait-controller",
     "phone-ui-streamlined",
+    "signal-phone-shell",
     phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--immersive",
     bottomDockExpanded ? "phone-shell--bottomdock-expanded" : "phone-shell--bottomdock-compact",
     focusedResolutionActive ? "phone-shell--battle-active" : "",
@@ -1278,25 +1269,23 @@ export function PortraitControllerView({
   ]
     .filter(Boolean)
     .join(" ");
-  const topbarClassName = ["phone-portrait-header", "phone-topbar", phoneChromeHidden ? "phone-topbar--compact" : ""]
-    .filter(Boolean)
-    .join(" ");
   const bottomNavClassName = [
     "phone-portrait-bottom-nav",
     "phone-bottomnav",
+    "signal-phone-nav",
     bottomDockExpanded ? "phone-bottomdock--expanded" : "phone-bottomdock--compact"
   ]
     .filter(Boolean)
     .join(" ");
   const contentClassName = [
     "phone-portrait-scroll",
+    "signal-phone-shell__content",
     phoneChromeHidden ? "phone-content--expanded" : "",
     focusedResolutionActive ? "phone-battle-content" : ""
   ]
     .filter(Boolean)
     .join(" ");
   const scarCount = self.character.scars.length;
-  const compactStatusDetail = `${scarCount} scar${scarCount === 1 ? "" : "s"}`;
   const scarCards = self.character.scarCards ?? [];
   const afflictions = self.character.afflictions ?? { faceup: [], facedownCount: 0 };
   const pendingTestModifiers = patch?.pendingTestModifiers ?? [];
@@ -1319,6 +1308,9 @@ export function PortraitControllerView({
     showBottomDock();
   };
   const requiredAction = patch?.requiredAction ?? null;
+  const commandTab: SignalPhoneCommandTab = isTurnActionTab(activeTab)
+    ? activeTab
+    : actionGuidance?.requiredTab ?? "move";
   const requiredActionStatus: RequiredActionStatus = qaRequiredActionState?.status ?? (pendingRequiredIntent
     ? "submitting"
     : requiredAction?.canAct
@@ -1361,41 +1353,26 @@ export function PortraitControllerView({
       data-phone-bottom-dock-expanded={bottomDockExpanded ? "true" : "false"}
     >
       <div className="phone-portrait-panel">
-        <header className={topbarClassName}>
-          {focusedResolutionActive ? (
-            <div className="phone-battle-topbar" aria-label={matchEnded ? "Match concluded" : "Battle operative status"}>
-              <img src={getCharacterPortraitPath(self.character.id)} alt="" />
-              <div>
-                <span>{self.character.name}</span>
-                <strong>{displayName}</strong>
-              </div>
-              <p>{matchEnded ? "Match concluded" : `${self.character.wounds} wounds · ${self.character.salvage ?? 0} Salvage`}</p>
-            </div>
-          ) : phoneChromeVisible ? (
-            <>
-              <div className="phone-portrait-header-art">
-                <img src={getCharacterPortraitPath(self.character.id)} alt="" />
-              </div>
-              <div className="phone-portrait-header-copy">
-                <span>{self.character.name}</span>
-                <h1>{displayName}</h1>
-                <p>{self.character.archetype} · {formatSeatLabel(self.seatId)}</p>
-              </div>
-              <div className="phone-portrait-header-vitals" aria-label="Character vitals">
-                <span>Health</span>
-                <strong>{self.character.wounds} wounds</strong>
-                <small>{self.character.salvage ?? 0} Salvage · {scarCount} scar{scarCount === 1 ? "" : "s"}</small>
-              </div>
-            </>
-          ) : (
-            <div className="phone-compact-status-strip" aria-label="Compact player status">
-              <strong>{displayName}</strong>
-              <span>
-                {self.character.name} | {self.character.wounds} wounds | {self.character.salvage ?? 0} Salvage | {compactStatusDetail}
-              </span>
-            </div>
-          )}
-        </header>
+        {phoneChromeVisible ? (
+          <SignalPhoneIdentityRail
+            characterId={self.character.id}
+            characterName={self.character.name}
+            displayName={displayName}
+            wounds={self.character.wounds}
+            salvage={self.character.salvage ?? 0}
+            scars={scarCount}
+            sectorId={self.sectorId}
+            connectionStatus={connectionStatus}
+            active={activeSeatId === self.seatId}
+          />
+        ) : (
+          <header className="signal-phone-compact-status phone-topbar--compact" aria-label="Compact player status">
+            <strong>{self.character.name}</strong>
+            <span>
+              {self.character.wounds} wounds | {self.character.salvage ?? 0} Salvage | {scarCount} scars
+            </span>
+          </header>
+        )}
 
         <main ref={phoneScrollRef} className={contentClassName} aria-label="Phone content">
           {focusedResolutionActive && patch && onIntent ? (
@@ -1744,29 +1721,25 @@ export function PortraitControllerView({
         {!focusedResolutionActive && !scarSelectorActive ? <nav
           ref={bottomDockRef}
           className={bottomNavClassName}
-          role={bottomDockExpanded ? "navigation" : "tablist"}
-          aria-label={bottomDockExpanded ? "More phone controls" : "Phone navigation"}
+          aria-label="More phone controls"
           onBlur={handleBottomDockBlur}
         >
           {bottomDockExpanded ? (
             <div className="phone-more-menu">
-              <div className="phone-more-menu__heading">
-                <strong>More</strong>
-                <span>Sections and room controls</span>
-              </div>
+              <SignalPhoneMoreHeading />
               <div className="phone-expanded-tab-grid" role="tablist" aria-label="All phone sections">
-                {(Object.keys(portraitTabLabels) as PortraitTab[]).map((tab) => (
+                {(Object.keys(signalPhoneTabLabels) as PortraitTab[]).map((tab) => (
                   <button
                     key={tab}
                     type="button"
                     className={`phone-portrait-tab phone-expanded-tab${activeTab === tab ? " is-active" : ""}`}
                     role="tab"
                     aria-selected={activeTab === tab}
-                    aria-label={tab === "player" ? "Operative — Player Card" : portraitTabLabels[tab]}
+                    aria-label={tab === "player" ? "Operative — Player Card" : signalPhoneTabLabels[tab]}
                     onClick={() => chooseBottomDockTab(tab)}
                   >
-                    <span className="phone-tab-icon" aria-hidden="true">{portraitTabIcons[tab]}</span>
-                    <span>{tab === "player" ? "Operative" : portraitTabLabels[tab]}</span>
+                    <span className="phone-tab-icon" aria-hidden="true"><SignalPhoneTabIcon tab={tab} size={20} /></span>
+                    <span>{tab === "player" ? "Operative" : signalPhoneTabLabels[tab]}</span>
                   </button>
                 ))}
               </div>
@@ -1800,21 +1773,14 @@ export function PortraitControllerView({
               </button> : null}
               {fullscreen.errorMessage ? <span className="phone-fullscreen-error" role="status">{fullscreen.errorMessage}</span> : null}
             </div>
-          ) : (
-            <div className="phone-compact-tab-dock">
-              <button
-                type="button"
-                className="phone-compact-active-tab"
-                onClick={showBottomDock}
-                aria-label={`${portraitTabLabels[activeTab]}, current section; show all phone sections`}
-                aria-expanded="false"
-              >
-                <span className="phone-tab-icon" aria-hidden="true">{portraitTabIcons[activeTab]}</span>
-                <span>{activeTab === "player" ? "Operative" : portraitTabLabels[activeTab]}</span>
-                <span className="phone-compact-active-tab__indicator" aria-hidden="true">&#9652;</span>
-              </button>
-            </div>
-          )}
+          ) : null}
+          <SignalPhoneNavigation
+            activeTab={activeTab}
+            commandTab={commandTab}
+            expanded={bottomDockExpanded}
+            onTab={(tab) => chooseBottomDockTab(tab)}
+            onMore={() => bottomDockExpanded ? hideBottomDock() : showBottomDock()}
+          />
         </nav> : null}
       </div>
     </section>
