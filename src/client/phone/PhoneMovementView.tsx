@@ -7,8 +7,9 @@ import type {
 } from "../shared/types.js";
 import { getMissionRelevanceForSector } from "../shared/missionRelevance.js";
 import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
+import { getSignalTheatreAssetPaths, getSignalTheatreStatSealPath } from "../shared/assetPaths.js";
 import { useAuthoritativeResultCollapse } from "../shared/useAuthoritativeResultCollapse.js";
-import { getTileAssetPath } from "../tv/tileAssetManifest.js";
+import { getSignalTheatreEnvironment } from "../tv/signalTheatreEnvironmentManifest.js";
 import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 
 export type MovementNavigationTarget = "player" | "inventory" | "more";
@@ -101,13 +102,27 @@ function buildDestinationPresentation(
       ? destination.routeNames.join(" → ")
       : `${destination.distance} sector route`,
     specialRules: destinationSpecialRules(destination),
-    artPath: getTileAssetPath(destination.sectorId)
+    artPath: getSignalTheatreEnvironment(destination.sectorId)?.path ?? null
   };
 }
 
 function DestinationArtwork({ model }: { model: DestinationPresentation }): ReactElement {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [model.artPath]);
+
   return model.artPath ? (
-    <img src={model.artPath} alt="" aria-hidden="true" className="phone-move-prototype__art" data-testid="movement-tile-image" />
+    <img
+      src={failed ? getSignalTheatreAssetPaths().worldStage : model.artPath}
+      width={1600}
+      height={900}
+      loading="lazy"
+      decoding="async"
+      alt=""
+      aria-hidden="true"
+      className="phone-move-prototype__art"
+      data-testid="movement-tile-image"
+      onError={() => setFailed(true)}
+    />
   ) : (
     <span className="phone-move-prototype__art-fallback" aria-hidden="true" data-testid="movement-tile-fallback">
       {model.destination.ring.slice(0, 1).toUpperCase()}
@@ -287,16 +302,24 @@ function MovementHeader({
       ? `Choose one destination exactly ${planner.movementValue} step${planner.movementValue === 1 ? "" : "s"} away.`
       : "Roll once to reveal your legal destinations.";
   return (
-    <header className="phone-move-prototype__header">
-      <div>
+    <header className="phone-move-prototype__header phone-move-instrument__header">
+      <div className="phone-move-instrument__heading">
         <span>Movement</span>
         <strong>{stateLabel}</strong>
+        {instruction ? <p>{instruction}</p> : null}
       </div>
-      <div className="phone-move-prototype__origin">
+      <div
+        className="phone-move-instrument__seal"
+        aria-label={planner?.active ? `Movement total ${finalMovement}` : "Movement total awaiting roll"}
+      >
+        <img src={getSignalTheatreStatSealPath("command")} width={512} height={512} alt="" aria-hidden="true" />
+        <span>Total</span>
+        <strong>{planner?.active ? finalMovement : "—"}</strong>
+      </div>
+      <div className="phone-move-prototype__origin phone-move-instrument__origin">
         <strong>{locationLabel}</strong>
         {statusLabel ? <span>{statusLabel}</span> : null}
       </div>
-      {instruction ? <p>{instruction}</p> : null}
     </header>
   );
 }
@@ -339,11 +362,14 @@ function TacticalDestinationList({
         return (
           <article
             key={model.destination.sectorId}
-            className={`phone-move-option-a__card${selected ? " is-selected" : ""}${disabled ? " is-disabled" : ""}`}
+            className={`phone-move-option-a__card phone-move-instrument__stop${selected ? " is-selected" : ""}${disabled ? " is-disabled" : ""}`}
             role="listitem"
             data-testid="movement-destination"
             data-selected={selected ? "true" : "false"}
           >
+            <span className="phone-move-instrument__rail" aria-hidden="true">
+              <i />
+            </span>
             <button
               type="button"
               className="phone-move-option-a__select"

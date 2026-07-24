@@ -856,7 +856,7 @@ describe("PhoneActionPanel", () => {
     expect(destinationCard).toHaveTextContent(/threat risk/i);
     expect(destinationCard.querySelector('[data-testid="movement-tile-image"]')).toHaveAttribute(
       "src",
-      "/assets/map/tiles/map_tile_anchor_market.png"
+      "/assets/riftfall/environments/signal-theatre/sectors/outer_waymarket.png"
     );
     expect(screen.getByRole("button", { name: /select anchor market/i })).toBeInTheDocument();
     expect(screen.getByText("View details").closest("details")).not.toHaveAttribute("open");

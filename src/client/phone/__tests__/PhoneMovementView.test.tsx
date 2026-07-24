@@ -72,6 +72,22 @@ function Harness({ onIntent }: { onIntent: (intent: ClientIntent) => void }) {
 }
 
 describe("PhoneMovementView", () => {
+  it("uses the Signal Theatre command seal and environment system", () => {
+    render(<Harness onIntent={vi.fn()} />);
+
+    const total = screen.getByLabelText("Movement total 1");
+    expect(within(total).getByRole("strong")).toHaveTextContent("1");
+    expect(total.querySelector("img")).toHaveAttribute(
+      "src",
+      "/assets/riftfall/ui/signal-theatre/stat-seals/command.png"
+    );
+    expect(screen.getAllByTestId("movement-tile-image")[0]).toHaveAttribute(
+      "src",
+      "/assets/riftfall/environments/signal-theatre/sectors/votive-engine-room.png"
+    );
+    expect(screen.getAllByTestId("movement-destination")[0]).toHaveClass("phone-move-instrument__stop");
+  });
+
   it("uses the authoritative preview and move intents", () => {
     const onIntent = vi.fn();
     render(<Harness onIntent={onIntent} />);
