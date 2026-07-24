@@ -731,6 +731,13 @@
   }
 }
 
+@media (max-width: 374px) {
+  .signal-phone-nav__primary > button span {
+    font-size: 0.48rem;
+    letter-spacing: 0.015em;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .signal-phone-shell *,
   .signal-phone-shell *::before,
