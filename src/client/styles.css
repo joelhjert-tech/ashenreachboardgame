@@ -5200,7 +5200,7 @@ select {
   background:
     linear-gradient(180deg, rgba(3, 5, 8, 0.42), rgba(3, 5, 8, 0.88)),
     radial-gradient(circle at 52% 26%, rgba(190, 78, 42, 0.18), transparent 38%),
-    url("/assets/riftfall/board/full-board/ashen_reach_board_main.png") center / cover no-repeat;
+    url("/assets/riftfall/ui/signal-theatre/world-stage.png") center / cover no-repeat;
   place-content: center;
   justify-items: center;
 }
@@ -5347,7 +5347,7 @@ select {
   background:
     linear-gradient(180deg, rgba(3, 5, 8, 0.56), rgba(3, 5, 8, 0.93)),
     radial-gradient(circle at 50% 22%, rgba(190, 78, 42, 0.14), transparent 40%),
-    url("/assets/riftfall/board/full-board/ashen_reach_board_main.png") center / cover no-repeat;
+    url("/assets/riftfall/ui/signal-theatre/world-stage.png") center / cover no-repeat;
 }
 
 .phone-portrait-controller:has(.phone-lobby-panel) .phone-lobby-panel {

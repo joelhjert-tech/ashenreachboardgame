@@ -46,7 +46,8 @@ export function SignalPhoneIdentityRail({
     : environment.path;
   const sectorName = environment?.sectorName ?? titleCase(sectorId);
   const reachLabel = environment ? `${titleCase(environment.tier)} Reach` : "Signal Theatre";
-  const connected = connectionStatus.toLowerCase().includes("connected");
+  const normalizedConnection = connectionStatus.toLowerCase();
+  const connected = normalizedConnection === "open" || normalizedConnection.includes("connected");
 
   return (
     <header className="signal-phone-identity phone-topbar" data-testid="signal-phone-identity">

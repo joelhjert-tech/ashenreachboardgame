@@ -690,7 +690,7 @@
   width: 2.8rem;
 }
 
-@media (max-width: 374px), (max-height: 805px) {
+@media (max-width: 480px), (max-height: 805px) {
   .signal-phone-identity__rail {
     grid-template-columns: 3.55rem minmax(0, 1fr) auto;
     gap: 0.34rem;
