@@ -1,0 +1,1611 @@
+{
+  "generatedAt": "2026-07-24T11:57:26+0200",
+  "records": [
+    {
+      "capture": "01-battle-ready",
+      "fixture": "battle-ready",
+      "viewport": "1366x768",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "battle_ready",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1366,
+          "height": 768,
+          "right": 1366,
+          "bottom": 768
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1184.34375,
+          "y": 9.203125,
+          "right": 1348.25,
+          "bottom": 146.796875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "01-battle-ready",
+      "fixture": "battle-ready",
+      "viewport": "1600x900",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "battle_ready",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1600,
+          "height": 900,
+          "right": 1600,
+          "bottom": 900
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1387.203125,
+          "y": 10.796875,
+          "right": 1579.203125,
+          "bottom": 148.390625
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "01-battle-ready",
+      "fixture": "battle-ready",
+      "viewport": "1920x1080",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "battle_ready",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1703.046875,
+          "y": 12.953125,
+          "right": 1895.046875,
+          "bottom": 150.546875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "02-battle-rolling",
+      "fixture": "battle-rolling",
+      "viewport": "1366x768",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "rolling",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1366,
+          "height": 768,
+          "right": 1366,
+          "bottom": 768
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1184.34375,
+          "y": 9.203125,
+          "right": 1348.25,
+          "bottom": 146.796875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "02-battle-rolling",
+      "fixture": "battle-rolling",
+      "viewport": "1600x900",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "rolling",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1600,
+          "height": 900,
+          "right": 1600,
+          "bottom": 900
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1387.203125,
+          "y": 10.796875,
+          "right": 1579.203125,
+          "bottom": 148.390625
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "02-battle-rolling",
+      "fixture": "battle-rolling",
+      "viewport": "1920x1080",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "rolling",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1703.046875,
+          "y": 12.953125,
+          "right": 1895.046875,
+          "bottom": 150.546875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "03-battle-success",
+      "fixture": "battle-success",
+      "viewport": "1366x768",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "result",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1366,
+          "height": 768,
+          "right": 1366,
+          "bottom": 768
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1184.34375,
+          "y": 9.203125,
+          "right": 1348.25,
+          "bottom": 146.796875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "03-battle-success",
+      "fixture": "battle-success",
+      "viewport": "1600x900",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "result",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1600,
+          "height": 900,
+          "right": 1600,
+          "bottom": 900
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1387.203125,
+          "y": 10.796875,
+          "right": 1579.203125,
+          "bottom": 148.390625
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "03-battle-success",
+      "fixture": "battle-success",
+      "viewport": "1920x1080",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "result",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1703.046875,
+          "y": 12.953125,
+          "right": 1895.046875,
+          "bottom": 150.546875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "04-battle-failure",
+      "fixture": "battle-failure",
+      "viewport": "1366x768",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "result",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1366,
+          "height": 768,
+          "right": 1366,
+          "bottom": 768
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1184.34375,
+          "y": 9.203125,
+          "right": 1348.25,
+          "bottom": 146.796875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "04-battle-failure",
+      "fixture": "battle-failure",
+      "viewport": "1600x900",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "result",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1600,
+          "height": 900,
+          "right": 1600,
+          "bottom": 900
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1387.203125,
+          "y": 10.796875,
+          "right": 1579.203125,
+          "bottom": 148.390625
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "04-battle-failure",
+      "fixture": "battle-failure",
+      "viewport": "1920x1080",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "result",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1703.046875,
+          "y": 12.953125,
+          "right": 1895.046875,
+          "bottom": 150.546875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "05-challenge-ready",
+      "fixture": "challenge-ready",
+      "viewport": "1366x768",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "battle_ready",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1366,
+          "height": 768,
+          "right": 1366,
+          "bottom": 768
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1184.34375,
+          "y": 9.203125,
+          "right": 1348.25,
+          "bottom": 146.796875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "05-challenge-ready",
+      "fixture": "challenge-ready",
+      "viewport": "1600x900",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "battle_ready",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1600,
+          "height": 900,
+          "right": 1600,
+          "bottom": 900
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1387.203125,
+          "y": 10.796875,
+          "right": 1579.203125,
+          "bottom": 148.390625
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "05-challenge-ready",
+      "fixture": "challenge-ready",
+      "viewport": "1920x1080",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "battle_ready",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1703.046875,
+          "y": 12.953125,
+          "right": 1895.046875,
+          "bottom": 150.546875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "06-challenge-rolling",
+      "fixture": "challenge-rolling",
+      "viewport": "1366x768",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "rolling",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1366,
+          "height": 768,
+          "right": 1366,
+          "bottom": 768
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1184.34375,
+          "y": 9.203125,
+          "right": 1348.25,
+          "bottom": 146.796875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "06-challenge-rolling",
+      "fixture": "challenge-rolling",
+      "viewport": "1600x900",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "rolling",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1600,
+          "height": 900,
+          "right": 1600,
+          "bottom": 900
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1387.203125,
+          "y": 10.796875,
+          "right": 1579.203125,
+          "bottom": 148.390625
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "06-challenge-rolling",
+      "fixture": "challenge-rolling",
+      "viewport": "1920x1080",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "rolling",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1703.046875,
+          "y": 12.953125,
+          "right": 1895.046875,
+          "bottom": 150.546875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "07-challenge-success",
+      "fixture": "challenge-success",
+      "viewport": "1366x768",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "result",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1366,
+          "height": 768,
+          "right": 1366,
+          "bottom": 768
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1184.34375,
+          "y": 9.203125,
+          "right": 1348.25,
+          "bottom": 146.796875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "07-challenge-success",
+      "fixture": "challenge-success",
+      "viewport": "1600x900",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "result",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1600,
+          "height": 900,
+          "right": 1600,
+          "bottom": 900
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1387.203125,
+          "y": 10.796875,
+          "right": 1579.203125,
+          "bottom": 148.390625
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "07-challenge-success",
+      "fixture": "challenge-success",
+      "viewport": "1920x1080",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "result",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1703.046875,
+          "y": 12.953125,
+          "right": 1895.046875,
+          "bottom": 150.546875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "08-challenge-failure",
+      "fixture": "challenge-failure",
+      "viewport": "1366x768",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "result",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1366,
+          "height": 768,
+          "right": 1366,
+          "bottom": 768
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1184.34375,
+          "y": 9.203125,
+          "right": 1348.25,
+          "bottom": 146.796875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "08-challenge-failure",
+      "fixture": "challenge-failure",
+      "viewport": "1600x900",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "result",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1600,
+          "height": 900,
+          "right": 1600,
+          "bottom": 900
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1387.203125,
+          "y": 10.796875,
+          "right": 1579.203125,
+          "bottom": 148.390625
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "08-challenge-failure",
+      "fixture": "challenge-failure",
+      "viewport": "1920x1080",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "result",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1703.046875,
+          "y": 12.953125,
+          "right": 1895.046875,
+          "bottom": 150.546875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "09-private-wait",
+      "fixture": "private-wait",
+      "viewport": "1366x768",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "choice_required",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1366,
+          "height": 768,
+          "right": 1366,
+          "bottom": 768
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1184.34375,
+          "y": 9.203125,
+          "right": 1348.25,
+          "bottom": 146.796875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "09-private-wait",
+      "fixture": "private-wait",
+      "viewport": "1600x900",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "choice_required",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1600,
+          "height": 900,
+          "right": 1600,
+          "bottom": 900
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1387.203125,
+          "y": 10.796875,
+          "right": 1579.203125,
+          "bottom": 148.390625
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "09-private-wait",
+      "fixture": "private-wait",
+      "viewport": "1920x1080",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "choice_required",
+        "restored": "false",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1703.046875,
+          "y": 12.953125,
+          "right": 1895.046875,
+          "bottom": 150.546875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Resolution in progress"
+      }
+    },
+    {
+      "capture": "10-reconnect",
+      "fixture": "reconnect",
+      "viewport": "1366x768",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "result",
+        "restored": "true",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1366,
+          "height": 768,
+          "right": 1366,
+          "bottom": 768
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1184.34375,
+          "y": 9.203125,
+          "right": 1348.25,
+          "bottom": 146.796875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "10-reconnect",
+      "fixture": "reconnect",
+      "viewport": "1600x900",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "result",
+        "restored": "true",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1600,
+          "height": 900,
+          "right": 1600,
+          "bottom": 900
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1387.203125,
+          "y": 10.796875,
+          "right": 1579.203125,
+          "bottom": 148.390625
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "10-reconnect",
+      "fixture": "reconnect",
+      "viewport": "1920x1080",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "result",
+        "restored": "true",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1703.046875,
+          "y": 12.953125,
+          "right": 1895.046875,
+          "bottom": 150.546875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "11-six-player-battle",
+      "fixture": "battle-success",
+      "viewport": "1366x768",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "result",
+        "restored": "true",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1366,
+          "height": 768,
+          "right": 1366,
+          "bottom": 768
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1184.34375,
+          "y": 9.203125,
+          "right": 1348.25,
+          "bottom": 146.796875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "11-six-player-battle",
+      "fixture": "battle-success",
+      "viewport": "1600x900",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "result",
+        "restored": "true",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1600,
+          "height": 900,
+          "right": 1600,
+          "bottom": 900
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1387.203125,
+          "y": 10.796875,
+          "right": 1579.203125,
+          "bottom": 148.390625
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "11-six-player-battle",
+      "fixture": "battle-success",
+      "viewport": "1920x1080",
+      "reducedMotion": false,
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "resolutionMode": "battle",
+        "resolutionStage": "result",
+        "restored": "true",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "grit",
+        "actionCoinRect": {
+          "x": 1703.046875,
+          "y": 12.953125,
+          "right": 1895.046875,
+          "bottom": 150.546875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "12-reduced-motion",
+      "fixture": "challenge-success",
+      "viewport": "1366x768",
+      "reducedMotion": true,
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "result",
+        "restored": "true",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1366,
+          "height": 768,
+          "right": 1366,
+          "bottom": 768
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1184.34375,
+          "y": 9.203125,
+          "right": 1348.25,
+          "bottom": 146.796875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "12-reduced-motion",
+      "fixture": "challenge-success",
+      "viewport": "1600x900",
+      "reducedMotion": true,
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "result",
+        "restored": "true",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1600,
+          "height": 900,
+          "right": 1600,
+          "bottom": 900
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1387.203125,
+          "y": 10.796875,
+          "right": 1579.203125,
+          "bottom": 148.390625
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    },
+    {
+      "capture": "12-reduced-motion",
+      "fixture": "challenge-success",
+      "viewport": "1920x1080",
+      "reducedMotion": true,
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "resolutionMode": "tile-challenge",
+        "resolutionStage": "result",
+        "restored": "true",
+        "resolutionRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "canvasCount": 0,
+        "operativeArtwork": 1,
+        "oppositionArtwork": 1,
+        "totalCount": 2,
+        "actionCoinCount": 1,
+        "actionCoinKind": "signal",
+        "actionCoinRect": {
+          "x": 1703.046875,
+          "y": 12.953125,
+          "right": 1895.046875,
+          "bottom": 150.546875
+        },
+        "arithmeticDetailPanels": 0,
+        "pieceLayerOpacity": "0",
+        "legacyBattle": 0,
+        "privateLeak": false,
+        "publicStateLabel": "Authoritative result"
+      }
+    }
+  ],
+  "consoleErrors": [],
+  "reviewVideo": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\signal-sector-resolution\\recordings\\review\\page@c69d0b7547629993347160d88cae046e.webm",
+  "flowVideos": [
+    {
+      "flow": "battle-flow",
+      "fixtures": [
+        "battle-ready",
+        "battle-rolling",
+        "battle-success"
+      ],
+      "path": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\signal-sector-resolution\\recordings\\battle-flow\\page@141c39b0722ba347cdd8fd420ce98426.webm"
+    },
+    {
+      "flow": "tile-challenge-flow",
+      "fixtures": [
+        "challenge-ready",
+        "challenge-rolling",
+        "challenge-failure"
+      ],
+      "path": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\signal-sector-resolution\\recordings\\tile-challenge-flow\\page@12a9ba1466ce2bfea4fac286e6d67059.webm"
+    }
+  ]
+}

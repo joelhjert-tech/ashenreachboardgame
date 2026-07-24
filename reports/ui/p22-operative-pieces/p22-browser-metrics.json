@@ -1,0 +1,3149 @@
+{
+  "generatedAt": "2026-07-24T12:16:34+0200",
+  "records": [
+    {
+      "capture": "01-one-piece",
+      "fixture": "one-operative",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 0,
+        "pieceRects": [],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/ashwake-crossing.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "01-one-piece",
+      "fixture": "one-operative",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 0,
+        "pieceRects": [],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/ashwake-crossing.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "01-one-piece",
+      "fixture": "one-operative",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 0,
+        "pieceRects": [],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/ashwake-crossing.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "02-three-pieces",
+      "fixture": "three-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 2,
+        "pieceRects": [
+          {
+            "x": 646.9320068359375,
+            "y": 420.89141845703125,
+            "width": 113.104736328125,
+            "height": 113.10467529296875,
+            "right": 760.0367431640625,
+            "bottom": 533.99609375
+          },
+          {
+            "x": 734.235595703125,
+            "y": 481.90350341796875,
+            "width": 110.59130859375,
+            "height": 110.59124755859375,
+            "right": 844.826904296875,
+            "bottom": 592.4947509765625
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/ashen-chapel.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "02-three-pieces",
+      "fixture": "three-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 2,
+        "pieceRects": [
+          {
+            "x": 757.765625,
+            "y": 467.359375,
+            "width": 132.46875,
+            "height": 132.46875,
+            "right": 890.234375,
+            "bottom": 599.828125
+          },
+          {
+            "x": 853.6281127929688,
+            "y": 542.9150390625,
+            "width": 129.52496337890625,
+            "height": 129.52496337890625,
+            "right": 983.153076171875,
+            "bottom": 672.4400024414062
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/ashen-chapel.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "02-three-pieces",
+      "fixture": "three-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 2,
+        "pieceRects": [
+          {
+            "x": 909.5968627929688,
+            "y": 561.2562255859375,
+            "width": 158.39996337890625,
+            "height": 158.4000244140625,
+            "right": 1067.996826171875,
+            "bottom": 719.65625
+          },
+          {
+            "x": 1024.63818359375,
+            "y": 651.9086303710938,
+            "width": 154.8798828125,
+            "height": 154.8800048828125,
+            "right": 1179.51806640625,
+            "bottom": 806.7886352539062
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/ashen-chapel.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "03-six-player-board",
+      "fixture": "six-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 655.7290649414062,
+            "y": 421.05419921875,
+            "width": 95.5106201171875,
+            "height": 95.5106201171875,
+            "right": 751.2396850585938,
+            "bottom": 516.5648193359375
+          },
+          {
+            "x": 553.7045288085938,
+            "y": 458.5662841796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 646.7017211914062,
+            "bottom": 551.5634765625
+          },
+          {
+            "x": 562.3139038085938,
+            "y": 513.4100341796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 655.3110961914062,
+            "bottom": 606.4072265625
+          },
+          {
+            "x": 751.6420288085938,
+            "y": 513.4100341796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 844.6392211914062,
+            "bottom": 606.4072265625
+          },
+          {
+            "x": 655.7290649414062,
+            "y": 530.72607421875,
+            "width": 95.5106201171875,
+            "height": 95.5106201171875,
+            "right": 751.2396850585938,
+            "bottom": 626.2366943359375
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "03-six-player-board",
+      "fixture": "six-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 768.0687255859375,
+            "y": 466.4674987792969,
+            "width": 111.862548828125,
+            "height": 111.86251831054688,
+            "right": 879.9312744140625,
+            "bottom": 578.3300170898438
+          },
+          {
+            "x": 656.2593994140625,
+            "y": 512.8512573242188,
+            "width": 108.918701171875,
+            "height": 108.91876220703125,
+            "right": 765.1781005859375,
+            "bottom": 621.77001953125
+          },
+          {
+            "x": 665.6968994140625,
+            "y": 580.8981323242188,
+            "width": 108.918701171875,
+            "height": 108.91876220703125,
+            "right": 774.6156005859375,
+            "bottom": 689.81689453125
+          },
+          {
+            "x": 873.3687744140625,
+            "y": 580.8981323242188,
+            "width": 108.91876220703125,
+            "height": 108.91876220703125,
+            "right": 982.2875366210938,
+            "bottom": 689.81689453125
+          },
+          {
+            "x": 768.0687255859375,
+            "y": 602.545654296875,
+            "width": 111.862548828125,
+            "height": 111.8624267578125,
+            "right": 879.9312744140625,
+            "bottom": 714.4080810546875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "03-six-player-board",
+      "fixture": "six-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 921.9168701171875,
+            "y": 560.1041259765625,
+            "width": 133.760009765625,
+            "height": 133.760009765625,
+            "right": 1055.6768798828125,
+            "bottom": 693.8641357421875
+          },
+          {
+            "x": 787.7393798828125,
+            "y": 615.7564697265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 917.9793701171875,
+            "bottom": 745.9965209960938
+          },
+          {
+            "x": 799.0675048828125,
+            "y": 697.4127197265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 929.3074951171875,
+            "bottom": 827.6527709960938
+          },
+          {
+            "x": 1048.2862548828125,
+            "y": 697.4127197265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 1178.5262451171875,
+            "bottom": 827.6527709960938
+          },
+          {
+            "x": 921.9168701171875,
+            "y": 723.4010009765625,
+            "width": 133.760009765625,
+            "height": 133.760009765625,
+            "right": 1055.6768798828125,
+            "bottom": 857.1610107421875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "04-two-one-sector",
+      "fixture": "two-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 704.6529541015625,
+            "y": 432.0390930175781,
+            "width": 118.131591796875,
+            "height": 118.13156127929688,
+            "right": 822.7845458984375,
+            "bottom": 550.170654296875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/outer_waymarket.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "04-two-one-sector",
+      "fixture": "two-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 820.9000244140625,
+            "y": 481.4981384277344,
+            "width": 138.356201171875,
+            "height": 138.35623168945312,
+            "right": 959.2562255859375,
+            "bottom": 619.8543701171875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/outer_waymarket.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "04-two-one-sector",
+      "fixture": "two-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 985.373779296875,
+            "y": 578.2483520507812,
+            "width": 165.43994140625,
+            "height": 165.44000244140625,
+            "right": 1150.813720703125,
+            "bottom": 743.6883544921875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/outer_waymarket.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "05-six-one-sector",
+      "fixture": "six-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 655.7290649414062,
+            "y": 421.05419921875,
+            "width": 95.5106201171875,
+            "height": 95.5106201171875,
+            "right": 751.2396850585938,
+            "bottom": 516.5648193359375
+          },
+          {
+            "x": 553.7045288085938,
+            "y": 458.5662841796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 646.7017211914062,
+            "bottom": 551.5634765625
+          },
+          {
+            "x": 562.3139038085938,
+            "y": 513.4100341796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 655.3110961914062,
+            "bottom": 606.4072265625
+          },
+          {
+            "x": 751.6420288085938,
+            "y": 513.4100341796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 844.6392211914062,
+            "bottom": 606.4072265625
+          },
+          {
+            "x": 655.7290649414062,
+            "y": 530.72607421875,
+            "width": 95.5106201171875,
+            "height": 95.5106201171875,
+            "right": 751.2396850585938,
+            "bottom": 626.2366943359375
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "05-six-one-sector",
+      "fixture": "six-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 768.0687255859375,
+            "y": 466.4674987792969,
+            "width": 111.862548828125,
+            "height": 111.86251831054688,
+            "right": 879.9312744140625,
+            "bottom": 578.3300170898438
+          },
+          {
+            "x": 656.2593994140625,
+            "y": 512.8512573242188,
+            "width": 108.918701171875,
+            "height": 108.91876220703125,
+            "right": 765.1781005859375,
+            "bottom": 621.77001953125
+          },
+          {
+            "x": 665.6968994140625,
+            "y": 580.8981323242188,
+            "width": 108.918701171875,
+            "height": 108.91876220703125,
+            "right": 774.6156005859375,
+            "bottom": 689.81689453125
+          },
+          {
+            "x": 873.3687744140625,
+            "y": 580.8981323242188,
+            "width": 108.91876220703125,
+            "height": 108.91876220703125,
+            "right": 982.2875366210938,
+            "bottom": 689.81689453125
+          },
+          {
+            "x": 768.0687255859375,
+            "y": 602.545654296875,
+            "width": 111.862548828125,
+            "height": 111.8624267578125,
+            "right": 879.9312744140625,
+            "bottom": 714.4080810546875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "05-six-one-sector",
+      "fixture": "six-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 921.9168701171875,
+            "y": 560.1041259765625,
+            "width": 133.760009765625,
+            "height": 133.760009765625,
+            "right": 1055.6768798828125,
+            "bottom": 693.8641357421875
+          },
+          {
+            "x": 787.7393798828125,
+            "y": 615.7564697265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 917.9793701171875,
+            "bottom": 745.9965209960938
+          },
+          {
+            "x": 799.0675048828125,
+            "y": 697.4127197265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 929.3074951171875,
+            "bottom": 827.6527709960938
+          },
+          {
+            "x": 1048.2862548828125,
+            "y": 697.4127197265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 1178.5262451171875,
+            "bottom": 827.6527709960938
+          },
+          {
+            "x": 921.9168701171875,
+            "y": 723.4010009765625,
+            "width": 133.760009765625,
+            "height": 133.760009765625,
+            "right": 1055.6768798828125,
+            "bottom": 857.1610107421875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "06-active-operative",
+      "fixture": "active-operative",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 3,
+        "pieceRects": [
+          {
+            "x": 564.6396484375,
+            "y": 419.8495788574219,
+            "width": 105.56439208984375,
+            "height": 105.56436157226562,
+            "right": 670.2040405273438,
+            "bottom": 525.4139404296875
+          },
+          {
+            "x": 564.6396484375,
+            "y": 513.849609375,
+            "width": 105.56439208984375,
+            "height": 105.5643310546875,
+            "right": 670.2040405273438,
+            "bottom": 619.4139404296875
+          },
+          {
+            "x": 736.7490234375,
+            "y": 513.849609375,
+            "width": 105.56439208984375,
+            "height": 105.5643310546875,
+            "right": 842.3134155273438,
+            "bottom": 619.4139404296875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/ashwake-crossing.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "06-active-operative",
+      "fixture": "active-operative",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 3,
+        "pieceRects": [
+          {
+            "x": 667.7750244140625,
+            "y": 465.5887451171875,
+            "width": 123.637451171875,
+            "height": 123.63751220703125,
+            "right": 791.4124755859375,
+            "bottom": 589.2262573242188
+          },
+          {
+            "x": 667.7750244140625,
+            "y": 582.2293701171875,
+            "width": 123.637451171875,
+            "height": 123.63751220703125,
+            "right": 791.4124755859375,
+            "bottom": 705.8668823242188
+          },
+          {
+            "x": 856.5718994140625,
+            "y": 582.2293701171875,
+            "width": 123.637451171875,
+            "height": 123.63751220703125,
+            "right": 980.2093505859375,
+            "bottom": 705.8668823242188
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/ashwake-crossing.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "06-active-operative",
+      "fixture": "active-operative",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 3,
+        "pieceRects": [
+          {
+            "x": 801.5956420898438,
+            "y": 559.10400390625,
+            "width": 147.84002685546875,
+            "height": 147.8399658203125,
+            "right": 949.4356689453125,
+            "bottom": 706.9439697265625
+          },
+          {
+            "x": 801.5956420898438,
+            "y": 699.05712890625,
+            "width": 147.84002685546875,
+            "height": 147.8399658203125,
+            "right": 949.4356689453125,
+            "bottom": 846.8970947265625
+          },
+          {
+            "x": 1028.158203125,
+            "y": 699.05712890625,
+            "width": 147.8399658203125,
+            "height": 147.8399658203125,
+            "right": 1175.9981689453125,
+            "bottom": 846.8970947265625
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/ashwake-crossing.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "07-handoff",
+      "fixture": "handoff",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 3,
+        "pieceRects": [
+          {
+            "x": 564.6396484375,
+            "y": 419.8495788574219,
+            "width": 105.56439208984375,
+            "height": 105.56436157226562,
+            "right": 670.2040405273438,
+            "bottom": 525.4139404296875
+          },
+          {
+            "x": 736.7490234375,
+            "y": 419.8495788574219,
+            "width": 105.56439208984375,
+            "height": 105.56436157226562,
+            "right": 842.3134155273438,
+            "bottom": 525.4139404296875
+          },
+          {
+            "x": 564.6396484375,
+            "y": 513.849609375,
+            "width": 105.56439208984375,
+            "height": 105.5643310546875,
+            "right": 670.2040405273438,
+            "bottom": 619.4139404296875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/outer_oathpost.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "07-handoff",
+      "fixture": "handoff",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 3,
+        "pieceRects": [
+          {
+            "x": 667.7750244140625,
+            "y": 465.5887451171875,
+            "width": 123.637451171875,
+            "height": 123.63751220703125,
+            "right": 791.4124755859375,
+            "bottom": 589.2262573242188
+          },
+          {
+            "x": 856.5718994140625,
+            "y": 465.5887451171875,
+            "width": 123.637451171875,
+            "height": 123.63751220703125,
+            "right": 980.2093505859375,
+            "bottom": 589.2262573242188
+          },
+          {
+            "x": 667.7750244140625,
+            "y": 582.2293701171875,
+            "width": 123.637451171875,
+            "height": 123.63751220703125,
+            "right": 791.4124755859375,
+            "bottom": 705.8668823242188
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/outer_oathpost.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "07-handoff",
+      "fixture": "handoff",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 3,
+        "pieceRects": [
+          {
+            "x": 801.5956420898438,
+            "y": 559.10400390625,
+            "width": 147.84002685546875,
+            "height": 147.8399658203125,
+            "right": 949.4356689453125,
+            "bottom": 706.9439697265625
+          },
+          {
+            "x": 1028.158203125,
+            "y": 559.10400390625,
+            "width": 147.8399658203125,
+            "height": 147.8399658203125,
+            "right": 1175.9981689453125,
+            "bottom": 706.9439697265625
+          },
+          {
+            "x": 801.5956420898438,
+            "y": 699.05712890625,
+            "width": 147.84002685546875,
+            "height": 147.8399658203125,
+            "right": 949.4356689453125,
+            "bottom": 846.8970947265625
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/outer_oathpost.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "08-movement-start",
+      "fixture": "movement",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 704.6529541015625,
+            "y": 432.0390930175781,
+            "width": 118.131591796875,
+            "height": 118.13156127929688,
+            "right": 822.7845458984375,
+            "bottom": 550.170654296875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/shattered-causeway.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "08-movement-start",
+      "fixture": "movement",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 820.9000244140625,
+            "y": 481.4981384277344,
+            "width": 138.356201171875,
+            "height": 138.35623168945312,
+            "right": 959.2562255859375,
+            "bottom": 619.8543701171875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/shattered-causeway.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "08-movement-start",
+      "fixture": "movement",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 985.373779296875,
+            "y": 578.2483520507812,
+            "width": 165.43994140625,
+            "height": 165.44000244140625,
+            "right": 1150.813720703125,
+            "bottom": 743.6883544921875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/shattered-causeway.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "09-intermediate-movement",
+      "fixture": "movement",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 704.6529541015625,
+            "y": 432.0390930175781,
+            "width": 118.131591796875,
+            "height": 118.13156127929688,
+            "right": 822.7845458984375,
+            "bottom": 550.170654296875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/shattered-causeway.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "09-intermediate-movement",
+      "fixture": "movement",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 820.9000244140625,
+            "y": 481.4981384277344,
+            "width": 138.356201171875,
+            "height": 138.35623168945312,
+            "right": 959.2562255859375,
+            "bottom": 619.8543701171875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/shattered-causeway.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "09-intermediate-movement",
+      "fixture": "movement",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 985.373779296875,
+            "y": 578.2483520507812,
+            "width": 165.43994140625,
+            "height": 165.44000244140625,
+            "right": 1150.813720703125,
+            "bottom": 743.6883544921875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/shattered-causeway.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "10-cross-ring",
+      "fixture": "cross-ring",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 704.6529541015625,
+            "y": 432.0390930175781,
+            "width": 118.131591796875,
+            "height": 118.13156127929688,
+            "right": 822.7845458984375,
+            "bottom": 550.170654296875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/middle_guardian_span.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "10-cross-ring",
+      "fixture": "cross-ring",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 820.9000244140625,
+            "y": 481.4981384277344,
+            "width": 138.356201171875,
+            "height": 138.35623168945312,
+            "right": 959.2562255859375,
+            "bottom": 619.8543701171875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/middle_guardian_span.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "10-cross-ring",
+      "fixture": "cross-ring",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 985.373779296875,
+            "y": 578.2483520507812,
+            "width": 165.43994140625,
+            "height": 165.44000244140625,
+            "right": 1150.813720703125,
+            "bottom": 743.6883544921875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/middle_guardian_span.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "11-arrival",
+      "fixture": "arrival",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 704.6529541015625,
+            "y": 432.0390930175781,
+            "width": 118.131591796875,
+            "height": 118.13156127929688,
+            "right": 822.7845458984375,
+            "bottom": 550.170654296875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/ashen-chapel.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "11-arrival",
+      "fixture": "arrival",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 820.9000244140625,
+            "y": 481.4981384277344,
+            "width": 138.356201171875,
+            "height": 138.35623168945312,
+            "right": 959.2562255859375,
+            "bottom": 619.8543701171875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/ashen-chapel.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "11-arrival",
+      "fixture": "arrival",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 985.373779296875,
+            "y": 578.2483520507812,
+            "width": 165.43994140625,
+            "height": 165.44000244140625,
+            "right": 1150.813720703125,
+            "bottom": 743.6883544921875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/ashen-chapel.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "12-encounter-transition",
+      "fixture": "encounter-transition",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 704.6529541015625,
+            "y": 432.0390930175781,
+            "width": 118.131591796875,
+            "height": 118.13156127929688,
+            "right": 822.7845458984375,
+            "bottom": 550.170654296875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/reavers-den.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "12-encounter-transition",
+      "fixture": "encounter-transition",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 820.9000244140625,
+            "y": 481.4981384277344,
+            "width": 138.356201171875,
+            "height": 138.35623168945312,
+            "right": 959.2562255859375,
+            "bottom": 619.8543701171875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/reavers-den.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "12-encounter-transition",
+      "fixture": "encounter-transition",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 985.373779296875,
+            "y": 578.2483520507812,
+            "width": 165.43994140625,
+            "height": 165.44000244140625,
+            "right": 1150.813720703125,
+            "bottom": 743.6883544921875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/reavers-den.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "13-missing-portrait",
+      "fixture": "missing-portrait",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 704.6529541015625,
+            "y": 432.0390930175781,
+            "width": 118.131591796875,
+            "height": 118.13156127929688,
+            "right": 822.7845458984375,
+            "bottom": 550.170654296875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/hollow-veil-yard.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "13-missing-portrait",
+      "fixture": "missing-portrait",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 820.9000244140625,
+            "y": 481.4981384277344,
+            "width": 138.356201171875,
+            "height": 138.35623168945312,
+            "right": 959.2562255859375,
+            "bottom": 619.8543701171875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/hollow-veil-yard.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "13-missing-portrait",
+      "fixture": "missing-portrait",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 1,
+        "pieceRects": [
+          {
+            "x": 985.373779296875,
+            "y": 578.2483520507812,
+            "width": 165.43994140625,
+            "height": 165.44000244140625,
+            "right": 1150.813720703125,
+            "bottom": 743.6883544921875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/hollow-veil-yard.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "14-long-names",
+      "fixture": "long-names",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 2,
+        "pieceRects": [
+          {
+            "x": 562.126220703125,
+            "y": 481.90350341796875,
+            "width": 110.59130859375,
+            "height": 110.59124755859375,
+            "right": 672.717529296875,
+            "bottom": 592.4947509765625
+          },
+          {
+            "x": 734.235595703125,
+            "y": 481.90350341796875,
+            "width": 110.59130859375,
+            "height": 110.59124755859375,
+            "right": 844.826904296875,
+            "bottom": 592.4947509765625
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/outer_relay_camp.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "14-long-names",
+      "fixture": "long-names",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 2,
+        "pieceRects": [
+          {
+            "x": 664.8312377929688,
+            "y": 542.9150390625,
+            "width": 129.52496337890625,
+            "height": 129.52496337890625,
+            "right": 794.356201171875,
+            "bottom": 672.4400024414062
+          },
+          {
+            "x": 853.6281127929688,
+            "y": 542.9150390625,
+            "width": 129.52496337890625,
+            "height": 129.52496337890625,
+            "right": 983.153076171875,
+            "bottom": 672.4400024414062
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/outer_relay_camp.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "14-long-names",
+      "fixture": "long-names",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 2,
+        "pieceRects": [
+          {
+            "x": 798.0756225585938,
+            "y": 651.9086303710938,
+            "width": 154.8800048828125,
+            "height": 154.8800048828125,
+            "right": 952.9556274414062,
+            "bottom": 806.7886352539062
+          },
+          {
+            "x": 1024.63818359375,
+            "y": 651.9086303710938,
+            "width": 154.8798828125,
+            "height": 154.8800048828125,
+            "right": 1179.51806640625,
+            "bottom": 806.7886352539062
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/outer_relay_camp.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "15-bright-sector",
+      "fixture": "bright-sector",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 2,
+        "pieceRects": [
+          {
+            "x": 562.126220703125,
+            "y": 481.90350341796875,
+            "width": 110.59130859375,
+            "height": 110.59124755859375,
+            "right": 672.717529296875,
+            "bottom": 592.4947509765625
+          },
+          {
+            "x": 734.235595703125,
+            "y": 481.90350341796875,
+            "width": 110.59130859375,
+            "height": 110.59124755859375,
+            "right": 844.826904296875,
+            "bottom": 592.4947509765625
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "15-bright-sector",
+      "fixture": "bright-sector",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 2,
+        "pieceRects": [
+          {
+            "x": 664.8312377929688,
+            "y": 542.9150390625,
+            "width": 129.52496337890625,
+            "height": 129.52496337890625,
+            "right": 794.356201171875,
+            "bottom": 672.4400024414062
+          },
+          {
+            "x": 853.6281127929688,
+            "y": 542.9150390625,
+            "width": 129.52496337890625,
+            "height": 129.52496337890625,
+            "right": 983.153076171875,
+            "bottom": 672.4400024414062
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "15-bright-sector",
+      "fixture": "bright-sector",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 2,
+        "pieceRects": [
+          {
+            "x": 798.0756225585938,
+            "y": 651.9086303710938,
+            "width": 154.8800048828125,
+            "height": 154.8800048828125,
+            "right": 952.9556274414062,
+            "bottom": 806.7886352539062
+          },
+          {
+            "x": 1024.63818359375,
+            "y": 651.9086303710938,
+            "width": 154.8798828125,
+            "height": 154.8800048828125,
+            "right": 1179.51806640625,
+            "bottom": 806.7886352539062
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "16-dark-sector",
+      "fixture": "dark-sector",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 2,
+        "pieceRects": [
+          {
+            "x": 562.126220703125,
+            "y": 481.90350341796875,
+            "width": 110.59130859375,
+            "height": 110.59124755859375,
+            "right": 672.717529296875,
+            "bottom": 592.4947509765625
+          },
+          {
+            "x": 734.235595703125,
+            "y": 481.90350341796875,
+            "width": 110.59130859375,
+            "height": 110.59124755859375,
+            "right": 844.826904296875,
+            "bottom": 592.4947509765625
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/deadwater-marsh.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "16-dark-sector",
+      "fixture": "dark-sector",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 2,
+        "pieceRects": [
+          {
+            "x": 664.8312377929688,
+            "y": 542.9150390625,
+            "width": 129.52496337890625,
+            "height": 129.52496337890625,
+            "right": 794.356201171875,
+            "bottom": 672.4400024414062
+          },
+          {
+            "x": 853.6281127929688,
+            "y": 542.9150390625,
+            "width": 129.52496337890625,
+            "height": 129.52496337890625,
+            "right": 983.153076171875,
+            "bottom": 672.4400024414062
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/deadwater-marsh.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "16-dark-sector",
+      "fixture": "dark-sector",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 2,
+        "pieceRects": [
+          {
+            "x": 798.0756225585938,
+            "y": 651.9086303710938,
+            "width": 154.8800048828125,
+            "height": 154.8800048828125,
+            "right": 952.9556274414062,
+            "bottom": 806.7886352539062
+          },
+          {
+            "x": 1024.63818359375,
+            "y": 651.9086303710938,
+            "width": 154.8798828125,
+            "height": 154.8800048828125,
+            "right": 1179.51806640625,
+            "bottom": 806.7886352539062
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/deadwater-marsh.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "17-reduced-motion",
+      "fixture": "reduced-motion",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 3,
+        "pieceRects": [
+          {
+            "x": 736.7490234375,
+            "y": 419.8495788574219,
+            "width": 105.56439208984375,
+            "height": 105.56436157226562,
+            "right": 842.3134155273438,
+            "bottom": 525.4139404296875
+          },
+          {
+            "x": 564.6396484375,
+            "y": 513.849609375,
+            "width": 105.56439208984375,
+            "height": 105.5643310546875,
+            "right": 670.2040405273438,
+            "bottom": 619.4139404296875
+          },
+          {
+            "x": 736.7490234375,
+            "y": 513.849609375,
+            "width": 105.56439208984375,
+            "height": 105.5643310546875,
+            "right": 842.3134155273438,
+            "bottom": 619.4139404296875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/transit-gate.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "17-reduced-motion",
+      "fixture": "reduced-motion",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 3,
+        "pieceRects": [
+          {
+            "x": 856.5718994140625,
+            "y": 465.5887451171875,
+            "width": 123.637451171875,
+            "height": 123.63751220703125,
+            "right": 980.2093505859375,
+            "bottom": 589.2262573242188
+          },
+          {
+            "x": 667.7750244140625,
+            "y": 582.2293701171875,
+            "width": 123.637451171875,
+            "height": 123.63751220703125,
+            "right": 791.4124755859375,
+            "bottom": 705.8668823242188
+          },
+          {
+            "x": 856.5718994140625,
+            "y": 582.2293701171875,
+            "width": 123.637451171875,
+            "height": 123.63751220703125,
+            "right": 980.2093505859375,
+            "bottom": 705.8668823242188
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/transit-gate.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "17-reduced-motion",
+      "fixture": "reduced-motion",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 3,
+        "pieceRects": [
+          {
+            "x": 1028.158203125,
+            "y": 559.10400390625,
+            "width": 147.8399658203125,
+            "height": 147.8399658203125,
+            "right": 1175.9981689453125,
+            "bottom": 706.9439697265625
+          },
+          {
+            "x": 801.5956420898438,
+            "y": 699.05712890625,
+            "width": 147.84002685546875,
+            "height": 147.8399658203125,
+            "right": 949.4356689453125,
+            "bottom": 846.8970947265625
+          },
+          {
+            "x": 1028.158203125,
+            "y": 699.05712890625,
+            "width": 147.8399658203125,
+            "height": 147.8399658203125,
+            "right": 1175.9981689453125,
+            "bottom": 846.8970947265625
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/transit-gate.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "18-victory-background",
+      "fixture": "victory-background",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 553.7045288085938,
+            "y": 458.5662841796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 646.7017211914062,
+            "bottom": 551.5634765625
+          },
+          {
+            "x": 760.2514038085938,
+            "y": 458.5662841796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 853.2485961914062,
+            "bottom": 551.5634765625
+          },
+          {
+            "x": 562.3139038085938,
+            "y": 513.4100341796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 655.3110961914062,
+            "bottom": 606.4072265625
+          },
+          {
+            "x": 751.6420288085938,
+            "y": 513.4100341796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 844.6392211914062,
+            "bottom": 606.4072265625
+          },
+          {
+            "x": 655.7290649414062,
+            "y": 530.72607421875,
+            "width": 95.5106201171875,
+            "height": 95.5106201171875,
+            "right": 751.2396850585938,
+            "bottom": 626.2366943359375
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/center_cinder_gate.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "18-victory-background",
+      "fixture": "victory-background",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 656.2593994140625,
+            "y": 512.8512573242188,
+            "width": 108.918701171875,
+            "height": 108.91876220703125,
+            "right": 765.1781005859375,
+            "bottom": 621.77001953125
+          },
+          {
+            "x": 882.8062744140625,
+            "y": 512.8512573242188,
+            "width": 108.91876220703125,
+            "height": 108.91876220703125,
+            "right": 991.7250366210938,
+            "bottom": 621.77001953125
+          },
+          {
+            "x": 665.6968994140625,
+            "y": 580.8981323242188,
+            "width": 108.918701171875,
+            "height": 108.91876220703125,
+            "right": 774.6156005859375,
+            "bottom": 689.81689453125
+          },
+          {
+            "x": 873.3687744140625,
+            "y": 580.8981323242188,
+            "width": 108.91876220703125,
+            "height": 108.91876220703125,
+            "right": 982.2875366210938,
+            "bottom": 689.81689453125
+          },
+          {
+            "x": 768.0687255859375,
+            "y": 602.545654296875,
+            "width": 111.862548828125,
+            "height": 111.8624267578125,
+            "right": 879.9312744140625,
+            "bottom": 714.4080810546875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/center_cinder_gate.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "18-victory-background",
+      "fixture": "victory-background",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 787.7393798828125,
+            "y": 615.7564697265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 917.9793701171875,
+            "bottom": 745.9965209960938
+          },
+          {
+            "x": 1059.6143798828125,
+            "y": 615.7564697265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 1189.8543701171875,
+            "bottom": 745.9965209960938
+          },
+          {
+            "x": 799.0675048828125,
+            "y": 697.4127197265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 929.3074951171875,
+            "bottom": 827.6527709960938
+          },
+          {
+            "x": 1048.2862548828125,
+            "y": 697.4127197265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 1178.5262451171875,
+            "bottom": 827.6527709960938
+          },
+          {
+            "x": 921.9168701171875,
+            "y": 723.4010009765625,
+            "width": 133.760009765625,
+            "height": 133.760009765625,
+            "right": 1055.6768798828125,
+            "bottom": 857.1610107421875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/center_cinder_gate.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "19-defeat-background",
+      "fixture": "defeat-background",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 553.7045288085938,
+            "y": 458.5662841796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 646.7017211914062,
+            "bottom": 551.5634765625
+          },
+          {
+            "x": 760.2514038085938,
+            "y": 458.5662841796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 853.2485961914062,
+            "bottom": 551.5634765625
+          },
+          {
+            "x": 562.3139038085938,
+            "y": 513.4100341796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 655.3110961914062,
+            "bottom": 606.4072265625
+          },
+          {
+            "x": 751.6420288085938,
+            "y": 513.4100341796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 844.6392211914062,
+            "bottom": 606.4072265625
+          },
+          {
+            "x": 655.7290649414062,
+            "y": 530.72607421875,
+            "width": 95.5106201171875,
+            "height": 95.5106201171875,
+            "right": 751.2396850585938,
+            "bottom": 626.2366943359375
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/center_cinder_gate.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "19-defeat-background",
+      "fixture": "defeat-background",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 656.2593994140625,
+            "y": 512.8512573242188,
+            "width": 108.918701171875,
+            "height": 108.91876220703125,
+            "right": 765.1781005859375,
+            "bottom": 621.77001953125
+          },
+          {
+            "x": 882.8062744140625,
+            "y": 512.8512573242188,
+            "width": 108.91876220703125,
+            "height": 108.91876220703125,
+            "right": 991.7250366210938,
+            "bottom": 621.77001953125
+          },
+          {
+            "x": 665.6968994140625,
+            "y": 580.8981323242188,
+            "width": 108.918701171875,
+            "height": 108.91876220703125,
+            "right": 774.6156005859375,
+            "bottom": 689.81689453125
+          },
+          {
+            "x": 873.3687744140625,
+            "y": 580.8981323242188,
+            "width": 108.91876220703125,
+            "height": 108.91876220703125,
+            "right": 982.2875366210938,
+            "bottom": 689.81689453125
+          },
+          {
+            "x": 768.0687255859375,
+            "y": 602.545654296875,
+            "width": 111.862548828125,
+            "height": 111.8624267578125,
+            "right": 879.9312744140625,
+            "bottom": 714.4080810546875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/center_cinder_gate.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "19-defeat-background",
+      "fixture": "defeat-background",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 787.7393798828125,
+            "y": 615.7564697265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 917.9793701171875,
+            "bottom": 745.9965209960938
+          },
+          {
+            "x": 1059.6143798828125,
+            "y": 615.7564697265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 1189.8543701171875,
+            "bottom": 745.9965209960938
+          },
+          {
+            "x": 799.0675048828125,
+            "y": 697.4127197265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 929.3074951171875,
+            "bottom": 827.6527709960938
+          },
+          {
+            "x": 1048.2862548828125,
+            "y": 697.4127197265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 1178.5262451171875,
+            "bottom": 827.6527709960938
+          },
+          {
+            "x": 921.9168701171875,
+            "y": 723.4010009765625,
+            "width": 133.760009765625,
+            "height": 133.760009765625,
+            "right": 1055.6768798828125,
+            "bottom": 857.1610107421875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/center_cinder_gate.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "20-option-a",
+      "fixture": "six-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 655.7290649414062,
+            "y": 421.05419921875,
+            "width": 95.5106201171875,
+            "height": 95.5106201171875,
+            "right": 751.2396850585938,
+            "bottom": 516.5648193359375
+          },
+          {
+            "x": 553.7045288085938,
+            "y": 458.5662841796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 646.7017211914062,
+            "bottom": 551.5634765625
+          },
+          {
+            "x": 562.3139038085938,
+            "y": 513.4100341796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 655.3110961914062,
+            "bottom": 606.4072265625
+          },
+          {
+            "x": 751.6420288085938,
+            "y": 513.4100341796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 844.6392211914062,
+            "bottom": 606.4072265625
+          },
+          {
+            "x": 655.7290649414062,
+            "y": 530.72607421875,
+            "width": 95.5106201171875,
+            "height": 95.5106201171875,
+            "right": 751.2396850585938,
+            "bottom": 626.2366943359375
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "20-option-a",
+      "fixture": "six-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 768.0687255859375,
+            "y": 466.4674987792969,
+            "width": 111.862548828125,
+            "height": 111.86251831054688,
+            "right": 879.9312744140625,
+            "bottom": 578.3300170898438
+          },
+          {
+            "x": 656.2593994140625,
+            "y": 512.8512573242188,
+            "width": 108.918701171875,
+            "height": 108.91876220703125,
+            "right": 765.1781005859375,
+            "bottom": 621.77001953125
+          },
+          {
+            "x": 665.6968994140625,
+            "y": 580.8981323242188,
+            "width": 108.918701171875,
+            "height": 108.91876220703125,
+            "right": 774.6156005859375,
+            "bottom": 689.81689453125
+          },
+          {
+            "x": 873.3687744140625,
+            "y": 580.8981323242188,
+            "width": 108.91876220703125,
+            "height": 108.91876220703125,
+            "right": 982.2875366210938,
+            "bottom": 689.81689453125
+          },
+          {
+            "x": 768.0687255859375,
+            "y": 602.545654296875,
+            "width": 111.862548828125,
+            "height": 111.8624267578125,
+            "right": 879.9312744140625,
+            "bottom": 714.4080810546875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "20-option-a",
+      "fixture": "six-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 921.9168701171875,
+            "y": 560.1041259765625,
+            "width": 133.760009765625,
+            "height": 133.760009765625,
+            "right": 1055.6768798828125,
+            "bottom": 693.8641357421875
+          },
+          {
+            "x": 787.7393798828125,
+            "y": 615.7564697265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 917.9793701171875,
+            "bottom": 745.9965209960938
+          },
+          {
+            "x": 799.0675048828125,
+            "y": 697.4127197265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 929.3074951171875,
+            "bottom": 827.6527709960938
+          },
+          {
+            "x": 1048.2862548828125,
+            "y": 697.4127197265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 1178.5262451171875,
+            "bottom": 827.6527709960938
+          },
+          {
+            "x": 921.9168701171875,
+            "y": 723.4010009765625,
+            "width": 133.760009765625,
+            "height": 133.760009765625,
+            "right": 1055.6768798828125,
+            "bottom": 857.1610107421875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "21-option-b",
+      "fixture": "six-operatives",
+      "variant": "operative-bust",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 653.6568603515625,
+            "y": 418.1967468261719,
+            "width": 99.655029296875,
+            "height": 99.65499877929688,
+            "right": 753.3118896484375,
+            "bottom": 517.8517456054688
+          },
+          {
+            "x": 551.6868896484375,
+            "y": 455.8070068359375,
+            "width": 97.032470703125,
+            "height": 97.032470703125,
+            "right": 648.7193603515625,
+            "bottom": 552.8394775390625
+          },
+          {
+            "x": 560.2962646484375,
+            "y": 510.6507568359375,
+            "width": 97.032470703125,
+            "height": 97.032470703125,
+            "right": 657.3287353515625,
+            "bottom": 607.6832275390625
+          },
+          {
+            "x": 749.6243896484375,
+            "y": 510.6507568359375,
+            "width": 97.032470703125,
+            "height": 97.032470703125,
+            "right": 846.6568603515625,
+            "bottom": 607.6832275390625
+          },
+          {
+            "x": 653.6568603515625,
+            "y": 527.86865234375,
+            "width": 99.655029296875,
+            "height": 99.65496826171875,
+            "right": 753.3118896484375,
+            "bottom": 627.5236206054688
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "21-option-b",
+      "fixture": "six-operatives",
+      "variant": "operative-bust",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 765.6343994140625,
+            "y": 463.1106262207031,
+            "width": 116.731201171875,
+            "height": 116.73123168945312,
+            "right": 882.3656005859375,
+            "bottom": 579.8418579101562
+          },
+          {
+            "x": 653.8890380859375,
+            "y": 509.60968017578125,
+            "width": 113.659423828125,
+            "height": 113.65936279296875,
+            "right": 767.5484619140625,
+            "bottom": 623.26904296875
+          },
+          {
+            "x": 663.3265380859375,
+            "y": 577.6565551757812,
+            "width": 113.659423828125,
+            "height": 113.65936279296875,
+            "right": 776.9859619140625,
+            "bottom": 691.31591796875
+          },
+          {
+            "x": 870.9984130859375,
+            "y": 577.6565551757812,
+            "width": 113.65936279296875,
+            "height": 113.65936279296875,
+            "right": 984.6577758789062,
+            "bottom": 691.31591796875
+          },
+          {
+            "x": 765.6343994140625,
+            "y": 599.188720703125,
+            "width": 116.731201171875,
+            "height": 116.73126220703125,
+            "right": 882.3656005859375,
+            "bottom": 715.9199829101562
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "21-option-b",
+      "fixture": "six-operatives",
+      "variant": "operative-bust",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 919.4884033203125,
+            "y": 556.7554321289062,
+            "width": 138.6168212890625,
+            "height": 138.61688232421875,
+            "right": 1058.105224609375,
+            "bottom": 695.372314453125
+          },
+          {
+            "x": 785.3748779296875,
+            "y": 612.5228271484375,
+            "width": 134.96905517578125,
+            "height": 134.9691162109375,
+            "right": 920.3439331054688,
+            "bottom": 747.491943359375
+          },
+          {
+            "x": 796.7030029296875,
+            "y": 694.1790771484375,
+            "width": 134.96905517578125,
+            "height": 134.9691162109375,
+            "right": 931.6720581054688,
+            "bottom": 829.148193359375
+          },
+          {
+            "x": 1045.921630859375,
+            "y": 694.1790771484375,
+            "width": 134.9691162109375,
+            "height": 134.9691162109375,
+            "right": 1180.8907470703125,
+            "bottom": 829.148193359375
+          },
+          {
+            "x": 919.4884033203125,
+            "y": 720.0523071289062,
+            "width": 138.6168212890625,
+            "height": 138.61688232421875,
+            "right": 1058.105224609375,
+            "bottom": 858.669189453125
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "22-selected-production",
+      "fixture": "six-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1366x768",
+      "metrics": {
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "scroll": {
+          "width": 1366,
+          "height": 768
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 655.7290649414062,
+            "y": 421.05419921875,
+            "width": 95.5106201171875,
+            "height": 95.5106201171875,
+            "right": 751.2396850585938,
+            "bottom": 516.5648193359375
+          },
+          {
+            "x": 553.7045288085938,
+            "y": 458.5662841796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 646.7017211914062,
+            "bottom": 551.5634765625
+          },
+          {
+            "x": 562.3139038085938,
+            "y": 513.4100341796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 655.3110961914062,
+            "bottom": 606.4072265625
+          },
+          {
+            "x": 751.6420288085938,
+            "y": 513.4100341796875,
+            "width": 92.9971923828125,
+            "height": 92.9971923828125,
+            "right": 844.6392211914062,
+            "bottom": 606.4072265625
+          },
+          {
+            "x": 655.7290649414062,
+            "y": 530.72607421875,
+            "width": 95.5106201171875,
+            "height": 95.5106201171875,
+            "right": 751.2396850585938,
+            "bottom": 626.2366943359375
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "22-selected-production",
+      "fixture": "six-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1600x900",
+      "metrics": {
+        "viewport": {
+          "width": 1600,
+          "height": 900
+        },
+        "scroll": {
+          "width": 1600,
+          "height": 900
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 768.0687255859375,
+            "y": 466.4674987792969,
+            "width": 111.862548828125,
+            "height": 111.86251831054688,
+            "right": 879.9312744140625,
+            "bottom": 578.3300170898438
+          },
+          {
+            "x": 656.2593994140625,
+            "y": 512.8512573242188,
+            "width": 108.918701171875,
+            "height": 108.91876220703125,
+            "right": 765.1781005859375,
+            "bottom": 621.77001953125
+          },
+          {
+            "x": 665.6968994140625,
+            "y": 580.8981323242188,
+            "width": 108.918701171875,
+            "height": 108.91876220703125,
+            "right": 774.6156005859375,
+            "bottom": 689.81689453125
+          },
+          {
+            "x": 873.3687744140625,
+            "y": 580.8981323242188,
+            "width": 108.91876220703125,
+            "height": 108.91876220703125,
+            "right": 982.2875366210938,
+            "bottom": 689.81689453125
+          },
+          {
+            "x": 768.0687255859375,
+            "y": 602.545654296875,
+            "width": 111.862548828125,
+            "height": 111.8624267578125,
+            "right": 879.9312744140625,
+            "bottom": 714.4080810546875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    },
+    {
+      "capture": "22-selected-production",
+      "fixture": "six-operatives",
+      "variant": "heraldic-reliquary",
+      "viewport": "1920x1080",
+      "metrics": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "scroll": {
+          "width": 1920,
+          "height": 1080
+        },
+        "canvasCount": 0,
+        "pieceCount": 5,
+        "pieceRects": [
+          {
+            "x": 921.9168701171875,
+            "y": 560.1041259765625,
+            "width": 133.760009765625,
+            "height": 133.760009765625,
+            "right": 1055.6768798828125,
+            "bottom": 693.8641357421875
+          },
+          {
+            "x": 787.7393798828125,
+            "y": 615.7564697265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 917.9793701171875,
+            "bottom": 745.9965209960938
+          },
+          {
+            "x": 799.0675048828125,
+            "y": 697.4127197265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 929.3074951171875,
+            "bottom": 827.6527709960938
+          },
+          {
+            "x": 1048.2862548828125,
+            "y": 697.4127197265625,
+            "width": 130.239990234375,
+            "height": 130.24005126953125,
+            "right": 1178.5262451171875,
+            "bottom": 827.6527709960938
+          },
+          {
+            "x": 921.9168701171875,
+            "y": 723.4010009765625,
+            "width": 133.760009765625,
+            "height": 133.760009765625,
+            "right": 1055.6768798828125,
+            "bottom": 857.1610107421875
+          }
+        ],
+        "escapedPieces": 0,
+        "severeOverlaps": 0,
+        "environment": "/assets/riftfall/environments/signal-theatre/sectors/inner_cinder_lattice.png",
+        "legacyTileImages": 0,
+        "privateLeak": false
+      }
+    }
+  ],
+  "consoleErrors": [],
+  "video": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\p22-operative-pieces\\recordings\\page@13a6b7dd0c9a4e2801f1161ae81d2cb5.webm",
+  "flowVideos": [
+    {
+      "flow": "01-turn-handoff",
+      "fixtures": [
+        "active-operative",
+        "handoff"
+      ],
+      "path": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\p22-operative-pieces\\recordings\\01-turn-handoff\\page@29f69c546fad29387a06f65d7162d8aa.webm"
+    },
+    {
+      "flow": "02-short-movement",
+      "fixtures": [
+        "movement",
+        "arrival"
+      ],
+      "path": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\p22-operative-pieces\\recordings\\02-short-movement\\page@d8c134c642f0e08d5dab545a2ee06bcb.webm"
+    },
+    {
+      "flow": "03-long-movement",
+      "fixtures": [
+        "movement",
+        "movement",
+        "arrival"
+      ],
+      "path": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\p22-operative-pieces\\recordings\\03-long-movement\\page@55865e9f337b26b821cbcb0a6f094537.webm"
+    },
+    {
+      "flow": "04-cross-ring-movement",
+      "fixtures": [
+        "movement",
+        "cross-ring",
+        "arrival"
+      ],
+      "path": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\p22-operative-pieces\\recordings\\04-cross-ring-movement\\page@9e645616dd7c99735687bcf7ab7536ed.webm"
+    },
+    {
+      "flow": "05-arrival",
+      "fixtures": [
+        "movement",
+        "arrival",
+        "encounter-transition"
+      ],
+      "path": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\p22-operative-pieces\\recordings\\05-arrival\\page@449f56f32633c2b91c240916f5f29ef7.webm"
+    },
+    {
+      "flow": "06-multi-operative-formation",
+      "fixtures": [
+        "one-operative",
+        "two-operatives",
+        "three-operatives"
+      ],
+      "path": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\p22-operative-pieces\\recordings\\06-multi-operative-formation\\page@3286c6d1194a803b5c472e5f41b285e8.webm"
+    },
+    {
+      "flow": "07-six-player-sequence",
+      "fixtures": [
+        "six-operatives",
+        "handoff",
+        "six-operatives"
+      ],
+      "path": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\p22-operative-pieces\\recordings\\07-six-player-sequence\\page@7533b17ca6f937fbdf05a35ea9b0805a.webm"
+    },
+    {
+      "flow": "08-reconnect-restoration",
+      "fixtures": [
+        "reconnect",
+        "reconnect"
+      ],
+      "path": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\p22-operative-pieces\\recordings\\08-reconnect-restoration\\page@93f3237ca9046603f532f576139daeaa.webm"
+    },
+    {
+      "flow": "09-reduced-motion-movement",
+      "fixtures": [
+        "reduced-motion",
+        "arrival"
+      ],
+      "path": "C:\\Users\\Joel_\\Documents\\Ashenboardgame\\ashen-reach-codex-task-01-repository\\reports\\ui\\p22-operative-pieces\\recordings\\09-reduced-motion-movement\\page@37bd969c9aef6723d3de6bbc457e6139.webm"
+    }
+  ]
+}
