@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { useState } from "react";
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientIntent, PublicMovementPlannerState } from "../../shared/types.js";
 import { PhoneMovementView } from "../PhoneMovementView.js";
@@ -88,7 +88,6 @@ describe("PhoneMovementView", () => {
     });
     expect(screen.getByTestId("movement-primary-action")).toHaveTextContent(`Confirm ${longDestinationName}`);
 
-    fireEvent.click(screen.getAllByText("View details")[0]!);
     expect(screen.getAllByText("View details")[0]!.closest("details")).toHaveAttribute("open");
     expect(screen.getByText(`Ashwalk Bridge → ${longDestinationName}`)).toBeInTheDocument();
 
@@ -146,6 +145,36 @@ describe("PhoneMovementView", () => {
     expect(onIntent).toHaveBeenCalledWith({ type: "MOVEMENT_ROLL_REQUESTED", seatId: "seat-1" });
   });
 
+  it("shows a new authoritative movement result before compacting it after 100ms", () => {
+    vi.useFakeTimers();
+    const common = {
+      seatId: "seat-1",
+      activeContract: null,
+      currentSectorName: "Ashwalk Bridge",
+      canRoll: false,
+      movementResolving: false,
+      travel: null,
+      selectedSectorId: null,
+      onSelectedSectorId: vi.fn(),
+      onIntent: vi.fn(),
+      showContextNavigation: false
+    } as const;
+    const view = render(<PhoneMovementView {...common} planner={null} />);
+    view.rerender(<PhoneMovementView {...common} planner={planner} />);
+    const disclosure = screen.getByTestId("phone-movement-dice-disclosure");
+    expect(disclosure).not.toHaveClass("is-collapsed");
+    act(() => vi.advanceTimersByTime(99));
+    expect(disclosure).not.toHaveClass("is-collapsed");
+    act(() => vi.advanceTimersByTime(1));
+    expect(disclosure).toHaveClass("is-collapsed");
+    vi.useRealTimers();
+  });
+
+  it("restores an existing authoritative movement result in its stable compact state", () => {
+    render(<Harness onIntent={vi.fn()} />);
+    expect(screen.getByTestId("phone-movement-dice-disclosure")).toHaveClass("is-collapsed");
+  });
+
   it("keeps technical route identifiers out of rendered copy", () => {
     render(<Harness onIntent={vi.fn()} />);
     expect(screen.queryByText(/votive-engine-room|ashwake-crossing/i)).not.toBeInTheDocument();
@@ -156,6 +185,22 @@ describe("PhoneMovementView", () => {
     render(<Harness onIntent={vi.fn()} />);
     expect(screen.getByRole("button", { name: new RegExp(`Select destination A, ${longDestinationName}`) })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Select destination B, Glass Signal Pier/ })).toBeInTheDocument();
+  });
+
+  it("expands only the selected destination and lets Back collapse its detail first", () => {
+    render(<Harness onIntent={vi.fn()} />);
+    const details = screen.getAllByText("View details").map((entry) => entry.closest("details")!);
+
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`Select destination A, ${longDestinationName}`) }));
+    expect(details[0]).toHaveAttribute("open");
+    expect(details[1]).not.toHaveAttribute("open");
+
+    fireEvent.click(screen.getByRole("button", { name: /Select destination B, Glass Signal Pier/ }));
+    expect(details[0]).not.toHaveAttribute("open");
+    expect(details[1]).toHaveAttribute("open");
+
+    act(() => window.dispatchEvent(new Event("ashenreach:phone-back-dismiss", { cancelable: true })));
+    expect(details[1]).not.toHaveAttribute("open");
   });
 
   it("keeps the authoritative Route Compass adjustment as a secondary confirmed control", () => {

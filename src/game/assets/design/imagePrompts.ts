@@ -6,6 +6,7 @@ import { generatedCardImagePrompts } from "./generatedCardImagePrompts.js";
 import { baseNegativePrompt } from "./negativePrompt.js";
 import { scenarioSheetPrompts } from "./scenarioSheetPrompts.js";
 import { signalTheatreEnvironmentPrompts } from "./signalTheatreEnvironmentPrompts.js";
+import { signalPiecePrompts } from "./signalPiecePrompts.js";
 import { uiPrompts } from "./uiPrompts.js";
 
 export type ImagePromptSpec = {
@@ -58,6 +59,7 @@ export const requiredImageGenerationChecklist = [
   "4 tokens",
   "4 UI frames/backgrounds",
   "49 Signal Theatre sector environments",
+  "6 selectable Signal Theatre player pieces",
   "6 printable scenario sheet illustrations"
 ] as const;
 
@@ -78,6 +80,7 @@ export const imagePrompts: ImagePromptSpec[] = [
   })),
   ...scenarioSheetPrompts,
   ...signalTheatreEnvironmentPrompts,
+  ...signalPiecePrompts,
   ...uiPrompts
 ];
 

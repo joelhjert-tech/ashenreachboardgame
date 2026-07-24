@@ -516,7 +516,7 @@ function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminC
           return;
         }
 
-        roomServer.releaseSeatByToken(body.seatToken);
+        roomServer.leaveSeatByToken(body.seatToken);
         sendJson(response, 200, {
           roomCode: roomServer.getState().sessionId,
           status: roomServer.getState().status,

@@ -530,17 +530,24 @@ function InventoryProgressionSection({
   onIntent: ((intent: ClientIntent) => void) | null;
 }): ReactElement | null {
   const self = patch.self;
+  const [selectedUpgrade, setSelectedUpgrade] = useState<Stat | null>(null);
+  const [upgradeSubmitting, setUpgradeSubmitting] = useState(false);
+  const trophies = self?.character.trophies ?? 0;
+  const statRevision = self ? statOrder.map((stat) => self.character.stats[stat]).join(":") : "none";
+
+  useEffect(() => {
+    setUpgradeSubmitting(false);
+    setSelectedUpgrade(null);
+  }, [statRevision, trophies]);
 
   if (!self) {
     return null;
   }
 
-  const trophies = self.character.trophies;
   const trophyPile = self.character.trophyPile ?? [];
   const pileAvailableValue = trophyPile.reduce((total, entry) => total + getTrophyPileEntryAvailableValue(entry), 0);
   const missionRecords = self.character.completedMissionRecords ?? [];
   const spentMissions = missionRecords.filter((record) => record.spent);
-
   return (
     <section className="phone-inventory-progression" aria-label="Progression" data-testid="phone-inventory-progression">
       <div className="phone-inventory-progression-header">
@@ -601,6 +608,7 @@ function InventoryProgressionSection({
 
       <div className="phone-inventory-upgrades">
         <span className="phone-inventory-upgrades-title">Available Upgrades</span>
+        <p className="phone-inventory-upgrades-copy">Choose one skill. The server spends Trophies only after you confirm.</p>
         <div className="phone-inventory-upgrade-grid">
           {statOrder.map((stat) => {
             const currentValue = self.character.stats[stat];
@@ -626,20 +634,47 @@ function InventoryProgressionSection({
                 style={getChallengeThemeStyle(stat) as CSSProperties}
                 disabled={Boolean(disabledReason)}
                 disabledReason={disabledReason ?? undefined}
-                onClick={() =>
-                  onIntent?.({
-                    type: "RAISE_STAT_REQUESTED",
-                    seatId: self.seatId,
-                    stat: stat as Stat
-                  })
-                }
+                onClick={() => setSelectedUpgrade(stat as Stat)}
                 sublabel={disabledReason ?? `Cost ${cost} Troph${cost === 1 ? "y" : "ies"}`}
               >
-                {label}
+                {selectedUpgrade === stat ? `Selected · ${label}` : label}
               </GameButton>
             );
           })}
         </div>
+        {selectedUpgrade ? (() => {
+          const currentValue = self.character.stats[selectedUpgrade];
+          const cost = getStatUpgradeCost(currentValue);
+          const disabledReason = getStatUpgradeDisabledReason({
+            stat: selectedUpgrade,
+            currentValue,
+            trophies,
+            qaOnly: self.character.qaOnly === true,
+            cap: NORMAL_STAT_UPGRADE_CAP
+          });
+          return (
+            <div className="phone-inventory-upgrade-confirm" role="group" aria-label={`Confirm ${statLabelById[selectedUpgrade]} upgrade`}>
+              <div>
+                <span>{statLabelById[selectedUpgrade]}</span>
+                <strong>{currentValue} → {Math.min(currentValue + 1, NORMAL_STAT_UPGRADE_CAP)}</strong>
+                <small>{disabledReason ?? `${cost} Trophies will be spent · ${Math.max(0, trophies - cost)} remain`}</small>
+              </div>
+              <GameButton
+                type="button"
+                tone="primary"
+                disabled={Boolean(disabledReason) || upgradeSubmitting}
+                disabledReason={disabledReason ?? (upgradeSubmitting ? "Upgrade is being confirmed." : undefined)}
+                onClick={() => {
+                  if (disabledReason || upgradeSubmitting) return;
+                  setUpgradeSubmitting(true);
+                  onIntent?.({ type: "RAISE_STAT_REQUESTED", seatId: self.seatId, stat: selectedUpgrade });
+                }}
+              >
+                {upgradeSubmitting ? "Upgrading..." : `Confirm ${statLabelById[selectedUpgrade]}`}
+              </GameButton>
+            </div>
+          );
+        })() : null}
       </div>
     </section>
   );

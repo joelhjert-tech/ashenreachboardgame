@@ -2691,7 +2691,10 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/total \/ target6 \/ 7/i);
     expect(screen.getByTestId("phone-roll-result")).not.toHaveTextContent(/attack|defense|A 6 \/ D 7/i);
     expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/affliction: hollow belly -2/i);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-test-result", "true");
+    expect(screen.getByRole("button", { name: /view details/i })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();
+    expect(screen.getAllByRole("button", { name: /continue/i })).toHaveLength(1);
     expect(
       screen.getByTestId("phone-resolution-continue").compareDocumentPosition(screen.getByTestId("phone-roll-result")) &
         Node.DOCUMENT_POSITION_PRECEDING

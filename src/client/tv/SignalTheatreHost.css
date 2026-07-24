@@ -239,59 +239,6 @@
   pointer-events: none;
 }
 
-.signal-theatre__route-art {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-  filter: drop-shadow(0 0 0.65rem rgba(164, 248, 219, 0.35));
-}
-
-.signal-theatre__operative-beacon {
-  position: absolute;
-  z-index: 2;
-  bottom: 28%;
-  left: var(--signal-marker-position);
-  width: clamp(4.6rem, 8.7vw, 10.5rem);
-  height: auto;
-  object-fit: contain;
-  filter: drop-shadow(0 0.55rem 1.15rem rgba(0, 0, 0, 0.82));
-  transform: translateX(-50%);
-  animation: signal-theatre-marker-enter 460ms var(--ease-command, ease-out) both;
-}
-
-.signal-theatre__route-labels {
-  position: absolute;
-  z-index: 3;
-  left: 4.5%;
-  right: 4.5%;
-  bottom: 17%;
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  align-items: end;
-  gap: 0.25rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.signal-theatre__route-labels li {
-  overflow: hidden;
-  color: #a9aaa5;
-  font-size: clamp(0.42rem, 0.54vw, 0.64rem);
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-align: center;
-  text-overflow: ellipsis;
-  text-shadow: 0 0.12rem 0.34rem #000, 0 0.12rem 0.34rem #000;
-  white-space: nowrap;
-}
-
-.signal-theatre__route-labels li.is-destination {
-  color: var(--signal-mint);
-}
-
 .signal-theatre__sequence {
   position: absolute;
   z-index: 6;
@@ -659,11 +606,6 @@
   white-space: nowrap;
 }
 
-@keyframes signal-theatre-marker-enter {
-  from { opacity: 0; transform: translateX(-50%) translateY(1.2rem) scale(0.92); }
-  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-}
-
 @media (max-width: 1500px), (max-height: 820px) {
   .signal-theatre__command {
     left: 24vw;
@@ -765,8 +707,7 @@
   object-fit: cover;
   object-position: 50% 50%;
   filter: brightness(.76) saturate(.86) contrast(1.08);
-  animation: signal-environment-enter 520ms cubic-bezier(.18,.78,.22,1) both;
-  will-change: opacity, transform;
+  animation: signal-environment-enter 360ms cubic-bezier(.18,.78,.22,1) both;
 }
 
 .signal-theatre--tier-middle .signal-theatre__environment-image {
@@ -980,10 +921,6 @@
   z-index: 30;
 }
 
-.signal-theatre--journey .signal-theatre__environment-image {
-  animation-duration: 640ms;
-}
-
 .signal-theatre--sector-resolution .signal-theatre__environment-image {
   filter: saturate(.72) brightness(.56) contrast(1.08);
 }
@@ -1000,16 +937,6 @@
   height: 100%;
   opacity: 0;
   pointer-events: none;
-}
-
-.signal-theatre--sector-resolution .signal-theatre__pieces .operative-piece {
-  opacity: .12;
-  filter: saturate(.35) brightness(.58);
-}
-
-.signal-theatre--sector-resolution .signal-theatre__pieces .operative-piece.is-active {
-  opacity: 1;
-  filter: none;
 }
 
 .signal-theatre--sector-resolution .signal-theatre__occupant-summary,
@@ -1072,9 +999,21 @@
     right: 17vw;
   }
 
-  .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command p,
+  .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command > strong {
+    font-size: clamp(.9rem, 1vw, 1.05rem);
+  }
+
+  .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command p {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: clamp(.75rem, .82vw, .9rem);
+    line-height: 1.3;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
   .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command small {
-    display: block;
+    display: none;
   }
 
   .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__scenario {

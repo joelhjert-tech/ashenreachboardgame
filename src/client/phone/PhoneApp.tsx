@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactElement } from "react";
 import {
   configureSessionFromPhone,
   fetchCharacters,
@@ -13,9 +13,17 @@ import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSessionAuth, Scenar
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { useFocusOnRevision } from "../shared/useFocusOnRevision.js";
+import { usePhysicalVisualViewport } from "../shared/usePhysicalVisualViewport.js";
 import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
 import { PortraitControllerView } from "./PortraitControllerView.js";
+import { useActiveRoomBackGuard } from "./useActiveRoomBackGuard.js";
 import { getSubmittedDisplayNameError, MAX_PLAYER_DISPLAY_NAME_LENGTH } from "../../game/rules/playerIdentity.js";
+import {
+  SIGNAL_PIECES,
+  getSignalPieceAssetPath,
+  getSignalPieceIdForSeat,
+  type SignalPieceId
+} from "../../shared/signalPieceCatalog.js";
 
 const storageKey = "ashenreach.controllerSession";
 const legacyStorageKey = "ashen-reach-phone-auth";
@@ -173,6 +181,10 @@ function matchesCharacterFilter(character: CharacterCatalogEntry, filter: Charac
   return Boolean(character.qaOnly || character.presentation?.complexity === "advanced" || character.presentation?.complexity === "expert");
 }
 
+function getFirstAvailableSignalPiece(taken: ReadonlySet<SignalPieceId>): SignalPieceId {
+  return SIGNAL_PIECES.find((piece) => !taken.has(piece.id))?.id ?? SIGNAL_PIECES[0]!.id;
+}
+
 function formatJoinFailure(joinFailure: unknown): string {
   const message = joinFailure instanceof Error ? joinFailure.message : "Join failed";
 
@@ -243,11 +255,18 @@ export function PhoneApp(): ReactElement {
   }));
   const [configuredPlayerCount, setConfiguredPlayerCount] = useState(6);
   const [pendingCharacterId, setPendingCharacterId] = useState<string | null>(null);
+  const [selectedSignalPieceId, setSelectedSignalPieceId] = useState<SignalPieceId>("beacon");
+  const [signalPieceAnnouncement, setSignalPieceAnnouncement] = useState("");
   const [characterSelectionRetryRequired, setCharacterSelectionRetryRequired] = useState(false);
   const [auth, setAuth] = useState<PhoneSessionAuth | null>(() => readStoredAuth());
   const [joinError, setJoinError] = useState<string | null>(null);
+  const joinFormRef = useRef<HTMLFormElement | null>(null);
+  const joinActionsRef = useRef<HTMLDivElement | null>(null);
+  const joinSubmittingRef = useRef(false);
   const hostScenarioPickerRef = useRef<HTMLElement | null>(null);
   const operativeSelectionRef = useRef<HTMLElement | null>(null);
+  const signalPiecePickerRef = useRef<HTMLDivElement | null>(null);
+  const initializedSignalPieceSeatRef = useRef<string | null>(null);
   const joinUnavailable = joinError === "No open seats remain";
   const isLandscape = useLandscapeMode();
   const { patch, error, sendIntent, status, debugEvents, clearDebugEvents } = useRoomSubscription({
@@ -290,6 +309,25 @@ export function PhoneApp(): ReactElement {
 
   const phonePatch =
     patch && "self" in patch.payload ? (patch as StatePatch<PhonePatchPayload>) : null;
+  const visualViewport = usePhysicalVisualViewport();
+  const leaveCurrentRoom = useCallback(async () => {
+    if (!auth) return;
+    await leaveSession(auth);
+    setAuth(null);
+    writeStoredAuth(null);
+  }, [auth]);
+  const roomBackGuard = useActiveRoomBackGuard({
+    active: Boolean(auth && phonePatch?.payload.status !== "ended"),
+    roomKey: auth ? `${auth.roomCode}:${auth.seatId}` : null,
+    onLeave: leaveCurrentRoom
+  });
+
+  useEffect(() => {
+    if (auth || !visualViewport.keyboardConstrained) return;
+    const activeElement = document.activeElement;
+    if (!activeElement || !joinFormRef.current?.contains(activeElement)) return;
+    joinActionsRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
+  }, [auth, visualViewport.keyboardConstrained, visualViewport.revision]);
   const isScenarioSelectable = (scenario: ScenarioCatalogEntry): boolean => {
     if (!selectedSetupMode || !scenario.supportedModes || !scenario.supportedPlayerCounts) return true;
     const playerCount = selectedSetupMode === "single-player" ? 1 : configuredPlayerCount;
@@ -300,6 +338,18 @@ export function PhoneApp(): ReactElement {
     return false;
   };
   const selectedScenarioIsValid = scenarios.some((scenario) => scenario.id === selectedScenarioId && isScenarioSelectable(scenario));
+  const takenSignalPieceIds = useMemo(() => new Set(
+    phonePatch?.payload.seats
+      .filter((seat) =>
+        seat.seatId !== auth?.seatId
+        && Boolean(seat.displayName)
+        && !seat.kicked
+        && seat.characterSelected !== false
+        && Boolean(seat.signalPieceId)
+      )
+      .map((seat) => seat.signalPieceId!)
+    ?? []
+  ), [auth?.seatId, phonePatch?.payload.seats]);
 
   useEffect(() => {
     if (!auth || !phonePatch) {
@@ -311,12 +361,14 @@ export function PhoneApp(): ReactElement {
 
   const handleNameSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (joinSubmittingRef.current) return;
     setJoinError(null);
     const displayNameError = getSubmittedDisplayNameError(formState.displayName);
     if (displayNameError) {
       setJoinError(displayNameError);
       return;
     }
+    joinSubmittingRef.current = true;
     setJoiningRoom(true);
 
     try {
@@ -341,6 +393,7 @@ export function PhoneApp(): ReactElement {
     } catch (joinFailure) {
       setJoinError(formatJoinFailure(joinFailure));
     } finally {
+      joinSubmittingRef.current = false;
       setJoiningRoom(false);
     }
   };
@@ -352,11 +405,23 @@ export function PhoneApp(): ReactElement {
     setJoinError(null);
     setPendingCharacterId(characterId);
     setFormState((current) => ({ ...current, characterId }));
-    sendIntent({ type: "SELECT_CHARACTER", seatId: auth?.seatId ?? "", characterId });
+    sendIntent({
+      type: "SELECT_CHARACTER",
+      seatId: auth?.seatId ?? "",
+      characterId,
+      signalPieceId: selectedSignalPieceId
+    });
   };
 
   const handleConfigureLobby = async () => {
     if (!auth || !selectedSetupMode) {
+      return;
+    }
+    if (takenSignalPieceIds.has(selectedSignalPieceId)) {
+      const replacement = getFirstAvailableSignalPiece(takenSignalPieceIds);
+      setSelectedSignalPieceId(replacement);
+      setSignalPieceAnnouncement(`${selectedSignalPieceId} became occupied. ${replacement} is now selected.`);
+      setJoinError("That Signal piece was just claimed. Review the replacement and choose your operative again.");
       return;
     }
 
@@ -388,11 +453,6 @@ export function PhoneApp(): ReactElement {
     } finally {
       setStartingGame(false);
     }
-  };
-
-  const clearSession = () => {
-    setAuth(null);
-    writeStoredAuth(null);
   };
 
   const backToCharacterSelect = async () => {
@@ -448,6 +508,22 @@ export function PhoneApp(): ReactElement {
   const ownSeat = phonePatch?.payload.seats.find((seat) => seat.seatId === auth?.seatId) ?? null;
   const isSetupHost = Boolean(phonePatch?.payload.selfIsSetupHost);
   const previousTurnRef = useRef<{ activeSeatId: string | null; status: PhonePatchPayload["status"] } | null>(null);
+  const leaveConfirmationDialog = roomBackGuard.confirmationOpen ? (
+    <section className="phone-leave-dialog" role="dialog" aria-modal="true" aria-labelledby="phone-leave-dialog-title">
+      <div>
+        <span>Room safety</span>
+        <h2 id="phone-leave-dialog-title">Leave the game?</h2>
+        <p>Your operative will remain in the current room until the server processes your exit.</p>
+        {roomBackGuard.leaveError ? <p className="error" role="alert">{roomBackGuard.leaveError}</p> : null}
+        <div className="phone-leave-dialog__actions">
+          <button type="button" className="phone-button phone-button-primary" autoFocus onClick={roomBackGuard.stayInGame}>Stay in Game</button>
+          <button type="button" className="phone-button phone-button-danger" disabled={roomBackGuard.leaveSubmitting} onClick={() => void roomBackGuard.confirmLeave()}>
+            {roomBackGuard.leaveSubmitting ? "Leaving…" : "Leave Room"}
+          </button>
+        </div>
+      </div>
+    </section>
+  ) : null;
 
   useFocusOnRevision(
     hostScenarioPickerRef,
@@ -463,6 +539,35 @@ export function PhoneApp(): ReactElement {
     Boolean(auth && phonePatch?.payload.setup?.stage === "operative-selection" && phonePatch.payload.setup.actorSeatId === auth.seatId),
     ".phone-character-option:not([disabled])"
   );
+
+  useEffect(() => {
+    if (!ownSeat) return;
+
+    if (initializedSignalPieceSeatRef.current !== ownSeat.seatId) {
+      initializedSignalPieceSeatRef.current = ownSeat.seatId;
+      const seatIndex = phonePatch?.payload.seats.findIndex((seat) => seat.seatId === ownSeat.seatId) ?? 0;
+      const projectedDefault = ownSeat.signalPieceId ?? getSignalPieceIdForSeat(seatIndex);
+      const initialPiece = projectedDefault && !takenSignalPieceIds.has(projectedDefault)
+        ? projectedDefault
+        : getFirstAvailableSignalPiece(takenSignalPieceIds);
+      setSelectedSignalPieceId(initialPiece);
+      if (projectedDefault && projectedDefault !== initialPiece) {
+        setSignalPieceAnnouncement(`${projectedDefault} is occupied. ${initialPiece} is now selected.`);
+      }
+      return;
+    }
+
+    if (ownSeat.characterSelected !== false && ownSeat.signalPieceId) {
+      setSelectedSignalPieceId(ownSeat.signalPieceId);
+      return;
+    }
+
+    if (takenSignalPieceIds.has(selectedSignalPieceId)) {
+      const replacement = getFirstAvailableSignalPiece(takenSignalPieceIds);
+      setSelectedSignalPieceId(replacement);
+      setSignalPieceAnnouncement(`${selectedSignalPieceId} became occupied. ${replacement} is now selected.`);
+    }
+  }, [ownSeat, phonePatch?.payload.seats, selectedSignalPieceId, takenSignalPieceIds]);
 
   useEffect(() => {
     const current = { activeSeatId, status: phonePatch?.payload.status ?? "lobby" as const };
@@ -521,6 +626,9 @@ export function PhoneApp(): ReactElement {
           : { ...current, characterId: ownSeat.characterId }
       );
     }
+    if (ownSeat.signalPieceId) {
+      setSelectedSignalPieceId(ownSeat.signalPieceId);
+    }
     setPendingCharacterId(null);
     setCharacterSelectionRetryRequired(false);
   }, [
@@ -528,6 +636,7 @@ export function PhoneApp(): ReactElement {
     formState.characterId,
     ownSeat?.characterId,
     ownSeat?.characterSelected,
+    ownSeat?.signalPieceId,
     pendingCharacterId,
     phonePatch?.payload.status
   ]);
@@ -544,7 +653,7 @@ export function PhoneApp(): ReactElement {
 
   if (!auth) {
     return (
-      <main className="phone-page">
+      <main className="phone-page phone-page-join" data-keyboard-constrained={visualViewport.keyboardConstrained ? "true" : "false"}>
         {isLandscape ? (
           <section className="phone-rotate-warning" aria-live="polite">
             <div>
@@ -562,7 +671,7 @@ export function PhoneApp(): ReactElement {
                     <p className="phone-muted-copy">Enter the room code and your player name to join the table.</p>
                   </div>
                 </div>
-                <form className="phone-join-form" onSubmit={handleNameSubmit}>
+                <form ref={joinFormRef} className="phone-join-form" onSubmit={handleNameSubmit}>
                   <section className="phone-join-step" aria-label="Step 1 enter room code and name">
                     <span className="phone-join-step-kicker">Step 1</span>
                     <label className="field">
@@ -570,8 +679,10 @@ export function PhoneApp(): ReactElement {
                       <input
                         name="roomCode"
                         autoComplete="off"
+                        autoCorrect="off"
                         autoCapitalize="characters"
                         inputMode="text"
+                        enterKeyHint="next"
                         spellCheck={false}
                         value={formState.roomCode}
                         onChange={(event) => {
@@ -588,6 +699,7 @@ export function PhoneApp(): ReactElement {
                         name="playerName"
                         autoComplete="nickname"
                         spellCheck={false}
+                        enterKeyHint="go"
                         value={formState.displayName}
                         maxLength={MAX_PLAYER_DISPLAY_NAME_LENGTH}
                         onChange={(event) => {
@@ -599,8 +711,8 @@ export function PhoneApp(): ReactElement {
                       />
                     </label>
                   </section>
-                  {(joinError || error) && <p className="error">{joinError ?? error}</p>}
-                  <div className="phone-join-actions">
+                  {(joinError || error) && <p className="error" role="alert">{joinError ?? error}</p>}
+                  <div ref={joinActionsRef} className="phone-join-actions">
                     <button
                       className="phone-button phone-button-primary"
                       type="submit"
@@ -638,6 +750,22 @@ export function PhoneApp(): ReactElement {
             </main>
           </div>
         </section>
+        {roomBackGuard.confirmationOpen ? (
+          <section className="phone-leave-dialog" role="dialog" aria-modal="true" aria-labelledby="phone-leave-dialog-title">
+            <div>
+              <span>Room safety</span>
+              <h2 id="phone-leave-dialog-title">Leave the game?</h2>
+              <p>Your operative will remain in the current room until the server processes your exit.</p>
+              {roomBackGuard.leaveError ? <p className="error" role="alert">{roomBackGuard.leaveError}</p> : null}
+              <div className="phone-leave-dialog__actions">
+                <button type="button" className="phone-button phone-button-primary" autoFocus onClick={roomBackGuard.stayInGame}>Stay in Game</button>
+                <button type="button" className="phone-button phone-button-danger" disabled={roomBackGuard.leaveSubmitting} onClick={() => void roomBackGuard.confirmLeave()}>
+                  {roomBackGuard.leaveSubmitting ? "Leaving…" : "Leave Room"}
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : null}
       </main>
     );
   }
@@ -744,6 +872,7 @@ export function PhoneApp(): ReactElement {
             </main>
           </div>
         </section>
+        {leaveConfirmationDialog}
       </main>
     );
   }
@@ -767,6 +896,7 @@ export function PhoneApp(): ReactElement {
             </main>
           </div>
         </section>
+        {leaveConfirmationDialog}
       </main>
     );
   }
@@ -793,6 +923,62 @@ export function PhoneApp(): ReactElement {
                 {phonePatch.payload.lateJoinPending ? (
                   <p className="phone-muted-copy">Choose an available operative, select a starting mission, then join the end of the current turn order.</p>
                 ) : null}
+                <section className="phone-signal-piece-picker" aria-labelledby="phone-signal-piece-title">
+                  <div className="phone-signal-piece-picker__heading">
+                    <span id="phone-signal-piece-title">Choose your Signal piece</span>
+                    <small>Silhouette, symbol, and colour identify you on the TV.</small>
+                  </div>
+                  <div ref={signalPiecePickerRef} className="phone-signal-piece-picker__grid" role="radiogroup" aria-label="Signal piece">
+                    {SIGNAL_PIECES.map((piece) => {
+                      const selected = selectedSignalPieceId === piece.id;
+                      const unavailable = takenSignalPieceIds.has(piece.id);
+                      return (
+                        <button
+                          key={piece.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          disabled={unavailable}
+                          tabIndex={selected && !unavailable ? 0 : -1}
+                          data-signal-piece-id={piece.id}
+                          className={`phone-signal-piece-option${selected ? " is-selected" : ""}`}
+                          onClick={() => {
+                            setSelectedSignalPieceId(piece.id);
+                            setSignalPieceAnnouncement(`${piece.name} selected.`);
+                          }}
+                          onKeyDown={(event: ReactKeyboardEvent<HTMLButtonElement>) => {
+                            const forward = event.key === "ArrowRight" || event.key === "ArrowDown";
+                            const backward = event.key === "ArrowLeft" || event.key === "ArrowUp";
+                            if (!forward && !backward && event.key !== "Home" && event.key !== "End") return;
+                            event.preventDefault();
+                            const available = SIGNAL_PIECES.filter((candidate) => !takenSignalPieceIds.has(candidate.id));
+                            const currentAvailableIndex = available.findIndex((candidate) => candidate.id === piece.id);
+                            const target = event.key === "Home"
+                              ? available[0]
+                              : event.key === "End"
+                                ? available.at(-1)
+                                : available[
+                                  (currentAvailableIndex + (forward ? 1 : -1) + available.length) % available.length
+                                ];
+                            if (!target) return;
+                            setSelectedSignalPieceId(target.id);
+                            setSignalPieceAnnouncement(`${target.name} selected.`);
+                            signalPiecePickerRef.current
+                              ?.querySelector<HTMLButtonElement>(`[data-signal-piece-id="${target.id}"]`)
+                              ?.focus();
+                          }}
+                        >
+                          <img src={getSignalPieceAssetPath(piece.id)} width={768} height={768} alt="" aria-hidden="true" />
+                          <span>
+                            <strong>{piece.name}</strong>
+                            <small>{unavailable ? "In use at this table" : piece.shortDescription}</small>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="phone-signal-piece-picker__status" role="status" aria-live="polite">{signalPieceAnnouncement}</p>
+                </section>
                 <div className="phone-character-filter-row" role="tablist" aria-label="Character filters">
                   {[
                     ["recommended", "Recommended"],
@@ -853,6 +1039,7 @@ export function PhoneApp(): ReactElement {
             </main>
           </div>
         </section>
+        {leaveConfirmationDialog}
       </main>
     );
   }
@@ -882,12 +1069,29 @@ export function PhoneApp(): ReactElement {
               ? projectedCharacterOptions.filter((option) => option.eligible).map((option) => option.character)
               : characters}
             onIntent={canSendLobbyIntent ? sendIntent : null}
-            onLeave={clearSession}
+            onLeave={roomBackGuard.requestLeave}
             onLobbyBack={() => void backToCharacterSelect()}
             onStartSession={isSetupHost ? handleStartFromPhone : undefined}
             startSubmitting={startingGame}
           />
         )}
+
+        {roomBackGuard.confirmationOpen ? (
+          <section className="phone-leave-dialog" role="dialog" aria-modal="true" aria-labelledby="phone-leave-dialog-title">
+            <div>
+              <span>Room safety</span>
+              <h2 id="phone-leave-dialog-title">Leave the game?</h2>
+              <p>Your operative will remain in the current room until the server processes your exit.</p>
+              {roomBackGuard.leaveError ? <p className="error" role="alert">{roomBackGuard.leaveError}</p> : null}
+              <div className="phone-leave-dialog__actions">
+                <button type="button" className="phone-button phone-button-primary" autoFocus onClick={roomBackGuard.stayInGame}>Stay in Game</button>
+                <button type="button" className="phone-button phone-button-danger" disabled={roomBackGuard.leaveSubmitting} onClick={() => void roomBackGuard.confirmLeave()}>
+                  {roomBackGuard.leaveSubmitting ? "Leaving…" : "Leave Room"}
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         {debugOpen && (
           <div className="phone-debug-anchor">

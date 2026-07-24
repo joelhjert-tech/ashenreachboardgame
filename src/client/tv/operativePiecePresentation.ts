@@ -1,4 +1,8 @@
 import type { CSSProperties } from "react";
+import {
+  getSignalPieceIdForSeat,
+  type SignalPieceId
+} from "../../shared/signalPieceCatalog.js";
 import type { PublicPatchPayload, PublicPlayer, PublicSeat } from "../shared/types.js";
 
 export type OperativePieceVariant = "heraldic-reliquary" | "operative-bust";
@@ -17,6 +21,7 @@ export interface OperativePieceIdentity {
   colorSoft: string;
   heraldry: PlayerHeraldry;
   topper: OperativeTopper;
+  signalPieceId: SignalPieceId;
 }
 
 export interface FormationPoint {
@@ -60,9 +65,8 @@ export function buildOperativePieceIdentities(
 ): OperativePieceIdentity[] {
   const playerBySeat = new Map(players.map((player) => [player.seatId, player] as const));
 
-  return seats
-    .filter((seat) => seat.displayName && !seat.kicked)
-    .flatMap<OperativePieceIdentity>((seat, seatIndex) => {
+  return seats.flatMap<OperativePieceIdentity>((seat, seatIndex) => {
+      if (!seat.displayName || seat.kicked) return [];
       const player = playerBySeat.get(seat.seatId);
       if (!player) return [];
       const palette = playerColors[seatIndex % playerColors.length]!;
@@ -77,7 +81,8 @@ export function buildOperativePieceIdentities(
         color: palette[0],
         colorSoft: palette[1],
         heraldry: heraldry[seatIndex % heraldry.length]!,
-        topper: toppers[stableHash(player.character.id) % toppers.length]!
+        topper: toppers[stableHash(player.character.id) % toppers.length]!,
+        signalPieceId: seat.signalPieceId ?? getSignalPieceIdForSeat(seatIndex)
       }];
     });
 }

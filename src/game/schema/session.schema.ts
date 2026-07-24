@@ -29,6 +29,7 @@ import { pendingScarChoiceSchema, pendingScarThresholdSchema, scarDecksSchema, s
 import { pendingEncounterDecisionSchema } from "./encounterDecision.schema.js";
 import { pendingDisplacementArrivalSchema, pendingDisplacementSchema, pendingForcedDestinationChoiceSchema, pendingSutureStormConsequenceSchema } from "./displacement.schema.js";
 import { pendingMemoryTaxChoiceSchema } from "./memoryTax.schema.js";
+import { SIGNAL_PIECE_IDS } from "../../shared/signalPieceCatalog.js";
 
 export const phaseSchema = z.enum([
   "start",
@@ -216,6 +217,7 @@ export const seatSchema = z.object({
   seatId: z.string().min(1),
   characterId: z.string().min(1),
   characterSelected: z.boolean().optional(),
+  signalPieceId: z.enum(SIGNAL_PIECE_IDS).optional(),
   displayName: z.string().min(1).nullable().optional(),
   startingContractOptions: z.array(z.string().min(1)).default([]),
   selectedStartingContractId: z.string().min(1).nullable().default(null),

@@ -202,6 +202,7 @@ export function PhoneHazardChallengeView({
       className={`phone-test-prototype phone-test-prototype--cinematic phone-test-prototype--${kind} phone-battle-panel`}
       data-testid="phone-action-active-panel"
       data-hazard-challenge-layout="cinematic"
+      data-test-result={result ? "true" : "false"}
     >
       <div className="phone-test-prototype__scene" aria-hidden="true" />
       <div className="phone-test-prototype__scroll" data-testid="phone-battle-panel">
@@ -215,8 +216,8 @@ export function PhoneHazardChallengeView({
           <p className="phone-test-prototype__lore">{flavor}</p>
         </article>
         <AuthoritativeDicePresentation model={diceModel} compact />
-        <TestCalculation stat={stat} value={skillValue} resolution={resolution} difficulty={difficulty} />
-        {resolution?.battle?.modifiers.length ? (
+        {!result ? <TestCalculation stat={stat} value={skillValue} resolution={resolution} difficulty={difficulty} /> : null}
+        {!result && resolution?.battle?.modifiers.length ? (
           <div className="phone-test-modifiers" aria-label="Applied modifiers">
             {resolution.battle.modifiers.map((entry, index) => (
               <span key={`${entry.label}-${index}`}>{entry.label} {signed(entry.value)}</span>
@@ -228,7 +229,6 @@ export function PhoneHazardChallengeView({
             {patch.pendingTileChallengePrivate.challengeType === "anomaly" ? "Recurring anomaly challenge" : "Tile challenge"} {patch.pendingTileChallengePrivate.authoredOrder + 1} of {patch.pendingTileChallengePrivate.totalChallenges}
           </p>
         ) : null}
-        {result ? <div className={`phone-test-result phone-test-result--${result}`} role="status">{result}</div> : null}
         <ConsequencePanels patch={patch} resolution={resolution} />
 
         {resolution?.outcome ? (
@@ -261,16 +261,15 @@ export function PhoneHazardChallengeView({
         <button className="phone-test-details-toggle" type="button" aria-expanded={detailsOpen} onClick={() => setDetailsOpen((open) => !open)}>
           {detailsOpen ? "Hide details" : "View details"}
         </button>
-        {detailsOpen ? (
-          <section className="phone-test-details" aria-label="Encounter details">
+        <section className="phone-test-details" aria-label="Encounter details" hidden={!detailsOpen}>
             <p>{flavor}</p>
+            {result ? <TestCalculation stat={stat} value={skillValue} resolution={resolution} difficulty={difficulty} /> : null}
             <dl>
               <div><dt>Source</dt><dd>{titleCase(resolution?.source ?? "encounter")}</dd></div>
               <div><dt>Test</dt><dd>{statLabelById[stat]} against {difficulty}</dd></div>
               <div><dt>Modifiers</dt><dd>{resolution?.battle?.modifiers.length ? resolution.battle.modifiers.map((modifier) => `${modifier.label} ${signed(modifier.value)}`).join(", ") : "None projected"}</dd></div>
             </dl>
-          </section>
-        ) : null}
+        </section>
         {supplemental}
       </div>
 

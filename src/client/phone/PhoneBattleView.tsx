@@ -18,6 +18,8 @@ import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { CinderWattleAbilityPanel } from "./CinderWattleAbilityPanel.js";
 import { getBattleAssistViewModel } from "./inventoryPresentation.js";
 import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
+import { useAuthoritativeResultCollapse } from "../shared/useAuthoritativeResultCollapse.js";
+import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 
 export interface PhoneBattleChoiceAction {
   key: string;
@@ -328,6 +330,18 @@ export function PhoneBattleView({
     if (roll || pendingRoll || resolution?.stage === "dice_roll") setRollSubmitting(false);
   }, [pendingRoll, resolution?.stage, roll]);
 
+  usePhoneBackDismissal(context !== "battle" || detailsOpen, () => {
+    if (context !== "battle") {
+      setContext("battle");
+      return true;
+    }
+    if (detailsOpen) {
+      setDetailsOpen(false);
+      return true;
+    }
+    return false;
+  });
+
   const operativeDiceModel: AuthoritativeDiceModel = {
     id: presentation?.id ?? resolution?.id ?? `battle:${self.seatId}:${enemyName}`,
     revision: presentation?.revision ?? 0,
@@ -346,6 +360,14 @@ export function PhoneBattleView({
     target: opponentTotal,
     outcome: result ? resultLabel : null
   };
+  const diceResultKey = roll && operativeDiceModel.stage !== "reaction"
+    ? `${operativeDiceModel.id}:${operativeDiceModel.revision}:${roll.dice.join(",")}:${roll.finalTotal}`
+    : null;
+  const diceDisclosure = useAuthoritativeResultCollapse(
+    diceResultKey,
+    100,
+    `battle:${self.seatId}:${operativeDiceModel.id}`
+  );
 
   const primaryAction = useMemo(() => {
     if (choiceActions.length > 0) {
@@ -434,6 +456,7 @@ export function PhoneBattleView({
       data-battle-identity={identity ?? undefined}
       data-battle-ui="cinematic-split"
       data-battle-restored={restored ? "true" : "false"}
+      data-battle-result={result ? "true" : "false"}
     >
       <div className="phone-battle-shell__backdrop" aria-hidden="true" />
       <div className="phone-battle-shell__scroll" data-testid="phone-battle-scroll-region">
@@ -444,7 +467,18 @@ export function PhoneBattleView({
               <strong>{resultLabel}</strong>
             </header>
             {combatantArena}
-            <AuthoritativeDicePresentation model={operativeDiceModel} compact />
+            <div className={`phone-auto-collapse-dice${diceDisclosure.collapsed ? " is-collapsed" : ""}`} data-testid="phone-battle-dice-disclosure">
+              <button
+                type="button"
+                className="phone-auto-collapse-dice__summary"
+                aria-expanded={!diceDisclosure.collapsed}
+                onClick={diceDisclosure.collapsed ? diceDisclosure.expand : diceDisclosure.collapse}
+              >
+                <span>{diceDisclosure.collapsed ? "Dice result" : "Dice details"}</span>
+                <strong>{finalTotal === null ? "Pending" : `${finalTotal} vs ${opponentTotal}`}</strong>
+              </button>
+              <AuthoritativeDicePresentation model={operativeDiceModel} compact />
+            </div>
             {usableGearCount > 0 && !roll ? (
               <button
                 type="button"

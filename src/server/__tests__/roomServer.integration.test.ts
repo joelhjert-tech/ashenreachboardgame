@@ -1158,6 +1158,40 @@ describe("roomServer websocket integration", () => {
     expect(() => activeHarness.roomServer.joinSeat("Second", "signal-witch")).not.toThrow();
   });
 
+  it("disconnects an active phone without removing its authoritative operative", async () => {
+    const activeHarness = (harness = await startHarness(
+      [0, 0, 0, 0],
+      createInitialSessionState("session-alpha", "single-player")
+    ));
+    const joined = activeHarness.roomServer.joinSeat("Solo", "signal-witch");
+    selectFirstStartingContract(activeHarness.roomServer, joined.seatId);
+    activeHarness.roomServer.setSeatReady(joined.seatId, true);
+    activeHarness.roomServer.startSession();
+
+    const playerBefore = activeHarness.roomServer.getState().players.find(
+      (player) => player.seatId === joined.seatId
+    );
+    activeHarness.roomServer.leaveSeatByToken(joined.seatToken);
+
+    const departedSeat = activeHarness.roomServer.getState().seats.find(
+      (seat) => seat.seatId === joined.seatId
+    );
+    expect(departedSeat).toMatchObject({
+      displayName: "Solo",
+      connected: false,
+      ready: true,
+      characterSelected: true
+    });
+    expect(activeHarness.roomServer.getState().turnOrder).toContain(joined.seatId);
+    expect(activeHarness.roomServer.getState().players.find(
+      (player) => player.seatId === joined.seatId
+    )).toEqual(playerBefore);
+
+    const sequenceAfterLeave = activeHarness.roomServer.getState().sequence;
+    activeHarness.roomServer.leaveSeatByToken(joined.seatToken);
+    expect(activeHarness.roomServer.getState().sequence).toBe(sequenceAfterLeave);
+  });
+
   it("blocks single-player start until the joined seat is ready", async () => {
     const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "single-player")));
 

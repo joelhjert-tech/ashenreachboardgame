@@ -30,6 +30,28 @@ export const hostPresentationTimings = {
   movementArrivalMs: 600
 } as const;
 
+export type SignalJourneyTimingPhase = "stable" | "departure" | "travel" | "arrival";
+
+export const signalJourneyVisualTimings = {
+  stable: { holdMs: 0, transitionMs: 0 },
+  departure: { holdMs: hostPresentationTimings.movementStartMs, transitionMs: 240 },
+  segment: { holdMs: hostPresentationTimings.movementSegmentMs, transitionMs: 460 },
+  crossRing: { holdMs: hostPresentationTimings.movementCrossRingMs, transitionMs: 610 },
+  arrival: { holdMs: hostPresentationTimings.movementArrivalMs, transitionMs: 500 }
+} as const;
+
+export function getSignalJourneyTiming(
+  phase: SignalJourneyTimingPhase,
+  crossingRings: boolean
+): { holdMs: number; transitionMs: number } {
+  if (phase === "stable") return signalJourneyVisualTimings.stable;
+  if (phase === "departure") return signalJourneyVisualTimings.departure;
+  if (phase === "arrival") return signalJourneyVisualTimings.arrival;
+  return crossingRings
+    ? signalJourneyVisualTimings.crossRing
+    : signalJourneyVisualTimings.segment;
+}
+
 export const motionCssVariables = {
   instant: "--motion-instant",
   quick: "--motion-quick",

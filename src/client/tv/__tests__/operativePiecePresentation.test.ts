@@ -36,6 +36,7 @@ describe("operative piece presentation", () => {
     expect(identities).toHaveLength(6);
     expect(new Set(identities.map((entry) => entry.color)).size).toBe(6);
     expect(new Set(identities.map((entry) => entry.heraldry)).size).toBe(6);
+    expect(new Set(identities.map((entry) => entry.signalPieceId)).size).toBe(6);
     expect(identities[0]).toMatchObject({
       playerName: "Nera Vale",
       operativeName: "Operative 1",
@@ -48,6 +49,22 @@ describe("operative piece presentation", () => {
     expect(getPlayerInitials("Nera")).toBe("NE");
     expect(getPlayerInitials("Nera Vale")).toBe("NV");
     expect(getPlayerInitials(" Alexandria-of-the-Last-Relay ")).toBe("AL");
+  });
+
+  it("keeps seat identity stable when earlier seats are empty or kicked", () => {
+    const full = buildOperativePieceIdentities(makeSeats(6), makePlayers(6));
+    const sparseSeats = makeSeats(6);
+    sparseSeats[0] = { ...sparseSeats[0]!, displayName: null };
+    sparseSeats[1] = { ...sparseSeats[1]!, kicked: true };
+    const sparse = buildOperativePieceIdentities(sparseSeats, makePlayers(6));
+
+    expect(sparse.find((identity) => identity.seatId === "seat-3")).toMatchObject({
+      seatIndex: full[2]!.seatIndex,
+      color: full[2]!.color,
+      colorSoft: full[2]!.colorSoft,
+      heraldry: full[2]!.heraldry,
+      signalPieceId: full[2]!.signalPieceId
+    });
   });
 
   it.each([1, 2, 3, 4, 5, 6])("creates a non-overlapping deterministic %i-piece formation", (count) => {

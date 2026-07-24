@@ -41,6 +41,9 @@ import {
 } from "../shared/explainabilityPrompts.js";
 import { ChallengeBadge, ThreatIconBadge, getThreatIconStat, isStat } from "../shared/ChallengeBadge.js";
 import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
+import { useAuthoritativeResultCollapse } from "../shared/useAuthoritativeResultCollapse.js";
+import { useReducedMotion } from "../shared/useReducedMotion.js";
+import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 import { GameButton, type GameButtonTone } from "../shared/GameButton.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { getGearCardArtId, getGearCardArtType, getShopCategoryIconPath } from "../shared/assetPaths.js";
@@ -85,8 +88,50 @@ interface PhoneActionPanelProps {
   onLeaveRoom?: () => void;
 }
 
-export function PhoneTileArrivalSummary({ arrival }: { arrival: PublicTileArrivalState | null | undefined }): ReactElement | null {
+export type PhoneArrivalPresentation = "cinematic" | "overlay";
+
+export const DEFAULT_PHONE_ARRIVAL_PRESENTATION: PhoneArrivalPresentation = "cinematic";
+
+export function resolvePhoneArrivalPresentation(
+  search: string,
+  developmentMode: boolean
+): PhoneArrivalPresentation {
+  if (!developmentMode) return DEFAULT_PHONE_ARRIVAL_PRESENTATION;
+  return new URLSearchParams(search).get("arrivalUi") === "overlay"
+    ? "overlay"
+    : DEFAULT_PHONE_ARRIVAL_PRESENTATION;
+}
+
+export function PhoneTileArrivalSummary({ arrival, compact = false }: { arrival: PublicTileArrivalState | null | undefined; compact?: boolean }): ReactElement | null {
+  const reducedMotion = useReducedMotion();
+  const [showArrivalNotice, setShowArrivalNotice] = useState(false);
+  const arrivalId = arrival?.arrivalId ?? null;
+
+  useEffect(() => {
+    if (!arrivalId || typeof window === "undefined") {
+      setShowArrivalNotice(false);
+      return;
+    }
+    const storageKey = `ashenreach:arrival-presented:${arrivalId}`;
+    if (window.sessionStorage.getItem(storageKey) === "1") {
+      setShowArrivalNotice(false);
+      return;
+    }
+    window.sessionStorage.setItem(storageKey, "1");
+    if (reducedMotion) {
+      setShowArrivalNotice(false);
+      return;
+    }
+    setShowArrivalNotice(true);
+    const timer = window.setTimeout(() => setShowArrivalNotice(false), 150);
+    return () => window.clearTimeout(timer);
+  }, [arrivalId, reducedMotion]);
+
   if (!arrival) return null;
+  const arrivalOption = resolvePhoneArrivalPresentation(
+    typeof window !== "undefined" ? window.location.search : "",
+    import.meta.env.DEV
+  );
   const currentRule = arrival.rules.find((rule) => rule.status === "current") ?? null;
   const remainingRules = arrival.rules.filter((rule) => rule.id !== currentRule?.id && rule.status !== "completed");
   const remainingMandatory = remainingRules.filter((rule) => rule.mandatory).length;
@@ -98,14 +143,47 @@ export function PhoneTileArrivalSummary({ arrival }: { arrival: PublicTileArriva
       <b>{rule.status === "current" ? "NEXT" : rule.status.toUpperCase()}</b>
     </li>
   );
+  if (compact) {
+    return (
+      <section className="phone-tile-arrival phone-tile-arrival--compact" aria-label={`${arrival.tileName} arrival resolution`}>
+        <header>
+          <div><span>Tile arrival</span><h2>{arrival.tileName}</h2></div>
+          <strong>{arrival.mandatoryRemaining > 0 ? `${arrival.mandatoryRemaining} mandatory` : "Optional actions"}</strong>
+        </header>
+        <details className="phone-tile-arrival__context-details">
+          <summary>{currentRule?.label ?? "Arrival details"}</summary>
+          <p>{arrival.lore}</p>
+          {currentRule ? <ol>{renderRule(currentRule)}</ol> : null}
+          {remainingRules.length > 0 ? <ol>{remainingRules.map(renderRule)}</ol> : null}
+          {!arrival.canEndTurn && arrival.blockedReason ? <div className="phone-tile-arrival__blocked">MANDATORY · {arrival.blockedReason}</div> : null}
+        </details>
+      </section>
+    );
+  }
   return (
-    <section className="phone-tile-arrival" aria-label={`${arrival.tileName} arrival resolution`}>
+    <section
+      className={`phone-tile-arrival phone-tile-arrival--${arrivalOption}${showArrivalNotice ? " is-arriving" : ""}`}
+      aria-label={`${arrival.tileName} arrival resolution`}
+      data-arrival-ui={arrivalOption}
+      data-arrival-option={arrivalOption === DEFAULT_PHONE_ARRIVAL_PRESENTATION ? "a" : "b"}
+      data-testid="phone-tile-arrival-presentation"
+    >
+      {showArrivalNotice ? <div className="phone-tile-arrival__notice" role="status">Arrived</div> : null}
       <header>
         <div><span>Tile arrival</span><h2>{arrival.tileName}</h2></div>
         <strong>{arrival.mandatoryRemaining > 0 ? `${arrival.mandatoryRemaining} mandatory` : "Optional actions"}</strong>
       </header>
-      <p>{arrival.lore}</p>
       {currentRule ? <ol>{renderRule(currentRule)}</ol> : null}
+      {!arrival.canEndTurn && arrival.blockedReason ? <div className="phone-tile-arrival__blocked">MANDATORY · {arrival.blockedReason}</div> : null}
+      {getTileAssetPath(arrival.tileId) ? (
+        <div className="phone-tile-arrival__art" aria-hidden="true">
+          <img src={getTileAssetPath(arrival.tileId)!} alt="" />
+        </div>
+      ) : null}
+      <details className="phone-tile-arrival__lore">
+        <summary>Tile lore and public details</summary>
+        <p>{arrival.lore}</p>
+      </details>
       {remainingRules.length > 0 ? (
         <details className="phone-tile-arrival__remaining">
           <summary>
@@ -115,7 +193,6 @@ export function PhoneTileArrivalSummary({ arrival }: { arrival: PublicTileArriva
           <ol>{remainingRules.map(renderRule)}</ol>
         </details>
       ) : null}
-      {!arrival.canEndTurn && arrival.blockedReason ? <div className="phone-tile-arrival__blocked">MANDATORY · {arrival.blockedReason}</div> : null}
     </section>
   );
 }
@@ -2163,18 +2240,14 @@ function MovementPlanner({
           )}
         </div>
       ) : planner.movementAdjustment ? <p>Roll {planner.originalMovementValue} | Compass {planner.movementAdjustment > 0 ? "+1" : "−1"} | Move {planner.movementValue}</p> : null}
-      {selected ? (
-        <MovementDestinationDetail
-          planner={planner}
-          selected={selected}
-          seatId={seatId}
-          activeContract={activeContract}
-          onBack={() => onSelectedSectorId(null)}
-          onIntent={onIntent}
-        />
-      ) : (
-        <MovementDestinationList planner={planner} activeContract={activeContract} onSelected={onSelectedSectorId} />
-      )}
+      <MovementDestinationList
+        planner={planner}
+        activeContract={activeContract}
+        selectedSectorId={selected?.sectorId ?? null}
+        seatId={seatId}
+        onSelected={onSelectedSectorId}
+        onIntent={onIntent}
+      />
     </section>
   );
 }
@@ -2182,14 +2255,22 @@ function MovementPlanner({
 function MovementSummaryHeader({ planner }: { planner: PublicMovementPlannerState }): ReactElement {
   const movementModifiers = planner.modifierSources ?? [];
   const movementModifierTotal = movementModifiers.reduce((total, source) => total + source.value, 0);
+  const diceResultKey = planner.rolledValue === undefined
+    ? null
+    : `${planner.movementRevision ?? "movement"}:${planner.rolledValue}:${planner.movementValue}`;
+  const diceDisclosure = useAuthoritativeResultCollapse(diceResultKey, 100);
   return (
     <div className="phone-movement-summary" aria-label="Movement summary" data-testid="movement-summary">
       <span className="sr-only">Move {planner.movementValue}</span>
       <div
-        className="phone-movement-dice"
+        className={`phone-movement-dice phone-auto-collapse-dice${diceDisclosure.collapsed ? " is-collapsed" : ""}`}
         data-testid="movement-dice-animation"
         aria-label={`Movement die result ${planner.movementValue}`}
       >
+        <button type="button" className="phone-auto-collapse-dice__summary" aria-expanded={!diceDisclosure.collapsed} onClick={diceDisclosure.collapsed ? diceDisclosure.expand : diceDisclosure.collapse}>
+          <span>Movement roll</span>
+          <strong>{planner.movementValue}</strong>
+        </button>
         <CombatDiceAnimation
           attackValue={planner.rolledValue ?? planner.movementValue}
           defenseValue={null}
@@ -2271,11 +2352,17 @@ function PhoneMovementAnimation({ travel }: { travel: PhoneMovementTravelState |
 function MovementDestinationList({
   planner,
   activeContract,
-  onSelected
+  selectedSectorId,
+  seatId,
+  onSelected,
+  onIntent
 }: {
   planner: PublicMovementPlannerState;
   activeContract: ContractCard | null;
-  onSelected: (sectorId: string) => void;
+  selectedSectorId: string | null;
+  seatId: string;
+  onSelected: (sectorId: string | null) => void;
+  onIntent: (intent: ClientIntent) => void;
 }): ReactElement {
   return (
     <div className="phone-movement-list-view" data-testid="movement-list-view">
@@ -2292,13 +2379,17 @@ function MovementDestinationList({
         />
       ) : (
         <div className="phone-movement-destination-list" role="list" aria-label="Legal destinations">
-          {planner.destinations.map((destination) => (
+          {planner.destinations.map((destination, index) => (
             <MovementDestinationRow
               key={destination.sectorId}
               destination={destination}
               planner={planner}
               activeContract={activeContract}
+              selected={destination.sectorId === selectedSectorId}
+              marker={String.fromCharCode(65 + index)}
+              seatId={seatId}
               onSelected={onSelected}
+              onIntent={onIntent}
             />
           ))}
         </div>
@@ -2311,12 +2402,20 @@ function MovementDestinationRow({
   destination,
   planner,
   activeContract,
-  onSelected
+  selected,
+  marker,
+  seatId,
+  onSelected,
+  onIntent
 }: {
   destination: PublicMoveDestination;
   planner: PublicMovementPlannerState;
   activeContract: ContractCard | null;
-  onSelected: (sectorId: string) => void;
+  selected: boolean;
+  marker: string;
+  seatId: string;
+  onSelected: (sectorId: string | null) => void;
+  onIntent: (intent: ClientIntent) => void;
 }): ReactElement {
   const primaryTag = getPrimaryMovementTag(destination);
   const isLocked = Boolean(destination.disabledReason);
@@ -2330,11 +2429,12 @@ function MovementDestinationRow({
 
   return (
     <article
-      className={`phone-movement-row phone-move-panel__destination-row${isLocked ? " phone-movement-row-disabled" : ""}${missionRelevance ? " phone-movement-row-mission" : ""}`}
+      className={`phone-movement-row phone-move-panel__destination-row${selected ? " is-selected" : ""}${isLocked ? " phone-movement-row-disabled" : ""}${missionRelevance ? " phone-movement-row-mission" : ""}`}
       role="listitem"
       data-testid="movement-destination-row"
       data-mission-target={missionRelevance ? "true" : "false"}
     >
+      <span className="phone-movement-row-marker" aria-hidden="true">{marker}</span>
       <PhoneWrappedMediaCard
         variant="movement"
         className="phone-movement-row-button"
@@ -2371,10 +2471,20 @@ function MovementDestinationRow({
             disabledReason={destination.disabledReason}
             onClick={() => onSelected(destination.sectorId)}
           >
-            Select
+            {selected ? "Selected" : "Select"}
           </GameButton>
         }
       />
+      {selected ? (
+        <MovementDestinationDetail
+          planner={planner}
+          selected={destination}
+          seatId={seatId}
+          activeContract={activeContract}
+          onBack={() => onSelected(null)}
+          onIntent={onIntent}
+        />
+      ) : null}
     </article>
   );
 }
@@ -2443,20 +2553,7 @@ function MovementDestinationDetail({
   const routeStarPrompt = selected.routeStarPrompt;
 
   useLayoutEffect(() => {
-    const scrollContainer = detailRef.current?.closest<HTMLElement>(".phone-action-content-root");
-
-    if (scrollContainer) {
-      scrollContainer.scrollTop = 0;
-      scrollContainer.scrollLeft = 0;
-      return;
-    }
-
-    const phoneScrollContainer = detailRef.current?.closest<HTMLElement>(".phone-portrait-scroll");
-
-    if (phoneScrollContainer) {
-      phoneScrollContainer.scrollTop = 0;
-      phoneScrollContainer.scrollLeft = 0;
-    }
+    detailRef.current?.scrollIntoView?.({ block: "nearest", behavior: "auto" });
     setPreviewRouteId(null);
   }, [selected.sectorId]);
 
@@ -2687,11 +2784,21 @@ function PhoneMovePanel({
   actorName?: string;
   diceCount?: number;
 }): ReactElement {
-  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
+  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(() => movementPlanner?.selectedDestinationId ?? null);
+
+  usePhoneBackDismissal(selectedSectorId !== null, () => {
+    setSelectedSectorId(null);
+    return true;
+  });
 
   useEffect(() => {
-    setSelectedSectorId(null);
-  }, [movementPlanner?.currentSectorId, movementPlanner?.movementValue]);
+    const authoritativeSelection = movementPlanner?.selectedDestinationId ?? null;
+    setSelectedSectorId(
+      authoritativeSelection && movementPlanner?.destinations.some((destination) => destination.sectorId === authoritativeSelection)
+        ? authoritativeSelection
+        : null
+    );
+  }, [movementPlanner?.currentSectorId, movementPlanner?.movementValue, movementPlanner?.selectedDestinationId]);
 
   return (
     <PhoneMovementView
@@ -2737,14 +2844,20 @@ function PhoneBattlePanel({
   usefulNow: UsefulNowViewModel | null;
 }): ReactElement {
   const categoryLabel = formatEncounterSourceLabel(activeResolution?.source, activeResolution?.card?.type ?? encounter?.cardType);
+  const resolvedResult = Boolean(activeResolution?.roll && activeResolution?.outcome);
   return (
-    <section className="phone-action-active-panel phone-battle-panel" data-testid="phone-action-active-panel" aria-label={`${categoryLabel} command screen`}>
+    <section className={`phone-action-active-panel phone-battle-panel${resolvedResult ? " phone-battle-panel--result" : ""}`} data-testid="phone-action-active-panel" aria-label={`${categoryLabel} command screen`}>
       <header className="phone-battle-panel__header">
         <span>{categoryLabel}</span>
         <strong>{title}</strong>
       </header>
-      <BattleSubjectCard resolution={activeResolution} encounter={encounter} />
       {resolutionPanel ? <div className="phone-battle-panel__roll-card">{resolutionPanel}</div> : null}
+      {resolvedResult ? (
+        <details className="phone-battle-panel__encounter-details">
+          <summary>Encounter details and lore</summary>
+          <BattleSubjectCard resolution={activeResolution} encounter={encounter} />
+        </details>
+      ) : <BattleSubjectCard resolution={activeResolution} encounter={encounter} />}
       <ActionSections sections={[
         { key: "choice", title: "Required choice", detail: "Resolve before continuing", actions: resolveActions, defaultOpen: true },
         { key: "threat", title: "Threat", detail: title, actions: threatActions, defaultOpen: true }
@@ -4209,7 +4322,9 @@ export function PhoneActionPanel({
       data-testid="phone-action-panel-root"
     >
       {!patch.requiredAction && !scarDecisionContent && showCurrentPrompt && activeTurnTab !== "move" && activeTurnTab !== "action" ? <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} /> : null}
-      {!scarDecisionContent && activeTurnTab !== "move" && activeTurnTab !== "shop" && activeTurnTab !== "action" && isActiveSeat ? <PhoneTileArrivalSummary arrival={patch.tileArrival} /> : null}
+      {!scarDecisionContent && activeTurnTab !== "move" && activeTurnTab !== "shop" && activeTurnTab !== "action" && isActiveSeat ? (
+        <PhoneTileArrivalSummary arrival={patch.tileArrival} compact={activeTurnTab === "battle" && Boolean(patch.activeResolution)} />
+      ) : null}
       <div
         className="phone-action-content-root"
         id={`phone-turn-panel-${activeTurnTab}`}

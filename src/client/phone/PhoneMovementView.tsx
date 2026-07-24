@@ -7,7 +7,9 @@ import type {
 } from "../shared/types.js";
 import { getMissionRelevanceForSector } from "../shared/missionRelevance.js";
 import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
+import { useAuthoritativeResultCollapse } from "../shared/useAuthoritativeResultCollapse.js";
 import { getTileAssetPath } from "../tv/tileAssetManifest.js";
+import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 
 export type MovementNavigationTarget = "player" | "inventory" | "more";
 
@@ -127,18 +129,26 @@ function RouteDetails({
   model,
   planner,
   seatId,
-  onIntent
+  onIntent,
+  expanded,
+  onExpandedChange
 }: {
   model: DestinationPresentation;
   planner: PublicMovementPlannerState;
   seatId: string;
   onIntent: (intent: ClientIntent) => void;
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
 }): ReactElement {
   const [previewRouteId, setPreviewRouteId] = useState<string | null>(null);
   const routeVariants = model.destination.routeVariants ?? [];
   const routeStarPrompt = model.destination.routeStarPrompt;
   return (
-    <details className="phone-move-prototype__details">
+    <details
+      className="phone-move-prototype__details"
+      open={expanded}
+      onToggle={(event) => onExpandedChange(event.currentTarget.open)}
+    >
       <summary>View details</summary>
       <div>
         <span>Route</span>
@@ -307,7 +317,9 @@ function TacticalDestinationList({
   seatId,
   onIntent,
   selectedSectorId,
-  onSelect
+  onSelect,
+  expandedSectorId,
+  onExpandedSectorId
 }: {
   models: DestinationPresentation[];
   planner: PublicMovementPlannerState;
@@ -315,6 +327,8 @@ function TacticalDestinationList({
   onIntent: (intent: ClientIntent) => void;
   selectedSectorId: string | null;
   onSelect: (sectorId: string) => void;
+  expandedSectorId: string | null;
+  onExpandedSectorId: (sectorId: string | null) => void;
 }): ReactElement {
   return (
     <div className="phone-move-option-a__list" role="list" aria-label="Legal destinations">
@@ -349,7 +363,14 @@ function TacticalDestinationList({
               </span>
               {selected ? <span className="phone-move-prototype__selected">Selected</span> : null}
             </button>
-            <RouteDetails model={model} planner={planner} seatId={seatId} onIntent={onIntent} />
+            <RouteDetails
+              model={model}
+              planner={planner}
+              seatId={seatId}
+              onIntent={onIntent}
+              expanded={expandedSectorId === model.destination.sectorId}
+              onExpandedChange={(expanded) => onExpandedSectorId(expanded ? model.destination.sectorId : null)}
+            />
           </article>
         );
       })}
@@ -378,7 +399,12 @@ export function PhoneMovementView({
     [activeContract, planner?.destinations]
   );
   const [submitted, setSubmitted] = useState(false);
+  const [expandedSectorId, setExpandedSectorId] = useState<string | null>(selectedSectorId);
   const shellRef = useRef<HTMLElement | null>(null);
+  usePhoneBackDismissal(Boolean(expandedSectorId), () => {
+    setExpandedSectorId(null);
+    return true;
+  });
 
   useLayoutEffect(() => {
     const resetScroll = (): void => {
@@ -409,7 +435,10 @@ export function PhoneMovementView({
   useEffect(() => {
     setSubmitted(false);
     const serverSelected = planner?.selectedDestinationId ?? null;
-    if (serverSelected) onSelectedSectorId(serverSelected);
+    if (serverSelected) {
+      onSelectedSectorId(serverSelected);
+      setExpandedSectorId(serverSelected);
+    }
   }, [onSelectedSectorId, planner?.currentSectorId, planner?.movementValue, planner?.selectedDestinationId]);
 
   const rollFaces = planner?.rollFaces ?? (planner?.rolledValue !== undefined ? [planner.rolledValue] : planner?.active ? [planner.originalMovementValue ?? planner.movementValue] : []);
@@ -426,6 +455,14 @@ export function PhoneMovementView({
     finalValue: planner?.movementValue ?? null,
     outcome: planner?.active ? `${planner.destinations.filter(canSelectDestination).length} legal destinations` : null
   };
+  const diceResultKey = planner?.active && planner.rolledValue !== undefined
+    ? `${planner.movementRevision ?? "movement"}:${rollFaces.join(",")}:${planner.movementValue}`
+    : null;
+  const diceDisclosure = useAuthoritativeResultCollapse(
+    diceResultKey,
+    100,
+    `movement:${seatId}:${currentSectorName}`
+  );
 
   const selectedModel = models.find((model) => model.destination.sectorId === selectedSectorId) ?? null;
   const movementState = movementResolving || travel
@@ -437,6 +474,7 @@ export function PhoneMovementView({
     const model = models.find((entry) => entry.destination.sectorId === sectorId);
     if (!model || !canSelectDestination(model.destination)) return;
     onSelectedSectorId(sectorId);
+    setExpandedSectorId(sectorId);
     onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: sectorId });
   };
   const confirm = (): void => {
@@ -477,6 +515,7 @@ export function PhoneMovementView({
 
   const changeDestination = (): void => {
     onSelectedSectorId(null);
+    setExpandedSectorId(null);
     onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: null });
   };
 
@@ -490,7 +529,23 @@ export function PhoneMovementView({
     >
       <MovementHeader planner={planner} canRoll={canRoll} currentSectorName={currentSectorName} travel={travel} movementResolving={movementResolving} />
       <div className="phone-move-prototype__content">
-        {!travel && !movementResolving ? <AuthoritativeDicePresentation model={diceModel} compact /> : null}
+        {!travel && !movementResolving ? (
+          <div
+            className={`phone-auto-collapse-dice${diceDisclosure.collapsed ? " is-collapsed" : ""}`}
+            data-testid="phone-movement-dice-disclosure"
+          >
+            <button
+              type="button"
+              className="phone-auto-collapse-dice__summary"
+              aria-expanded={!diceDisclosure.collapsed}
+              onClick={diceDisclosure.collapsed ? diceDisclosure.expand : diceDisclosure.collapse}
+            >
+              <span>Movement roll</span>
+              <strong>{planner?.movementValue ?? "Ready"}</strong>
+            </button>
+            <AuthoritativeDicePresentation model={diceModel} compact />
+          </div>
+        ) : null}
         {travel ? (
           <div className="phone-move-prototype__travel" role="status">
             <span>Moving to</span>
@@ -505,7 +560,16 @@ export function PhoneMovementView({
           <>
             <MovementAdjustments planner={planner} seatId={seatId} onIntent={onIntent} />
             {models.length > 0 ? (
-              <TacticalDestinationList models={models} planner={planner} seatId={seatId} onIntent={onIntent} selectedSectorId={selectedSectorId} onSelect={selectDestination} />
+              <TacticalDestinationList
+                models={models}
+                planner={planner}
+                seatId={seatId}
+                onIntent={onIntent}
+                selectedSectorId={selectedSectorId}
+                onSelect={selectDestination}
+                expandedSectorId={expandedSectorId}
+                onExpandedSectorId={setExpandedSectorId}
+              />
             ) : (
               <p className="phone-move-prototype__empty">No legal destinations are available.</p>
             )}

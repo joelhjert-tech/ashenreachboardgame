@@ -5,6 +5,7 @@ import {
 import { getRuntimeCardArtPath } from "../../game/assets/runtime/cardArtRuntimeCatalog.js";
 import { getSignalTheatreEnvironmentPaths } from "../tv/signalTheatreEnvironmentManifest.js";
 import type { ContractCard, EncounterCard, GearTier, Stat } from "./types.js";
+import { SIGNAL_PIECE_IDS, getSignalPieceAssetPath } from "../../shared/signalPieceCatalog.js";
 
 const characterPortraitById: Record<string, string> = {
   "cinder-wattle": "/assets/riftfall/characters/cinder-wattle.png",
@@ -73,6 +74,7 @@ const uiAssetPaths = [
   "/assets/riftfall/ui/signal-theatre/operative-beacon.png",
   "/assets/riftfall/ui/signal-theatre/arrival-seal.png",
   "/assets/riftfall/ui/signal-theatre/journey-path.png",
+  ...SIGNAL_PIECE_IDS.map(getSignalPieceAssetPath),
   ...Object.values(signalTheatreStatSealByStat),
   ...Object.values(signalTheatreResultCrestByOutcome),
   "/assets/riftfall/ui/ui_scenario_frame.png",

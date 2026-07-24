@@ -1,0 +1,245 @@
+.signal-journey-track {
+  --signal-route-color: #a4f8db;
+  --signal-route-hot: #f3fff8;
+  position: absolute;
+  z-index: 5;
+  right: clamp(2rem, 5vw, 6rem);
+  bottom: clamp(5.5rem, 10svh, 8.5rem);
+  left: clamp(2rem, 5vw, 6rem);
+  height: clamp(9rem, 21svh, 14rem);
+  pointer-events: none;
+  filter: drop-shadow(0 0.55rem 0.7rem rgba(0, 0, 0, 0.72));
+}
+
+.signal-journey-track::before {
+  content: "";
+  position: absolute;
+  inset: 14% -2% -7%;
+  background:
+    radial-gradient(ellipse at 50% 58%, rgba(3, 5, 10, 0.76), rgba(3, 5, 10, 0.14) 65%, transparent 78%);
+}
+
+.signal-journey-track.is-cross-ring {
+  --signal-route-color: #ff9d60;
+  --signal-route-hot: #fff1c7;
+}
+
+.signal-journey-track__line {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.signal-journey-track__rift,
+.signal-journey-track__core,
+.signal-journey-track__travelled {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.signal-journey-track__rift {
+  stroke: rgba(0, 0, 0, 0.88);
+  stroke-width: 34;
+  stroke-dasharray: 1.8 1.1 4.5 0.8;
+}
+
+.signal-journey-track__core {
+  stroke: color-mix(in srgb, var(--signal-route-color) 60%, #20242d);
+  stroke-width: 7;
+  opacity: 0.62;
+}
+
+.signal-journey-track__travelled {
+  stroke: var(--signal-route-hot);
+  stroke-width: 8;
+  stroke-dasharray: var(--signal-route-progress) 100;
+  filter: drop-shadow(0 0 0.48rem var(--signal-route-color));
+  transition: stroke-dasharray var(--signal-journey-duration, 1ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.2,1));
+}
+
+.signal-journey-track__node {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.signal-journey-track__node circle:first-child {
+  fill: #080b11;
+  stroke: color-mix(in srgb, var(--signal-route-color) 66%, #c6b998);
+  stroke-width: 4;
+}
+
+.signal-journey-track__node circle:last-child {
+  fill: var(--signal-route-color);
+}
+
+.signal-journey-track__node.is-event-stop circle:first-child {
+  stroke: var(--signal-route-hot);
+  stroke-width: 6;
+  filter: drop-shadow(0 0 0.45rem var(--signal-route-color));
+}
+
+.signal-journey-track__node.is-passed circle:last-child {
+  fill: var(--signal-route-hot);
+}
+
+.signal-journey-track__label {
+  position: absolute;
+  display: grid;
+  width: min(20vw, 15rem);
+  gap: 0.12rem;
+  overflow: hidden;
+  color: #8d9493;
+  font-size: clamp(0.7rem, 0.8vw, 0.9rem);
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 0 0.12rem 0.28rem #000, 0 0.12rem 0.28rem #000;
+  transform: translate(-50%, 2rem);
+  white-space: nowrap;
+}
+
+.signal-journey-track__label b,
+.signal-journey-track__label small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.signal-journey-track__label b {
+  color: var(--signal-route-hot);
+  font-size: 1em;
+}
+
+.signal-journey-track__label small {
+  color: #9da7a3;
+  font-size: 0.82em;
+}
+
+.signal-journey-track__marker {
+  position: absolute;
+  z-index: 4;
+  top: var(--signal-journey-y);
+  left: var(--signal-journey-x);
+  width: clamp(7rem, 9.6vw, 11.5rem);
+  aspect-ratio: 1;
+  transform: translate(-50%, -79%) rotateY(-7deg);
+  transform-origin: 50% 90%;
+  transition:
+    top var(--signal-journey-duration, 1ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.2,1)),
+    left var(--signal-journey-duration, 1ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.2,1)),
+    transform var(--signal-journey-duration, 1ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.2,1));
+}
+
+.signal-journey-track__marker::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  right: 14%;
+  bottom: 5%;
+  left: 14%;
+  height: 12%;
+  border: 0.16rem solid var(--signal-piece-color-soft);
+  border-radius: 50%;
+  box-shadow: 0 0 0.7rem var(--signal-piece-color);
+}
+
+.signal-journey-track__marker > img {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0.5rem 0.4rem rgba(0, 0, 0, 0.8));
+}
+
+.signal-journey-track--departure .signal-journey-track__marker > img,
+.signal-journey-track--travel .signal-journey-track__marker > img {
+  animation: signal-piece-stride 360ms ease-in-out infinite alternate;
+}
+
+.signal-journey-track__portrait {
+  position: absolute;
+  z-index: 1;
+  top: 31%;
+  left: 37%;
+  width: 26%;
+  height: 23%;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #06080c;
+}
+
+.signal-journey-track__marker[data-piece-id="bastion"] .signal-journey-track__portrait {
+  top: 28%; left: 36%; width: 28%; height: 25%;
+}
+
+.signal-journey-track__marker[data-piece-id="lantern"] .signal-journey-track__portrait {
+  top: 39%; left: 38%; width: 24%; height: 21%;
+}
+
+.signal-journey-track__marker[data-piece-id="harrow"] .signal-journey-track__portrait {
+  top: 34%; left: 40%; width: 20%; height: 19%;
+}
+
+.signal-journey-track__marker[data-piece-id="reliquary"] .signal-journey-track__portrait {
+  top: 31%; left: 38%; width: 24%; height: 22%;
+}
+
+.signal-journey-track__marker[data-piece-id="compass"] .signal-journey-track__portrait {
+  top: 27%; left: 38%; width: 24%; height: 21%;
+}
+
+.signal-journey-track__marker > span {
+  position: absolute;
+  z-index: 5;
+  bottom: 6%;
+  left: 50%;
+  min-width: 2rem;
+  color: var(--signal-piece-color-soft);
+  font-size: clamp(0.48rem, 0.68vw, 0.76rem);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-shadow: 0 0.12rem 0.18rem #000;
+  transform: translateX(-50%);
+}
+
+.signal-journey-track--arrival .signal-journey-track__marker {
+  transform: translate(-50%, -76%) rotateY(0) scale(1.06);
+}
+
+.signal-journey-track--arrival .signal-journey-track__node.is-event-stop circle:first-child {
+  animation: signal-event-stop-arrival var(--signal-journey-duration, 500ms) var(--motion-ease-emphasized, ease-out) 1;
+}
+
+.signal-journey-track.is-resetting .signal-journey-track__marker {
+  opacity: 0;
+  transition: none;
+}
+
+@keyframes signal-piece-stride {
+  from { transform: translateY(0.08rem) rotate(-1.7deg); }
+  to { transform: translateY(-0.28rem) rotate(1.7deg); }
+}
+
+@keyframes signal-event-stop-arrival {
+  0% { opacity: 0.35; transform: scale(0.6); }
+  60% { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-journey-track__travelled,
+  .signal-journey-track__marker {
+    transition-duration: 1ms;
+  }
+
+  .signal-journey-track__marker > img,
+  .signal-journey-track__node.is-event-stop circle:first-child {
+    animation: none;
+  }
+}

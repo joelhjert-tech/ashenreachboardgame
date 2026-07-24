@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent, type ReactElement } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { describeContractObjective as describeObjective, formatContractProgress } from "../../game/contracts/objectives.js";
 import { getEquippedGearItem } from "../../game/engine/gear.js";
@@ -13,6 +13,7 @@ import {
   describeContractReward as describeObjectiveReward
 } from "../shared/objectivePresentation.js";
 import { useFocusOnRevision } from "../shared/useFocusOnRevision.js";
+import { usePhoneFullscreen } from "../shared/usePhoneFullscreen.js";
 import { getMissionTargetClue } from "../shared/missionRelevance.js";
 import { formatSeatLabel, gearSlotLabelById, statLabelById, statOrder } from "../shared/statLabels.js";
 import type {
@@ -33,6 +34,7 @@ import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
 import { PhoneRequiredActionShell, type RequiredActionStatus } from "./PhoneRequiredActionShell.js";
 import type { MovementNavigationTarget } from "./PhoneMovementView.js";
 import { isPhoneBattleRelevantToSeat } from "./PhoneBattleView.js";
+import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
 import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
@@ -76,6 +78,16 @@ const portraitTabLabels: Record<PortraitTab, string> = {
   battle: "Battle",
   shop: "Shop",
   action: "Action"
+};
+
+const portraitTabIcons: Record<PortraitTab, string> = {
+  player: "OP",
+  inventory: "KIT",
+  quests: "OBJ",
+  move: "MOVE",
+  battle: "TEST",
+  shop: "BUY",
+  action: "ACT"
 };
 
 function isTurnActionTab(tab: PortraitTab): tab is TurnActionTab {
@@ -724,7 +736,10 @@ export function PortraitControllerView({
   const [activeTab, setActiveTab] = useState<PortraitTab>("player");
   const [phoneChromeVisible, setPhoneChromeVisible] = useState(readStoredPhoneChromeVisible);
   const [bottomDockExpanded, setBottomDockExpanded] = useState(false);
-  const [confirmingLeave, setConfirmingLeave] = useState(false);
+  const bottomDockCollapseTimerRef = useRef<number | null>(null);
+  const bottomDockRef = useRef<HTMLElement | null>(null);
+  const bottomDockCollapsePendingRef = useRef(false);
+  const fullscreen = usePhoneFullscreen();
   const [expandedStat, setExpandedStat] = useState<Stat | null>(null);
   const [choosingStartingMission, setChoosingStartingMission] = useState(false);
   const [pendingStartingContract, setPendingStartingContract] = useState<{ id: string; sequence: number } | null>(null);
@@ -739,11 +754,68 @@ export function PortraitControllerView({
   const startingMissionSectionRef = useRef<HTMLElement | null>(null);
   const setupStageRef = useRef<HTMLElement | null>(null);
   const lobbyScrollRef = useRef<HTMLElement | null>(null);
+  const phoneScrollRef = useRef<HTMLElement | null>(null);
+  const pendingTabScrollRef = useRef<"top" | "required" | null>(null);
   const lastAutoRoutedActionRef = useRef<string | null>(null);
   const previousCompletedContractCountRef = useRef(self?.character.completedContracts?.length ?? 0);
   const awaitingReplacementMissionRef = useRef(false);
   const phoneChromeHidden = !phoneChromeVisible;
   const actionGuidance = self ? getPhoneActionGuidance(patch, self) : null;
+
+  const scrollPhoneContent = (target: "top" | "required"): void => {
+    const scrollRoot = phoneScrollRef.current;
+    if (!scrollRoot) return;
+    if (target === "required") {
+      const required = scrollRoot.querySelector<HTMLElement>("[data-testid='phone-required-action-shell']");
+      if (required) {
+        if (typeof required.scrollIntoView === "function") {
+          required.scrollIntoView({ block: "start", behavior: "auto" });
+        } else {
+          scrollRoot.scrollTop = required.offsetTop;
+        }
+        return;
+      }
+    }
+    if (typeof scrollRoot.scrollTo === "function") {
+      scrollRoot.scrollTo({ top: 0, behavior: "auto" });
+    } else {
+      scrollRoot.scrollTop = 0;
+    }
+  };
+
+  const navigateToTab = (tab: PortraitTab, target: "top" | "required" = "top"): void => {
+    if (tab === activeTab) {
+      scrollPhoneContent(target);
+      return;
+    }
+    pendingTabScrollRef.current = target;
+    setActiveTab(tab);
+  };
+
+  useLayoutEffect(() => {
+    const pending = pendingTabScrollRef.current;
+    if (!pending) return;
+    pendingTabScrollRef.current = null;
+    scrollPhoneContent(pending);
+  }, [activeTab]);
+
+  usePhoneBackDismissal(true, () => {
+    if (bottomDockExpanded) {
+      setBottomDockExpanded(false);
+      return true;
+    }
+    if (expandedStat) {
+      setExpandedStat(null);
+      return true;
+    }
+    const openDetail = phoneScrollRef.current?.querySelector<HTMLDetailsElement>("details[open]");
+    if (openDetail) {
+      openDetail.open = false;
+      openDetail.querySelector<HTMLElement>("summary")?.focus();
+      return true;
+    }
+    return false;
+  });
 
   useEffect(() => {
     writeStoredPhoneChromeVisible(phoneChromeVisible);
@@ -779,14 +851,42 @@ export function PortraitControllerView({
   };
 
   const showBottomDock = () => {
-    setConfirmingLeave(false);
+    if (bottomDockCollapseTimerRef.current !== null) window.clearTimeout(bottomDockCollapseTimerRef.current);
+    bottomDockCollapsePendingRef.current = false;
     setBottomDockExpanded(true);
   };
 
   const hideBottomDock = () => {
-    setConfirmingLeave(false);
+    if (bottomDockCollapseTimerRef.current !== null) window.clearTimeout(bottomDockCollapseTimerRef.current);
+    bottomDockCollapseTimerRef.current = null;
+    bottomDockCollapsePendingRef.current = false;
     setBottomDockExpanded(false);
   };
+
+  const chooseBottomDockTab = (tab: PortraitTab): void => {
+    navigateToTab(tab, patch?.requiredAction?.requiredTab === tab ? "required" : "top");
+    if (bottomDockCollapseTimerRef.current !== null) window.clearTimeout(bottomDockCollapseTimerRef.current);
+    bottomDockCollapseTimerRef.current = window.setTimeout(() => {
+      const focused = document.activeElement;
+      if (focused instanceof HTMLElement && bottomDockRef.current?.contains(focused) && focused.matches(":focus-visible")) {
+        bottomDockCollapsePendingRef.current = true;
+        bottomDockCollapseTimerRef.current = null;
+        return;
+      }
+      setBottomDockExpanded(false);
+      bottomDockCollapseTimerRef.current = null;
+    }, 300);
+  };
+
+  const handleBottomDockBlur = (event: FocusEvent<HTMLElement>): void => {
+    if (!bottomDockCollapsePendingRef.current || event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+    bottomDockCollapsePendingRef.current = false;
+    setBottomDockExpanded(false);
+  };
+
+  useEffect(() => () => {
+    if (bottomDockCollapseTimerRef.current !== null) window.clearTimeout(bottomDockCollapseTimerRef.current);
+  }, []);
 
   useEffect(() => {
     if (!patch || !self || patch.status !== "active") {
@@ -800,7 +900,7 @@ export function PortraitControllerView({
       }
       lastAutoRoutedActionRef.current = routeKey;
       if (patch.requiredAction.requiredTab) {
-        setActiveTab(patch.requiredAction.requiredTab);
+        navigateToTab(patch.requiredAction.requiredTab, "required");
       }
       return;
     }
@@ -809,8 +909,8 @@ export function PortraitControllerView({
 
     const nextTab: PortraitTab | null = getPhoneActionGuidance(patch, self)?.requiredTab ?? null;
 
-    if (nextTab) {
-      setActiveTab(nextTab);
+    if (nextTab && nextTab !== activeTab) {
+      navigateToTab(nextTab);
     }
   }, [
     patch?.activeResolution?.id,
@@ -898,7 +998,7 @@ export function PortraitControllerView({
       awaitingReplacementMissionRef.current = true;
     }
     if (patch?.pendingMissionSelection?.status === "awaitingSelection" && !self?.character.activeContract) {
-      setActiveTab("quests");
+      navigateToTab("quests");
       awaitingReplacementMissionRef.current = false;
     }
     previousCompletedContractCountRef.current = completedCount;
@@ -1209,11 +1309,11 @@ export function PortraitControllerView({
     : statOrder;
   const handleMovementNavigation = (target: MovementNavigationTarget): void => {
     if (target === "player") {
-      setActiveTab("player");
+      navigateToTab("player");
       return;
     }
     if (target === "inventory") {
-      setActiveTab("inventory");
+      navigateToTab("inventory");
       return;
     }
     showBottomDock();
@@ -1247,7 +1347,7 @@ export function PortraitControllerView({
         atRequiredTab={requiredAction.requiredTab === activeTab}
         compact={compact}
         recoveryMessage={actionRecovery?.message}
-        onReturnToAction={requiredAction.requiredTab ? () => setActiveTab(requiredAction.requiredTab!) : undefined}
+        onReturnToAction={requiredAction.requiredTab ? () => navigateToTab(requiredAction.requiredTab!, "required") : undefined}
       >
         {content}
       </PhoneRequiredActionShell>
@@ -1297,7 +1397,7 @@ export function PortraitControllerView({
           )}
         </header>
 
-        <main className={contentClassName} aria-label="Phone content">
+        <main ref={phoneScrollRef} className={contentClassName} aria-label="Phone content">
           {focusedResolutionActive && patch && onIntent ? (
             <div className="phone-portrait-screen phone-portrait-screen-command phone-portrait-screen-battle" data-testid="phone-action-screen">
               {matchEnded ? (
@@ -1628,7 +1728,7 @@ export function PortraitControllerView({
                     onSelectedTurnTab={setActiveTab}
                     hideTurnTabs
                     onMovementNavigation={handleMovementNavigation}
-                    showMovementContextNavigation={!bottomDockExpanded}
+                    showMovementContextNavigation={false}
                   />
                 )
               ) : (
@@ -1641,16 +1741,34 @@ export function PortraitControllerView({
           )}
         </main>
 
-        {!focusedResolutionActive && !scarSelectorActive && (!movementFlowActive || bottomDockExpanded) ? <nav
+        {!focusedResolutionActive && !scarSelectorActive ? <nav
+          ref={bottomDockRef}
           className={bottomNavClassName}
           role={bottomDockExpanded ? "navigation" : "tablist"}
           aria-label={bottomDockExpanded ? "More phone controls" : "Phone navigation"}
+          onBlur={handleBottomDockBlur}
         >
           {bottomDockExpanded ? (
             <div className="phone-more-menu">
               <div className="phone-more-menu__heading">
                 <strong>More</strong>
-                <span>Display and room controls</span>
+                <span>Sections and room controls</span>
+              </div>
+              <div className="phone-expanded-tab-grid" role="tablist" aria-label="All phone sections">
+                {(Object.keys(portraitTabLabels) as PortraitTab[]).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    className={`phone-portrait-tab phone-expanded-tab${activeTab === tab ? " is-active" : ""}`}
+                    role="tab"
+                    aria-selected={activeTab === tab}
+                    aria-label={tab === "player" ? "Operative — Player Card" : portraitTabLabels[tab]}
+                    onClick={() => chooseBottomDockTab(tab)}
+                  >
+                    <span className="phone-tab-icon" aria-hidden="true">{portraitTabIcons[tab]}</span>
+                    <span>{tab === "player" ? "Operative" : portraitTabLabels[tab]}</span>
+                  </button>
+                ))}
               </div>
               <button
                 type="button"
@@ -1662,7 +1780,7 @@ export function PortraitControllerView({
               <button
                 type="button"
                 className="phone-portrait-tab phone-portrait-tab-utility phone-room-menu-action"
-                onClick={() => setConfirmingLeave(true)}
+                onClick={onLeave}
               >
                 Leave Room
               </button>
@@ -1673,43 +1791,27 @@ export function PortraitControllerView({
               >
                 {phoneChromeVisible ? "Hide UI" : "Show UI"}
               </button>
-              {confirmingLeave ? (
-                <div className="phone-leave-confirmation" role="alert" aria-label="Leave room confirmation">
-                  <strong>Leave this room?</strong>
-                  <p>Your seat remains in the game until the host removes or replaces it.</p>
-                  <div>
-                    <button type="button" className="phone-button phone-button-secondary" onClick={() => setConfirmingLeave(false)}>
-                      Cancel
-                    </button>
-                    <button type="button" className="phone-button phone-button-danger" onClick={handleLeave}>
-                      Confirm Leave
-                    </button>
-                  </div>
-                </div>
-              ) : null}
+              {fullscreen.supported ? <button
+                type="button"
+                className="phone-portrait-tab phone-portrait-tab-utility phone-display-menu-action"
+                onClick={() => void fullscreen.toggle()}
+              >
+                {fullscreen.active ? "Exit Full Screen" : "Full Screen"}
+              </button> : null}
+              {fullscreen.errorMessage ? <span className="phone-fullscreen-error" role="status">{fullscreen.errorMessage}</span> : null}
             </div>
           ) : (
-            <div className="phone-clean-tab-dock" aria-label="Essential phone navigation">
-              {(["player", "inventory", "quests"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  className={`phone-clean-tab${activeTab === tab ? " is-active" : ""}`}
-                  role="tab"
-                  aria-selected={activeTab === tab}
-                  aria-label={tab === "player" ? "Operative — Player Card" : portraitTabLabels[tab]}
-                  onClick={() => setActiveTab(tab)}
-                >
-                  {tab === "player" ? "Operative" : portraitTabLabels[tab]}
-                </button>
-              ))}
+            <div className="phone-compact-tab-dock">
               <button
                 type="button"
-                className="phone-clean-tab phone-clean-tab-more"
+                className="phone-compact-active-tab"
                 onClick={showBottomDock}
-                aria-label="Show all phone sections"
+                aria-label={`${portraitTabLabels[activeTab]}, current section; show all phone sections`}
+                aria-expanded="false"
               >
-                More
+                <span className="phone-tab-icon" aria-hidden="true">{portraitTabIcons[activeTab]}</span>
+                <span>{activeTab === "player" ? "Operative" : portraitTabLabels[activeTab]}</span>
+                <span className="phone-compact-active-tab__indicator" aria-hidden="true">&#9652;</span>
               </button>
             </div>
           )}

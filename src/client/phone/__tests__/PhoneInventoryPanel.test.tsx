@@ -243,11 +243,8 @@ afterEach(() => {
 });
 
 function openPhoneTabs(): void {
-  const closeMoreButton = screen.queryByRole("button", { name: /^close$/i });
-
-  if (closeMoreButton) {
-    fireEvent.click(closeMoreButton);
-  }
+  const showSectionsButton = screen.queryByRole("button", { name: /current section; show all phone sections/i });
+  if (showSectionsButton) fireEvent.click(showSectionsButton);
 }
 
 describe("PhoneInventoryPanel", () => {
@@ -483,6 +480,9 @@ describe("PhoneInventoryPanel", () => {
     expect(gritUpgrade.style.getPropertyValue("--challenge-color")).toBe(getChallengeThemeStyle("grit")["--challenge-color"]);
 
     fireEvent.click(gritUpgrade);
+
+    expect(onIntent).not.toHaveBeenCalled();
+    fireEvent.click(within(progression).getByRole("button", { name: /confirm grit/i }));
 
     expect(onIntent).toHaveBeenCalledWith({
       type: "RAISE_STAT_REQUESTED",
@@ -975,15 +975,16 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    expect(screen.getByLabelText(/essential phone navigation/i)).toHaveTextContent(/operative.*inventory.*objectives.*more/i);
+    expect(screen.getByRole("tablist", { name: /^phone navigation$/i })).toHaveTextContent(/act.*action/i);
+    openPhoneTabs();
     expect(screen.getByRole("tab", { name: /player card/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /inventory/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /objectives/i })).toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: /move/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: /battle/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: /shop/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: /action/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("tablist", { name: /phone navigation/i })).toHaveClass("phone-portrait-bottom-nav");
+    expect(screen.getByRole("tab", { name: /move/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /battle/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /action/i })).toBeInTheDocument();
+    expect(screen.getByRole("tablist", { name: /all phone sections/i })).toHaveClass("phone-expanded-tab-grid");
     expect(screen.getByTestId("phone-action-screen")).toHaveClass("phone-portrait-screen-command");
 
     fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
@@ -995,6 +996,33 @@ describe("PhoneInventoryPanel", () => {
     await waitFor(() => expect(screen.getByLabelText(/character stats/i)).toBeInTheDocument());
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
     expect(screen.queryByText(/turn console/i)).not.toBeInTheDocument();
+  });
+
+  it("collapses the expanded section grid exactly 300 ms after touch-style selection", () => {
+    vi.useFakeTimers();
+    const patch = createPatch({ encounter: null });
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    openPhoneTabs();
+    fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
+    act(() => vi.advanceTimersByTime(299));
+    expect(screen.getByRole("tablist", { name: /all phone sections/i })).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.queryByRole("tablist", { name: /all phone sections/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /inventory, current section; show all phone sections/i })).toBeInTheDocument();
   });
 
   it("shows the owner-only Glass-Chime Swarm penalty as passive status with no controls", () => {
@@ -1102,25 +1130,24 @@ describe("PhoneInventoryPanel", () => {
     expect(tablist).toHaveClass("phone-portrait-bottom-nav");
     expect(tablist).toHaveClass("phone-bottomdock--compact");
     expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "false");
-    expect(screen.getByLabelText(/essential phone navigation/i)).toHaveTextContent(/operative.*inventory.*objectives.*more/i);
+    expect(screen.getByRole("tablist", { name: /^phone navigation$/i })).toHaveTextContent(/act.*action/i);
     expect(screen.queryByRole("button", { name: /open phone navigation and room controls/i })).not.toBeInTheDocument();
 
+    openPhoneTabs();
     fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
     await waitFor(() => expect(document.querySelector(".phone-inventory-panel")).toHaveTextContent(/black route fuse/i));
 
-    fireEvent.click(screen.getByRole("button", { name: /show all phone sections/i }));
+    await waitFor(() => expect(shell).toHaveClass("phone-shell--bottomdock-compact"));
+    openPhoneTabs();
 
     expect(shell).toHaveClass("phone-shell--chrome-visible");
     expect(shell).toHaveClass("phone-shell--bottomdock-expanded");
     expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "true");
     expect(screen.getByRole("button", { name: /hide ui/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^close$/i })).toHaveClass("phone-portrait-tab-utility");
-    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("tab")).toHaveLength(7);
     fireEvent.click(screen.getByRole("button", { name: /leave room/i }));
-    expect(screen.getByRole("alert", { name: /leave room confirmation/i })).toBeInTheDocument();
-    expect(onLeave).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
-    expect(screen.queryByRole("alert", { name: /leave room confirmation/i })).not.toBeInTheDocument();
+    expect(onLeave).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
 
     expect(shell).toHaveClass("phone-shell--immersive");
@@ -1133,7 +1160,7 @@ describe("PhoneInventoryPanel", () => {
     expect(compactStatus).toHaveTextContent(/0 wounds \| 0 Salvage \| 0 scars/i);
     expect(compactStatus.querySelector("img")).not.toBeInTheDocument();
     expect(screen.getByRole("banner")).toHaveClass("phone-topbar--compact");
-    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("tab")).toHaveLength(7);
     expect(screen.getByRole("button", { name: /leave room/i })).toBeInTheDocument();
     expect(document.querySelector(".phone-inventory-panel")).toHaveTextContent(/black route fuse/i);
     expect(screen.getByLabelText(/phone content/i)).toHaveClass("phone-content--expanded");
@@ -1146,18 +1173,18 @@ describe("PhoneInventoryPanel", () => {
     expect(shell).toHaveClass("phone-shell--bottomdock-compact");
     expect(shell).toHaveAttribute("data-phone-chrome-visible", "false");
     expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "false");
-    expect(screen.getByLabelText(/essential phone navigation/i)).toHaveTextContent(/operative.*inventory.*objectives.*more/i);
+    expect(screen.getByRole("tablist", { name: /phone navigation/i })).toHaveTextContent(/kit.*inventory/i);
 
     fireEvent.click(screen.getByRole("button", { name: /show all phone sections/i }));
 
     expect(shell).toHaveClass("phone-shell--immersive");
     expect(shell).toHaveClass("phone-shell--bottomdock-expanded");
     expect(window.localStorage.getItem("ashenreach.phoneChromeVisible")).toBe("false");
-    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("tab")).toHaveLength(7);
     expect(screen.getByRole("button", { name: /show ui/i })).toBeInTheDocument();
   });
 
-  it("requires confirmation before leaving the room", () => {
+  it("routes the More-menu Leave Room action to the shared confirmation owner", () => {
     const onLeave = vi.fn();
     const patch = createPatch({ encounter: null, phase: "broadcast" });
     render(
@@ -1178,9 +1205,38 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.queryByRole("button", { name: /leave room/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /show all phone sections/i }));
     fireEvent.click(screen.getByRole("button", { name: /leave room/i }));
-    expect(onLeave).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: /confirm leave/i }));
     expect(onLeave).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts each different top-level phone section at its meaningful top", async () => {
+    const patch = createPatch({ encounter: null, phase: "broadcast" });
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    const scrollRoot = screen.getByLabelText(/phone content/i);
+    openPhoneTabs();
+    fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
+    await waitFor(() => expect(document.querySelector(".phone-inventory-panel")).toBeInTheDocument());
+    scrollRoot.scrollTop = 640;
+
+    fireEvent.click(screen.getByRole("tab", { name: /objectives/i }));
+    await waitFor(() => expect(scrollRoot.scrollTop).toBe(0));
+    scrollRoot.scrollTop = 520;
+
+    fireEvent.click(screen.getByRole("tab", { name: /operative/i }));
+    await waitFor(() => expect(scrollRoot.scrollTop).toBe(0));
   });
 
   it("renders compact expandable player card stats without label value collision", () => {
@@ -1318,7 +1374,7 @@ describe("PhoneInventoryPanel", () => {
     });
   });
 
-  it("replaces global navigation only while authoritative movement is active", async () => {
+  it("keeps one global navigation system while authoritative movement is active", async () => {
     const movementPatch = createPatch({
       phase: "navigation",
       encounter: null,
@@ -1343,8 +1399,8 @@ describe("PhoneInventoryPanel", () => {
     };
     const { rerender } = render(<PortraitControllerView {...props} patch={movementPatch} />);
 
-    await waitFor(() => expect(screen.getByRole("navigation", { name: /movement navigation/i })).toBeInTheDocument());
-    expect(screen.queryByRole("tablist", { name: /phone navigation/i })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("tablist", { name: /phone navigation/i })).toBeInTheDocument());
+    expect(screen.queryByRole("navigation", { name: /movement navigation/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-action-guidance")).not.toBeInTheDocument();
 
     const completedPatch = createPatch({ phase: "action", encounter: null, movementPlanner: null });
@@ -1537,8 +1593,9 @@ describe("PhoneInventoryPanel", () => {
     );
 
     expect(screen.getByTestId("phone-movement-view")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /more/i }));
-    expect(screen.queryByRole("tab", { name: /move/i })).not.toBeInTheDocument();
+    expect(document.querySelector(".phone-movement-context-nav")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /show all phone sections/i }));
+    expect(screen.getByRole("tab", { name: /move/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
     expect(screen.getByTestId("phone-movement-view")).toBeInTheDocument();
 
@@ -1601,7 +1658,7 @@ describe("PhoneInventoryPanel", () => {
 
     expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /show all phone sections/i }));
-    expect(screen.queryByRole("tab", { name: /shop/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
     expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument();
 
@@ -1709,6 +1766,7 @@ describe("PhoneInventoryPanel", () => {
     );
 
     await waitFor(() => expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument());
+    openPhoneTabs();
     fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
     expect(screen.getByRole("tab", { name: /player card/i })).toHaveAttribute("aria-selected", "true");
 

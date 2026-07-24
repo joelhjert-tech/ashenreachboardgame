@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
-import { hostPresentationTimings } from "../shared/motionTokens.js";
+import { getSignalJourneyTiming } from "../shared/motionTokens.js";
 import type { PublicPatchPayload, StatePatch } from "../shared/types.js";
 import { useReducedMotion } from "../shared/useReducedMotion.js";
 import { getMovementArrivalModel, type MovementArrivalModel } from "./hostMovementPresentation.js";
@@ -23,6 +23,24 @@ interface UseSignalTheatreJourneyInput {
   synchronized: boolean;
 }
 
+const MAX_COMPLETED_JOURNEYS = 64;
+
+function rememberCompletedJourney(completed: Set<string>, eventId: string): void {
+  completed.delete(eventId);
+  completed.add(eventId);
+  while (completed.size > MAX_COMPLETED_JOURNEYS) {
+    const oldest = completed.values().next().value as string | undefined;
+    if (!oldest) break;
+    completed.delete(oldest);
+  }
+}
+
+function crossesReachBoundary(route: readonly string[], step: number): boolean {
+  const currentTier = getBoardSpace(route[step] ?? "")?.tier ?? null;
+  const nextTier = getBoardSpace(route[step + 1] ?? "")?.tier ?? null;
+  return Boolean(currentTier && nextTier && currentTier !== nextTier);
+}
+
 export function useSignalTheatreJourney({
   patch,
   previousPatch,
@@ -37,6 +55,16 @@ export function useSignalTheatreJourney({
   );
   const [journey, setJourney] = useState<SignalTheatreJourneyState | null>(null);
   const completedEventIdsRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (synchronized) return;
+    setJourney((current) => {
+      if (current) {
+        rememberCompletedJourney(completedEventIdsRef.current, current.eventId);
+      }
+      return null;
+    });
+  }, [synchronized]);
 
   useEffect(() => {
     if (!synchronized || !arrival || completedEventIdsRef.current.has(arrival.eventId)) return;
@@ -61,61 +89,59 @@ export function useSignalTheatreJourney({
   }, [arrival, reducedMotion, synchronized]);
 
   useEffect(() => {
-    if (!journey) return;
+    if (!journey || !synchronized) return;
     const lastStep = Math.max(0, journey.route.length - 1);
-    const nextStep = Math.min(journey.step + 1, lastStep);
-    const currentTier = getBoardSpace(journey.route[journey.step] ?? "")?.tier ?? null;
-    const nextTier = getBoardSpace(journey.route[nextStep] ?? "")?.tier ?? null;
-    const crossingNextSegment = Boolean(
-      journey.phase === "travel"
-      && journey.step < lastStep
-      && currentTier
-      && nextTier
-      && currentTier !== nextTier
-    );
+    const timing = getSignalJourneyTiming(journey.phase, journey.crossingRings);
 
     const timeout = window.setTimeout(() => {
       setJourney((current) => {
         if (!current || current.eventId !== journey.eventId) return current;
 
         if (current.phase === "arrival") {
-          completedEventIdsRef.current.add(current.eventId);
+          rememberCompletedJourney(completedEventIdsRef.current, current.eventId);
           return null;
         }
 
         if (current.phase === "departure") {
+          if (lastStep === 0) {
+            return {
+              ...current,
+              phase: "arrival",
+              crossingRings: false
+            };
+          }
+          const firstStep = 1;
           return {
             ...current,
             phase: "travel",
+            step: firstStep,
+            sectorId: current.route[firstStep] ?? current.movement.destination.sectorId,
+            crossingRings: crossesReachBoundary(current.route, 0)
+          };
+        }
+
+        if (current.step >= lastStep) {
+          return {
+            ...current,
+            phase: "arrival",
             crossingRings: false
           };
         }
 
         const currentNextStep = Math.min(current.step + 1, lastStep);
-        const currentTier = getBoardSpace(current.route[current.step] ?? "")?.tier ?? null;
-        const nextTier = getBoardSpace(current.route[currentNextStep] ?? "")?.tier ?? null;
-        const crossingRings = Boolean(currentTier && nextTier && currentTier !== nextTier);
 
         return {
           ...current,
           step: currentNextStep,
           sectorId: current.route[currentNextStep] ?? current.movement.destination.sectorId,
-          phase: currentNextStep >= lastStep ? "arrival" : "travel",
-          crossingRings
+          phase: "travel",
+          crossingRings: crossesReachBoundary(current.route, current.step)
         };
       });
-    }, reducedMotion
-      ? 90
-      : journey.phase === "arrival"
-        ? hostPresentationTimings.movementArrivalMs
-        : journey.phase === "departure"
-          ? hostPresentationTimings.movementStartMs
-          : crossingNextSegment
-            ? hostPresentationTimings.movementCrossRingMs
-            : hostPresentationTimings.movementSegmentMs);
+    }, reducedMotion ? 90 : timing.holdMs);
 
     return () => window.clearTimeout(timeout);
-  }, [journey, reducedMotion]);
+  }, [journey, reducedMotion, synchronized]);
 
   return journey;
 }

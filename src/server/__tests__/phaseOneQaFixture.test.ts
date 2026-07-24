@@ -187,6 +187,33 @@ describe("Phase 1 QA fixture", () => {
     expect(shop.players[0]?.character.currentSpaceId).toBe("outer_waymarket");
   });
 
+  it("prepares a deterministic Trophy upgrade fixture", () => {
+    const state = createInitialSessionState("QA-TROPHY", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "inventory-player-card", stage: "trophies" });
+    const player = state.players.find((entry) => entry.seatId === "seat-1")!;
+    expect(player.character.trophies).toBe(6);
+    expect(player.character.trophyPile).toEqual([
+      expect.objectContaining({ cardId: "cinder-veil-stalker", trophyValue: 6, spentValue: 0, stat: "grit" })
+    ]);
+  });
+
+  it("isolates host presentation fixtures from prior movement and arrival state", () => {
+    const state = createInitialSessionState("QA-P20-ISOLATION", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "movement-journey", stage: "ashen-chapel" });
+    expect(state.movementRolls?.["seat-1"]).toBe(2);
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "tile-arrival", stage: "multi-effect" });
+    expect(state.tileArrivalThreatProgress).not.toBeNull();
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "waiting-handoff", stage: "next-turn" });
+    expect(state.movementRolls).toBeUndefined();
+    expect(state.tileArrivalThreatProgress).toBeNull();
+    expect(state.tileChallengeProgress).toBeNull();
+  });
+
   it("prepares Mission progress and readiness without resolving the reward", () => {
     const state = createInitialSessionState("QA-MISSION", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
     state.status = "active";

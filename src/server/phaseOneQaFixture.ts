@@ -31,7 +31,7 @@ export type PhaseOneQaFixture =
         | "basic" | "battle" | "movement" | "wounds-scars" | "equipped" | "carried"
         | "consumable" | "charged" | "exhausted" | "wrong-timing" | "passive-artifact"
         | "active-artifact" | "empty" | "many" | "long-copy" | "missing-art"
-        | "relevant-one" | "relevant-many" | "none-relevant" | "use-result" | "reconnect";
+        | "relevant-one" | "relevant-many" | "none-relevant" | "use-result" | "reconnect" | "trophies";
     }
   | { kind: "movement-journey"; stage: "ashen-chapel"; withChoirLantern?: boolean }
   | { kind: "tile-arrival"; stage: "challenge" | "multi-effect" | "optional-shop" | "single-next-turn" }
@@ -101,6 +101,9 @@ function clearResolution(state: GameState): void {
   state.pendingEncounterDecision = null;
   state.pendingMemoryTaxChoice = null;
   state.pendingForcedDestinationChoice = null;
+  state.pendingDisplacement = null;
+  state.pendingDisplacementArrival = null;
+  state.pendingSutureStormConsequence = null;
   state.pendingEquipmentSuppressionChoice = null;
   state.activeResolution = null;
   state.pendingTileChallenge = null;
@@ -288,6 +291,11 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
 
   if (state.status !== "active" && fixture.kind !== "host-state" && fixture.kind !== "progression-endgame") throw new Error("QA fixture requires an active session");
   clearResolution(state);
+  state.tileArrivalThreatProgress = null;
+  state.tileChallengeProgress = null;
+  if (fixture.kind !== "tile-arrival") {
+    state.movementRolls = undefined;
+  }
   state.sequence += 1;
   state.activeSeatIndex = Math.max(0, state.turnOrder.indexOf(seatId));
 
@@ -1349,6 +1357,18 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
     }
     if (fixture.stage === "many") {
       ["nailspike-maul", "rivetplate-vest", "field-lens", "bridge-spike", "ember-poultice", "route-star", "oathchain-lens", "black-route-fuse"].forEach((id) => addGear(id));
+      return;
+    }
+    if (fixture.stage === "trophies") {
+      player.character.trophies = 6;
+      player.character.trophyPile = [{
+        cardId: "cinder-veil-stalker",
+        name: "Cinder-Veil Stalker",
+        trophyValue: 6,
+        spentValue: 0,
+        stat: "grit",
+        cardType: "enemy"
+      }];
       return;
     }
     if (fixture.stage === "use-result" || fixture.stage === "reconnect") {

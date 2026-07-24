@@ -191,7 +191,7 @@ export function SignalActionCoin({
     >
       <div className="signal-action-coin__disc" aria-hidden="true">
         {stat ? (
-          <img src={getSignalTheatreStatSealPath(stat)} alt="" />
+          <img src={getSignalTheatreStatSealPath(stat)} width={512} height={512} alt="" />
         ) : (
           <svg viewBox="0 0 100 100" focusable="false">
             <path className="signal-action-coin__rim" d="m50 3 11 5 12-1 7 10 11 5 1 12 6 10-5 11 1 12-10 7-5 11-12 1-10 7-11-5-12 1-7-10-11-5-1-12-6-10 5-11-1-12 10-7 5-11 12-1z" />

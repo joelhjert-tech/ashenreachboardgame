@@ -25,6 +25,7 @@ import {
   type SessionMode
 } from "../game/schema/session.schema.js";
 import { createJoinToken } from "./auth.js";
+import { getSignalPieceIdForSeat } from "../shared/signalPieceCatalog.js";
 
 const sessionSeatLayouts = {
   "single-player": [
@@ -156,10 +157,11 @@ export function createInitialSessionState(
     sequence: 0,
     escalationLevel: 0,
     sectors: sectorsWithChallenges,
-    seats: configuredSeats.map(({ seatId, characterId }) => ({
+    seats: configuredSeats.map(({ seatId, characterId }, index) => ({
       seatId,
       characterId,
       characterSelected: false,
+      signalPieceId: getSignalPieceIdForSeat(index),
       displayName: null,
       startingContractOptions: [],
       selectedStartingContractId: null,

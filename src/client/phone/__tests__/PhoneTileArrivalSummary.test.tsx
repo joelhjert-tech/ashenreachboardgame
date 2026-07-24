@@ -1,58 +1,93 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import { PhoneTileArrivalSummary } from "../PhoneActionPanel.js";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import "@testing-library/jest-dom/vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PublicTileArrivalState } from "../../shared/types.js";
+import {
+  DEFAULT_PHONE_ARRIVAL_PRESENTATION,
+  PhoneTileArrivalSummary,
+  resolvePhoneArrivalPresentation
+} from "../PhoneActionPanel.js";
 
 const arrival: PublicTileArrivalState = {
-  arrivalId: "arrival:seat-1:ashen-chapel:4",
+  arrivalId: "arrival:seat-1:ashwake-crossing:7",
   seatId: "seat-1",
-  tileId: "ashen-chapel",
-  tileName: "Ashen Chapel",
-  lore: "Static candles burn behind the relay glass.",
-  currentRuleId: "challenge:rift-whispers-ashen-chapel",
-  mandatoryRemaining: 2,
+  tileId: "ashwake-crossing",
+  tileName: "Ashwake Crossing",
+  lore: "Ash moves like black water beneath the old bridge.",
+  currentRuleId: "hazard",
+  mandatoryRemaining: 1,
   canEndTurn: false,
-  blockedReason: "Resolve the mandatory tile challenge.",
-  rules: [
-    {
-      id: "challenge:rift-whispers-ashen-chapel",
-      order: 10,
-      kind: "tile-challenge",
-      label: "Rift Whispers",
-      detail: "Anomaly · Signal 8",
-      mandatory: true,
-      repeatPolicy: "EVERY_ARRIVAL",
-      marker: "ANOMALY",
-      supported: true,
-      sourceId: "rift-whispers-ashen-chapel",
-      status: "current"
-    },
-    {
-      id: "action:middle_anomalyWell",
-      order: 200,
-      kind: "board-action",
-      label: "Read the Chapel",
-      detail: "Read the anomaly and bottle a breach clue.",
-      mandatory: false,
-      repeatPolicy: "EVERY_ARRIVAL",
-      marker: "SIGNAL 9",
-      supported: true,
-      status: "optional"
-    }
-  ]
+  blockedReason: "Resolve Ashfall Hazard.",
+  rules: [{
+    id: "hazard",
+    order: 1,
+    kind: "tile-challenge",
+    label: "Ashfall Hazard",
+    detail: "Resolve the Hazard before continuing.",
+    mandatory: true,
+    repeatPolicy: "EVERY_ARRIVAL",
+    marker: "HAZARD",
+    supported: true,
+    status: "current"
+  }]
 };
 
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  window.sessionStorage.clear();
+  window.history.replaceState({}, "", "/");
+});
+
 describe("PhoneTileArrivalSummary", () => {
-  it("shows current, mandatory, optional, and end-turn guidance without raw IDs", () => {
+  it("removes the transient Arrived notice after exactly 150 ms", () => {
+    vi.useFakeTimers();
     render(<PhoneTileArrivalSummary arrival={arrival} />);
-    expect(screen.getByRole("region", { name: /Ashen Chapel arrival resolution/i })).toBeTruthy();
-    expect(screen.getByText("Rift Whispers")).toBeTruthy();
-    expect(screen.getByText("NEXT")).toBeTruthy();
-    expect(screen.getByText("OPTIONAL")).toBeTruthy();
-    expect(screen.getByText(/MANDATORY · Resolve the mandatory tile challenge/i)).toBeTruthy();
-    expect(screen.getByText((_, element) => element?.tagName === "SUMMARY" && element.textContent?.includes("View 1 remaining effect") === true)).toBeTruthy();
-    expect(screen.getByText("Read the Chapel").closest("details")?.hasAttribute("open")).toBe(false);
-    expect(screen.queryByText(/middle_anomalyWell/)).toBeNull();
+    expect(screen.getByText("Arrived")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(149));
+    expect(screen.getByText("Arrived")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.queryByText("Arrived")).not.toBeInTheDocument();
+  });
+
+  it("does not replay the arrival notice after a reconnect-style remount", () => {
+    const first = render(<PhoneTileArrivalSummary arrival={arrival} />);
+    first.unmount();
+    render(<PhoneTileArrivalSummary arrival={arrival} />);
+    expect(screen.queryByText("Arrived")).not.toBeInTheDocument();
+  });
+
+  it("keeps the immersive option development-selectable while cinematic remains default", () => {
+    const defaultView = render(<PhoneTileArrivalSummary arrival={arrival} />);
+    expect(DEFAULT_PHONE_ARRIVAL_PRESENTATION).toBe("cinematic");
+    expect(screen.getByTestId("phone-tile-arrival-presentation"))
+      .toHaveAttribute("data-arrival-ui", "cinematic");
+    expect(screen.getByTestId("phone-tile-arrival-presentation"))
+      .toHaveAttribute("data-arrival-option", "a");
+    defaultView.unmount();
+    window.history.replaceState({}, "", "/?arrivalUi=overlay");
+    render(<PhoneTileArrivalSummary arrival={{ ...arrival, arrivalId: `${arrival.arrivalId}:overlay` }} />);
+    expect(screen.getByTestId("phone-tile-arrival-presentation"))
+      .toHaveAttribute("data-arrival-ui", "overlay");
+    expect(screen.getByTestId("phone-tile-arrival-presentation"))
+      .toHaveAttribute("data-arrival-option", "b");
+  });
+
+  it("cannot enable the development-only overlay in production mode", () => {
+    expect(resolvePhoneArrivalPresentation("?arrivalUi=overlay", false))
+      .toBe(DEFAULT_PHONE_ARRIVAL_PRESENTATION);
+    expect(resolvePhoneArrivalPresentation("?arrivalUi=overlay", true)).toBe("overlay");
+    expect(resolvePhoneArrivalPresentation("?arrivalUi=unknown", true))
+      .toBe(DEFAULT_PHONE_ARRIVAL_PRESENTATION);
+  });
+
+  it("places the mandatory rule before secondary lore details", () => {
+    render(<PhoneTileArrivalSummary arrival={arrival} />);
+    const presentation = screen.getByTestId("phone-tile-arrival-presentation");
+    const rule = screen.getByText("Ashfall Hazard");
+    const lore = screen.getByText("Tile lore and public details");
+    expect(rule.compareDocumentPosition(lore) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(presentation).toHaveTextContent(/mandatory.*resolve ashfall hazard/i);
   });
 });

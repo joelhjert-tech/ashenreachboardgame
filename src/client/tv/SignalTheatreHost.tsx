@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactElement } from "react";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import { getSignalTheatreAssetPaths } from "../shared/assetPaths.js";
 import type {
@@ -14,6 +14,7 @@ import { buildHostMotionCueModel, type HostMotionCueKind } from "./HostMotionCue
 import { OperativeChessPiece } from "./OperativeChessPiece.js";
 import { SignalActionCoin, type SignalActionCoinKind } from "./SignalActionCoin.js";
 import { SignalSectorResolution } from "./SignalSectorResolution.js";
+import { SignalJourneyTrack } from "./SignalJourneyTrack.js";
 import {
   getDevPieceVariant,
   getFormationPoints,
@@ -29,6 +30,7 @@ import {
 import { buildSignalSectorResolutionModel } from "./signalSectorResolutionPresentation.js";
 import { getSignalSectorResolutionDevFixture } from "./signalSectorResolutionDevFixtures.js";
 import { useSignalTheatreJourney } from "./useSignalTheatreJourney.js";
+import { useSignalTheatreEnvironmentPreload } from "./useSignalTheatreEnvironmentPreload.js";
 import "./SignalTheatreHost.css";
 
 interface SignalTheatreHostProps {
@@ -50,6 +52,29 @@ interface SignalRouteModel {
 }
 
 const assets = getSignalTheatreAssetPaths();
+
+function SignalEnvironmentImage({ path }: { path: string }): ReactElement {
+  const [visiblePath, setVisiblePath] = useState(path);
+
+  useEffect(() => {
+    setVisiblePath(path);
+  }, [path]);
+
+  return (
+    <img
+      key={visiblePath}
+      className="signal-theatre__environment-image"
+      src={visiblePath}
+      width={1672}
+      height={941}
+      decoding="async"
+      fetchPriority="high"
+      alt=""
+      aria-hidden="true"
+      onError={() => setVisiblePath((current) => current === assets.worldStage ? current : assets.worldStage)}
+    />
+  );
+}
 
 function titleCase(value: string): string {
   return value
@@ -189,6 +214,13 @@ export function SignalTheatreHost({
 }: SignalTheatreHostProps): ReactElement {
   const payload = patch?.payload ?? null;
   const journey = useSignalTheatreJourney({ patch, previousPatch, synchronized });
+  const confirmedDestination = payload?.movementPlanner?.selectedDestinationId
+    ? payload.movementPlanner.destinations.find(
+      (destination) => destination.sectorId === payload.movementPlanner?.selectedDestinationId
+    ) ?? null
+    : null;
+  const preloadRoute = journey?.route ?? confirmedDestination?.route ?? [];
+  useSignalTheatreEnvironmentPreload(preloadRoute, journey?.step ?? 0);
 
   if (!payload || payload.status === "lobby") {
     return <SignalLobby patch={patch} roomCode={roomCode} synchronized={synchronized} connectionStatus={connectionStatus} />;
@@ -209,6 +241,9 @@ export function SignalTheatreHost({
     ? null
     : getSignalSectorResolutionDevFixture(search, payload)
       ?? buildSignalSectorResolutionModel(payload);
+  const resolutionPlayer = sectorResolution?.actorSeatId
+    ? payload.players.find((player) => player.seatId === sectorResolution.actorSeatId) ?? null
+    : null;
   const route = getSignalRoute(payload.movementPlanner);
   const operativeName = journey?.movement.operativeName ?? activePlayer?.character.name ?? activeSeat?.displayName ?? model?.actor ?? "Table";
   const playerName = journey?.movement.playerName ?? activeSeat?.displayName ?? operativeName;
@@ -216,7 +251,8 @@ export function SignalTheatreHost({
   const activeProgressIndex = endResult ? 3 : journey ? 2 : model?.activeProgressIndex ?? 1;
   const markerPosition = progressPosition(kind, activeProgressIndex);
   const stableSectorId =
-    activePlayer?.sectorId
+    resolutionPlayer?.sectorId
+    ?? activePlayer?.sectorId
     ?? payload.movementPlanner?.currentSectorId
     ?? payload.tileArrival?.tileId
     ?? payload.players[0]?.sectorId
@@ -238,7 +274,7 @@ export function SignalTheatreHost({
     identity.seatId === (sectorResolution?.actorSeatId ?? activeSeat?.seatId)
   );
   const activeIndex = fixture?.activeIndex
-    ?? (matchedActiveIndex >= 0 ? matchedActiveIndex : 0);
+    ?? (matchedActiveIndex >= 0 ? matchedActiveIndex : -1);
   const formation = getFormationPoints(occupants.length, activeIndex, true);
   const pieceVariant = getDevPieceVariant(search);
   const journeyStepTotal = Math.max(1, (journey?.route.length ?? 1) - 1);
@@ -299,6 +335,22 @@ export function SignalTheatreHost({
     : journey?.movement.movingSeatId ?? null;
   const visibleMotionPhase = fixture?.motionPhase ?? journey?.phase ?? null;
   const occupantSummary = getPublicOccupantSummary(occupants);
+  const visibleJourneyRoute = journey?.route
+    ?? (fixture?.motionPhase
+      ? [stableSectorId ?? focusSectorId ?? "ashwake-crossing", focusSectorId ?? stableSectorId ?? "ashwake-crossing"]
+      : null);
+  const visibleJourneyNames = visibleJourneyRoute?.map((sectorId, index) =>
+    getBoardSpace(sectorId)?.name ?? (index === visibleJourneyRoute.length - 1 ? focusSector?.name : null) ?? `Route ${index + 1}`
+  ) ?? [];
+  const featuredSeatId = movingSeatId ?? sectorResolution?.actorSeatId ?? activeSeat?.seatId ?? null;
+  const matchedFeaturedIdentity = occupants.find((identity) => identity.seatId === featuredSeatId) ?? null;
+  const movingIdentity = sectorResolution
+    ? matchedFeaturedIdentity
+    : matchedFeaturedIdentity ?? (fixture ? occupants[fixture.activeIndex] ?? null : occupants[0] ?? null);
+  const trackRoute = visibleJourneyRoute ?? [focusSectorId ?? stableSectorId ?? "unknown"];
+  const trackRouteNames = visibleJourneyNames.length > 0
+    ? visibleJourneyNames
+    : [focusSector?.name ?? "Unknown sector"];
 
   return (
     <main
@@ -312,18 +364,13 @@ export function SignalTheatreHost({
       data-sector-resolution-mode={sectorResolution?.mode ?? undefined}
       style={style}
     >
-      <section
-        className="signal-theatre__environment"
-        aria-label={`${focusSector?.name ?? "Unknown sector"}. ${occupants.length} operative${occupants.length === 1 ? "" : "s"} present.`}
-        data-testid="signal-environment-stage"
-      >
-        <img
-          key={stageImage}
-          className="signal-theatre__environment-image"
-          src={stageImage}
-          alt=""
-          aria-hidden="true"
-        />
+      <div className="signal-theatre__base" aria-hidden={sectorResolution ? "true" : undefined}>
+        <section
+          className="signal-theatre__environment"
+          aria-label={`${focusSector?.name ?? "Unknown sector"}. ${occupants.length} operative${occupants.length === 1 ? "" : "s"} present.`}
+          data-testid="signal-environment-stage"
+        >
+        <SignalEnvironmentImage path={stageImage} />
         <div className="signal-theatre__environment-shade" aria-hidden="true" />
         <div
           className={`signal-theatre__destination-ring${visibleMotionPhase === "arrival" ? " is-arriving" : ""}`}
@@ -331,7 +378,10 @@ export function SignalTheatreHost({
         />
         <div className="signal-theatre__pieces" data-testid="signal-operative-formation">
           {occupants.map((identity, index) => {
-            const resolutionActor = Boolean(sectorResolution && index === activeIndex);
+            if (identity.seatId === movingIdentity?.seatId) {
+              return null;
+            }
+            const resolutionActor = Boolean(sectorResolution && identity.seatId === sectorResolution.actorSeatId);
             const pieceStyle = getPieceStyle(identity, formation[index] ?? formation[0]!);
             const presentationStyle = resolutionActor
               ? {
@@ -363,21 +413,34 @@ export function SignalTheatreHost({
         {occupants.length >= 5 ? (
           <span className="signal-theatre__occupant-count">{occupants.length} OPERATIVES</span>
         ) : null}
-      </section>
+        </section>
 
-      <header className="signal-theatre__brand">
+        {focusSectorId ? (
+        <SignalJourneyTrack
+          route={trackRoute}
+          routeNames={trackRouteNames}
+          step={journey?.step ?? (visibleMotionPhase === "arrival" ? Math.max(0, trackRoute.length - 1) : 0)}
+          sectorId={focusSectorId}
+          crossingRings={journey?.crossingRings ?? fixture?.id === "cross-ring"}
+          identity={movingIdentity}
+          phase={visibleMotionPhase ?? "stable"}
+          sectorName={focusSector?.name ?? "Unknown sector"}
+        />
+        ) : null}
+
+        <header className="signal-theatre__brand">
         <span>ASHENREACH</span>
         <small>{payload.activeScenario?.name ?? "Expedition in progress"}</small>
-      </header>
+        </header>
 
-      <section className="signal-theatre__operative" aria-label={`Active operative ${operativeName}`}>
+        <section className="signal-theatre__operative" aria-label={`Active operative ${operativeName}`}>
         <span>{environment?.tier ? `${titleCase(environment.tier)} reach` : "Signal stage"}</span>
         <h1>{focusSector?.name ?? journey?.movement.destination.name ?? model?.location ?? "Unknown sector"}</h1>
         <h2>{operativeName}</h2>
         <small>{playerName}</small>
-      </section>
+        </section>
 
-      {!sectorResolution ? (
+        {!sectorResolution ? (
         <section className="signal-theatre__command" aria-label="Current public action" role={model?.id && !model.id.startsWith("turn:") ? "status" : "region"}>
           <span>{endResult ? "Expedition result" : journey ? "Authoritative movement" : model?.eyebrow ?? "Command link"}</span>
           <h2>{title}</h2>
@@ -385,40 +448,28 @@ export function SignalTheatreHost({
           <p>{detail}</p>
           <small>{next}</small>
         </section>
-      ) : null}
+        ) : null}
 
-      <aside className="signal-theatre__signal">
-        <SignalActionCoin
-          key={`${actionCoinKind}:${sectorResolution?.stat ?? "none"}:${model?.id ?? journey?.eventId ?? endResult?.id ?? "stable"}`}
-          kind={actionCoinKind}
-          stat={sectorResolution?.stat ?? null}
-          label={actionCoinLabel}
-          detail={actionCoinDetail}
-        />
-      </aside>
+        <SignalScenarioReadout payload={payload} />
 
-      <SignalScenarioReadout payload={payload} />
-
-      {sectorResolution ? <SignalSectorResolution model={sectorResolution} /> : null}
-
-      {!journey && !sectorResolution && model?.delta ? (
+        {!journey && !sectorResolution && model?.delta ? (
         <section className={`signal-theatre__delta signal-theatre__delta--${model.delta.tone}`} aria-label="Public state change">
           <span>{model.delta.tone === "reward" ? "Reward" : model.delta.tone === "penalty" ? "Consequence" : "Change"}</span>
           <strong>{model.delta.label}</strong>
           {model.delta.value ? <b>{model.delta.value}</b> : null}
           {model.delta.reason ? <small>{model.delta.reason}</small> : null}
         </section>
-      ) : null}
+        ) : null}
 
-      {!sectorResolution ? (
+        {!sectorResolution ? (
         <ol className="signal-theatre__sequence" aria-label="Presentation sequence">
           {sequence.map((label, index) => (
             <li key={`${label}-${index}`} className={index === activeProgressIndex ? "is-current" : index < activeProgressIndex ? "is-complete" : ""}>{label}</li>
           ))}
         </ol>
-      ) : null}
+        ) : null}
 
-      <section className="signal-theatre__roster" aria-label="Operative connection and location status">
+        <section className="signal-theatre__roster" aria-label="Operative connection and location status">
         {payload.seats.filter((seat) => seat.displayName && !seat.kicked).slice(0, 6).map((seat) => {
           const player = payload.players.find((entry) => entry.seatId === seat.seatId);
           const publicLocation = getBoardSpace(player?.sectorId ?? "")?.name ?? "Unknown sector";
@@ -430,7 +481,20 @@ export function SignalTheatreHost({
             </span>
           );
         })}
-      </section>
+        </section>
+      </div>
+
+      <aside className="signal-theatre__signal">
+        <SignalActionCoin
+          key={`${actionCoinKind}:${sectorResolution?.stat ?? "none"}:${model?.id ?? journey?.eventId ?? endResult?.id ?? "stable"}`}
+          kind={actionCoinKind}
+          stat={sectorResolution?.stat ?? null}
+          label={actionCoinLabel}
+          detail={actionCoinDetail}
+        />
+      </aside>
+
+      {sectorResolution ? <SignalSectorResolution model={sectorResolution} /> : null}
 
       {!synchronized ? (
         <section className="signal-theatre__network" role="status" aria-live="polite">

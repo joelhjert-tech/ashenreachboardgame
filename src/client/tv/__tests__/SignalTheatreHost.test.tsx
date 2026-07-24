@@ -121,9 +121,13 @@ describe("SignalTheatreHost", () => {
     const rendered = renderSignal();
     expect(screen.getByTestId("signal-theatre-host")).toHaveAttribute("data-signal-state", "movement");
     expect(screen.getByRole("heading", { name: "Scorched Road" })).toBeVisible();
-    expect(screen.getByRole("article", { name: "Nera, Bjornis, active operative" })).toHaveAttribute(
-      "data-operative-piece",
-      "heraldic-reliquary"
+    const stableTrack = screen.getByTestId("signal-journey-track");
+    expect(stableTrack).toHaveClass("signal-journey-track--stable");
+    expect(stableTrack.querySelectorAll(".signal-journey-track__node")).toHaveLength(7);
+    expect(within(stableTrack).getByText("Event stop")).toBeVisible();
+    expect(screen.getByRole("img", { name: "Nera, Bjornis, at the event stop" })).toHaveAttribute(
+      "data-piece-id",
+      "beacon"
     );
     expect(screen.getByText("Glass Causeway")).toBeVisible();
     expect(screen.getByText("Route confirmed")).toBeVisible();
@@ -163,7 +167,7 @@ describe("SignalTheatreHost", () => {
   });
 
   it("displays only server-authored totals without exposing the arithmetic breakdown", () => {
-    renderSignal(makePatch({
+    const rendered = renderSignal(makePatch({
       movementPlanner: null,
       battlePresentation: {
         id: "battle-fixed",
@@ -207,6 +211,90 @@ describe("SignalTheatreHost", () => {
     expect(battle).not.toHaveTextContent("FIXED");
     expect(screen.getByLabelText(/forge challenge.*ward lock.*forge challenge seal/i)).toBeVisible();
     expect(document.querySelector("[data-signal-action-coin='forge']")).toBeInTheDocument();
+    expect(rendered.container.querySelector(".signal-theatre__base")).toHaveAttribute("aria-hidden", "true");
+
+    rendered.rerender(
+      <SignalTheatreHost
+        patch={makePatch({ movementPlanner: null, battlePresentation: null })}
+        roomCode="EMBER"
+        activeSeat={activeSeat}
+        activePlayer={activePlayer}
+        currentStepCopy="Awaiting action."
+        synchronized
+        connectionStatus="open"
+      />
+    );
+    expect(rendered.container.querySelector(".signal-theatre__base")).not.toHaveAttribute("aria-hidden");
+  });
+
+  it("focuses the resolution actor sector without substituting the active-turn player", () => {
+    const resolutionSeat = {
+      ...activeSeat,
+      seatId: "seat-2",
+      displayName: "Ilya",
+      signalPieceId: "compass"
+    } as PublicSeat;
+    const resolutionPlayer = {
+      seatId: "seat-2",
+      sectorId: "ashen-chapel",
+      character: { id: "char_vespera", name: "Vespera" }
+    } as PublicPlayer;
+    const rendered = renderSignal(makePatch({
+      seats: [activeSeat, resolutionSeat],
+      players: [activePlayer, resolutionPlayer],
+      movementPlanner: null,
+      battlePresentation: {
+        id: "battle-other-actor",
+        revision: 1,
+        stage: "battle_ready",
+        actorSeatId: "seat-2",
+        actorDisplayName: "Ilya",
+        encounter: { name: "Ash Warden", category: "Battle" },
+        test: { stat: "grit", label: "Grit", opposed: true },
+        operative: { name: "Vespera", baseValue: 4, modifiers: [], rawDice: [], diceTotal: null, finalTotal: null },
+        opponent: { name: "Ash Warden", baseValue: 5, modifiers: [], rawDice: [], diceTotal: null, finalTotal: null },
+        outcome: null,
+        publicConsequence: null,
+        publicRewardSummary: null,
+        waiting: null,
+        restored: false
+      }
+    }));
+
+    expect(screen.getByTestId("signal-theatre-host")).toHaveAttribute("data-sector-id", "ashen-chapel");
+    expect(rendered.container.querySelector(".signal-theatre__environment-image")).toHaveAttribute(
+      "src",
+      "/assets/riftfall/environments/signal-theatre/sectors/ashen-chapel.png"
+    );
+    expect(rendered.container.querySelector(".signal-journey-track__marker")).toHaveAttribute(
+      "data-piece-id",
+      "compass"
+    );
+    expect(rendered.container.querySelector(".signal-theatre__base")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("does not show a false resolution marker when the actor is absent", () => {
+    const rendered = renderSignal(makePatch({
+      movementPlanner: null,
+      battlePresentation: {
+        id: "battle-missing-actor",
+        revision: 1,
+        stage: "battle_ready",
+        actorSeatId: "seat-missing",
+        actorDisplayName: "Missing operative",
+        encounter: { name: "Ash Warden", category: "Battle" },
+        test: { stat: "grit", label: "Grit", opposed: true },
+        operative: { name: "Missing operative", baseValue: 4, modifiers: [], rawDice: [], diceTotal: null, finalTotal: null },
+        opponent: { name: "Ash Warden", baseValue: 5, modifiers: [], rawDice: [], diceTotal: null, finalTotal: null },
+        outcome: null,
+        publicConsequence: null,
+        publicRewardSummary: null,
+        waiting: null,
+        restored: false
+      }
+    }));
+
+    expect(rendered.container.querySelector(".signal-journey-track__marker")).not.toBeInTheDocument();
   });
 
   it("finishes the authoritative arrival journey before showing the sector resolution", () => {
@@ -260,6 +348,10 @@ describe("SignalTheatreHost", () => {
     );
 
     expect(screen.getByTestId("signal-theatre-host")).toHaveAttribute("data-signal-state", "movement");
+    const movingTrack = screen.getByTestId("signal-journey-track");
+    expect(movingTrack).toHaveAttribute("data-route-variant");
+    expect(movingTrack).toHaveClass("signal-journey-track--departure");
+    expect(movingTrack.querySelector("[data-piece-id='beacon']")).toBeInTheDocument();
     expect(screen.queryByTestId("signal-sector-resolution")).not.toBeInTheDocument();
   });
 

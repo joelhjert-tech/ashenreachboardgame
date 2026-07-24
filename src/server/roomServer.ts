@@ -1,4 +1,10 @@
 import { WebSocketServer, type WebSocket } from "ws";
+import {
+  SIGNAL_PIECE_IDS,
+  getSignalPieceIdForSeat,
+  isSignalPieceId,
+  type SignalPieceId
+} from "../shared/signalPieceCatalog.js";
 import { loadCharacters } from "../game/content/characters.js";
 import { loadAfflictionCards } from "../game/content/afflictions.js";
 import { loadContracts } from "../game/content/contracts.js";
@@ -889,7 +895,9 @@ export class GameRoomServer {
       }
 
       if (intent.type === "SELECT_CHARACTER") {
-        this.selectSeatCharacter(intent.seatId, intent.characterId);
+        this.selectSeatCharacter(intent.seatId, intent.characterId, {
+          signalPieceId: intent.signalPieceId
+        });
         return;
       }
 
@@ -1253,7 +1261,11 @@ export class GameRoomServer {
     };
   }
 
-  selectSeatCharacter(seatId: string, characterId: string, options: { suppressBroadcast?: boolean } = {}): void {
+  selectSeatCharacter(
+    seatId: string,
+    characterId: string,
+    options: { suppressBroadcast?: boolean; signalPieceId?: SignalPieceId } = {}
+  ): void {
     const seat = this.state.seats.find((entry) => entry.seatId === seatId);
 
     const lobbySelection = this.state.status === "lobby" && this.state.phase === "start";
@@ -1296,6 +1308,20 @@ export class GameRoomServer {
     }
 
     const seatIndex = Math.max(0, this.state.seats.findIndex((entry) => entry.seatId === seatId));
+    const signalPieceId = options.signalPieceId
+      ?? seat.signalPieceId
+      ?? getSignalPieceIdForSeat(seatIndex);
+    const signalPieceTaken = this.state.seats.some(
+      (entry) =>
+        entry.seatId !== seatId
+        && Boolean(entry.displayName)
+        && !entry.kicked
+        && entry.characterSelected !== false
+        && entry.signalPieceId === signalPieceId
+    );
+    if (signalPieceTaken) {
+      throw new Error("Signal piece already taken");
+    }
     const loadedCharacter = applyStartingLoadout(selectedCharacter, {
       sessionMode: this.state.sessionMode,
       seatIndex,
@@ -1321,6 +1347,7 @@ export class GameRoomServer {
               ...entry,
               characterId,
               characterSelected: true,
+              signalPieceId,
               startingContractOptions,
               selectedStartingContractId: null,
               missionSelectedAt: null,
@@ -1619,6 +1646,34 @@ export class GameRoomServer {
     this.broadcastPatch();
   }
 
+  leaveSeatByToken(seatToken: string): void {
+    const seat = this.resolveSeatFromToken(seatToken);
+
+    if (!seat) {
+      throw new Error("Invalid seat token");
+    }
+
+    const activeOperative =
+      this.state.status === "active" && this.state.turnOrder.includes(seat.seatId);
+
+    if (!activeOperative) {
+      this.releaseSeat(seat.seatId);
+      this.broadcastPatch();
+      return;
+    }
+
+    for (const client of [...this.clients]) {
+      if (client.view !== "phone" || client.seatId !== seat.seatId) continue;
+      client.superseded = true;
+      this.clients.delete(client);
+      client.socket.close(4005, "Player left the room");
+    }
+
+    this.setSeatConnected(seat.seatId, false);
+    this.recoverPendingEnemyRollForLeavingSeat(seat.seatId);
+    this.broadcastPatch();
+  }
+
   startSession(): void {
     this.reconcileNamedPlayerRules({ autoSelectPopelord: true });
     if (this.state.status !== "lobby" || this.state.phase !== "start") {
@@ -1821,6 +1876,9 @@ export class GameRoomServer {
         break;
       case "SELECT_CHARACTER":
         requireStringField(message, "characterId", type);
+        if (message.signalPieceId !== undefined) {
+          requireEnumField(message, "signalPieceId", new Set(SIGNAL_PIECE_IDS), type);
+        }
         break;
       case "EQUIP_GEAR":
         requireStringField(message, "gearId", type);
@@ -13127,6 +13185,9 @@ export function createTvProjection(
         seatId: seat.seatId,
         characterId: seat.characterId,
         characterSelected: isSeatCharacterSelectedForProjection(state, seat, playerSeatIds),
+        signalPieceId: isSignalPieceId(seat.signalPieceId)
+          ? seat.signalPieceId
+          : getSignalPieceIdForSeat(state.seats.findIndex((entry) => entry.seatId === seat.seatId)),
         displayName: seat.displayName ?? null,
         startingMissionSelected: Boolean(seat.selectedStartingContractId),
         startingMissionTitle: null,

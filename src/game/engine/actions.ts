@@ -961,6 +961,7 @@ export type ClientIntent =
       type: "SELECT_CHARACTER";
       seatId: string;
       characterId: string;
+      signalPieceId?: import("../../shared/signalPieceCatalog.js").SignalPieceId;
     }
   | {
       type: "SELECT_STARTING_CONTRACT";

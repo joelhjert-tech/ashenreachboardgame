@@ -145,7 +145,7 @@ export function SignalSectorResolution({
         aria-live="polite"
         data-result-visual="crest"
       >
-        {resultCrest ? <img className={`signal-sector-resolution__result-crest signal-sector-resolution__result-crest--${model.outcomeLabel.toLowerCase()}`} src={resultCrest} alt="" aria-hidden="true" /> : null}
+        {resultCrest ? <img className={`signal-sector-resolution__result-crest signal-sector-resolution__result-crest--${model.outcomeLabel.toLowerCase()}`} src={resultCrest} width={640} height={640} alt="" aria-hidden="true" /> : null}
         <div className="signal-sector-resolution__outcome-copy">
           <span>{resultVisible ? "Authoritative result" : "Resolution in progress"}</span>
         <strong>{model.outcomeLabel}</strong>

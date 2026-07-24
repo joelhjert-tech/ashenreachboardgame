@@ -66,6 +66,7 @@ export interface PublicSeat {
   seatId: string;
   characterId: string;
   characterSelected?: boolean;
+  signalPieceId?: import("../../shared/signalPieceCatalog.js").SignalPieceId;
   displayName: string | null;
   startingMissionSelected?: boolean;
   startingMissionTitle?: string | null;
@@ -1737,6 +1738,7 @@ export type ClientIntent =
       type: "SELECT_CHARACTER";
       seatId: string;
       characterId: string;
+      signalPieceId?: import("../../shared/signalPieceCatalog.js").SignalPieceId;
     }
   | {
       type: "RECRUIT_REPLACEMENT";

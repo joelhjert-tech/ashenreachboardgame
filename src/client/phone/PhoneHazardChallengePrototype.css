@@ -170,6 +170,82 @@
   .phone-test-consequences p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 }
 
+@media (max-width: 430px) and (max-height: 740px) {
+  .phone-test-prototype[data-test-result="true"] .phone-test-prototype__scroll {
+    padding-top: 7px;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .phone-test-player-header {
+    padding-bottom: 6px;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .phone-encounter-art {
+    height: 56px;
+    aspect-ratio: auto;
+    margin-top: 7px;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .phone-encounter-art__identity {
+    inset: auto 10px 8px;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .phone-encounter-art__identity span,
+  .phone-test-prototype[data-test-result="true"] .phone-encounter-art__identity strong {
+    font-size: 1rem;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .phone-test-prototype__lore {
+    display: none;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .authoritative-dice__header {
+    display: none;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .authoritative-dice {
+    --dice-size: 44px;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .authoritative-dice__tray {
+    padding-block: 4px;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .authoritative-die > small {
+    font-size: 0.58rem;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .authoritative-dice__math {
+    gap: 0.2rem;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .authoritative-dice__math > span {
+    min-height: 1.45rem;
+    padding: 0.2rem 0.34rem;
+    font-size: 0.64rem;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .authoritative-dice__math > span strong,
+  .phone-test-prototype[data-test-result="true"] .authoritative-dice__math > .is-final strong {
+    font-size: 0.88rem;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .phone-test-outcome,
+  .phone-test-prototype[data-test-result="true"] .phone-test-consequences article {
+    padding-block: 6px;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .phone-test-consequences article:not(.is-current) {
+    display: none;
+  }
+
+  .phone-test-prototype[data-test-result="true"] .phone-test-outcome p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+
 @media (max-width: 370px) {
   .phone-test-calculation span { font-size: .47rem; letter-spacing: .02em; }
   .phone-test-consequences article { padding-block: 7px; }

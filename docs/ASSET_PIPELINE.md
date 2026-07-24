@@ -7,6 +7,7 @@ Assets are runtime data. Do not delete an asset just because TypeScript does not
 - Current board tiles: `public/assets/map/tiles/`
 - Current board base/region/corner assets: `public/assets/map/board/`, `public/assets/map/corners/`
 - Signal Theatre sector environments: `public/assets/riftfall/environments/signal-theatre/sectors/`
+- Signal Theatre selectable player pieces: `public/assets/riftfall/ui/signal-theatre/player-pieces/`
 - Current generated card art: `public/assets/cards/`
 - Active card backs: `public/assets/cards/backs/`
 - Legacy/reference card art source: `public/assets/riftfall/cards/`
@@ -58,6 +59,7 @@ Remaining legacy files:
 - Runtime portrait/frame lookups: `src/client/shared/assetPaths.ts`
 - Prompt manifest root: `src/game/assets/design/imagePrompts.ts`
 - Signal Theatre prompt catalog: `src/game/assets/design/signalTheatreEnvironmentPrompts.ts`
+- Signal Piece prompt catalog: `src/game/assets/design/signalPiecePrompts.ts`
 - Generated card image prompt catalog: `src/game/assets/design/generatedCardImagePrompts.ts`
 - Card fallback and output directories: `src/game/assets/design/cardImageCatalog.ts`
 
@@ -66,6 +68,7 @@ Remaining legacy files:
 - Board tile PNGs in the current map system use `map_tile_*` names under `public/assets/map/tiles/`.
 - Signal Theatre environment PNGs use the canonical sector ID under `public/assets/riftfall/environments/signal-theatre/sectors/`.
 - Signal Theatre environment generation must create original Ashenreach locations and must not use legacy tile art or reference-game imagery as inputs.
+- Signal Piece PNGs use the six stable catalog IDs: `beacon`, `bastion`, `lantern`, `harrow`, `reliquary`, and `compass`.
 - Card art generated from content uses the card ID as the PNG filename under `public/assets/cards/<type>/`.
 - Active threat card art is organized by `threatLane` under `public/assets/cards/threats/red/`, `public/assets/cards/threats/blue/`, and `public/assets/cards/threats/yellow/`.
 - Do not add new Ashenreach card art under `public/assets/riftfall/cards/`. Treat that folder as legacy/source/reference material only.
@@ -81,7 +84,7 @@ Run:
 npm run audit:assets
 ```
 
-The asset audit is the source of truth for the current expected count. P22 adds 49 distinct Signal Theatre sector environments: 24 outer, 16 middle, 8 inner, and 1 center.
+The asset audit is the source of truth for the current expected count. Signal Theatre adds 49 distinct sector environments and 6 selectable player-piece renders.
 
 Previous baseline after the July 2026 repository cleanup and contract-art refresh:
 

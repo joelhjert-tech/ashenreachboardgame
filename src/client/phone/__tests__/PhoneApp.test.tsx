@@ -418,6 +418,29 @@ describe("PhoneApp", () => {
     expect(document.body.scrollWidth).toBeLessThanOrEqual(390);
   });
 
+  it("guards Android Back during operative selection and preserves setup after Stay", async () => {
+    storeControllerAuth();
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch(),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<PhoneApp />);
+    expect(await screen.findByRole("heading", { name: /select operative/i })).toBeInTheDocument();
+
+    fireEvent.popState(window);
+    expect(screen.getByRole("dialog", { name: /leave the game/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /stay in game/i })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole("button", { name: /stay in game/i }));
+    expect(screen.queryByRole("dialog", { name: /leave the game/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /select operative/i })).toBeInTheDocument();
+  });
+
   it("moves focus to the first operative when the authoritative setup stage changes", async () => {
     storeControllerAuth();
     const patch = createLobbyPhonePatch({
@@ -455,6 +478,67 @@ describe("PhoneApp", () => {
     const picker = await screen.findByRole("list", { name: /character/i });
     const firstOperative = within(picker).getAllByRole("button")[0]!;
     await waitFor(() => expect(document.activeElement).toBe(firstOperative));
+  });
+
+  it("initializes the picker from the seat-specific projected Signal piece", async () => {
+    storeControllerAuth();
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch({
+        seats: [{
+          ...createLobbyPhonePatch().payload.seats[0]!,
+          signalPieceId: "compass"
+        }]
+      }),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<PhoneApp />);
+
+    expect(await screen.findByRole("radio", { name: /compass/i })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: /beacon/i })).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("uses roving keyboard navigation and skips occupied Signal pieces", async () => {
+    storeControllerAuth();
+    const ownSeat = {
+      ...createLobbyPhonePatch().payload.seats[0]!,
+      signalPieceId: "beacon" as const
+    };
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch({
+        seats: [
+          ownSeat,
+          {
+            ...ownSeat,
+            seatId: "seat-2",
+            displayName: "Ilya",
+            characterSelected: true,
+            signalPieceId: "bastion" as const
+          }
+        ]
+      }),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<PhoneApp />);
+    const beacon = await screen.findByRole("radio", { name: /beacon/i });
+    const bastion = screen.getByRole("radio", { name: /bastion/i });
+    const lantern = screen.getByRole("radio", { name: /lantern/i });
+    expect(bastion).toBeDisabled();
+
+    beacon.focus();
+    fireEvent.keyDown(beacon, { key: "ArrowRight" });
+    expect(lantern).toHaveAttribute("aria-checked", "true");
+    expect(lantern).toHaveFocus();
+    expect(lantern).toHaveAttribute("tabindex", "0");
   });
 
   it("shows character role, complexity, starting gear, and starting contract guidance", async () => {
@@ -519,13 +603,15 @@ describe("PhoneApp", () => {
     fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
     fireEvent.click(screen.getByRole("button", { name: /join game/i }));
+    fireEvent.click(await screen.findByRole("radio", { name: /compass/i }));
     fireEvent.click(await screen.findByRole("button", { name: /deepdale.*deep route delver/i }));
 
     await waitFor(() => {
       expect(sendIntent).toHaveBeenCalledWith({
         type: "SELECT_CHARACTER",
         seatId: "seat-1",
-        characterId: "char_deepdale"
+        characterId: "char_deepdale",
+        signalPieceId: "compass"
       });
     });
   });
@@ -589,7 +675,8 @@ describe("PhoneApp", () => {
     expect(sendIntent).toHaveBeenCalledWith({
       type: "SELECT_CHARACTER",
       seatId: "seat-1",
-      characterId: "char_deepdale"
+      characterId: "char_deepdale",
+      signalPieceId: "beacon"
     });
   });
 
@@ -782,7 +869,8 @@ describe("PhoneApp", () => {
     expect(sendIntent).toHaveBeenCalledWith({
       type: "SELECT_CHARACTER",
       seatId: "seat-1",
-      characterId: "char_deepdale"
+      characterId: "char_deepdale",
+      signalPieceId: "beacon"
     });
     expect(screen.getByRole("list", { name: /character/i })).toBeInTheDocument();
     expect(deepdale).toBeDisabled();

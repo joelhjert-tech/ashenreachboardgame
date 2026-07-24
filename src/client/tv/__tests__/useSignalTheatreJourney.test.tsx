@@ -3,7 +3,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PublicPatchPayload, StatePatch } from "../../shared/types.js";
-import { hostPresentationTimings } from "../../shared/motionTokens.js";
+import { hostPresentationTimings, signalJourneyVisualTimings } from "../../shared/motionTokens.js";
 import { useSignalTheatreJourney } from "../useSignalTheatreJourney.js";
 
 vi.mock("../../shared/useReducedMotion.js", () => ({
@@ -82,20 +82,21 @@ describe("Signal Theatre authoritative journey", () => {
 
     act(() => vi.advanceTimersByTime(hostPresentationTimings.movementStartMs));
     expect(result.current).toMatchObject({
-      sectorId: "ashwake-crossing",
-      phase: "travel",
-      step: 0
-    });
-
-    act(() => vi.advanceTimersByTime(hostPresentationTimings.movementCrossRingMs - 1));
-    expect(result.current?.sectorId).toBe("ashwake-crossing");
-
-    act(() => vi.advanceTimersByTime(1));
-    expect(result.current).toMatchObject({
       sectorId: "middle_guardian_span",
       phase: "travel",
       step: 1,
       crossingRings: true
+    });
+
+    act(() => vi.advanceTimersByTime(hostPresentationTimings.movementCrossRingMs - 1));
+    expect(result.current?.sectorId).toBe("middle_guardian_span");
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(result.current).toMatchObject({
+      sectorId: "ashen-chapel",
+      phase: "travel",
+      step: 2,
+      crossingRings: false
     });
 
     act(() => vi.advanceTimersByTime(hostPresentationTimings.movementSegmentMs));
@@ -134,6 +135,45 @@ describe("Signal Theatre authoritative journey", () => {
       synchronized: false
     }));
 
+    expect(result.current).toBeNull();
+  });
+
+  it("keeps every visual transition shorter than its controlling hold", () => {
+    expect(signalJourneyVisualTimings.departure.transitionMs).toBeLessThan(signalJourneyVisualTimings.departure.holdMs);
+    expect(signalJourneyVisualTimings.segment.transitionMs).toBeLessThan(signalJourneyVisualTimings.segment.holdMs);
+    expect(signalJourneyVisualTimings.crossRing.transitionMs).toBeLessThan(signalJourneyVisualTimings.crossRing.holdMs);
+    expect(signalJourneyVisualTimings.arrival.transitionMs).toBeLessThan(signalJourneyVisualTimings.arrival.holdMs);
+  });
+
+  it.each([
+    ["departure", 0],
+    ["cross-ring travel", hostPresentationTimings.movementStartMs],
+    ["same-reach travel", hostPresentationTimings.movementStartMs + hostPresentationTimings.movementCrossRingMs],
+    ["arrival", hostPresentationTimings.movementStartMs + hostPresentationTimings.movementCrossRingMs + hostPresentationTimings.movementSegmentMs]
+  ])("cancels and consumes a journey disconnected during %s", (_label, elapsedMs) => {
+    vi.useFakeTimers();
+    const currentPatch = patch("ashen-chapel", false, 12);
+    const previousPatch = patch("ashwake-crossing", true, 11);
+    const { result, rerender } = renderHook(
+      ({ synchronized }: { synchronized: boolean }) => useSignalTheatreJourney({
+        patch: currentPatch,
+        previousPatch,
+        synchronized
+      }),
+      { initialProps: { synchronized: true } }
+    );
+
+    act(() => vi.advanceTimersByTime(elapsedMs));
+    expect(result.current).not.toBeNull();
+
+    rerender({ synchronized: false });
+    expect(result.current).toBeNull();
+    act(() => vi.runAllTimers());
+    expect(result.current).toBeNull();
+
+    rerender({ synchronized: true });
+    expect(result.current).toBeNull();
+    act(() => vi.runAllTimers());
     expect(result.current).toBeNull();
   });
 });
