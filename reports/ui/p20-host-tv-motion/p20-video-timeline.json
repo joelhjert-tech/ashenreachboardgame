@@ -1,0 +1,118 @@
+[
+  {
+    "state": "01-lobby-ready",
+    "atMs": 2675
+  },
+  {
+    "state": "02-game-start-summary",
+    "atMs": 5087
+  },
+  {
+    "state": "03-board-reveal",
+    "atMs": 9034
+  },
+  {
+    "state": "04-turn-start",
+    "atMs": 12138
+  },
+  {
+    "state": "05-movement-result",
+    "atMs": 15142
+  },
+  {
+    "state": "06-destinations",
+    "atMs": 19341
+  },
+  {
+    "state": "07-route",
+    "atMs": 23111
+  },
+  {
+    "state": "08-intermediate-movement",
+    "atMs": 28005
+  },
+  {
+    "state": "09-arrival",
+    "atMs": 36899
+  },
+  {
+    "state": "10-encounter",
+    "atMs": 47864
+  },
+  {
+    "state": "11-penalty",
+    "atMs": 54728
+  },
+  {
+    "state": "12-reward",
+    "atMs": 60728
+  },
+  {
+    "state": "13-combat-entry",
+    "atMs": 66988
+  },
+  {
+    "state": "14-dice",
+    "atMs": 72591
+  },
+  {
+    "state": "15-modifiers",
+    "atMs": 78648
+  },
+  {
+    "state": "16-combat-result",
+    "atMs": 84016
+  },
+  {
+    "state": "17-waiting",
+    "atMs": 90065
+  },
+  {
+    "state": "18-automated-public",
+    "atMs": 95131
+  },
+  {
+    "state": "19-end-turn-result",
+    "atMs": 98753
+  },
+  {
+    "state": "20-handoff",
+    "atMs": 101878
+  },
+  {
+    "state": "21-progress",
+    "atMs": 105281
+  },
+  {
+    "state": "22-pressure",
+    "atMs": 108681
+  },
+  {
+    "state": "23-final-stage",
+    "atMs": 111659
+  },
+  {
+    "state": "26-reconnect",
+    "atMs": 116894
+  },
+  {
+    "state": "27-reduced-motion",
+    "atMs": 123206
+  },
+  {
+    "state": "24-victory",
+    "atMs": 127833
+  },
+  {
+    "state": "25-defeat",
+    "atMs": 130666
+  },
+  {
+    "state": "29-long-text",
+    "atMs": 133468
+  },
+  {
+    "state": "30-missing-art",
+    "atMs": 134527
+  }
+]
