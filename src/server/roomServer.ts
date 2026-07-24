@@ -4235,6 +4235,16 @@ export class GameRoomServer {
     };
   }
 
+  private activateQueuedReplacementMissionSelection(seatId: string): void {
+    const pending = this.state.pendingMissionSelection;
+    if (!pending || pending.ownerSeatId !== seatId || pending.status !== "queued") return;
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      pendingMissionSelection: { ...pending, status: "awaitingSelection" }
+    };
+  }
+
   private selectReplacementContract(intent: Extract<ClientIntent, { type: "SELECT_REPLACEMENT_CONTRACT" }>): void {
     const pending = this.state.pendingMissionSelection;
     if (!pending || pending.id !== intent.selectionId || pending.status !== "awaitingSelection") {
@@ -4687,14 +4697,24 @@ export class GameRoomServer {
       ]
     };
 
+    this.completeSatisfiedContract(seatId);
   }
 
   private completeSatisfiedContract(seatId: string): boolean {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const activeContract = player?.character.activeContract;
-    if (!activeContract || this.state.phase !== "action") return false;
+    const activeSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? null;
+    if (
+      !activeContract ||
+      this.state.status !== "active" ||
+      this.state.phase !== "action" ||
+      activeSeatId !== seatId ||
+      this.state.activeResolution ||
+      this.state.pendingEffect ||
+      this.state.pendingMissionSelection
+    ) return false;
     const contract = this.state.availableContracts.find((entry) => entry.id === activeContract.contractId);
-    if (!contract || contract.objective.type !== "tileChallengeResolved" || !isContractObjectiveComplete(contract, activeContract)) return false;
+    if (!contract || !isContractObjectiveComplete(contract, activeContract)) return false;
     this.applyAction({
       type: "COMPLETE_CONTRACT",
       seatId,
@@ -4703,6 +4723,16 @@ export class GameRoomServer {
       createdAt: new Date().toISOString()
     } satisfies CompleteContractAction);
     this.queueReplacementMissionSelection(seatId, contract.id);
+    this.applyScenarioOnContractCompleted(seatId);
+    this.applyScenarioObjectiveOnContractCompleted(seatId, contract.id);
+    this.applyRivalryAgendaProgressTrigger(seatId, {
+      type: "contractCompleted",
+      seatId,
+      contractId: contract.id,
+      sectorId: this.state.players.find((entry) => entry.seatId === seatId)?.sectorId
+    });
+    this.maybeTriggerAbilityOnContractCompleted(seatId);
+    this.activateQueuedReplacementMissionSelection(seatId);
     return true;
   }
 
@@ -6619,13 +6649,7 @@ export class GameRoomServer {
       }
 
       if (this.state.pendingMissionSelection) {
-        if (this.state.pendingMissionSelection.status === "queued") {
-          this.state = {
-            ...this.state,
-            sequence: this.state.sequence + 1,
-            pendingMissionSelection: { ...this.state.pendingMissionSelection, status: "awaitingSelection" }
-          };
-        }
+        this.activateQueuedReplacementMissionSelection(this.state.pendingMissionSelection.ownerSeatId);
         return;
       }
 
@@ -9867,6 +9891,7 @@ export class GameRoomServer {
     }
 
     this.clients.add(client);
+    this.completeSatisfiedContract(client.seatId);
     this.setSeatConnected(client.seatId, true);
     // The broadcast is the authoritative bootstrap for the adopted phone and
     // the connectivity update for every other client. Sending a direct

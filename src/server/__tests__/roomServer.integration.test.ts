@@ -2291,14 +2291,6 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-3",
       toSectorId: "seat-2-start"
     });
-    await tv.waitForSince(marker, statePatchForPhase("action", 2));
-
-    marker = tv.mark();
-    phone3.send({
-      type: "COMPLETE_CONTRACT",
-      seatId: "seat-3",
-      contractId: "choir-quietus"
-    });
     await tv.waitForSince(marker, statePatchWithPendingMissionSelection("seat-3", "awaitingSelection"));
     const replacementSelection = harness.roomServer.getState().pendingMissionSelection;
     expect(replacementSelection?.ownerSeatId).toBe("seat-3");

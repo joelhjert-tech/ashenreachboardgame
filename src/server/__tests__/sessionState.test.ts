@@ -331,6 +331,85 @@ describe("canonical sector graph", () => {
     expect(server.getState().players[0]!.character.completedMissionRecords).toHaveLength(1);
     expect(server.getState().eventLog.filter((event) => (event as { type?: string; contractId?: string }).type === "COMPLETE_CONTRACT" && (event as { contractId?: string }).contractId === mission.id)).toHaveLength(1);
   });
+
+  it("automatically completes a satisfied standard Contract and opens replacement selection", () => {
+    const state = createInitialSessionState("standard-contract-completion", "single-player");
+    const mission = loadContracts().get("contract-beacon")!;
+    if (mission.objective.type !== "defeatCount") throw new Error("Contract Beacon must remain a defeat-count Contract");
+    state.status = "active";
+    state.phase = "action";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.players[0]!.character.activeContract = { contractId: mission.id, progress: mission.objective.target };
+    const startingSalvage = state.players[0]!.character.salvage ?? 0;
+    const server = new GameRoomServer(state);
+
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+
+    const player = server.getState().players[0]!;
+    expect(player.character.activeContract).toBeNull();
+    expect(player.character.completedContracts).toContain(mission.id);
+    expect(player.character.completedMissionRecords).toContainEqual(expect.objectContaining({
+      missionId: mission.id,
+      completedByPlayerId: "seat-1",
+      rewardGranted: true
+    }));
+    expect(player.character.salvage).toBe(startingSalvage + 1);
+    expect(server.getState().pendingMissionSelection).toMatchObject({
+      ownerSeatId: "seat-1",
+      completedContractId: mission.id,
+      status: "awaitingSelection"
+    });
+    expect(server.getState().pendingMissionSelection?.optionIds).toHaveLength(3);
+    expect(server.getState().eventLog.filter((event) =>
+      (event as { type?: string; contractId?: string }).type === "COMPLETE_CONTRACT" &&
+      (event as { contractId?: string }).contractId === mission.id
+    )).toHaveLength(1);
+  });
+
+  it("repairs a satisfied Contract on phone reconnect without repeating its reward", () => {
+    const state = createInitialSessionState("reconnect-contract-completion", "single-player");
+    const mission = loadContracts().get("contract-beacon")!;
+    if (mission.objective.type !== "defeatCount") throw new Error("Contract Beacon must remain a defeat-count Contract");
+    state.status = "active";
+    state.phase = "action";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.seats[0]!.connected = false;
+    state.players[0]!.character.activeContract = { contractId: mission.id, progress: mission.objective.target };
+    const startingSalvage = state.players[0]!.character.salvage ?? 0;
+    const server = new GameRoomServer(state);
+    const sent: Array<Record<string, unknown>> = [];
+    const client: ConnectedClient = {
+      seatId: "seat-1",
+      view: "phone",
+      socket: {
+        send: (payload: string) => sent.push(JSON.parse(payload)),
+        close() {}
+      } as unknown as ConnectedClient["socket"]
+    };
+
+    (server as unknown as { adoptPhoneClient: (connectedClient: ConnectedClient) => void }).adoptPhoneClient(client);
+    (server as unknown as { adoptPhoneClient: (connectedClient: ConnectedClient) => void }).adoptPhoneClient(client);
+
+    expect(server.getState().players[0]!.character.salvage).toBe(startingSalvage + 1);
+    expect(server.getState().players[0]!.character.completedMissionRecords).toHaveLength(1);
+    expect(server.getState().pendingMissionSelection?.status).toBe("awaitingSelection");
+    expect(sent.at(-1)).toMatchObject({
+      type: "STATE_PATCH",
+      payload: {
+        pendingMissionSelection: {
+          completedContractId: mission.id,
+          status: "awaitingSelection"
+        }
+      }
+    });
+    expect(server.getState().eventLog.filter((event) =>
+      (event as { type?: string; contractId?: string }).type === "COMPLETE_CONTRACT" &&
+      (event as { contractId?: string }).contractId === mission.id
+    )).toHaveLength(1);
+  });
+
   it("creates one live sector for every board node and keeps ids aligned", () => {
     const sectors = createCanonicalSectorGraph();
 
