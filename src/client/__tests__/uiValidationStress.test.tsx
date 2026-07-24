@@ -317,6 +317,12 @@ describe("Ashen Reach UI validation stress states", () => {
     render(<PhoneInventoryPanel patch={createMasterAlphaPhonePatch()} onIntent={vi.fn()} />);
 
     const inventory = screen.getByLabelText("Inventory");
+    for (const category of [/artifacts.*records/i, /equipment.*records/i, /followers.*records/i]) {
+      const toggle = within(inventory).getByRole("button", { name: category });
+      if (toggle.getAttribute("aria-expanded") !== "true") {
+        fireEvent.click(toggle);
+      }
+    }
 
     expect(within(inventory).getByText(longGearName)).toBeInTheDocument();
     expect(within(inventory).getByText(longFollowerName)).toBeInTheDocument();

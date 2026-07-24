@@ -68,6 +68,16 @@ const signalTheatreResultCrestByOutcome = {
   defeat: "/assets/riftfall/ui/signal-theatre/results/defeat.png"
 } as const;
 
+export type InventoryCategoryIcon = "artifacts" | "equipment" | "followers" | "status" | "progression";
+
+const inventoryCategoryIconByCategory: Record<InventoryCategoryIcon, string> = {
+  artifacts: "/assets/riftfall/ui/inventory-categories/artifacts.png",
+  equipment: "/assets/riftfall/ui/inventory-categories/equipment.png",
+  followers: "/assets/riftfall/ui/inventory-categories/followers.png",
+  status: "/assets/riftfall/ui/inventory-categories/status.png",
+  progression: "/assets/riftfall/ui/inventory-categories/progression.png"
+};
+
 const uiAssetPaths = [
   "/assets/riftfall/ui/ashen-reach-lobby-stage.png",
   "/assets/riftfall/ui/signal-theatre/world-stage.png",
@@ -77,6 +87,7 @@ const uiAssetPaths = [
   ...SIGNAL_PIECE_IDS.map(getSignalPieceAssetPath),
   ...Object.values(signalTheatreStatSealByStat),
   ...Object.values(signalTheatreResultCrestByOutcome),
+  ...Object.values(inventoryCategoryIconByCategory),
   "/assets/riftfall/ui/ui_scenario_frame.png",
   "/assets/riftfall/ui/ui_card_frame_red.png",
   "/assets/riftfall/ui/ui_card_frame_blue.png",
@@ -135,6 +146,10 @@ export function getSignalTheatreStatSealPath(stat: Stat): string {
 
 export function getSignalTheatreResultCrestPath(outcome: "success" | "defeat"): string {
   return signalTheatreResultCrestByOutcome[outcome];
+}
+
+export function getInventoryCategoryIconPath(category: InventoryCategoryIcon): string {
+  return inventoryCategoryIconByCategory[category];
 }
 
 export function getCharacterPortraitPath(characterId: string): string {

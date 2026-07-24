@@ -7,6 +7,7 @@ import {
 } from "../../game/rules/statUpgrades.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
+import { getInventoryCategoryIconPath, type InventoryCategoryIcon } from "../shared/assetPaths.js";
 import { statOrder } from "../shared/statLabels.js";
 import type { AfflictionSummary, ClientIntent, PhonePatchPayload, ScarSummary, Stat, TrophyPileEntry } from "../shared/types.js";
 import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
@@ -29,13 +30,19 @@ interface PhoneInventoryPanelProps {
 
 function InventoryDisclosure({
   label,
+  icon,
+  summary,
   count,
+  countLabel = "records",
   initiallyOpen,
   actionAvailable,
   children
 }: {
   label: string;
+  icon: InventoryCategoryIcon;
+  summary: string;
   count: number;
+  countLabel?: string;
   initiallyOpen: boolean;
   actionAvailable: boolean;
   children: ReactNode;
@@ -55,9 +62,21 @@ function InventoryDisclosure({
         aria-controls={contentId}
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="phone-inventory-group-label">{label}</span>
+        <img
+          className="phone-inventory-group-icon"
+          src={getInventoryCategoryIconPath(icon)}
+          alt=""
+          aria-hidden="true"
+          width={48}
+          height={48}
+          decoding="async"
+        />
+        <span className="phone-inventory-group-copy">
+          <span className="phone-inventory-group-label">{label}</span>
+          <small>{summary}</small>
+        </span>
         {actionAvailable ? <span className="phone-inventory-group-action">Action available</span> : null}
-        <span className="phone-inventory-group-count" aria-label={`${count} ${label} cards`}>{count}</span>
+        <span className="phone-inventory-group-count" aria-label={`${count} ${label} ${countLabel}`}>{count}</span>
         <span className="phone-inventory-group-indicator" aria-hidden="true" />
       </button>
       {open ? <div id={contentId} role="group" aria-labelledby={buttonId} className="phone-inventory-group-content">{children}</div> : null}
@@ -343,39 +362,6 @@ function InventoryCard({
       )) : null}
       </>}
     />
-  );
-}
-
-function InventoryTimingGroups({ cards }: { cards: InventoryCardViewModel[] }): ReactElement | null {
-  const groups = [
-    {
-      label: "Useful now",
-      items: cards.filter((card) => card.canUseNow)
-    },
-    {
-      label: "Passive / already applied",
-      items: cards.filter((card) => card.status === "Passive")
-    },
-    {
-      label: "Not usable now",
-      items: cards.filter((card) => !card.canUseNow && card.status !== "Passive")
-    }
-  ];
-
-  if (cards.length === 0) {
-    return null;
-  }
-
-  return (
-    <section className="phone-inventory-timing-groups" aria-label="Inventory timing groups">
-      {groups.map((group) => (
-        <article key={group.label} className="phone-inventory-timing-group">
-          <span>{group.label}</span>
-          <strong>{group.items.length}</strong>
-          <small>{group.items.slice(0, 2).map((item) => item.name).join(", ") || "None"}</small>
-        </article>
-      ))}
-    </section>
   );
 }
 
@@ -704,11 +690,64 @@ export function PhoneInventoryPanel({
     ? presentation.relevantNow
     : allCards.filter((card) => card.canUseNow)
   ).filter((card) => onlyUsable ? card.canUseNow : true);
-  const groups = onlyUsable
-    ? [{ group: "Equipment" as const, items: relevantCards }]
-    : presentation.groups;
-  const visibleGroups = groups.filter((group) => group.items.length > 0);
-  const visibleItemCount = visibleGroups.reduce((sum, group) => sum + group.items.length, 0) + (onlyUsable ? 0 : relevantCards.length);
+  const visibleItemCount = onlyUsable ? relevantCards.length : allCards.length;
+  const artifactCards = allCards.filter((card) => card.group === "Artifacts / Relics");
+  const followerCards = allCards.filter((card) => card.group === "Followers");
+  const equipmentCards = allCards.filter((card) => card.group !== "Artifacts / Relics" && card.group !== "Followers");
+  const scars = self.character.scarCards ?? [];
+  const faceupAfflictions = self.character.afflictions?.faceup ?? [];
+  const facedownAfflictionCount = self.character.afflictions?.facedownCount ?? 0;
+  const statusCount = scars.length + faceupAfflictions.length + facedownAfflictionCount;
+  const progressionCount = (self.character.trophyPile?.length ?? 0) + (self.character.completedMissionRecords?.length ?? 0);
+  const summarizeCards = (cards: InventoryCardViewModel[], empty: string): string =>
+    cards.length === 0
+      ? empty
+      : `${cards.slice(0, 2).map((card) => card.name).join(" · ")}${cards.length > 2 ? ` +${cards.length - 2}` : ""}`;
+  const categories = [
+    {
+      id: "artifacts" as const,
+      label: "Artifacts",
+      count: artifactCards.length,
+      summary: summarizeCards(artifactCards, "No relics held"),
+      cards: artifactCards,
+      actionAvailable: artifactCards.some((card) => card.canUseNow)
+    },
+    {
+      id: "equipment" as const,
+      label: "Equipment",
+      count: equipmentCards.length,
+      summary: summarizeCards(equipmentCards, "No carried equipment"),
+      cards: equipmentCards,
+      actionAvailable: equipmentCards.some((card) => card.canUseNow)
+    },
+    {
+      id: "followers" as const,
+      label: "Followers",
+      count: followerCards.length,
+      summary: summarizeCards(followerCards, "No companions"),
+      cards: followerCards,
+      actionAvailable: followerCards.some((card) => card.canUseNow)
+    },
+    {
+      id: "status" as const,
+      label: "Scars & Afflictions",
+      count: statusCount,
+      summary: statusCount === 0 ? "No persistent conditions" : `${scars.length} Scars · ${faceupAfflictions.length + facedownAfflictionCount} Afflictions`,
+      cards: [] as InventoryCardViewModel[],
+      actionAvailable: false
+    },
+    {
+      id: "progression" as const,
+      label: "Progression",
+      count: progressionCount,
+      summary: `${self.character.trophies ?? 0} Trophies · ${self.character.completedContracts?.length ?? 0} completed Missions`,
+      cards: [] as InventoryCardViewModel[],
+      actionAvailable: false
+    }
+  ];
+  const defaultOpenCategory = categories.find((category) => category.actionAvailable)?.id
+    ?? categories.find((category) => category.count > 0)?.id
+    ?? "equipment";
   const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
   const canManageEquipment =
     (patch.status === "lobby" && patch.phase === "start") ||
@@ -730,11 +769,10 @@ export function PhoneInventoryPanel({
             <em>{relevantCards.length}</em>
           </div>
           {relevantCards.length > 0 ? (
-            <div className="phone-inventory-card-list">
-              {relevantCards.map((card) => (
-                <InventoryCard key={`${card.source}:${card.instanceId ?? card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} canManageEquipment={canManageEquipment} />
-              ))}
-            </div>
+            <p className="phone-inventory-relevant-summary">
+              {relevantCards.slice(0, 3).map((card) => card.name).join(" · ")}
+              {relevantCards.length > 3 ? ` · +${relevantCards.length - 3} more` : ""}
+            </p>
           ) : <p>Nothing you own changes this decision. Continue with the required action.</p>}
         </section>
       ) : null}
@@ -757,48 +795,64 @@ export function PhoneInventoryPanel({
           </GameButton>
         ) : null}
       </div>
-      {!onlyUsable && <InventoryScarsSection scars={self.character.scarCards ?? []} />}
-      {!onlyUsable && (
-        <InventoryAfflictionsSection
-          afflictions={self.character.afflictions?.faceup ?? []}
-          facedownCount={self.character.afflictions?.facedownCount ?? 0}
-        />
-      )}
-      {!onlyUsable && <InventoryProgressionSection patch={patch} onIntent={onIntent} />}
-      {!onlyUsable && patch.activeOathchainReveal ? (
-        <section className="phone-inventory-oathchain-reveal" aria-label="Private Lens Reading">
-          <span>Private Lens Reading</span>
-          <strong>{patch.activeOathchainReveal.contractName}</strong>
-          <p>{patch.activeOathchainReveal.objectiveProgress}</p>
-          <ul>{patch.activeOathchainReveal.revealedTargets.map((target) => <li key={`${target.kind}:${target.id}:${target.sectorId ?? "none"}`}><strong>{target.label}</strong><span>{target.detail}</span></li>)}</ul>
-          <small>Until end of turn</small>
-        </section>
-      ) : null}
-      {!onlyUsable && <InventoryTimingGroups cards={allCards} />}
-      {!onlyUsable && visibleGroups.length > 0 ? <div className="phone-inventory-collection-heading"><span>Full collection</span><small>Inspect carried and inactive cards</small></div> : null}
-      {visibleGroups.length === 0 && (onlyUsable || relevantCards.length === 0) ? (
+      {!onlyUsable ? <div className="phone-inventory-collection-heading"><span>Inventory categories</span><small>Expand a reliquary drawer</small></div> : null}
+      {onlyUsable && relevantCards.length === 0 ? (
         <p className="phone-sheet-action-empty">
-          {onlyUsable ? "No combat cards are usable in this timing window." : "No inventory cards, followers, or quest items yet."}
+          No combat cards are usable in this timing window.
         </p>
+      ) : onlyUsable ? (
+        <InventoryDisclosure
+          label="Equipment"
+          icon="equipment"
+          summary={summarizeCards(relevantCards, "No usable equipment")}
+          count={relevantCards.length}
+          initiallyOpen
+          actionAvailable
+        >
+          <div className="phone-inventory-card-list">
+            {relevantCards.map((card) => (
+              <InventoryCard key={`${card.source}-${card.instanceId ?? card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} canManageEquipment={canManageEquipment} />
+            ))}
+          </div>
+        </InventoryDisclosure>
       ) : (
-        visibleGroups.map((group) => {
-          const actionAvailable = group.items.some((card) => card.canUseNow);
-          return (
+        categories.map((category) => (
           <InventoryDisclosure
-            key={group.group}
-            label={group.group}
-            count={group.items.length}
-            initiallyOpen
-            actionAvailable={actionAvailable}
+            key={category.id}
+            label={category.label}
+            icon={category.id}
+            summary={category.summary}
+            count={category.count}
+            initiallyOpen={category.id === defaultOpenCategory}
+            actionAvailable={category.actionAvailable}
           >
-            <div className="phone-inventory-card-list">
-              {group.items.map((card) => (
-                <InventoryCard key={`${card.source}-${card.instanceId ?? card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} canManageEquipment={canManageEquipment} />
-              ))}
-            </div>
+            {category.cards.length > 0 ? (
+              <div className="phone-inventory-card-list">
+                {category.cards.map((card) => (
+                  <InventoryCard key={`${card.source}-${card.instanceId ?? card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} canManageEquipment={canManageEquipment} />
+                ))}
+              </div>
+            ) : null}
+            {category.id === "artifacts" && patch.activeOathchainReveal ? (
+              <section className="phone-inventory-oathchain-reveal" aria-label="Private Lens Reading">
+                <span>Private Lens Reading</span>
+                <strong>{patch.activeOathchainReveal.contractName}</strong>
+                <p>{patch.activeOathchainReveal.objectiveProgress}</p>
+                <ul>{patch.activeOathchainReveal.revealedTargets.map((target) => <li key={`${target.kind}:${target.id}:${target.sectorId ?? "none"}`}><strong>{target.label}</strong><span>{target.detail}</span></li>)}</ul>
+                <small>Until end of turn</small>
+              </section>
+            ) : null}
+            {category.id === "status" ? (
+              statusCount > 0 ? (
+                <>
+                  <InventoryScarsSection scars={scars} />
+                  <InventoryAfflictionsSection afflictions={faceupAfflictions} facedownCount={facedownAfflictionCount} />
+                </>
+              ) : <p className="phone-sheet-action-empty">No persistent Scars or Afflictions.</p>
+            ) : null}
+            {category.id === "progression" ? <InventoryProgressionSection patch={patch} onIntent={onIntent} /> : null}
           </InventoryDisclosure>
-          );
-        })
+        ))
       )}
     </section>
   );

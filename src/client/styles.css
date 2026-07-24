@@ -5115,6 +5115,20 @@ select {
 
 .phone-inventory-relevant {
   border-color: rgba(204, 157, 75, 0.62);
+  gap: 0.42rem;
+  padding: 0.62rem 0.7rem;
+  background:
+    linear-gradient(100deg, rgba(42, 28, 19, 0.94), rgba(8, 12, 17, 0.96)),
+    rgba(8, 11, 15, 0.9);
+}
+
+.phone-inventory-relevant-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #d9c9aa !important;
+  font-size: 0.72rem !important;
 }
 
 .phone-inventory-relevant .phone-inventory-active-section > strong {
@@ -9260,8 +9274,16 @@ select {
 .phone-inventory-group {
   min-height: 0;
   display: grid;
-  gap: 0.36rem;
+  gap: 0;
   overflow: visible;
+  border: 1px solid rgba(143, 183, 218, 0.18);
+  border-radius: 0.5rem;
+  background:
+    linear-gradient(100deg, rgba(18, 20, 24, 0.96), rgba(7, 10, 14, 0.96)),
+    rgba(8, 12, 18, 0.9);
+  box-shadow:
+    inset 0 1px rgba(238, 214, 171, 0.05),
+    0 0.35rem 0.9rem rgba(0, 0, 0, 0.16);
 }
 
 .phone-inventory-group .phone-sheet-section-heading {
@@ -9271,19 +9293,52 @@ select {
 
 .phone-inventory-group-toggle {
   width: 100%;
-  min-height: 44px;
+  min-height: 64px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-columns: 48px minmax(0, 1fr) auto auto auto;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid rgba(143, 183, 218, 0.24);
-  border-radius: 0.35rem;
-  background: rgba(8, 12, 18, 0.76);
+  gap: 0.55rem;
+  padding: 0.46rem 0.62rem 0.46rem 0.46rem;
+  border: 0;
+  border-radius: 0.48rem;
+  background:
+    linear-gradient(90deg, rgba(93, 63, 36, 0.12), transparent 45%),
+    transparent;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.phone-inventory-group-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.7));
+}
+
+.phone-inventory-group-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.16rem;
+}
+
+.phone-inventory-group-copy small {
+  min-width: 0;
+  overflow: hidden;
+  color: rgba(222, 215, 200, 0.68);
+  font-size: 0.68rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-inventory-group-label {
+  color: #eee0c5;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
 }
 
 .phone-inventory-group-toggle:focus-visible {
@@ -9312,13 +9367,34 @@ select {
   transform: rotate(225deg) translate(-0.05rem, -0.05rem);
 }
 
+.phone-inventory-group.is-open {
+  border-color: rgba(202, 166, 102, 0.38);
+}
+
+.phone-inventory-group.is-open .phone-inventory-group-toggle {
+  border-radius: 0.48rem 0.48rem 0 0;
+  background:
+    linear-gradient(90deg, rgba(126, 83, 41, 0.2), transparent 60%),
+    rgba(15, 18, 22, 0.88);
+}
+
 .phone-inventory-group.has-action .phone-inventory-group-toggle {
-  border-left-color: #d0b377;
-  border-left-width: 3px;
+  box-shadow: inset 3px 0 #d0b377;
+}
+
+.phone-inventory-group.has-action .phone-inventory-group-icon {
+  filter:
+    drop-shadow(0 0 5px rgba(237, 180, 83, 0.44))
+    drop-shadow(0 2px 2px rgba(0, 0, 0, 0.7));
 }
 
 .phone-inventory-group-content {
   min-width: 0;
+  display: grid;
+  gap: 0.42rem;
+  padding: 0.48rem;
+  border-top: 1px solid rgba(202, 166, 102, 0.16);
+  background: rgba(3, 6, 9, 0.36);
 }
 
 .phone-inventory-group-count {
@@ -9336,12 +9412,21 @@ select {
 
 @media (max-width: 390px) {
   .phone-inventory-group-toggle {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: 44px minmax(0, 1fr) auto auto;
+  }
+
+  .phone-inventory-group-icon {
+    width: 44px;
+    height: 44px;
   }
 
   .phone-inventory-group-action {
-    grid-column: 1 / -1;
+    grid-column: 2 / -1;
     grid-row: 2;
+  }
+
+  .phone-inventory-group-copy small {
+    max-width: 12.5rem;
   }
 }
 

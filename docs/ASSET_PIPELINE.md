@@ -60,6 +60,7 @@ Remaining legacy files:
 - Prompt manifest root: `src/game/assets/design/imagePrompts.ts`
 - Signal Theatre prompt catalog: `src/game/assets/design/signalTheatreEnvironmentPrompts.ts`
 - Signal Piece prompt catalog: `src/game/assets/design/signalPiecePrompts.ts`
+- Inventory category emblem prompt catalog: `src/game/assets/design/inventoryCategoryIconPrompts.ts`
 - Generated card image prompt catalog: `src/game/assets/design/generatedCardImagePrompts.ts`
 - Card fallback and output directories: `src/game/assets/design/cardImageCatalog.ts`
 
@@ -69,6 +70,7 @@ Remaining legacy files:
 - Signal Theatre environment PNGs use the canonical sector ID under `public/assets/riftfall/environments/signal-theatre/sectors/`.
 - Signal Theatre environment generation must create original Ashenreach locations and must not use legacy tile art or reference-game imagery as inputs.
 - Signal Piece PNGs use the six stable catalog IDs: `beacon`, `bastion`, `lantern`, `harrow`, `reliquary`, and `compass`.
+- Private phone inventory category emblems use `artifacts`, `equipment`, `followers`, `status`, and `progression` under `public/assets/riftfall/ui/inventory-categories/`.
 - Card art generated from content uses the card ID as the PNG filename under `public/assets/cards/<type>/`.
 - Active threat card art is organized by `threatLane` under `public/assets/cards/threats/red/`, `public/assets/cards/threats/blue/`, and `public/assets/cards/threats/yellow/`.
 - Do not add new Ashenreach card art under `public/assets/riftfall/cards/`. Treat that folder as legacy/source/reference material only.
@@ -84,7 +86,7 @@ Run:
 npm run audit:assets
 ```
 
-The asset audit is the source of truth for the current expected count. Signal Theatre adds 49 distinct sector environments and 6 selectable player-piece renders.
+The asset audit is the source of truth for the current expected count. Signal Theatre adds 49 distinct sector environments and 6 selectable player-piece renders. The phone inventory adds 5 original category emblems.
 
 Previous baseline after the July 2026 repository cleanup and contract-art refresh:
 

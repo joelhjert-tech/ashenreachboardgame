@@ -8,6 +8,14 @@ import { PhoneInventoryPanel } from "../PhoneInventoryPanel.js";
 import { PortraitControllerView } from "../PortraitControllerView.js";
 import type { CharacterCatalogEntry, PhonePatchPayload } from "../../shared/types.js";
 
+function openInventoryCategory(label: RegExp): HTMLElement {
+  const toggle = screen.getByRole("button", { name: label });
+  if (toggle.getAttribute("aria-expanded") !== "true") {
+    fireEvent.click(toggle);
+  }
+  return toggle;
+}
+
 const combatWeapon = {
   id: "black-route-fuse",
   name: "Black Route Fuse",
@@ -264,6 +272,7 @@ describe("PhoneInventoryPanel", () => {
       self: basePatch.self ? { ...basePatch.self, character: { ...basePatch.self.character, followers: [lucy] } } : null
     } satisfies PhonePatchPayload;
     render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
+    openInventoryCategory(/followers.*records/i);
     const card = screen.getByLabelText(/lucy, hell puppy: locked/i);
     expect(card).toHaveTextContent(/exhausted/i);
     expect(card).toHaveTextContent(/refreshes next round/i);
@@ -297,12 +306,14 @@ describe("PhoneInventoryPanel", () => {
   it("groups private inventory cards by type and shows usability status", () => {
     render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
 
-    expect(screen.getAllByText("Weapons").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Armor").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Consumables").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Artifacts / Relics").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Followers").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Quest Items").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /artifacts.*records/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /equipment.*records/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /followers.*records/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /scars & afflictions.*records/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /progression.*records/i })).toBeInTheDocument();
+    openInventoryCategory(/equipment.*records/i);
+    openInventoryCategory(/followers.*records/i);
+    openInventoryCategory(/progression.*records/i);
     expect(screen.getByTestId("phone-inventory-progression")).toHaveTextContent(/progression/i);
     expect(screen.getByTestId("phone-inventory-progression")).toHaveTextContent(/trophies: 0/i);
     expect(screen.getByRole("button", { name: /command 3 -> 4\s*need 4 more trophies/i })).toBeDisabled();
@@ -311,11 +322,7 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getAllByText("Ashen Route Compass").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Passive").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Usable now").length).toBeGreaterThan(0);
-    expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/useful now/i);
-    expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/passive \/ already applied/i);
-    expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/not usable now/i);
-    expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/black route fuse/i);
-    expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/coffin rig/i);
+    expect(screen.getByTestId("phone-inventory-relevant-now")).toHaveTextContent(/relevant now/i);
     expect(screen.getByText(/no wounds to heal/i)).toBeInTheDocument();
   });
 
@@ -389,6 +396,7 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
+    openInventoryCategory(/scars & afflictions.*records/i);
     const scars = screen.getByTestId("phone-inventory-scars");
 
     expect(scars).toHaveTextContent(/scars: 1/i);
@@ -434,6 +442,7 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
+    openInventoryCategory(/scars & afflictions.*records/i);
     const afflictions = screen.getByTestId("phone-inventory-afflictions");
 
     expect(afflictions).toHaveTextContent(/afflictions: 2/i);
@@ -470,6 +479,7 @@ describe("PhoneInventoryPanel", () => {
 
     render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
 
+    openInventoryCategory(/progression.*records/i);
     const progression = screen.getByTestId("phone-inventory-progression");
     expect(progression).toHaveTextContent(/trophies: 6/i);
     expect(progression).toHaveTextContent(/cinder-veil stalker/i);
@@ -566,6 +576,8 @@ describe("PhoneInventoryPanel", () => {
   it("renders inventory and follower cards with wrapped media and cleared actions", () => {
     render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
 
+    openInventoryCategory(/equipment.*records/i);
+    openInventoryCategory(/followers.*records/i);
     const itemCard = screen.getByLabelText(/black route fuse: usable now/i);
     expect(itemCard).toHaveClass("phone-wrap-card", "phone-wrap-card--inventory");
     expect(itemCard.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
@@ -612,19 +624,20 @@ describe("PhoneInventoryPanel", () => {
     render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
 
     const inventory = screen.getByLabelText("Inventory");
-    const weaponsCount = screen.getByLabelText("7 Weapons cards");
-    const weaponsGroup = weaponsCount.closest(".phone-inventory-group");
+    const equipmentCount = screen.getByLabelText("10 Equipment records");
+    const equipmentGroup = equipmentCount.closest(".phone-inventory-group");
 
     expect(inventory).toHaveClass("phone-inventory-panel-overflow");
     expect(inventory).toHaveAttribute("data-item-count", "12");
-    expect(weaponsGroup?.querySelector(".phone-inventory-card-list")).not.toHaveClass("phone-inventory-card-list-scroll");
-    expect(weaponsCount).toBeInTheDocument();
+    openInventoryCategory(/equipment.*records/i);
+    expect(equipmentGroup?.querySelector(".phone-inventory-card-list")).not.toHaveClass("phone-inventory-card-list-scroll");
+    expect(equipmentCount).toBeInTheDocument();
   });
 
   it("uses accessible disclosure controls with stable unique relationships", () => {
     render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
 
-    const toggles = screen.getAllByRole("button", { name: /cards/i });
+    const toggles = screen.getAllByRole("button", { name: /records/i });
     expect(toggles.length).toBeGreaterThan(1);
     const controlledIds = toggles.map((toggle) => toggle.getAttribute("aria-controls"));
     expect(new Set(controlledIds).size).toBe(controlledIds.length);
@@ -639,10 +652,23 @@ describe("PhoneInventoryPanel", () => {
     }
   });
 
+  it("uses the five custom category emblems and opens one useful drawer by default", () => {
+    render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
+
+    const iconPaths = ["artifacts", "equipment", "followers", "status", "progression"].map(
+      (category) => `/assets/riftfall/ui/inventory-categories/${category}.png`
+    );
+    const icons = Array.from(document.querySelectorAll<HTMLImageElement>(".phone-inventory-group-icon"));
+
+    expect(icons.map((icon) => icon.getAttribute("src"))).toEqual(iconPaths);
+    expect(icons.every((icon) => icon.alt === "" && icon.getAttribute("aria-hidden") === "true")).toBe(true);
+    expect(screen.getAllByRole("button", { name: /records/i }).filter((toggle) => toggle.getAttribute("aria-expanded") === "true")).toHaveLength(1);
+  });
+
   it("collapses content so its item actions are no longer keyboard reachable, then restores them", () => {
     render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
 
-    const weaponsToggle = screen.getByRole("button", { name: /1 weapons cards/i });
+    const weaponsToggle = openInventoryCategory(/equipment.*records/i);
     const useButton = screen.getByRole("button", { name: /use black route fuse/i });
     expect(weaponsToggle).toHaveAttribute("aria-expanded", "true");
     expect(useButton).toBeInTheDocument();
@@ -661,7 +687,7 @@ describe("PhoneInventoryPanel", () => {
   it("opens and marks groups that contain an immediately eligible action", () => {
     render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
 
-    const weaponsToggle = screen.getByRole("button", { name: /1 weapons cards/i });
+    const weaponsToggle = openInventoryCategory(/equipment.*records/i);
     expect(weaponsToggle).toHaveAttribute("aria-expanded", "true");
     expect(weaponsToggle).toHaveTextContent(/action available/i);
     expect(weaponsToggle.closest(".phone-inventory-group")).toHaveClass("has-action");
@@ -670,6 +696,7 @@ describe("PhoneInventoryPanel", () => {
   it("makes usable, passive, and inactive item state explicit", () => {
     render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
 
+    openInventoryCategory(/equipment.*records/i);
     expect(screen.getByLabelText(/black route fuse: usable now/i)).toHaveAttribute("data-inventory-state", "active");
     expect(screen.getByLabelText(/black route fuse: usable now/i)).toHaveTextContent(/active in this timing window/i);
     expect(screen.getByRole("button", { name: /use black route fuse/i })).toHaveTextContent(/use now/i);
@@ -679,6 +706,7 @@ describe("PhoneInventoryPanel", () => {
 
     cleanup();
     render(<PhoneInventoryPanel patch={createPatch({ phase: "navigation", encounter: null })} onIntent={vi.fn()} />);
+    openInventoryCategory(/equipment.*records/i);
     expect(screen.getByLabelText(/black route fuse: ready but not usable now/i)).toHaveTextContent(/timing locked/i);
     expect(screen.getByLabelText(/black route fuse: ready but not usable now/i)).not.toHaveTextContent(/\bready\b/i);
   });
@@ -701,6 +729,7 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
+    openInventoryCategory(/equipment.*records/i);
     const itemCard = screen.getByLabelText(/black route fuse: locked/i);
     expect(itemCard).toHaveTextContent(/usable only in grit battles/i);
     expect(itemCard).toHaveTextContent(/this encounter uses command/i);
@@ -724,6 +753,7 @@ describe("PhoneInventoryPanel", () => {
 
     render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
 
+    openInventoryCategory(/equipment.*records/i);
     const armorCard = screen.getByLabelText(/coffin rig: ready but not usable now/i);
     expect(armorCard).toHaveAttribute("data-inventory-state", "inactive");
     expect(armorCard).toHaveTextContent(/equip to apply \+1 forge/i);
@@ -758,6 +788,8 @@ describe("PhoneInventoryPanel", () => {
 
     render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
 
+    openInventoryCategory(/artifacts.*records/i);
+    openInventoryCategory(/followers.*records/i);
     const relicCard = screen.getByLabelText(/choir static censer: usable now/i);
     expect(relicCard).toHaveTextContent(/1 \/ 2 charges/i);
     const followerCard = screen.getByLabelText(/choir defector: locked/i);
@@ -807,6 +839,7 @@ describe("PhoneInventoryPanel", () => {
 
     render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
 
+    openInventoryCategory(/artifacts.*records/i);
     const card = screen.getByLabelText(/choir lantern: locked/i);
     expect(card).toHaveTextContent(/\+1 signal · always active/i);
     expect(card).toHaveTextContent(/0 \/ 2 charges/i);
@@ -852,6 +885,7 @@ describe("PhoneInventoryPanel", () => {
 
     render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
 
+    openInventoryCategory(/artifacts.*records/i);
     const card = screen.getAllByLabelText(/choir lantern/i).find((element) => element.classList.contains("phone-inventory-card"));
     expect(card).toBeDefined();
     expect(card!).toHaveTextContent(/1 \/ 2 charges/i);
@@ -889,6 +923,7 @@ describe("PhoneInventoryPanel", () => {
 
     render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
 
+    openInventoryCategory(/artifacts.*records/i);
     const card = screen.getByLabelText(/oathchain lens: suppressed/i);
     expect(card).toHaveTextContent(/\+1 command · suppressed/i);
     expect(card).toHaveTextContent(/active ability/i);
@@ -944,6 +979,7 @@ describe("PhoneInventoryPanel", () => {
 
     render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
 
+    openInventoryCategory(/followers.*records/i);
     expect(screen.getByText("Fandiablos")).toBeInTheDocument();
     expect(screen.getByText(/before threat draw/i)).toBeInTheDocument();
     expect(document.querySelector('img[src="/assets/cards/artifacts/artifact-fandiablos.png"]')).toBeInTheDocument();
@@ -1685,6 +1721,7 @@ describe("PhoneInventoryPanel", () => {
     const onIntent = vi.fn();
     render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
 
+    openInventoryCategory(/equipment.*records/i);
     const fuseCard = screen.getByLabelText(/black route fuse:/i);
     fireEvent.click(within(fuseCard).getByRole("button", { name: /equip weapon/i }));
 
@@ -2207,6 +2244,7 @@ describe("PhoneInventoryPanel", () => {
     const onIntent = vi.fn();
 
     const view = render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
+    openInventoryCategory(/progression.*records/i);
     expect(screen.getByLabelText(/completed contract ledger/i)).toHaveTextContent("Choir Hush Census");
     view.unmount();
 
@@ -2602,8 +2640,8 @@ describe("PhoneInventoryPanel", () => {
     });
     render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
     const relevant = screen.getByTestId("phone-inventory-relevant-now");
-    expect(within(relevant).getByText("Black Route Fuse")).toBeInTheDocument();
-    expect(within(relevant).getByText("Cinder Suture Kit")).toBeInTheDocument();
+    expect(relevant).toHaveTextContent("Black Route Fuse");
+    expect(relevant).toHaveTextContent("Cinder Suture Kit");
     expect(within(relevant).queryByText("Coffin Rig")).not.toBeInTheDocument();
     expect(relevant).toHaveTextContent(/battle roll/i);
   });
