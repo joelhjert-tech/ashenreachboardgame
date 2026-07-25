@@ -977,9 +977,11 @@ function ActiveResolutionCard({
 
 function OrphanResolutionRecoveryCard({
   outcome,
+  canContinue = true,
   onContinue
 }: {
   outcome: OutcomeSummary;
+  canContinue?: boolean;
   onContinue: () => void;
 }): ReactElement {
   const dice = [outcome.die1, outcome.die2].filter((face): face is number => typeof face === "number");
@@ -996,15 +998,17 @@ function OrphanResolutionRecoveryCard({
         <span>Resolution</span>
         <strong>{outcome.encounterTitle ?? "Roll result"}</strong>
       </div>
-      <GameButton
-        tone="primary"
-        className="phone-button phone-button-primary phone-resolution-continue phone-resolution-continue-priority"
-        data-testid="phone-resolution-continue"
-        type="button"
-        onClick={onContinue}
-      >
-        Continue
-      </GameButton>
+      {canContinue ? (
+        <GameButton
+          tone="primary"
+          className="phone-button phone-button-primary phone-resolution-continue phone-resolution-continue-priority"
+          data-testid="phone-resolution-continue"
+          type="button"
+          onClick={onContinue}
+        >
+          Continue
+        </GameButton>
+      ) : null}
       <div className="phone-resolution-roll" data-testid="phone-roll-result">
         {dice.length > 0 && total !== null && target !== null && (
           <CombatDiceAnimation
@@ -3109,6 +3113,7 @@ export function PhoneActionPanel({
   const canContinueResolution =
     isActiveSeat &&
     !!activeResolution &&
+    self.character.status !== "recalled" &&
     !patch.pendingEncounterDecisionPrivate &&
     !patch.pendingMemoryTaxChoicePrivate &&
     !patch.pendingAfflictionChoicePrivate &&
@@ -3125,7 +3130,11 @@ export function PhoneActionPanel({
     patch.seats.find((seat) => seat.seatId === self.seatId)?.displayName ??
     self.character.name;
   const resolutionPanel = orphanResolutionOutcome ? (
-    <OrphanResolutionRecoveryCard outcome={orphanResolutionOutcome} onContinue={continueResolution} />
+    <OrphanResolutionRecoveryCard
+      outcome={orphanResolutionOutcome}
+      canContinue={self.character.status !== "recalled"}
+      onContinue={continueResolution}
+    />
   ) : (
     <ActiveResolutionCard
       resolution={activeResolution}

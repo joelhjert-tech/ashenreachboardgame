@@ -3530,6 +3530,46 @@ describe("PhoneActionPanel", () => {
     expect(onIntent).toHaveBeenCalledWith({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
   });
 
+  it("does not offer Continue while a recalled operative must be replaced", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+    const base = createPatch();
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          phase: "resolution",
+          self: {
+            ...base.self!,
+            character: {
+              ...base.self!.character,
+              status: "recalled"
+            }
+          },
+          activeResolution: {
+            id: "seat-1:threat:ash-cinder-runt:recalled",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "outcome_summary",
+            card: {
+              id: "ash-cinder-runt",
+              title: "Ash-Cinder Runt",
+              type: "enemy"
+            },
+            outcome: {
+              title: "Operative recalled",
+              text: "Wound threshold reached. Recruit a replacement.",
+              effects: []
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: /^continue$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /recruit sable vey/i })).toBeEnabled();
+  });
+
   it("does not repeat identical success copy as both outcome text and bullet", () => {
     render(
       <PhoneActionPanel
