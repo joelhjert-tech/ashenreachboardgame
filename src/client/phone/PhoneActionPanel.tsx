@@ -3252,10 +3252,13 @@ export function PhoneActionPanel({
   }
 
   if (
-    patch.cooperativeAssistance ||
-    patch.cooperativeAssistanceEligibility ||
-    patch.pendingCooperativeTest ||
-    patch.activeResolution?.assistance?.activeSeatId === self.seatId
+    !canContinueResolution &&
+    (
+      patch.cooperativeAssistance ||
+      patch.cooperativeAssistanceEligibility ||
+      patch.pendingCooperativeTest ||
+      patch.activeResolution?.assistance?.activeSeatId === self.seatId
+    )
   ) {
     return <CooperativeAssistancePanel patch={patch} seatId={self.seatId} onIntent={onIntent} />;
   }

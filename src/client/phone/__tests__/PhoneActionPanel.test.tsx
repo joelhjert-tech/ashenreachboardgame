@@ -3479,6 +3479,57 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/doom rises by 1/i);
   });
 
+  it("replaces completed cooperative assistance controls with a stable result gate", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          phase: "resolution",
+          activeResolution: {
+            id: "seat-1:threat:furnace-ditch-collapse:test",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "outcome_summary",
+            card: {
+              id: "furnace-ditch-collapse",
+              title: "Furnace-Ditch Collapse",
+              type: "hazard"
+            },
+            battle: { stat: "grit", difficulty: 12, modifiers: [] },
+            roll: {
+              dice: [6, 1],
+              baseTotal: 7,
+              modifierTotal: 8,
+              finalTotal: 15,
+              target: 12,
+              success: true
+            },
+            outcome: {
+              title: "Check passed",
+              text: "The route holds.",
+              effects: []
+            },
+            assistance: {
+              testedStat: "grit",
+              activeSeatId: "seat-1",
+              contributions: [{ seatId: "seat-2", value: 3 }],
+              total: 3
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-resolution-card")).toHaveAttribute("data-result-ready-gate", "true");
+    expect(screen.getByRole("button", { name: /^continue$/i })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: /roll grit/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^continue$/i }));
+    expect(onIntent).toHaveBeenCalledWith({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
+  });
+
   it("does not repeat identical success copy as both outcome text and bullet", () => {
     render(
       <PhoneActionPanel
