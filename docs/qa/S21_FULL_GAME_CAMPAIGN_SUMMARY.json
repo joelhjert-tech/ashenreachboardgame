@@ -1,0 +1,342 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-07-25",
+  "device": {
+    "model": "Samsung Galaxy S21+",
+    "browser": "Chrome 150.0.7871.181",
+    "viewport": {
+      "width": 384,
+      "height": 722,
+      "devicePixelRatio": 2.8125
+    },
+    "role": "seat-one-real-phone-controller"
+  },
+  "host": {
+    "surface": "rendered-tv-host",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  "campaign": {
+    "gameCount": 7,
+    "completed": 7,
+    "victories": 1,
+    "defeats": 6,
+    "totalActions": 1158,
+    "combinedDurationMs": 518466,
+    "screenshotFiles": 186,
+    "selectedRecordings": 1,
+    "phoneConsoleErrors": 0,
+    "tvConsoleErrors": 0,
+    "requestFailures": 0,
+    "horizontalOverflowObservations": 0,
+    "maximumCanvasNodes": 0
+  },
+  "games": [
+    {
+      "id": "broken-seal-1p",
+      "scenario": "The Broken Seal",
+      "playerCount": 1,
+      "mode": "co-op",
+      "outcome": "defeat",
+      "actionCount": 72,
+      "durationMs": 38898,
+      "screenshotFiles": 27,
+      "actionCadenceMs": {
+        "median": 225,
+        "p95": 1950,
+        "maximum": 6399
+      },
+      "reconnectChecks": [
+        "result-ready-restored"
+      ],
+      "mechanicsObserved": [
+        "arrival",
+        "contract",
+        "cross-reach-guidance",
+        "endgame",
+        "enemy-battle",
+        "inventory",
+        "movement",
+        "pressure",
+        "result-ready",
+        "reward",
+        "shop",
+        "tile-challenge"
+      ]
+    },
+    {
+      "id": "throne-of-ash-2p-rivalry",
+      "scenario": "The Throne of Ash",
+      "playerCount": 2,
+      "mode": "rivalry",
+      "outcome": "defeat",
+      "actionCount": 115,
+      "durationMs": 43669,
+      "screenshotFiles": 27,
+      "actionCadenceMs": {
+        "median": 168,
+        "p95": 1459,
+        "maximum": 3091
+      },
+      "reconnectChecks": [
+        "waiting-state-restored"
+      ],
+      "mechanicsObserved": [
+        "arrival",
+        "contract",
+        "cross-reach-guidance",
+        "endgame",
+        "enemy-battle",
+        "inventory",
+        "movement",
+        "pressure",
+        "result-ready",
+        "reward",
+        "shop",
+        "tile-challenge",
+        "waiting"
+      ]
+    },
+    {
+      "id": "mirror-false-heroes-3p",
+      "scenario": "The Mirror of False Heroes",
+      "playerCount": 3,
+      "mode": "co-op",
+      "outcome": "defeat",
+      "actionCount": 218,
+      "durationMs": 166255,
+      "screenshotFiles": 27,
+      "actionCadenceMs": {
+        "median": 643,
+        "p95": 668,
+        "maximum": 5661
+      },
+      "reconnectChecks": [
+        "movement-selection-restored"
+      ],
+      "mechanicsObserved": [
+        "arrival",
+        "contract",
+        "cross-reach-guidance",
+        "endgame",
+        "enemy-battle",
+        "inventory",
+        "movement",
+        "pressure",
+        "result-ready",
+        "reward",
+        "shop",
+        "tile-challenge",
+        "waiting"
+      ]
+    },
+    {
+      "id": "devourer-beneath-4p",
+      "scenario": "The Devourer Beneath",
+      "playerCount": 4,
+      "mode": "co-op",
+      "outcome": "victory",
+      "actionCount": 41,
+      "durationMs": 53399,
+      "screenshotFiles": 24,
+      "actionCadenceMs": {
+        "median": 646,
+        "p95": 2689,
+        "maximum": 5774
+      },
+      "reconnectChecks": [
+        "pending-choice-restored"
+      ],
+      "mechanicsObserved": [
+        "arrival",
+        "contract",
+        "cross-reach-guidance",
+        "endgame",
+        "enemy-battle",
+        "inventory",
+        "movement",
+        "result-ready",
+        "reward",
+        "shop",
+        "waiting"
+      ]
+    },
+    {
+      "id": "dying-star-5p",
+      "scenario": "The Dying Star",
+      "playerCount": 5,
+      "mode": "co-op",
+      "outcome": "defeat",
+      "actionCount": 213,
+      "durationMs": 70572,
+      "screenshotFiles": 27,
+      "actionCadenceMs": {
+        "median": 176,
+        "p95": 293,
+        "maximum": 2655
+      },
+      "reconnectChecks": [],
+      "mechanicsObserved": [
+        "arrival",
+        "contract",
+        "cross-reach-guidance",
+        "endgame",
+        "enemy-battle",
+        "inventory",
+        "movement",
+        "pressure",
+        "result-ready",
+        "reward",
+        "scar",
+        "shop",
+        "tile-challenge",
+        "waiting"
+      ]
+    },
+    {
+      "id": "broken-concordance-6p",
+      "scenario": "The Broken Concordance",
+      "playerCount": 6,
+      "mode": "co-op",
+      "outcome": "defeat",
+      "actionCount": 321,
+      "durationMs": 92091,
+      "screenshotFiles": 27,
+      "actionCadenceMs": {
+        "median": 168,
+        "p95": 828,
+        "maximum": 2670
+      },
+      "reconnectChecks": [],
+      "mechanicsObserved": [
+        "arrival",
+        "contract",
+        "cross-reach-guidance",
+        "endgame",
+        "enemy-battle",
+        "inventory",
+        "movement",
+        "pressure",
+        "result-ready",
+        "reward",
+        "shop",
+        "tile-challenge",
+        "waiting"
+      ]
+    },
+    {
+      "id": "labyrinth-engine-3p",
+      "scenario": "The Labyrinth Engine",
+      "playerCount": 3,
+      "mode": "co-op",
+      "outcome": "defeat",
+      "actionCount": 178,
+      "durationMs": 53582,
+      "screenshotFiles": 27,
+      "actionCadenceMs": {
+        "median": 165,
+        "p95": 825,
+        "maximum": 2617
+      },
+      "reconnectChecks": [],
+      "mechanicsObserved": [
+        "arrival",
+        "contract",
+        "cross-reach-guidance",
+        "endgame",
+        "enemy-battle",
+        "inventory",
+        "movement",
+        "pressure",
+        "result-ready",
+        "reward",
+        "shop",
+        "tile-challenge",
+        "waiting"
+      ]
+    }
+  ],
+  "scenarioPlayerCountMatrix": {
+    "combinationCount": 40,
+    "passed": 40,
+    "failed": 0,
+    "authoredRuntimeEligibilityMismatches": 0,
+    "checksPerCombination": [
+      "setup",
+      "one-full-round",
+      "waiting-and-handoff",
+      "save-v2-reconnect",
+      "public-projection-privacy",
+      "scenario-victory-path",
+      "scenario-defeat-path"
+    ]
+  },
+  "defectFixes": [
+    {
+      "commit": "7875bcd",
+      "summary": "Keep result verdicts stable on phone"
+    },
+    {
+      "commit": "d87e08f",
+      "summary": "Restore assisted resolution results on phone"
+    },
+    {
+      "commit": "a90be5b",
+      "summary": "Prioritize replacement recruitment on phone"
+    },
+    {
+      "commit": "dc19a65",
+      "summary": "Surface private Scar choices during battles"
+    },
+    {
+      "commit": "6680fd4",
+      "summary": "Resolve threshold Scars before replacement"
+    }
+  ],
+  "validation": {
+    "contentValidation": "passed",
+    "typecheck": "passed",
+    "client": {
+      "status": "passed",
+      "files": 68,
+      "tests": 531
+    },
+    "serverIntegration": {
+      "status": "passed",
+      "files": 45,
+      "tests": 387
+    },
+    "engineAndRules": {
+      "status": "passed",
+      "files": 73,
+      "tests": 829
+    },
+    "rulesOnly": {
+      "status": "passed",
+      "files": 14,
+      "tests": 106
+    },
+    "productionBuild": "passed",
+    "assetAudit": {
+      "status": "passed",
+      "assets": 511,
+      "missing": 0,
+      "invalid": 0,
+      "placeholders": 0
+    }
+  },
+  "privacy": {
+    "privateAgendaTextStored": false,
+    "credentialsStored": false,
+    "joinTokensStored": false,
+    "unnecessaryPersonalDataStored": false,
+    "deviceSerialStored": false
+  },
+  "rawEvidence": {
+    "location": ".tmp-playtest/s21-full-game-campaign",
+    "gitIgnored": true,
+    "selectedRecording": ".tmp-playtest/s21-full-game-campaign/throne-of-ash-2p-rivalry/waiting-reconnect-s21.mp4"
+  }
+}
