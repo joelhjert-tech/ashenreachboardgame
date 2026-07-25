@@ -13,6 +13,8 @@
     "test:client": "vitest run src/client",
     "test:phone-matrix": "tsx scripts/validate-phone-device-matrix.ts",
     "test:e2e:scenarios": "tsx scripts/validate-six-scenario-e2e.ts",
+    "qa:s21-campaign": "tsx scripts/run-s21-full-game-campaign.ts",
+    "test:s21-scenario-matrix": "tsx scripts/validate-s21-scenario-player-matrix.ts",
     "test:engine": "vitest run src/game/engine/__tests__ src/game/rules/__tests__",
     "test:rules": "vitest run src/game/rules/__tests__",
     "test:integration": "vitest run src/server/__tests__",
