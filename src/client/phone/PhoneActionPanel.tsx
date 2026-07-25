@@ -4191,6 +4191,8 @@ export function PhoneActionPanel({
       patch.pendingAfflictionReactionPrivate ||
       patch.pendingForcedDestinationChoicePrivate ||
       patch.pendingDisplacementPrivate ||
+      patch.pendingScarChoice ||
+      patch.pendingScarRemovalChoice ||
       patch.pendingScarConsequence ||
       patch.pendingTileChallengePrivate?.pendingFailureEffects?.length
     );

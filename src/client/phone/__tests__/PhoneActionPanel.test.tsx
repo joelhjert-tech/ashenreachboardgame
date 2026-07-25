@@ -183,6 +183,71 @@ describe("PhoneActionPanel", () => {
     });
   });
 
+  it("keeps an owner-private Scar choice actionable over an active battle", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          phase: "resolution",
+          encounter: {
+            id: "ash-choir-crusader",
+            title: "Ash Choir Crusader",
+            cardType: "enemy",
+            enemyName: "Ash Choir Crusader",
+            flavor: "A burned hymn advances.",
+            difficulty: 8,
+            stat: "signal"
+          },
+          activeResolution: {
+            id: "seat-1:threat:ash-choir-crusader:battle",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "battle_setup",
+            card: {
+              id: "ash-choir-crusader",
+              title: "Ash Choir Crusader",
+              type: "enemy"
+            },
+            battle: { enemyName: "Ash Choir Crusader", stat: "signal", difficulty: 8, modifiers: [] }
+          },
+          pendingScarChoice: {
+            selectionId: "scar-choice:seat-1:mind",
+            source: "mind",
+            sourceCardId: "ash-choir-crusader",
+            currentCount: 1,
+            thirdScarWarning: false,
+            cards: [
+              {
+                id: "scar-wound-12",
+                title: "Relay Ghost",
+                text: "The relay follows you.",
+                trigger: "Remote signal tests strain the operative.",
+                penalty: "Lose 1 Signal.",
+                relief: "Return to a relay.",
+                burdenText: "Remote Signal -1.",
+                adaptationText: "+1 Command while wounded."
+              }
+            ]
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
+    const choice = screen.getByRole("button", { name: /choose relay ghost/i });
+    expect(choice).toBeEnabled();
+
+    fireEvent.click(choice);
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "CHOOSE_SCAR",
+      seatId: "seat-1",
+      selectionId: "scar-choice:seat-1:mind",
+      scarId: "scar-wound-12"
+    });
+  });
+
   it("keeps an occupied-slot discovery choice owner-controlled", () => {
     const onIntent = vi.fn();
     render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={createPatch({
