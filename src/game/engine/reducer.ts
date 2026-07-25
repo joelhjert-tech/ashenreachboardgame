@@ -3548,6 +3548,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "Only recalled seats can recruit a replacement");
       }
 
+      if (state.pendingScarChoice?.ownerSeatId === recruitAction.seatId) {
+        return reject(state, action, "Resolve the pending Scar choice before recruiting a replacement");
+      }
+
       if (!recruitAction.replacementCharacter) {
         return reject(state, action, `Unknown replacement character ${recruitAction.replacementCharacterId}`);
       }

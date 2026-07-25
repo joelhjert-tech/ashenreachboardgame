@@ -3220,6 +3220,25 @@ export function PhoneActionPanel({
   }, [movementTravel]);
   const shopEncounter =
     patch.phase === "action" && patch.shopEncounter?.activePlayer.playerId === self.seatId ? patch.shopEncounter : null;
+  const scarDecisionContent = patch.pendingScarChoice ? (
+    <PhoneScarSelector
+      cards={patch.pendingScarChoice.cards}
+      source={patch.pendingScarChoice.source}
+      currentCount={patch.pendingScarChoice.currentCount}
+      thresholdWarning={patch.pendingScarChoice.thirdScarWarning}
+      onChoose={(scarId) => onIntent({ type: "CHOOSE_SCAR", seatId: self.seatId, selectionId: patch.pendingScarChoice!.selectionId, scarId })}
+    />
+  ) : patch.pendingScarRemovalChoice ? (
+    <ScarDecisionPanel
+      mode="remove"
+      cards={patch.pendingScarRemovalChoice.cards}
+      currentCount={self.character.scars.length}
+      warning={false}
+      salvageCost={patch.pendingScarRemovalChoice.salvageCost}
+      canPay={(self.character.salvage ?? 0) >= patch.pendingScarRemovalChoice.salvageCost}
+      onChoose={(scarId) => onIntent({ type: "PURGE_SCAR_REQUESTED", seatId: self.seatId, choiceId: patch.pendingScarRemovalChoice!.choiceId, scarId })}
+    />
+  ) : null;
 
   if (patch.status === "ended") {
     const result = patch.matchProgress?.publicResult ?? null;
@@ -3362,6 +3381,14 @@ export function PhoneActionPanel({
   }
 
   if (self.character.status === "recalled") {
+    if (patch.pendingScarChoice) {
+      return (
+        <section className="phone-sheet-actions" aria-label="Required Scar choice">
+          {scarDecisionContent}
+        </section>
+      );
+    }
+
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
@@ -4367,25 +4394,6 @@ export function PhoneActionPanel({
   );
   const battleTitle = patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat";
   const actionTitle = boardSpace?.textBox.title ?? "Operative options";
-  const scarDecisionContent = patch.pendingScarChoice ? (
-    <PhoneScarSelector
-      cards={patch.pendingScarChoice.cards}
-      source={patch.pendingScarChoice.source}
-      currentCount={patch.pendingScarChoice.currentCount}
-      thresholdWarning={patch.pendingScarChoice.thirdScarWarning}
-      onChoose={(scarId) => onIntent({ type: "CHOOSE_SCAR", seatId: self.seatId, selectionId: patch.pendingScarChoice!.selectionId, scarId })}
-    />
-  ) : patch.pendingScarRemovalChoice ? (
-    <ScarDecisionPanel
-      mode="remove"
-      cards={patch.pendingScarRemovalChoice.cards}
-      currentCount={self.character.scars.length}
-      warning={false}
-      salvageCost={patch.pendingScarRemovalChoice.salvageCost}
-      canPay={(self.character.salvage ?? 0) >= patch.pendingScarRemovalChoice.salvageCost}
-      onChoose={(scarId) => onIntent({ type: "PURGE_SCAR_REQUESTED", seatId: self.seatId, choiceId: patch.pendingScarRemovalChoice!.choiceId, scarId })}
-    />
-  ) : null;
   const actionViewModelSources: PhoneActionViewModelSources = {
     resolve: [
       ...resolveActions,

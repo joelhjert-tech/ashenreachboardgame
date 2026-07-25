@@ -4131,6 +4131,49 @@ describe("wound recall flow", () => {
     expect(player?.character.scars).toContain("scar-wound-1");
     expect(player?.character.id).toBe("signal-witch");
   });
+
+  it("rejects replacement recruitment until the recalled seat resolves its pending Scar choice", () => {
+    const initial = createState();
+    const state = createState({
+      phase: "resolution",
+      pendingScarChoice: {
+        selectionId: "scar-choice:seat-1:threshold",
+        ownerSeatId: "seat-1",
+        source: "unbound",
+        sourceCardId: "wound-threshold",
+        sourceEventId: "threshold-event",
+        candidateIds: ["scar-wound-1", "scar-wound-2"],
+        continuationPhase: "resolution",
+        createdAt: "threshold-event",
+        status: "awaitingSelection"
+      },
+      players: initial.players.map((entry) =>
+        entry.seatId === "seat-1"
+          ? {
+              ...entry,
+              character: {
+                ...entry.character,
+                status: "recalled"
+              }
+            }
+          : entry
+      )
+    });
+
+    const result = reduceGameState(state, {
+      type: "RECRUIT_REPLACEMENT",
+      seatId: "seat-1",
+      replacementCharacterId: "signal-witch",
+      replacementCharacter: createCharacters().get("signal-witch"),
+      createdAt: "recruit-before-scar"
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("Expected recruitment to be rejected");
+    expect(result.rejection.reason).toMatch(/pending Scar choice/i);
+    expect(result.state.pendingScarChoice?.selectionId).toBe("scar-choice:seat-1:threshold");
+    expect(result.state.players.find((entry) => entry.seatId === "seat-1")?.character.status).toBe("recalled");
+  });
 });
 
 describe("escalation flow", () => {

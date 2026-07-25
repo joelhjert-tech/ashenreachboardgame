@@ -3635,6 +3635,57 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByRole("button", { name: /recruit sable vey/i })).toBeEnabled();
   });
 
+  it("requires a recalled operative to bind its pending Scar before recruitment", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+    const base = createPatch();
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          phase: "resolution",
+          self: {
+            ...base.self!,
+            character: {
+              ...base.self!.character,
+              status: "recalled"
+            }
+          },
+          pendingScarChoice: {
+            selectionId: "scar-choice:seat-1:threshold",
+            source: "unbound",
+            sourceCardId: "wound-threshold",
+            currentCount: 1,
+            thirdScarWarning: false,
+            cards: [
+              {
+                id: "scar-wound-12",
+                title: "Relay Ghost",
+                text: "The relay follows you.",
+                trigger: "Remote signal tests strain the operative.",
+                penalty: "Remote Signal -1.",
+                relief: "Return to a relay.",
+                burdenText: "Remote Signal -1.",
+                adaptationText: "+1 Command while wounded."
+              }
+            ]
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /accept relay ghost/i })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: /recruit /i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /accept relay ghost/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "CHOOSE_SCAR",
+      seatId: "seat-1",
+      selectionId: "scar-choice:seat-1:threshold",
+      scarId: "scar-wound-12"
+    });
+  });
+
   it("does not repeat identical success copy as both outcome text and bullet", () => {
     render(
       <PhoneActionPanel
