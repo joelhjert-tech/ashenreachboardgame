@@ -70,8 +70,6 @@ export function SignalPhoneNavigation({
       className="signal-phone-nav__primary"
       role="tablist"
       aria-label="Phone navigation"
-      aria-hidden={expanded ? "true" : undefined}
-      inert={expanded ? true : undefined}
       data-navigation-state={expanded ? "expanded" : "compact"}
     >
       {primaryTabs.map((tab) => {
@@ -82,6 +80,9 @@ export function SignalPhoneNavigation({
             type="button"
             role="tab"
             aria-selected={active}
+            aria-hidden={expanded ? "true" : undefined}
+            tabIndex={expanded ? -1 : 0}
+            inert={expanded ? true : undefined}
             data-signal-phone-tab={tab}
             aria-label={tab === "player" ? "Operative — Player Card" : signalPhoneTabLabels[tab]}
             className={active ? "is-active" : ""}
@@ -100,7 +101,9 @@ export function SignalPhoneNavigation({
         className={expanded ? "is-active" : ""}
         aria-expanded={expanded}
         data-signal-phone-more
-        aria-label={`${activeLabel}, current section; show all phone sections`}
+        aria-label={expanded
+          ? `${activeLabel}, current section; close all phone sections`
+          : `${activeLabel}, current section; show all phone sections`}
         onClick={onMore}
       >
         {expanded

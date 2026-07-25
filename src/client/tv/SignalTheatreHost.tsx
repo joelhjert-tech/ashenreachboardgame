@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactElement } from "react";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
+import { BOARD_RING_TRANSITIONS } from "../../game/data/boardTransitions.js";
 import { getSignalTheatreAssetPaths } from "../shared/assetPaths.js";
 import type {
   PublicMoveDestination,
@@ -304,6 +305,12 @@ export function SignalTheatreHost({
     ?? payload.tileArrival?.tileId
     ?? payload.players[0]?.sectorId
     ?? null;
+  const inwardRoute = stableSectorId
+    ? BOARD_RING_TRANSITIONS.find(
+      (transition) => transition.sourceSectorId === stableSectorId && transition.direction === "inward"
+    ) ?? null
+    : null;
+  const inwardDestination = inwardRoute ? getBoardSpace(inwardRoute.destinationSectorId) : null;
   const focusSectorId = fixture?.sectorId ?? journey?.sectorId ?? stableSectorId;
   const environment = getSignalTheatreEnvironment(focusSectorId);
   const focusSector = getBoardSpace(focusSectorId ?? "");
@@ -501,6 +508,13 @@ export function SignalTheatreHost({
           <strong>{instruction}</strong>
           <p>{detail}</p>
           <small>{next}</small>
+          {inwardRoute && inwardDestination && !journey ? (
+            <aside className="signal-theatre__inward-route" role="note">
+              <span>Inward route available</span>
+              <strong>{inwardDestination.name}</strong>
+              <small>Harder challenges · stronger rewards</small>
+            </aside>
+          ) : null}
         </section>
         ) : null}
 

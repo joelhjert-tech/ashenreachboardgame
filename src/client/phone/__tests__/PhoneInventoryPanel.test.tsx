@@ -982,7 +982,7 @@ describe("PhoneInventoryPanel", () => {
     openInventoryCategory(/followers.*records/i);
     expect(screen.getByText("Fandiablos")).toBeInTheDocument();
     expect(screen.getByText(/before threat draw/i)).toBeInTheDocument();
-    expect(document.querySelector('img[src="/assets/cards/artifacts/artifact-fandiablos.png"]')).toBeInTheDocument();
+    expect(document.querySelector('img[src="/assets/cards/artifacts/artifact-fandiablos.webp"]')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /use.*1 wound/i }));
 
@@ -1186,8 +1186,10 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getAllByRole("tab")).toHaveLength(7);
     expect(tablist).toBeVisible();
     expect(tablist).toHaveAttribute("data-navigation-state", "expanded");
-    expect(tablist).toHaveAttribute("aria-hidden", "true");
-    expect(tablist).toHaveAttribute("inert");
+    expect(tablist).not.toHaveAttribute("aria-hidden");
+    expect(tablist).not.toHaveAttribute("inert");
+    expect(within(tablist).getAllByRole("tab", { hidden: true })).toHaveLength(4);
+    expect(screen.getByRole("button", { name: /close all phone sections/i })).toBeEnabled();
     const phoneContent = document.querySelector("main[aria-label='Phone content']");
     expect(phoneContent).toHaveAttribute("aria-hidden", "true");
     expect(phoneContent).toHaveAttribute("inert");
@@ -1927,6 +1929,16 @@ describe("PhoneInventoryPanel", () => {
 
     openPhoneTabs();
     fireEvent.click(screen.getByRole("tab", { name: /^objectives$/i }));
+
+    expect(screen.getByRole("button", { name: /shared mission/i })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /my contract/i })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /rivalry/i })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /completed/i })).toHaveAttribute("aria-expanded", "false");
+    expect(document.querySelectorAll(".phone-objective-group-icon")).toHaveLength(4);
+    expect(document.querySelector('img[src="/assets/riftfall/ui/objective-categories/shared-mission.webp"]')).toBeInTheDocument();
+    expect(document.querySelector('img[src="/assets/riftfall/ui/objective-categories/contract.webp"]')).toBeInTheDocument();
+    expect(document.querySelector('img[src="/assets/riftfall/ui/objective-categories/rivalry.webp"]')).toBeInTheDocument();
+    expect(document.querySelector('img[src="/assets/riftfall/ui/objective-categories/completed.webp"]')).toBeInTheDocument();
 
     const agenda = screen.getByRole("region", { name: /private rivalry agenda/i });
 

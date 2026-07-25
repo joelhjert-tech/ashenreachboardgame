@@ -69,6 +69,7 @@ const signalTheatreResultCrestByOutcome = {
 } as const;
 
 export type InventoryCategoryIcon = "artifacts" | "equipment" | "followers" | "status" | "progression";
+export type ObjectiveCategoryIcon = "shared-mission" | "contract" | "rivalry" | "completed";
 
 const inventoryCategoryIconByCategory: Record<InventoryCategoryIcon, string> = {
   artifacts: "/assets/riftfall/ui/inventory-categories/artifacts.png",
@@ -77,6 +78,15 @@ const inventoryCategoryIconByCategory: Record<InventoryCategoryIcon, string> = {
   status: "/assets/riftfall/ui/inventory-categories/status.png",
   progression: "/assets/riftfall/ui/inventory-categories/progression.png"
 };
+
+const objectiveCategoryIconByCategory: Record<ObjectiveCategoryIcon, string> = {
+  "shared-mission": "/assets/riftfall/ui/objective-categories/shared-mission.webp",
+  contract: "/assets/riftfall/ui/objective-categories/contract.webp",
+  rivalry: "/assets/riftfall/ui/objective-categories/rivalry.webp",
+  completed: "/assets/riftfall/ui/objective-categories/completed.webp"
+};
+
+const resultReadyGatePath = "/assets/riftfall/ui/result-ready/verdict-gate.webp";
 
 const uiAssetPaths = [
   "/assets/riftfall/ui/ashen-reach-lobby-stage.png",
@@ -88,6 +98,8 @@ const uiAssetPaths = [
   ...Object.values(signalTheatreStatSealByStat),
   ...Object.values(signalTheatreResultCrestByOutcome),
   ...Object.values(inventoryCategoryIconByCategory),
+  ...Object.values(objectiveCategoryIconByCategory),
+  resultReadyGatePath,
   "/assets/riftfall/ui/ui_scenario_frame.png",
   "/assets/riftfall/ui/ui_card_frame_red.png",
   "/assets/riftfall/ui/ui_card_frame_blue.png",
@@ -150,6 +162,14 @@ export function getSignalTheatreResultCrestPath(outcome: "success" | "defeat"): 
 
 export function getInventoryCategoryIconPath(category: InventoryCategoryIcon): string {
   return inventoryCategoryIconByCategory[category];
+}
+
+export function getObjectiveCategoryIconPath(category: ObjectiveCategoryIcon): string {
+  return objectiveCategoryIconByCategory[category];
+}
+
+export function getResultReadyGatePath(): string {
+  return resultReadyGatePath;
 }
 
 export function getCharacterPortraitPath(characterId: string): string {

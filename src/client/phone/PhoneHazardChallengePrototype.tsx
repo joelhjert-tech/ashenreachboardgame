@@ -9,6 +9,7 @@ import { getSignalTheatreResultCrestPath, getSignalTheatreStatSealPath } from ".
 import { statLabelById } from "../shared/statLabels.js";
 import type { ActiveResolution, PhonePatchPayload, ResultDelta, Stat } from "../shared/types.js";
 import { useAuthoritativeResultCollapse } from "../shared/useAuthoritativeResultCollapse.js";
+import { PhoneResultReadyGate } from "./PhoneResultReadyGate.js";
 import "./PhoneHazardChallengePrototype.css";
 
 export interface HazardChallengeAction {
@@ -273,9 +274,49 @@ export function PhoneHazardChallengeView({
     () => resultDeltas.filter((delta) => delta.visibility !== "hidden").slice(0, 4),
     [resultDeltas]
   );
+  const resultReady =
+    Boolean(outcome)
+    && canContinue
+    && (resolution?.stage === "outcome_summary" || resolution?.stage === "awaiting_continue");
   const fullFormula = finalTotal === null
     ? "Test not yet rolled"
     : `${operativeBase} + ${rollTotal ?? 0} ${modifierTotal >= 0 ? "+" : "−"} ${Math.abs(modifierTotal)} = ${finalTotal}`;
+
+  if (resultReady) {
+    return (
+      <section
+        className={`phone-trial-shell phone-trial-shell--${kind} phone-trial-shell--result-gate`}
+        style={getChallengeThemeStyle(stat) as CSSProperties}
+        aria-label={`${categoryLabel} result: ${title}`}
+        data-testid="phone-action-active-panel"
+        data-hazard-challenge-layout="result-gate"
+        data-trial-result="true"
+        data-test-result="true"
+        data-trial-restored={restored ? "true" : "false"}
+      >
+        <div className="phone-trial-shell__scroll">
+          <PhoneResultReadyGate
+            actorName={patch.seats.find((seat) => seat.seatId === self.seatId)?.displayName ?? playerName}
+            operativeName={self.character.name}
+            operativeId={self.character.id}
+            sourceLabel={categoryLabel}
+            challengeTitle={title}
+            challengeArtType={artTypeFor(resolution)}
+            challengeArtId={resolution?.card?.id ?? patch.encounter?.id ?? ""}
+            challengeFlavor={flavor}
+            success={result === "success" ? true : result === "failure" ? false : null}
+            playerTotal={finalTotal}
+            targetTotal={difficulty}
+            outcomeTitle={outcome?.title ?? resultLabel}
+            outcomeText={outcome?.text ?? consequenceCopy(patch, resolution, result === "success")}
+            outcomeEffects={visibleOutcomeEffects}
+            canContinue={canContinue}
+            onContinue={onContinue}
+          />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section

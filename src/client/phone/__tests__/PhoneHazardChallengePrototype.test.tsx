@@ -162,7 +162,7 @@ describe("PhoneHazardChallengeView", () => {
     expect(screen.queryByRole("region", { name: "Encounter details" })).not.toBeInTheDocument();
   });
 
-  it("reveals authoritative totals and the custom result crest without repeating both stakes", () => {
+  it("promotes a completed challenge into the reconnect-safe cinematic result gate", () => {
     const resolved = patch();
     resolved.pendingTileChallenge = {
       ...resolved.pendingTileChallenge!,
@@ -170,7 +170,7 @@ describe("PhoneHazardChallengeView", () => {
     };
     resolved.activeResolution = {
       ...resolved.activeResolution!,
-      stage: "roll_result",
+      stage: "outcome_summary",
       roll: {
         dice: [4, 3],
         baseTotal: 7,
@@ -197,14 +197,16 @@ describe("PhoneHazardChallengeView", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-trial-total-comparison")).toHaveTextContent(/Your total8AgainstAnomaly total4/i);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-hazard-challenge-layout", "result-gate");
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/Route broken/i);
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/Processional loses your trail/i);
-    expect(screen.getByTestId("phone-resolution-card").querySelector("img")).toHaveAttribute(
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/8.*4/i);
+    expect(screen.getByTestId("phone-resolution-card").querySelector(".phone-result-gate__environment")).toHaveAttribute(
       "src",
-      "/assets/riftfall/ui/signal-theatre/results/success.png"
+      "/assets/riftfall/ui/result-ready/verdict-gate.webp"
     );
-    expect(screen.queryByRole("region", { name: "Possible outcomes" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /continue/i })).toBeVisible();
+    expect(screen.queryByTestId("phone-trial-cinematic-stage")).not.toBeInTheDocument();
     expect(view.container.querySelectorAll("canvas")).toHaveLength(0);
   });
 

@@ -3474,7 +3474,7 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/outcome/i);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveAttribute("data-result-ready-gate", "true");
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/scenario pressure/i);
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/doom rises by 1/i);
   });

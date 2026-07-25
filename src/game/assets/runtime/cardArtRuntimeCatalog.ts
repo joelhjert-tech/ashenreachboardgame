@@ -875,7 +875,7 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
   {
     "cardId": "artifact-fandiablos",
     "cardType": "artifact",
-    "outputPath": "/assets/cards/artifacts/artifact-fandiablos.png"
+    "outputPath": "/assets/cards/artifacts/artifact-fandiablos.webp"
   },
   {
     "cardId": "artifact-gate-saint-key",

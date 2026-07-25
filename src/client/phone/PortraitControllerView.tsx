@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent, type ReactElement, type RefObject } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent, type ReactElement, type ReactNode, type RefObject } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { describeContractObjective as describeObjective, formatContractProgress } from "../../game/contracts/objectives.js";
 import { getEquippedGearItem } from "../../game/engine/gear.js";
-import { getCharacterPortraitPath } from "../shared/assetPaths.js";
+import { getCharacterPortraitPath, getObjectiveCategoryIconPath, type ObjectiveCategoryIcon } from "../shared/assetPaths.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import {
@@ -376,6 +376,55 @@ function describeContractProgress(contract: ContractCard): string {
 
 function describeContractReward(contract: ContractCard): string {
   return describeObjectiveReward(contract);
+}
+
+function ObjectiveDisclosure({
+  label,
+  summary,
+  icon,
+  count,
+  initiallyOpen,
+  children
+}: {
+  label: string;
+  summary: string;
+  icon: ObjectiveCategoryIcon;
+  count?: number;
+  initiallyOpen: boolean;
+  children: ReactNode;
+}): ReactElement {
+  const [open, setOpen] = useState(initiallyOpen);
+  const reactId = useId();
+  const contentId = `phone-objective-group-${reactId.replace(/:/g, "")}`;
+
+  return (
+    <section className={`phone-objective-group${open ? " is-open" : ""}`}>
+      <button
+        type="button"
+        className="phone-objective-group-toggle"
+        aria-expanded={open}
+        aria-controls={contentId}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <img
+          className="phone-objective-group-icon"
+          src={getObjectiveCategoryIconPath(icon)}
+          alt=""
+          aria-hidden="true"
+          width={56}
+          height={56}
+          decoding="async"
+        />
+        <span className="phone-objective-group-copy">
+          <strong>{label}</strong>
+          <small>{summary}</small>
+        </span>
+        {count !== undefined ? <span className="phone-objective-group-count" aria-label={`${count} ${label}`}>{count}</span> : null}
+        <span className="phone-objective-group-indicator" aria-hidden="true" />
+      </button>
+      {open ? <div id={contentId} className="phone-objective-group-content">{children}</div> : null}
+    </section>
+  );
 }
 
 function submittingLabel(intent: ClientIntent): string {
@@ -1709,8 +1758,13 @@ export function PortraitControllerView({
           {!focusedResolutionActive && activeTab === "quests" && (
             <div className="phone-portrait-screen phone-objectives-screen">
               {renderRequiredAction(undefined, true)}
-              <section className="phone-portrait-section">
-                <div className="phone-sheet-section-heading">Shared Mission</div>
+              <div className="phone-objective-groups" aria-label="Objective categories">
+                <ObjectiveDisclosure
+                  label="Shared Mission"
+                  summary={sharedMission?.stageLabel ?? "Room objective"}
+                  icon="shared-mission"
+                  initiallyOpen
+                >
                 <article className="phone-portrait-info-card phone-scenario-quest-card" data-testid="phone-shared-mission-summary">
                   <PhoneScenarioArt path={sharedMission?.artPath} title={sharedMission?.title ?? "Selected scenario"} />
                   <div className="phone-objective-status-line">
@@ -1762,16 +1816,34 @@ export function PortraitControllerView({
                   </details>
                   <ResultDeltaRow deltas={scenarioDeltas} className="phone-scenario-deltas" />
                 </article>
-              </section>
-              <section className="phone-portrait-section">
-                <div className="phone-sheet-section-heading">My Contract</div>
+                </ObjectiveDisclosure>
+                <ObjectiveDisclosure
+                  label="My Contract"
+                  summary={activeContractCard?.name ?? "Private objective"}
+                  icon="contract"
+                  initiallyOpen
+                >
                 <ActiveMissionQuestCard activeContract={self.character.activeContract} contract={activeContractCard} />
-              </section>
-              {patch?.privateRivalry ? <RivalryQuestPanel rivalry={patch.privateRivalry} seatId={self.seatId} onIntent={onIntent} /> : null}
+                </ObjectiveDisclosure>
+              {patch?.privateRivalry ? (
+                  <ObjectiveDisclosure
+                    label="Rivalry"
+                    summary="Private contest"
+                    icon="rivalry"
+                    initiallyOpen
+                >
+                  <RivalryQuestPanel rivalry={patch.privateRivalry} seatId={self.seatId} onIntent={onIntent} />
+                </ObjectiveDisclosure>
+              ) : null}
+              <ObjectiveDisclosure
+                label="Completed"
+                summary={completedContracts.length > 0 ? "Archived contracts" : "No archived contracts"}
+                icon="completed"
+                count={completedContracts.length}
+                initiallyOpen={completedContracts.length > 0}
+              >
               {completedContracts.length > 0 ? (
-                <section className="phone-portrait-section">
-                  <details className="phone-portrait-info-card phone-completed-contracts">
-                    <summary>Completed Contracts · {completedContracts.length}</summary>
+                  <div className="phone-portrait-info-card phone-completed-contracts">
                     <div className="phone-completed-contract-list">
                       {completedContracts.map((contract) => (
                         <article key={`${contract.title}-${contract.completedAtSequence}`}>
@@ -1780,9 +1852,10 @@ export function PortraitControllerView({
                         </article>
                       ))}
                     </div>
-                  </details>
-                </section>
-              ) : null}
+                  </div>
+              ) : <p className="phone-muted-copy">Completed Contracts are archived here without crowding active objectives.</p>}
+              </ObjectiveDisclosure>
+              </div>
             </div>
           )}
 

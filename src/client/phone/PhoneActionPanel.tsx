@@ -70,6 +70,7 @@ import {
   PhoneHazardChallengeView,
   isPhoneChallengeRelevantToSeat
 } from "./PhoneHazardChallengePrototype.js";
+import { PhoneResultReadyGate } from "./PhoneResultReadyGate.js";
 import {
   PhoneActionPriorityStack,
   buildPhoneActionViewModel,
@@ -848,10 +849,18 @@ function formatShopCategory(value: string | undefined): string {
 
 function ActiveResolutionCard({
   resolution,
+  encounter,
+  actorName,
+  operativeName,
+  operativeId,
   canContinue,
   onContinue
 }: {
   resolution: ActiveResolution | null | undefined;
+  encounter: PhonePatchPayload["encounter"];
+  actorName: string;
+  operativeName: string;
+  operativeId: string;
   canContinue: boolean;
   onContinue: () => void;
 }): ReactElement | null {
@@ -865,6 +874,34 @@ function ActiveResolutionCard({
   const challengeStat = battle?.stat ?? "grit";
   const isOpposedBattle = resolution.card?.type === "enemy";
   const visibleOutcomeEffects = outcome ? dedupeOutcomeEffects(outcome.text, outcome.effects) : [];
+  const resultReady =
+    outcome &&
+    canContinue &&
+    (resolution.stage === "outcome_summary" || resolution.stage === "awaiting_continue");
+
+  if (resultReady) {
+    const cardType = resolution.card?.type ?? encounter?.presentationType ?? encounter?.cardType ?? null;
+    return (
+      <PhoneResultReadyGate
+        actorName={actorName}
+        operativeName={operativeName}
+        operativeId={operativeId}
+        sourceLabel={formatEncounterSourceLabel(resolution.source, cardType)}
+        challengeTitle={resolution.card?.title ?? encounter?.enemyName ?? encounter?.title ?? outcome.title}
+        challengeArtType={getResolutionCardImageType(resolution, encounter)}
+        challengeArtId={resolution.card?.id ?? encounter?.id ?? null}
+        challengeFlavor={resolution.card?.flavor ?? encounter?.flavor ?? null}
+        success={resolution.roll?.success ?? null}
+        playerTotal={resolution.roll?.finalTotal ?? null}
+        targetTotal={resolution.roll?.target ?? resolution.battle?.difficulty ?? null}
+        outcomeTitle={outcome.title}
+        outcomeText={outcome.text}
+        outcomeEffects={visibleOutcomeEffects}
+        canContinue={canContinue}
+        onContinue={onContinue}
+      />
+    );
+  }
 
   return (
     <div className="phone-resolution-card" data-testid="phone-resolution-card">
@@ -2858,6 +2895,7 @@ function PhoneMovePanel({
       planner={movementPlanner}
       seatId={seatId}
       activeContract={activeContract}
+      currentSectorId={currentTile.sectorId}
       currentSectorName={currentTile.name}
       canRoll={canRollMovement}
       movementResolving={movementResolving}
@@ -3083,11 +3121,18 @@ export function PhoneActionPanel({
       type: "CONTINUE_RESOLUTION",
       seatId: self.seatId
     });
+  const resolutionActorName =
+    patch.seats.find((seat) => seat.seatId === self.seatId)?.displayName ??
+    self.character.name;
   const resolutionPanel = orphanResolutionOutcome ? (
     <OrphanResolutionRecoveryCard outcome={orphanResolutionOutcome} onContinue={continueResolution} />
   ) : (
     <ActiveResolutionCard
       resolution={activeResolution}
+      encounter={patch.encounter}
+      actorName={resolutionActorName}
+      operativeName={self.character.name}
+      operativeId={self.character.id}
       canContinue={canContinueResolution}
       onContinue={continueResolution}
     />

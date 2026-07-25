@@ -204,6 +204,66 @@ describe("PhoneMovementView", () => {
     expect(screen.getByRole("button", { name: /Select destination B, Glass Signal Pier/ })).toBeInTheDocument();
   });
 
+  it("recommends a harder inward route when the authoritative roll can reach it", () => {
+    const inwardPlanner: PublicMovementPlannerState = {
+      ...planner,
+      destinations: [{
+        ...planner.destinations[0]!,
+        name: "Iron Choir Gate",
+        ring: "middle",
+        ringTransition: {
+          direction: "inward",
+          fromRing: "outer",
+          toRing: "middle",
+          label: "Enter middle ring",
+          exactMovementRequired: 1,
+          endsMovement: true
+        }
+      }]
+    };
+    render(
+      <PhoneMovementView
+        planner={inwardPlanner}
+        seatId="seat-1"
+        activeContract={null}
+        currentSectorName="Ashwalk Bridge"
+        canRoll={false}
+        movementResolving={false}
+        travel={null}
+        selectedSectorId={null}
+        onSelectedSectorId={vi.fn()}
+        onIntent={vi.fn()}
+        showContextNavigation={false}
+      />
+    );
+
+    expect(screen.getByRole("note", { name: /inward route recommendation/i })).toHaveTextContent("Iron Choir Gate");
+    expect(screen.getByRole("note", { name: /inward route recommendation/i })).toHaveTextContent(/harder challenges and stronger rewards/i);
+  });
+
+  it("announces a canonical inward crossing even when the current exact roll cannot reach it", () => {
+    render(
+      <PhoneMovementView
+        planner={planner}
+        seatId="seat-1"
+        activeContract={null}
+        currentSectorId="outer_ember_sanctum"
+        currentSectorName="Pilgrim Lock Gate"
+        canRoll={false}
+        movementResolving={false}
+        travel={null}
+        selectedSectorId={null}
+        onSelectedSectorId={vi.fn()}
+        onIntent={vi.fn()}
+        showContextNavigation={false}
+      />
+    );
+
+    const note = screen.getByRole("note", { name: /inward route recommendation/i });
+    expect(note).toHaveTextContent("Choir Bastion");
+    expect(note).toHaveTextContent(/future exact movement roll/i);
+  });
+
   it("expands only the selected destination and lets Back collapse its detail first", () => {
     render(<Harness onIntent={vi.fn()} />);
     const details = screen.getAllByText("View details").map((entry) => entry.closest("details")!);

@@ -144,6 +144,40 @@ describe("SignalTheatreHost", () => {
     expect(sources.every((source) => !source?.includes("/assets/map/tiles/"))).toBe(true);
   });
 
+  it("announces an inward crossing from the authoritative current sector", () => {
+    const gatePlayer = {
+      ...activePlayer,
+      sectorId: "outer_ember_sanctum"
+    };
+    render(
+      <SignalTheatreHost
+        patch={makePatch({
+          movementPlanner: null,
+          players: [gatePlayer],
+          sectors: [{
+            id: "outer_ember_sanctum",
+            name: "Pilgrim Lock Gate",
+            regionTier: "outer",
+            neighbors: ["middle_red_march_outpost"],
+            danger: 1,
+            encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+          }]
+        })}
+        roomCode="EMBER"
+        activeSeat={activeSeat}
+        activePlayer={gatePlayer}
+        currentStepCopy="Prepare the next route."
+        synchronized
+        connectionStatus="open"
+      />
+    );
+
+    const note = screen.getByRole("note");
+    expect(note).toHaveTextContent("Inward route available");
+    expect(note).toHaveTextContent("Choir Bastion");
+    expect(note).toHaveTextContent("Harder challenges · stronger rewards");
+  });
+
   it("uses public-safe host copy for an owner-private decision", () => {
     renderSignal(makePatch({
       movementPlanner: null,

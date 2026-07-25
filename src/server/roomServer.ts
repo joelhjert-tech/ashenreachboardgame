@@ -9398,8 +9398,13 @@ export class GameRoomServer {
   }
 
   private shouldAutoContinueResolution(): boolean {
+    const resolutionOwner = this.state.activeResolution
+      ? this.state.seats.find((seat) => seat.seatId === this.state.activeResolution?.playerId)
+      : null;
+
     return Boolean(
       this.state.activeResolution &&
+        resolutionOwner?.connected === false &&
         !this.state.pendingEncounterDecision &&
         !this.state.pendingGearEquipChoice &&
         !this.state.pendingScarChoice &&

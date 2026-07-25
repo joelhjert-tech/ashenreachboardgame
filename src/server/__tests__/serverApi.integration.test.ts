@@ -796,6 +796,18 @@ describe("server API scenario flow", () => {
         })
       );
 
+      await waitForStatePatch(
+        phone,
+        (message) => message.payload.activeResolution?.stage === "outcome_summary"
+      );
+
+      phone.socket.send(
+        JSON.stringify({
+          type: "CONTINUE_RESOLUTION",
+          seatId: joined.payload.seatId
+        })
+      );
+
       const movedPatch = await waitForStatePatch(
         phone,
         (message) =>

@@ -4,6 +4,8 @@ import { cardTemplatePrompts } from "./cardTemplatePrompts.js";
 import { characterPortraitPrompts } from "./characterPortraitPrompts.js";
 import { generatedCardImagePrompts } from "./generatedCardImagePrompts.js";
 import { inventoryCategoryIconPrompts } from "./inventoryCategoryIconPrompts.js";
+import { objectiveCategoryIconPrompts } from "./objectiveCategoryIconPrompts.js";
+import { resultReadyVisualPrompts } from "./resultReadyVisualPrompts.js";
 import { baseNegativePrompt } from "./negativePrompt.js";
 import { scenarioSheetPrompts } from "./scenarioSheetPrompts.js";
 import { signalTheatreEnvironmentPrompts } from "./signalTheatreEnvironmentPrompts.js";
@@ -62,6 +64,8 @@ export const requiredImageGenerationChecklist = [
   "49 Signal Theatre sector environments",
   "6 selectable Signal Theatre player pieces",
   "5 private inventory category emblems",
+  "4 private objective category emblems",
+  "1 private result-ready verdict gate",
   "6 printable scenario sheet illustrations"
 ] as const;
 
@@ -84,6 +88,8 @@ export const imagePrompts: ImagePromptSpec[] = [
   ...signalTheatreEnvironmentPrompts,
   ...signalPiecePrompts,
   ...inventoryCategoryIconPrompts,
+  ...objectiveCategoryIconPrompts,
+  ...resultReadyVisualPrompts,
   ...uiPrompts
 ];
 

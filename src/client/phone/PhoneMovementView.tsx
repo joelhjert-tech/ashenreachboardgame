@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { getBoardSpace } from "../../game/data/boardSpaces.js";
+import { BOARD_RING_TRANSITIONS } from "../../game/data/boardTransitions.js";
 import type {
   ClientIntent,
   ContractCard,
@@ -33,6 +35,7 @@ interface PhoneMovementViewProps {
   planner: PublicMovementPlannerState | null | undefined;
   seatId: string;
   activeContract: ContractCard | null;
+  currentSectorId?: string;
   currentSectorName: string;
   canRoll: boolean;
   movementResolving: boolean;
@@ -408,6 +411,7 @@ export function PhoneMovementView({
   planner,
   seatId,
   activeContract,
+  currentSectorId,
   currentSectorName,
   canRoll,
   movementResolving,
@@ -491,6 +495,23 @@ export function PhoneMovementView({
   );
 
   const selectedModel = models.find((model) => model.destination.sectorId === selectedSectorId) ?? null;
+  const legalInwardDestinations = (planner?.destinations ?? []).filter(
+    (destination) =>
+      destination.ringTransition?.direction === "inward" &&
+      (!destination.disabledReason || destination.voidKeyPrompt)
+  );
+  const stableSectorId = currentSectorId ?? planner?.currentSectorId;
+  const canonicalInwardRouteNames = stableSectorId
+    ? BOARD_RING_TRANSITIONS
+        .filter((transition) => transition.sourceSectorId === stableSectorId && transition.direction === "inward")
+        .map((transition) => getBoardSpace(transition.destinationSectorId)?.name ?? transition.destinationSectorId)
+    : [];
+  const inwardRouteNames = [
+    ...new Set([
+      ...canonicalInwardRouteNames,
+      ...legalInwardDestinations.map((destination) => destination.name)
+    ])
+  ];
   const movementState = movementResolving || travel
     ? "resolving"
     : planner?.active
@@ -581,6 +602,18 @@ export function PhoneMovementView({
         ) : planner?.active ? (
           <>
             <MovementAdjustments planner={planner} seatId={seatId} onIntent={onIntent} />
+            {inwardRouteNames.length > 0 ? (
+              <aside className="phone-move-inward-guidance" role="note" aria-label="Inward route recommendation">
+                <span>Advance opportunity</span>
+                <strong>{inwardRouteNames.join(" · ")}</strong>
+                <p>
+                  Recommended when prepared: inner reaches carry harder challenges and stronger rewards.
+                  {legalInwardDestinations.length > 0
+                    ? " This roll can reach the crossing."
+                    : " A future exact movement roll and any printed requirement still apply."}
+                </p>
+              </aside>
+            ) : null}
             {models.length > 0 ? (
               <TacticalDestinationList
                 models={models}

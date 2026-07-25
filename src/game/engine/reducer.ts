@@ -930,7 +930,9 @@ export function applyEffectToState(state: GameState, seatId: string, effect: Enc
     const gainedGear = { ...effect.gear, instanceId };
     const slot = gainedGear.slot;
     const currentItem = getEquippedGearItem(owner.character, slot);
-    const mayAutoEquip = gainedGear.tier !== "artifact" && gainedGear.effectModel !== "consumable";
+    const mayAutoEquip =
+      gainedGear.effectModel === "permanent" ||
+      (gainedGear.effectModel == null && gainedGear.tier !== "artifact");
     const shouldAutoEquip = mayAutoEquip && !currentItem;
     const sourceResolutionId = state.activeResolution?.id ?? `gear-reward:${seatId}:${state.sequence}`;
 

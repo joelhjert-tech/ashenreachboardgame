@@ -61,6 +61,8 @@ Remaining legacy files:
 - Signal Theatre prompt catalog: `src/game/assets/design/signalTheatreEnvironmentPrompts.ts`
 - Signal Piece prompt catalog: `src/game/assets/design/signalPiecePrompts.ts`
 - Inventory category emblem prompt catalog: `src/game/assets/design/inventoryCategoryIconPrompts.ts`
+- Objective category emblem prompt catalog: `src/game/assets/design/objectiveCategoryIconPrompts.ts`
+- Result-ready verdict gate prompt catalog: `src/game/assets/design/resultReadyVisualPrompts.ts`
 - Generated card image prompt catalog: `src/game/assets/design/generatedCardImagePrompts.ts`
 - Card fallback and output directories: `src/game/assets/design/cardImageCatalog.ts`
 
