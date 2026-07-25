@@ -1410,8 +1410,11 @@ describe("roomServer websocket integration", () => {
     expect(startedSnapshot.payload.players).toHaveLength(1);
   });
 
-  it("keeps result-ready resolutions until a connected owner explicitly continues", () => {
-    const createResolvedState = (connected: boolean): GameState => {
+  it("keeps stable result-ready resolutions until their owner explicitly continues", () => {
+    const createResolvedState = (
+      connected: boolean,
+      stage: NonNullable<GameState["activeResolution"]>["stage"]
+    ): GameState => {
       const state = createState({
         phase: "resolution",
         resolutionSource: "encounter",
@@ -1422,7 +1425,7 @@ describe("roomServer websocket integration", () => {
           id: "seat-1:threat:result-ready",
           playerId: "seat-1",
           source: "threat",
-          stage: "awaiting_continue",
+          stage,
           outcome: {
             title: "Result ready",
             text: "Choose how to continue.",
@@ -1439,7 +1442,7 @@ describe("roomServer websocket integration", () => {
       (server as unknown as { shouldAutoContinueResolution(): boolean }).shouldAutoContinueResolution();
 
     const connectedServer = new GameRoomServer(
-      createResolvedState(true),
+      createResolvedState(true, "awaiting_continue"),
       [],
       createSequenceRandomSource([0]),
       createThreats(),
@@ -1448,7 +1451,25 @@ describe("roomServer websocket integration", () => {
       createContracts()
     );
     const disconnectedServer = new GameRoomServer(
-      createResolvedState(false),
+      createResolvedState(false, "awaiting_continue"),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createRoomCharacters(),
+      createGear(),
+      createContracts()
+    );
+    const disconnectedOutcomeServer = new GameRoomServer(
+      createResolvedState(false, "outcome_summary"),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createRoomCharacters(),
+      createGear(),
+      createContracts()
+    );
+    const disconnectedRollServer = new GameRoomServer(
+      createResolvedState(false, "roll_result"),
       [],
       createSequenceRandomSource([0]),
       createThreats(),
@@ -1458,7 +1479,9 @@ describe("roomServer websocket integration", () => {
     );
 
     expect(canAutoContinue(connectedServer)).toBe(false);
-    expect(canAutoContinue(disconnectedServer)).toBe(true);
+    expect(canAutoContinue(disconnectedServer)).toBe(false);
+    expect(canAutoContinue(disconnectedOutcomeServer)).toBe(false);
+    expect(canAutoContinue(disconnectedRollServer)).toBe(true);
   });
 
   it("continues from a resolved battle awaiting acknowledgement into the next action state", async () => {

@@ -79,6 +79,7 @@ export function PhoneResultReadyGate({
         <div className="phone-result-gate__portraits">
           <figure>
             <img
+              className="phone-result-gate__portrait-art"
               src={getCharacterPortraitPath(operativeId)}
               alt={`${operativeName} operative portrait`}
               width={720}

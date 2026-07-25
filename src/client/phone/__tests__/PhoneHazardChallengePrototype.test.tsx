@@ -201,6 +201,7 @@ describe("PhoneHazardChallengeView", () => {
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/Route broken/i);
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/Processional loses your trail/i);
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/8.*4/i);
+    expect(screen.getByAltText(/operative portrait/i)).toHaveClass("phone-result-gate__portrait-art");
     expect(screen.getByTestId("phone-resolution-card").querySelector(".phone-result-gate__environment")).toHaveAttribute(
       "src",
       "/assets/riftfall/ui/result-ready/verdict-gate.webp"

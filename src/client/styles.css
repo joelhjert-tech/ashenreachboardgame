@@ -8731,9 +8731,10 @@ select {
 
 .phone-result-gate {
   position: relative;
-  min-height: min(42rem, calc(100dvh - 9.5rem));
+  box-sizing: border-box;
+  min-height: clamp(35rem, calc(100dvh - 5rem), 48rem);
   display: grid;
-  grid-template-rows: auto minmax(19rem, 1fr) auto;
+  grid-template-rows: auto minmax(13rem, 1fr) auto;
   gap: 0.65rem;
   overflow: hidden;
   padding: 0.78rem;
@@ -8802,7 +8803,7 @@ select {
 
 .phone-result-gate__verdict {
   position: relative;
-  min-height: 19rem;
+  min-height: 13rem;
   display: grid;
   align-items: center;
 }
@@ -8822,9 +8823,11 @@ select {
   text-align: center;
 }
 
-.phone-result-gate__portraits figure > img,
+.phone-result-gate__portrait-art,
+.phone-result-gate__portraits figure > .artwork-frame,
 .phone-result-gate__art-fallback {
   width: 100%;
+  height: auto;
   aspect-ratio: 0.72;
   display: grid;
   place-items: center;
@@ -8836,7 +8839,8 @@ select {
   box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.68), inset 0 0 0 3px rgba(0, 0, 0, 0.45);
 }
 
-.phone-result-gate__portraits .is-challenge > img {
+.phone-result-gate__portraits figure > .artwork-frame > img {
+  object-fit: cover;
   object-position: 50% 36%;
 }
 
@@ -9039,17 +9043,37 @@ select {
 
 @media (max-height: 740px) {
   .phone-result-gate {
-    min-height: 35rem;
-    grid-template-rows: auto minmax(15.5rem, 1fr) auto;
+    min-height: clamp(35rem, calc(100dvh - 5rem), 42rem);
+    grid-template-rows: auto minmax(12.75rem, 1fr) auto;
+    gap: 0.48rem;
+    padding: 0.62rem;
   }
 
   .phone-result-gate__verdict {
-    min-height: 15.5rem;
+    min-height: 12.75rem;
   }
 
-  .phone-result-gate__portraits figure > img,
+  .phone-result-gate__portrait-art,
+  .phone-result-gate__portraits figure > .artwork-frame,
   .phone-result-gate__art-fallback {
     aspect-ratio: 0.86;
+  }
+
+  .phone-result-gate__title h2 {
+    font-size: clamp(1.55rem, 7vw, 2rem);
+  }
+
+  .phone-result-gate__seal {
+    width: 5.35rem;
+    border-width: 0.38rem;
+  }
+
+  .phone-result-gate__seal span {
+    top: 0.72rem;
+  }
+
+  .phone-result-gate__seal strong {
+    font-size: 1.95rem;
   }
 
   .phone-result-gate__consequence > p,

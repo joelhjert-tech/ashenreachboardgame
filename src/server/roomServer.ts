@@ -9413,7 +9413,7 @@ export class GameRoomServer {
         !this.state.pendingEquipmentSuppressionChoice &&
         !this.state.pendingForcedDestinationChoice &&
         !this.state.pendingDisplacement &&
-        ["roll_result", "outcome_summary", "awaiting_continue"].includes(this.state.activeResolution.stage)
+        this.state.activeResolution.stage === "roll_result"
     );
   }
 
