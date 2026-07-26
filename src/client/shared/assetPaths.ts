@@ -68,13 +68,14 @@ const signalTheatreResultCrestByOutcome = {
   defeat: "/assets/riftfall/ui/signal-theatre/results/defeat.png"
 } as const;
 
-export type InventoryCategoryIcon = "artifacts" | "equipment" | "followers" | "status" | "progression";
+export type InventoryCategoryIcon = "artifacts" | "equipment" | "followers" | "missions" | "status" | "progression";
 export type ObjectiveCategoryIcon = "shared-mission" | "contract" | "rivalry" | "completed";
 
 const inventoryCategoryIconByCategory: Record<InventoryCategoryIcon, string> = {
   artifacts: "/assets/riftfall/ui/inventory-categories/artifacts.png",
   equipment: "/assets/riftfall/ui/inventory-categories/equipment.png",
   followers: "/assets/riftfall/ui/inventory-categories/followers.png",
+  missions: "/assets/riftfall/ui/objective-categories/completed.webp",
   status: "/assets/riftfall/ui/inventory-categories/status.png",
   progression: "/assets/riftfall/ui/inventory-categories/progression.png"
 };

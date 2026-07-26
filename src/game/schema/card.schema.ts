@@ -526,6 +526,7 @@ export const authoredEnemyThreatCardSchema = threatBaseSchema.extend({
   cardType: z.literal("enemy"),
   enemyName: z.string().min(1),
   trophyValue: z.number().int().min(0),
+  missionReward: z.boolean().optional(),
   defeatReward: authoredEffectSchema,
   woundOnLoss: authoredEffectSchema.optional()
 }).superRefine((card, context) => {
@@ -553,6 +554,7 @@ export const runtimeEnemyThreatCardSchema = threatBaseSchema.extend({
   cardType: z.literal("enemy"),
   enemyName: z.string().min(1),
   trophyValue: z.number().int().min(0),
+  missionReward: z.boolean().optional(),
   defeatReward: effectSchema,
   woundOnLoss: effectSchema.optional()
 });
@@ -576,6 +578,7 @@ export const legacyCompatibleThreatCardSchema = z.union([
     cardType: z.literal("enemy"),
     enemyName: z.string().min(1),
     trophyValue: z.number().int().min(0),
+    missionReward: z.boolean().optional(),
     defeatReward: legacyCompatibleEffectSchema,
     woundOnLoss: legacyCompatibleEffectSchema.optional()
   })

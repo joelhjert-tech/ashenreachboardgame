@@ -10,6 +10,7 @@
   "stat": "signal",
   "difficulty": 8,
   "trophyValue": 8,
+  "missionReward": true,
   "defeatReward": {
     "type": "gain_note",
     "text": "You cracked a bell shield and learned its counter-phrase."

@@ -1305,7 +1305,7 @@ export function PortraitControllerView({
     Boolean(
       self &&
       patch?.pendingMissionSelection?.status === "awaitingSelection" &&
-      !self.character.activeContract
+      (self.character.activeContracts?.length ?? (self.character.activeContract ? 1 : 0)) < 3
     ),
     ".phone-mission-offer__select:not([disabled])"
   );
@@ -1331,12 +1331,24 @@ export function PortraitControllerView({
   const scenarioDeltas = scenarioQuestDeltas(patch?.playerResultDeltas ?? patch?.publicResultDeltas);
   const sharedMission = buildSharedMissionPresentation(patch);
   const completedContracts = buildCompletedContractPresentations(self, patch?.availableContracts ?? []);
+  const activeMissionStates =
+    self.character.activeContracts?.length
+      ? self.character.activeContracts
+      : self.character.activeContract
+        ? [self.character.activeContract]
+        : [];
+  const activeMissionCards =
+    patch?.activeContractCards?.length
+      ? patch.activeContractCards
+      : activeContractCard
+        ? [activeContractCard]
+        : [];
   const ownSeat = patch?.seats.find((seat) => seat.seatId === self.seatId) ?? null;
   const isLateJoinPending = patch?.lateJoinPending === true;
   const isLobbyWaiting = patch?.status === "lobby" || isLateJoinPending || (!patch && Boolean(onLobbyBack));
   const replacementMissionActive = Boolean(
     patch?.pendingMissionSelection?.status === "awaitingSelection" &&
-    !self.character.activeContract
+    activeMissionStates.length < 3
   );
   const localUnboundNemeses = (patch?.nemesisChampions ?? []).filter(
     (nemesis) => nemesis.boundPlayerId !== self.seatId && nemesis.sectorId === self.character.currentSpaceId && !nemesis.defeated
@@ -1974,12 +1986,28 @@ export function PortraitControllerView({
                 </article>
                 </ObjectiveDisclosure>
                 <ObjectiveDisclosure
-                  label="My Contract"
-                  summary={activeContractCard?.name ?? "Private objective"}
+                  label="My Contracts"
+                  summary={
+                    activeMissionCards.length > 0
+                      ? `${activeMissionCards.length}/3 active`
+                      : "Private objectives"
+                  }
                   icon="contract"
                   initiallyOpen
                 >
-                <ActiveMissionQuestCard activeContract={self.character.activeContract} contract={activeContractCard} />
+                  {activeMissionStates.length > 0 ? (
+                    activeMissionStates.map((activeMission) => (
+                      <ActiveMissionQuestCard
+                        key={activeMission.contractId}
+                        activeContract={activeMission}
+                        contract={
+                          activeMissionCards.find((contract) => contract.id === activeMission.contractId) ?? null
+                        }
+                      />
+                    ))
+                  ) : (
+                    <ActiveMissionQuestCard activeContract={null} contract={null} />
+                  )}
                 </ObjectiveDisclosure>
               {patch?.privateRivalry ? (
                   <ObjectiveDisclosure

@@ -10,6 +10,7 @@
   "stat": "command",
   "difficulty": 7,
   "trophyValue": 4,
+  "missionReward": true,
   "defeatReward": {
     "type": "gain_note",
     "text": "You broke the raider signal chain and kept their false toll call."

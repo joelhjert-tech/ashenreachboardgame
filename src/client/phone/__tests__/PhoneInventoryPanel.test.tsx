@@ -16,6 +16,14 @@ function openInventoryCategory(label: RegExp): HTMLElement {
   return toggle;
 }
 
+function openMissionInventoryCategory(): HTMLElement {
+  const label = screen.getByText("Missions", { selector: ".phone-inventory-group-label" });
+  const toggle = label.closest("button");
+  if (!toggle) throw new Error("Expected Missions inventory disclosure.");
+  if (toggle.getAttribute("aria-expanded") !== "true") fireEvent.click(toggle);
+  return toggle;
+}
+
 const combatWeapon = {
   id: "black-route-fuse",
   name: "Black Route Fuse",
@@ -652,12 +660,17 @@ describe("PhoneInventoryPanel", () => {
     }
   });
 
-  it("uses the five custom category emblems and opens one useful drawer by default", () => {
+  it("uses the six custom category emblems and opens one useful drawer by default", () => {
     render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
 
-    const iconPaths = ["artifacts", "equipment", "followers", "status", "progression"].map(
-      (category) => `/assets/riftfall/ui/inventory-categories/${category}.png`
-    );
+    const iconPaths = [
+      "/assets/riftfall/ui/inventory-categories/artifacts.png",
+      "/assets/riftfall/ui/inventory-categories/equipment.png",
+      "/assets/riftfall/ui/inventory-categories/followers.png",
+      "/assets/riftfall/ui/objective-categories/completed.webp",
+      "/assets/riftfall/ui/inventory-categories/status.png",
+      "/assets/riftfall/ui/inventory-categories/progression.png"
+    ];
     const icons = Array.from(document.querySelectorAll<HTMLImageElement>(".phone-inventory-group-icon"));
 
     expect(icons.map((icon) => icon.getAttribute("src"))).toEqual(iconPaths);
@@ -2261,6 +2274,166 @@ describe("PhoneInventoryPanel", () => {
     expect(within(mission).getByText("Gain 1 Salvage")).toBeInTheDocument();
   });
 
+  it("shows up to three active Missions together on the Objectives tab", () => {
+    const basePatch = createPatch({ encounter: null });
+    const baseSelf = basePatch.self!;
+    const contracts = ["choir-hush-census", "compact-ember-courier", "relay-witness"].map(
+      (id, index) => ({
+        id,
+        name: ["Choir Hush Census", "Ember Courier", "Relay Witness"][index]!,
+        factionGiver: "Ashen Relay",
+        text: "Follow the private route.",
+        objective: { type: "defeatCount" as const, target: index + 1 },
+        reward: { type: "gain_salvage" as const, amount: 1 }
+      })
+    );
+    const activeContracts = contracts.map((contract, index) => ({
+      contractId: contract.id,
+      progress: index
+    }));
+    const patch = {
+      ...basePatch,
+      activeContractCard: contracts[0],
+      activeContractCards: contracts,
+      self: {
+        ...baseSelf,
+        character: {
+          ...baseSelf.character,
+          activeContract: activeContracts[0],
+          activeContracts
+        }
+      }
+    } satisfies PhonePatchPayload;
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={contracts[0]!}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+    openPhoneTabs();
+    fireEvent.click(screen.getByRole("tab", { name: /^objectives$/i }));
+
+    expect(screen.getByRole("button", { name: /my contracts.*3\/3 active/i })).toBeInTheDocument();
+    expect(screen.getAllByTestId("phone-active-mission-card")).toHaveLength(3);
+    expect(screen.getByText("Choir Hush Census")).toBeInTheDocument();
+    expect(screen.getByText("Ember Courier")).toBeInTheDocument();
+    expect(screen.getByText("Relay Witness")).toBeInTheDocument();
+  });
+
+  it("keeps the main phone header and bottom menu while opening the Inventory Relic exchange", () => {
+    const basePatch = createPatch({ encounter: null });
+    const baseSelf = basePatch.self!;
+    const contracts = ["choir-hush-census", "compact-ember-courier", "relay-witness"].map(
+      (id, index) => ({
+        id,
+        name: ["Choir Hush Census", "Ember Courier", "Relay Witness"][index]!,
+        factionGiver: "Ashen Relay",
+        text: "A completed private route.",
+        objective: { type: "defeatCount" as const, target: 1 },
+        reward: { type: "gain_salvage" as const, amount: 1 }
+      })
+    );
+    const completedMissionRecords = contracts.map((contract, index) => ({
+      missionId: contract.id,
+      completedByPlayerId: "seat-1",
+      completedAtSequence: index + 1,
+      rewardGranted: true,
+      spent: false
+    }));
+    const patch = {
+      ...basePatch,
+      availableContracts: contracts,
+      self: {
+        ...baseSelf,
+        character: {
+          ...baseSelf.character,
+          completedContracts: contracts.map((contract) => contract.id),
+          completedMissionRecords
+        }
+      }
+    } satisfies PhonePatchPayload;
+    const onIntent = vi.fn();
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={onIntent}
+        onLeave={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("tab", { name: /^inventory$/i }));
+    const missionsToggle = openMissionInventoryCategory();
+    expect(missionsToggle).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: /open relic exchange/i }));
+    expect(screen.getByTestId("signal-phone-identity")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: /more phone controls/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /^inventory$/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText(/select three completed missions/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /offer 3 mission seals/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "OPEN_MISSION_RELIC_EXCHANGE",
+      seatId: "seat-1",
+      missionIds: contracts.map((contract) => contract.id)
+    });
+  });
+
+  it("shows two private Relic options and claims only the selected offer", () => {
+    const basePatch = createPatch({ encounter: null });
+    const baseSelf = basePatch.self!;
+    const completedMissionIds = ["choir-hush-census", "compact-ember-courier", "relay-witness"];
+    const options = [
+      { ...importedRelic, id: "oathchain-lens", name: "Oathchain Lens" },
+      { ...importedRelic, id: "saint-bone-key", name: "Saint-Bone Key" }
+    ];
+    const patch = {
+      ...basePatch,
+      self: {
+        ...baseSelf,
+        character: {
+          ...baseSelf.character,
+          completedContracts: completedMissionIds
+        }
+      },
+      pendingMissionRelicExchange: {
+        id: "mission-relic:seat-1:9",
+        status: "awaitingSelection" as const,
+        selectedMissionIds: completedMissionIds,
+        options
+      }
+    } satisfies PhonePatchPayload;
+    const onIntent = vi.fn();
+
+    render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
+    openMissionInventoryCategory();
+    fireEvent.click(screen.getByRole("radio", { name: /saint-bone key/i }));
+    fireEvent.click(screen.getByRole("button", { name: /claim selected relic/i }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "CLAIM_MISSION_RELIC",
+      seatId: "seat-1",
+      exchangeId: "mission-relic:seat-1:9",
+      artifactId: "saint-bone-key"
+    });
+  });
+
   it("archives a completed mission and immediately opens a focused replacement window", () => {
     const completedContract = {
       id: "choir-hush-census",
@@ -2303,7 +2476,7 @@ describe("PhoneInventoryPanel", () => {
     const onIntent = vi.fn();
 
     const view = render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
-    openInventoryCategory(/progression.*records/i);
+    openMissionInventoryCategory();
     expect(screen.getByLabelText(/completed contract ledger/i)).toHaveTextContent("Choir Hush Census");
     view.unmount();
 

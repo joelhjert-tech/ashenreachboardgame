@@ -498,6 +498,20 @@ export interface CompleteContractAction extends BaseAction {
   contract?: ContractCard;
 }
 
+export interface MissionRelicExchangeOpenedAction extends BaseAction {
+  type: "MISSION_RELIC_EXCHANGE_OPENED";
+  exchangeId: string;
+  selectedMissionIds: string[];
+  options: GearItem[];
+}
+
+export interface MissionRelicClaimedAction extends BaseAction {
+  type: "MISSION_RELIC_CLAIMED";
+  exchangeId: string;
+  artifactId: string;
+  artifact: GearItem;
+}
+
 export interface ScenarioConfrontationRequestedAction extends BaseAction {
   type: "SCENARIO_CONFRONTATION_REQUESTED";
 }
@@ -837,6 +851,8 @@ export type GameAction =
   | ShopSkippedAction
   | AcceptContractAction
   | CompleteContractAction
+  | MissionRelicExchangeOpenedAction
+  | MissionRelicClaimedAction
   | ScenarioConfrontationRequestedAction
   | SpaceTextResolvedAction
   | ScenarioProgressAdvancedAction
@@ -1146,6 +1162,8 @@ export type ClientIntent =
       contractId: string;
     }
   | { type: "SELECT_REPLACEMENT_CONTRACT"; seatId: string; selectionId: string; contractId: string }
+  | { type: "OPEN_MISSION_RELIC_EXCHANGE"; seatId: string; missionIds: string[] }
+  | { type: "CLAIM_MISSION_RELIC"; seatId: string; exchangeId: string; artifactId: string }
   | {
       type: "SCENARIO_CONFRONTATION_REQUESTED";
       seatId: string;

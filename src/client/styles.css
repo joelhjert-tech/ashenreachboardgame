@@ -10089,6 +10089,510 @@ select {
   }
 }
 
+.phone-mission-exchange {
+  min-width: 0;
+  display: grid;
+  gap: 0.72rem;
+  padding: 0.18rem;
+  color: #e9dfcc;
+}
+
+.phone-mission-exchange__steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.28rem;
+  padding-bottom: 0.15rem;
+}
+
+.phone-mission-exchange__steps span {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.32rem;
+  border: 1px solid rgba(136, 151, 161, 0.2);
+  border-radius: 0.22rem;
+  background: rgba(5, 8, 11, 0.7);
+  color: rgba(222, 216, 202, 0.58);
+  font-size: 0.63rem;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.phone-mission-exchange__steps b {
+  display: grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.62rem;
+}
+
+.phone-mission-exchange__steps .is-current {
+  border-color: rgba(224, 174, 87, 0.58);
+  background: linear-gradient(135deg, rgba(128, 77, 26, 0.32), rgba(10, 12, 15, 0.9));
+  color: #f0d49a;
+}
+
+.phone-mission-exchange__steps .is-done {
+  color: #9fc5aa;
+}
+
+.phone-mission-capacity {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.45rem 0.7rem;
+  padding: 0.68rem;
+  overflow: hidden;
+  border: 1px solid rgba(204, 164, 91, 0.34);
+  background:
+    radial-gradient(circle at 92% 12%, rgba(202, 145, 56, 0.14), transparent 37%),
+    linear-gradient(135deg, rgba(29, 24, 20, 0.96), rgba(6, 9, 12, 0.98));
+}
+
+.phone-mission-capacity > div:first-child {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.phone-mission-capacity span,
+.phone-mission-exchange__heading span {
+  color: #d6a95e;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.phone-mission-capacity strong {
+  color: #f0e4cc;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+}
+
+.phone-mission-capacity em {
+  align-self: center;
+  color: #f0d39b;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.7rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.phone-mission-capacity em small {
+  color: rgba(236, 226, 208, 0.55);
+  font-size: 0.72rem;
+}
+
+.phone-mission-capacity__slots {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.32rem;
+}
+
+.phone-mission-capacity__slots i {
+  height: 0.28rem;
+  border: 1px solid rgba(197, 175, 137, 0.25);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.phone-mission-capacity__slots i.is-filled {
+  border-color: #d7a855;
+  background: #d7a855;
+  box-shadow: 0 0 0.55rem rgba(215, 168, 85, 0.46);
+}
+
+.phone-mission-capacity p,
+.phone-mission-exchange__support,
+.phone-mission-exchange__heading p,
+.phone-mission-exchange__warning,
+.phone-mission-exchange__relic p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.42;
+}
+
+.phone-mission-capacity p {
+  grid-column: 1 / -1;
+  color: rgba(229, 222, 208, 0.7);
+}
+
+.phone-mission-reliquary {
+  position: relative;
+  width: min(100%, 15rem);
+  aspect-ratio: 2.7 / 1;
+  margin: 0.15rem auto;
+  background:
+    linear-gradient(120deg, transparent 19%, rgba(187, 139, 67, 0.28) 20% 21%, transparent 22%),
+    linear-gradient(240deg, transparent 19%, rgba(187, 139, 67, 0.28) 20% 21%, transparent 22%);
+}
+
+.phone-mission-reliquary::before,
+.phone-mission-reliquary::after {
+  content: "";
+  position: absolute;
+  inset: 12% 20%;
+  border: 1px solid rgba(213, 166, 84, 0.34);
+  transform: rotate(8deg);
+}
+
+.phone-mission-reliquary::after {
+  transform: rotate(-8deg);
+}
+
+.phone-mission-reliquary__aperture,
+.phone-mission-reliquary__socket {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(213, 166, 84, 0.5);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 40% 34%, #423420, #11100e 58%, #050607);
+  color: #e2bd7b;
+  box-shadow:
+    inset 0 0 0 3px rgba(2, 3, 4, 0.72),
+    0 0 0.65rem rgba(177, 120, 41, 0.2);
+}
+
+.phone-mission-reliquary__aperture {
+  width: 4.25rem;
+  height: 4.25rem;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+}
+
+.phone-mission-reliquary__aperture img {
+  width: 2.75rem;
+  height: 2.75rem;
+  object-fit: contain;
+}
+
+.phone-mission-reliquary__socket {
+  width: 2rem;
+  height: 2rem;
+  font: 700 0.64rem Georgia, "Times New Roman", serif;
+}
+
+.phone-mission-reliquary__socket--left {
+  left: 9%;
+  top: 8%;
+}
+
+.phone-mission-reliquary__socket--right {
+  right: 9%;
+  top: 8%;
+}
+
+.phone-mission-reliquary__socket--bottom {
+  bottom: 0;
+  left: calc(50% - 1rem);
+}
+
+.phone-mission-exchange__status {
+  display: grid;
+  gap: 0.15rem;
+  text-align: center;
+}
+
+.phone-mission-exchange__status strong {
+  color: #f2dfba;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.02rem;
+}
+
+.phone-mission-exchange__status span,
+.phone-mission-exchange__support {
+  color: rgba(226, 219, 205, 0.66);
+  font-size: 0.72rem;
+}
+
+.phone-mission-exchange__support {
+  text-align: center;
+}
+
+.phone-mission-exchange__archive {
+  display: grid;
+  gap: 0.28rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phone-mission-exchange__archive li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.5rem;
+  padding: 0.38rem 0.48rem;
+  border-left: 2px solid rgba(207, 164, 88, 0.55);
+  background: rgba(11, 14, 17, 0.72);
+}
+
+.phone-mission-exchange__archive span {
+  color: #cba664;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.phone-mission-exchange__archive strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #e9deca;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-mission-exchange__primary {
+  width: 100%;
+  min-height: 48px;
+}
+
+.phone-mission-exchange__history {
+  border-top: 1px solid rgba(198, 164, 104, 0.18);
+  padding-top: 0.45rem;
+  color: rgba(230, 221, 203, 0.72);
+  font-size: 0.76rem;
+}
+
+.phone-mission-exchange__history summary {
+  cursor: pointer;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.phone-mission-exchange__history ul {
+  margin: 0.2rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.phone-mission-exchange__heading {
+  display: grid;
+  gap: 0.22rem;
+  padding: 0.25rem 0.12rem 0;
+}
+
+.phone-mission-exchange__heading h3 {
+  margin: 0;
+  color: #f1e2c6;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.15rem;
+}
+
+.phone-mission-exchange__heading p {
+  color: rgba(230, 222, 206, 0.66);
+}
+
+.phone-mission-exchange__mission-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.phone-mission-exchange__mission {
+  min-width: 0;
+  min-height: 4.75rem;
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.42rem;
+  border: 1px solid rgba(133, 151, 163, 0.28);
+  background: linear-gradient(110deg, rgba(16, 19, 23, 0.96), rgba(6, 8, 11, 0.98));
+  color: inherit;
+  text-align: left;
+}
+
+.phone-mission-exchange__mission > .artwork-frame {
+  width: 3.5rem;
+  height: 4.2rem;
+}
+
+.phone-mission-exchange__mission > span {
+  min-width: 0;
+  display: grid;
+  gap: 0.16rem;
+}
+
+.phone-mission-exchange__mission small,
+.phone-mission-exchange__relic small {
+  color: #c9a66a;
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.phone-mission-exchange__mission strong,
+.phone-mission-exchange__relic strong {
+  color: #f0e2c8;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.88rem;
+  line-height: 1.18;
+}
+
+.phone-mission-exchange__mission em {
+  color: rgba(226, 218, 202, 0.62);
+  font-size: 0.68rem;
+  font-style: normal;
+}
+
+.phone-mission-exchange__mission > i {
+  display: grid;
+  width: 1.85rem;
+  height: 1.85rem;
+  place-items: center;
+  border: 1px solid rgba(201, 168, 106, 0.42);
+  border-radius: 50%;
+  color: #d4b477;
+  font-style: normal;
+}
+
+.phone-mission-exchange__mission.is-selected {
+  border-color: rgba(220, 174, 91, 0.78);
+  background:
+    linear-gradient(110deg, rgba(86, 58, 27, 0.42), rgba(8, 10, 13, 0.98));
+  box-shadow: inset 3px 0 #d8a855;
+}
+
+.phone-mission-exchange__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.45rem;
+  padding: 0.55rem 0 0.08rem;
+  background: linear-gradient(180deg, transparent, rgba(4, 6, 9, 0.98) 30%);
+}
+
+.phone-mission-exchange__actions > button {
+  min-height: 46px;
+}
+
+.phone-mission-exchange__actions > button:first-child {
+  min-width: 4.5rem;
+  border: 1px solid rgba(190, 170, 135, 0.3);
+  background: rgba(12, 15, 19, 0.92);
+  color: #dfd5c2;
+}
+
+.phone-mission-exchange__relics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.48rem;
+}
+
+.phone-mission-exchange__relic {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.28rem;
+  padding: 0.42rem;
+  border: 1px solid rgba(134, 151, 163, 0.28);
+  background: linear-gradient(160deg, rgba(20, 23, 27, 0.98), rgba(5, 7, 10, 0.98));
+  color: inherit;
+  text-align: left;
+}
+
+.phone-mission-exchange__relic > div {
+  position: relative;
+}
+
+.phone-mission-exchange__relic .artwork-frame {
+  width: 100%;
+}
+
+.phone-mission-exchange__relic > div > span {
+  position: absolute;
+  right: 0.3rem;
+  bottom: 0.3rem;
+  padding: 0.2rem 0.35rem;
+  background: #c89b4e;
+  color: #0d0d0c;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.phone-mission-exchange__relic p {
+  display: -webkit-box;
+  overflow: hidden;
+  color: rgba(230, 222, 206, 0.68);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.phone-mission-exchange__relic.is-selected {
+  border-color: #d5aa63;
+  box-shadow:
+    inset 0 0 0 1px rgba(213, 170, 99, 0.28),
+    0 0 0.85rem rgba(187, 126, 41, 0.2);
+}
+
+.phone-mission-exchange__warning {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem;
+  border: 1px solid rgba(182, 93, 69, 0.34);
+  background: rgba(63, 25, 19, 0.28);
+  color: rgba(232, 220, 201, 0.75);
+}
+
+.phone-mission-exchange__warning > b {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid #c9785d;
+  border-radius: 50%;
+  color: #e09b7e;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.phone-mission-exchange__warning strong {
+  color: #f0d3c5;
+}
+
+@media (max-width: 350px) {
+  .phone-mission-exchange__steps span {
+    grid-template-columns: 1.25rem;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .phone-mission-exchange__mission {
+    grid-template-columns: 3rem minmax(0, 1fr) 1.85rem;
+  }
+
+  .phone-mission-exchange__mission > .artwork-frame {
+    width: 3rem;
+    height: 3.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone-mission-capacity__slots i.is-filled,
+  .phone-mission-exchange__relic.is-selected {
+    box-shadow: none;
+  }
+}
+
 .phone-inventory-card-list {
   min-height: 0;
   display: grid;

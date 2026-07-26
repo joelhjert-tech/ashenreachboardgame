@@ -18,6 +18,7 @@ import {
   statLabelById,
   type InventoryCardViewModel
 } from "./inventoryPresentation.js";
+import { PhoneMissionRelicExchange } from "./PhoneMissionRelicExchange.js";
 
 interface PhoneInventoryPanelProps {
   patch: PhonePatchPayload;
@@ -532,8 +533,6 @@ function InventoryProgressionSection({
 
   const trophyPile = self.character.trophyPile ?? [];
   const pileAvailableValue = trophyPile.reduce((total, entry) => total + getTrophyPileEntryAvailableValue(entry), 0);
-  const missionRecords = self.character.completedMissionRecords ?? [];
-  const spentMissions = missionRecords.filter((record) => record.spent);
   return (
     <section className="phone-inventory-progression" aria-label="Progression" data-testid="phone-inventory-progression">
       <div className="phone-inventory-progression-header">
@@ -542,34 +541,6 @@ function InventoryProgressionSection({
           <strong>Trophies: {trophies}</strong>
         </div>
         <small>{pileAvailableValue} from defeated enemies</small>
-      </div>
-
-      <div className="phone-inventory-contract-ledger" aria-label="Completed Contract ledger">
-        <span>Completed Missions</span>
-        <strong>{self.character.completedContracts?.length ?? 0}</strong>
-        <small>{Math.min(self.character.completedContracts?.length ?? 0, 3)} / 3 toward Artifact requisition. Visit a Relic Dealer when ready.</small>
-        {(self.character.completedContracts?.length ?? 0) >= 3 ? (
-          <p><strong>Artifact requisition available</strong><br />Visit a Relic Dealer. No Artifact is granted automatically.</p>
-        ) : null}
-        {(self.character.completedContracts?.length ?? 0) > 0 ? (
-          <ul>
-            {(self.character.completedContracts ?? []).map((contractId) => (
-              <li key={contractId}>{patch.availableContracts.find((contract) => contract.id === contractId)?.name ?? "Archived mission"}</li>
-            ))}
-          </ul>
-        ) : null}
-        {spentMissions.length > 0 ? (
-          <details>
-            <summary>Requisitioned Missions ({spentMissions.length})</summary>
-            <ul>
-              {spentMissions.map((record) => (
-                <li key={`${record.missionId}-${record.completedAtSequence}`}>
-                  {patch.availableContracts.find((contract) => contract.id === record.missionId)?.name ?? "Archived mission"}
-                </li>
-              ))}
-            </ul>
-          </details>
-        ) : null}
       </div>
 
       <div className="phone-inventory-trophy-list" aria-label="Trophy source summary">
@@ -698,7 +669,14 @@ export function PhoneInventoryPanel({
   const faceupAfflictions = self.character.afflictions?.faceup ?? [];
   const facedownAfflictionCount = self.character.afflictions?.facedownCount ?? 0;
   const statusCount = scars.length + faceupAfflictions.length + facedownAfflictionCount;
-  const progressionCount = (self.character.trophyPile?.length ?? 0) + (self.character.completedMissionRecords?.length ?? 0);
+  const progressionCount = self.character.trophyPile?.length ?? 0;
+  const completedMissionRecords = self.character.completedMissionRecords ?? [];
+  const unspentMissionCount = (self.character.completedContracts ?? []).filter(
+    (missionId) => completedMissionRecords.find((record) => record.missionId === missionId)?.spent !== true
+  ).length;
+  const missionCount =
+    (self.character.activeContracts?.length ?? (self.character.activeContract ? 1 : 0)) +
+    completedMissionRecords.length;
   const summarizeCards = (cards: InventoryCardViewModel[], empty: string): string =>
     cards.length === 0
       ? empty
@@ -727,6 +705,14 @@ export function PhoneInventoryPanel({
       summary: summarizeCards(followerCards, "No companions"),
       cards: followerCards,
       actionAvailable: followerCards.some((card) => card.canUseNow)
+    },
+    {
+      id: "missions" as const,
+      label: "Missions",
+      count: missionCount,
+      summary: `${self.character.activeContracts?.length ?? (self.character.activeContract ? 1 : 0)}/3 active · ${unspentMissionCount} exchange-ready`,
+      cards: [] as InventoryCardViewModel[],
+      actionAvailable: unspentMissionCount >= 3 || Boolean(patch.pendingMissionRelicExchange)
     },
     {
       id: "status" as const,
@@ -850,6 +836,7 @@ export function PhoneInventoryPanel({
                 </>
               ) : <p className="phone-sheet-action-empty">No persistent Scars or Afflictions.</p>
             ) : null}
+            {category.id === "missions" ? <PhoneMissionRelicExchange patch={patch} onIntent={onIntent} /> : null}
             {category.id === "progression" ? <InventoryProgressionSection patch={patch} onIntent={onIntent} /> : null}
           </InventoryDisclosure>
         ))

@@ -172,6 +172,15 @@ import { getChallengeItemEligibility } from "../game/rules/challengeItemEligibil
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import { applyStartingLoadout, ARTIFACT_EXCHANGE_CONTRACT_COST } from "../game/rules/startingLoadout.js";
 import {
+  addActiveMission,
+  getActiveMission,
+  getActiveMissions,
+  MAX_ACTIVE_MISSIONS,
+  MISSION_RELIC_EXCHANGE_COST,
+  MISSION_RELIC_OPTION_COUNT,
+  setActiveMissions
+} from "../game/rules/missionLifecycle.js";
+import {
   getStatUpgradeCost,
   getStatUpgradeDisabledReason,
   isUpgradeableStat,
@@ -193,6 +202,8 @@ import type {
   GameAction,
   MovementResolvedAction,
   MovementRolledAction,
+  MissionRelicClaimedAction,
+  MissionRelicExchangeOpenedAction,
   MoveRequestedAction,
   NemesisCombatResolvedAction,
   NemesisDefeatedAction,
@@ -441,6 +452,8 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "ACCEPT_CONTRACT",
   "COMPLETE_CONTRACT",
   "SELECT_REPLACEMENT_CONTRACT",
+  "OPEN_MISSION_RELIC_EXCHANGE",
+  "CLAIM_MISSION_RELIC",
   "SCENARIO_CONFRONTATION_REQUESTED",
   "COOPERATIVE_ASSISTANCE_REQUESTED",
   "COOPERATIVE_ASSISTANCE_RESPONDED",
@@ -960,9 +973,25 @@ export class GameRoomServer {
       if (intent.type === "SELECT_REPLACEMENT_CONTRACT") {
         this.selectReplacementContract(intent);
         this.broadcastPatch();
-        if (this.state.phase === "broadcast" && !this.state.activeResolution) {
+        if (
+          this.state.phase === "broadcast" &&
+          !this.state.activeResolution &&
+          !this.state.pendingMissionSelection
+        ) {
           this.completeBroadcastTurn(intent.seatId);
         }
+        return;
+      }
+
+      if (intent.type === "OPEN_MISSION_RELIC_EXCHANGE") {
+        this.openMissionRelicExchange(intent);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "CLAIM_MISSION_RELIC") {
+        this.claimMissionRelic(intent);
+        this.broadcastPatch();
         return;
       }
 
@@ -1165,7 +1194,7 @@ export class GameRoomServer {
       }
 
       if (intent.type === "ACCEPT_CONTRACT") {
-        this.maybeTriggerAbilityOnContractAccepted(client.seatId);
+        this.maybeTriggerAbilityOnContractAccepted(client.seatId, intent.contractId);
       }
 
       if (intent.type === "SHOP_PURCHASE_REQUESTED") {
@@ -1225,6 +1254,7 @@ export class GameRoomServer {
         ...character,
         ...(presentation ? { presentation } : {}),
         activeContract: character.activeContract ? { ...character.activeContract } : null,
+        activeContracts: character.activeContracts?.map((contract) => ({ ...contract })),
         heldGear: [...character.heldGear],
         equippedGear: { ...character.equippedGear },
         followers: [...(character.followers ?? [])],
@@ -1413,6 +1443,7 @@ export class GameRoomServer {
                 status: "active",
                 trophyPile: [],
                 activeContract: null,
+                activeContracts: [],
                 heldGear: [...loadedCharacter.heldGear],
                 followers: [...(loadedCharacter.followers ?? [])],
                 equippedGear: { ...loadedCharacter.equippedGear },
@@ -1617,7 +1648,11 @@ export class GameRoomServer {
                   activeContract: {
                     contractId: seat.selectedStartingContractId!,
                     progress: 0
-                  }
+                  },
+                  activeContracts: [{
+                    contractId: seat.selectedStartingContractId!,
+                    progress: 0
+                  }]
                 }
               }
             : player
@@ -1995,6 +2030,19 @@ export class GameRoomServer {
       case "SELECT_REPLACEMENT_CONTRACT":
         requireStringField(message, "selectionId", type);
         requireStringField(message, "contractId", type);
+        break;
+      case "OPEN_MISSION_RELIC_EXCHANGE":
+        if (
+          !Array.isArray(message.missionIds) ||
+          message.missionIds.length !== MISSION_RELIC_EXCHANGE_COST ||
+          message.missionIds.some((missionId) => typeof missionId !== "string" || missionId.length === 0)
+        ) {
+          throw new IntentRejectedError(type, "Choose exactly three completed Mission IDs");
+        }
+        break;
+      case "CLAIM_MISSION_RELIC":
+        requireStringField(message, "exchangeId", type);
+        requireStringField(message, "artifactId", type);
         break;
       case "RESOLVE_SPACE_TEXT":
         if (message.choiceId !== undefined && typeof message.choiceId !== "string") {
@@ -4227,29 +4275,125 @@ export class GameRoomServer {
   }
 
   private queueReplacementMissionSelection(seatId: string, completedContractId: string): void {
-    if (this.state.pendingMissionSelection || this.state.players.find((entry) => entry.seatId === seatId)?.character.activeContract) return;
+    const contract = this.state.availableContracts.find((entry) => entry.id === completedContractId);
+    this.queueMissionReward({
+      ownerSeatId: seatId,
+      sourceKind: "completion",
+      sourceId: completedContractId,
+      sourceTitle: contract?.name ?? "Completed Mission",
+      completedContractId
+    });
+  }
+
+  private queueMissionReward({
+    ownerSeatId,
+    sourceKind,
+    sourceId,
+    sourceTitle,
+    completedContractId
+  }: {
+    ownerSeatId: string;
+    sourceKind: "completion" | "tile" | "battle";
+    sourceId: string;
+    sourceTitle: string;
+    completedContractId?: string;
+  }): void {
+    const rewardId = `mission-reward:${sourceKind}:${ownerSeatId}:${sourceId}:${this.state.sequence + 1}`;
+    const createdAt = new Date().toISOString();
+    const duplicate = (this.state.pendingMissionRewards ?? []).some((reward) =>
+      reward.ownerSeatId === ownerSeatId &&
+      reward.sourceKind === sourceKind &&
+      reward.sourceId === sourceId
+    );
+    const selectionDuplicate =
+      this.state.pendingMissionSelection?.ownerSeatId === ownerSeatId &&
+      this.state.pendingMissionSelection.sourceKind === sourceKind &&
+      this.state.pendingMissionSelection.sourceId === sourceId;
+    if (duplicate || selectionDuplicate) return;
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      pendingMissionRewards: [
+        ...(this.state.pendingMissionRewards ?? []),
+        {
+          id: rewardId,
+          ownerSeatId,
+          sourceKind,
+          sourceId,
+          sourceTitle,
+          createdAt
+        }
+      ],
+      eventLog: [
+        ...this.state.eventLog,
+        {
+          type: "MISSION_REWARD_QUEUED",
+          seatId: ownerSeatId,
+          rewardId,
+          sourceKind,
+          sourceId,
+          sourceTitle,
+          completedContractId,
+          createdAt
+        }
+      ]
+    };
+    if (
+      sourceKind === "completion" ||
+      (
+        !this.state.pendingEffect &&
+        !this.state.currentEncounter &&
+        !this.state.activeResolution &&
+        !this.state.pendingEnemyRoll &&
+        this.state.phase !== "resolution"
+      )
+    ) {
+      this.prepareNextMissionSelection(ownerSeatId, completedContractId);
+    }
+  }
+
+  private prepareNextMissionSelection(preferredSeatId?: string, completedContractId?: string): void {
+    if (this.state.pendingMissionSelection) return;
+    const pendingRewards = this.state.pendingMissionRewards ?? [];
+    const reward = [
+      ...pendingRewards.filter((entry) => entry.ownerSeatId === preferredSeatId),
+      ...pendingRewards.filter((entry) => entry.ownerSeatId !== preferredSeatId)
+    ].find((entry) => {
+      const player = this.state.players.find((playerEntry) => playerEntry.seatId === entry.ownerSeatId);
+      return player && getActiveMissions(player.character).length < MAX_ACTIVE_MISSIONS;
+    });
+    if (!reward) return;
+
     const unavailable = new Set(this.state.players.flatMap((entry) => [
       ...(entry.character.completedContracts ?? []),
       ...(entry.character.completedMissionRecords ?? []).map((record) => record.missionId),
-      ...(entry.character.activeContract ? [entry.character.activeContract.contractId] : [])
+      ...getActiveMissions(entry.character).map((mission) => mission.contractId)
     ]));
     const optionIds = this.state.availableContracts
       .map((contract) => contract.id)
       .filter((contractId) => !unavailable.has(contractId))
       .sort((left, right) =>
-        stableSetupHash(`${this.state.sessionId}:${seatId}:${completedContractId}:${left}`) -
-        stableSetupHash(`${this.state.sessionId}:${seatId}:${completedContractId}:${right}`)
+        stableSetupHash(`${this.state.sessionId}:${reward.ownerSeatId}:${reward.id}:${left}`) -
+        stableSetupHash(`${this.state.sessionId}:${reward.ownerSeatId}:${reward.id}:${right}`)
       )
       .slice(0, 3);
     const createdAt = new Date().toISOString();
-    const selectionId = `mission:${seatId}:${completedContractId}:${this.state.sequence + 1}`;
+    const selectionId = `mission:${reward.ownerSeatId}:${reward.sourceId}:${this.state.sequence + 1}`;
+    const remainingRewards = pendingRewards.filter((entry) => entry.id !== reward.id);
     this.state = {
       ...this.state,
       sequence: this.state.sequence + 1,
+      pendingMissionRewards: optionIds.length > 0 ? remainingRewards : pendingRewards.filter((entry) => entry.id !== reward.id),
       pendingMissionSelection: optionIds.length > 0 ? {
         id: selectionId,
-        ownerSeatId: seatId,
-        completedContractId,
+        ownerSeatId: reward.ownerSeatId,
+        ...(completedContractId || reward.sourceKind === "completion"
+          ? { completedContractId: completedContractId ?? reward.sourceId }
+          : {}),
+        sourceKind: reward.sourceKind,
+        sourceId: reward.sourceId,
+        sourceTitle: reward.sourceTitle,
         optionIds,
         status: "queued",
         continuationPhase: "broadcast",
@@ -4257,9 +4401,12 @@ export class GameRoomServer {
       } : null,
       eventLog: [...this.state.eventLog, {
         type: optionIds.length > 0 ? "REPLACEMENT_MISSION_OFFERED" : "REPLACEMENT_MISSION_UNAVAILABLE",
-        seatId,
+        seatId: reward.ownerSeatId,
         selectionId,
-        completedContractId,
+        completedContractId: completedContractId ?? (reward.sourceKind === "completion" ? reward.sourceId : undefined),
+        sourceKind: reward.sourceKind,
+        sourceId: reward.sourceId,
+        sourceTitle: reward.sourceTitle,
         optionIds,
         createdAt
       }]
@@ -4285,7 +4432,13 @@ export class GameRoomServer {
     if (!pending.optionIds.includes(intent.contractId)) throw new IntentRejectedError(intent.type, "Mission was not offered");
     const contract = this.state.availableContracts.find((entry) => entry.id === intent.contractId);
     if (!contract) throw new IntentRejectedError(intent.type, "Mission is unavailable");
-    const claimed = this.state.players.some((entry) => entry.character.activeContract?.contractId === intent.contractId);
+    const owner = this.state.players.find((entry) => entry.seatId === intent.seatId);
+    if (!owner || getActiveMissions(owner.character).length >= MAX_ACTIVE_MISSIONS) {
+      throw new IntentRejectedError(intent.type, `The ${MAX_ACTIVE_MISSIONS}-Mission limit is already full`);
+    }
+    const claimed = this.state.players.some((entry) =>
+      getActiveMissions(entry.character).some((mission) => mission.contractId === intent.contractId)
+    );
     if (claimed) throw new IntentRejectedError(intent.type, "Mission is already active");
     const createdAt = new Date().toISOString();
     this.state = {
@@ -4295,7 +4448,7 @@ export class GameRoomServer {
       pendingMissionSelection: null,
       players: this.state.players.map((entry) => entry.seatId === intent.seatId ? {
         ...entry,
-        character: { ...entry.character, activeContract: { contractId: contract.id, progress: 0 } }
+        character: addActiveMission(entry.character, { contractId: contract.id, progress: 0 })
       } : entry),
       eventLog: [...this.state.eventLog, {
         type: "REPLACEMENT_MISSION_SELECTED",
@@ -4305,7 +4458,55 @@ export class GameRoomServer {
         createdAt
       }]
     };
-    this.maybeTriggerAbilityOnContractAccepted(intent.seatId);
+    this.maybeTriggerAbilityOnContractAccepted(intent.seatId, contract.id);
+    this.prepareNextMissionSelection(intent.seatId);
+  }
+
+  private openMissionRelicExchange(
+    intent: Extract<ClientIntent, { type: "OPEN_MISSION_RELIC_EXCHANGE" }>
+  ): void {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+    if (!player) throw new IntentRejectedError(intent.type, "Mission owner is unavailable");
+    const options = this.pickRelicDealerArtifactOptions(player).slice(0, MISSION_RELIC_OPTION_COUNT);
+    if (options.length !== MISSION_RELIC_OPTION_COUNT) {
+      throw new IntentRejectedError(intent.type, "Two distinct Relics are not currently available");
+    }
+
+    this.applyAction({
+      type: "MISSION_RELIC_EXCHANGE_OPENED",
+      seatId: intent.seatId,
+      exchangeId: `mission-relic:${intent.seatId}:${this.state.sequence + 1}`,
+      selectedMissionIds: [...intent.missionIds],
+      options,
+      createdAt: new Date().toISOString()
+    } satisfies MissionRelicExchangeOpenedAction);
+  }
+
+  private claimMissionRelic(
+    intent: Extract<ClientIntent, { type: "CLAIM_MISSION_RELIC" }>
+  ): void {
+    const exchange = this.state.pendingMissionRelicExchange;
+    if (
+      !exchange ||
+      exchange.id !== intent.exchangeId ||
+      exchange.ownerSeatId !== intent.seatId ||
+      !exchange.optionIds.includes(intent.artifactId)
+    ) {
+      throw new IntentRejectedError(intent.type, "Relic exchange offer is stale");
+    }
+    const artifact = this.gear.get(intent.artifactId);
+    if (!artifact || artifact.tier !== "artifact") {
+      throw new IntentRejectedError(intent.type, "Selected Relic is unavailable");
+    }
+
+    this.applyAction({
+      type: "MISSION_RELIC_CLAIMED",
+      seatId: intent.seatId,
+      exchangeId: exchange.id,
+      artifactId: artifact.id,
+      artifact,
+      createdAt: new Date().toISOString()
+    } satisfies MissionRelicClaimedAction);
   }
 
   private applySelectedStartingContracts(): PlayerState[] {
@@ -4323,7 +4524,11 @@ export class GameRoomServer {
           activeContract: {
             contractId: seat.selectedStartingContractId,
             progress: 0
-          }
+          },
+          activeContracts: [{
+            contractId: seat.selectedStartingContractId,
+            progress: 0
+          }]
         }
       };
     });
@@ -4354,6 +4559,7 @@ export class GameRoomServer {
       wounds: 0,
       status: "active",
       activeContract: null,
+      activeContracts: [],
       heldGear: [...loadedCharacter.heldGear],
       equippedGear: { ...loadedCharacter.equippedGear },
       followers: [...(loadedCharacter.followers ?? [])],
@@ -4709,41 +4915,41 @@ export class GameRoomServer {
 
   private maybeAdvanceContractObjective(seatId: string, trigger: Parameters<typeof advanceContractObjectiveProgress>[2], summary: string): void {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
-
-    if (!player?.character.activeContract) {
-      return;
-    }
-
-    const contract = this.state.availableContracts.find((entry) => entry.id === player.character.activeContract?.contractId) ?? null;
-
-    if (!contract) {
-      return;
-    }
-
-    const nextState = advanceContractObjectiveState(contract, player.character.activeContract, trigger);
-    const nextProgress = nextState.progress;
-
-    if (nextProgress === player.character.activeContract.progress &&
-        JSON.stringify(nextState.completedTargetIds ?? []) === JSON.stringify(player.character.activeContract.completedTargetIds ?? []) &&
-        nextState.salvageSpent === player.character.activeContract.salvageSpent) {
-      return;
-    }
+    if (!player) return;
+    const activeMissions = getActiveMissions(player.character);
+    const updates = activeMissions.flatMap((activeMission) => {
+      const contract = this.state.availableContracts.find((entry) => entry.id === activeMission.contractId) ?? null;
+      if (!contract) return [];
+      const nextState = advanceContractObjectiveState(contract, activeMission, trigger);
+      const changed =
+        nextState.progress !== activeMission.progress ||
+        JSON.stringify(nextState.completedTargetIds ?? []) !== JSON.stringify(activeMission.completedTargetIds ?? []) ||
+        nextState.salvageSpent !== activeMission.salvageSpent;
+      return changed ? [{ activeMission, contract, nextState }] : [];
+    });
+    if (updates.length === 0) return;
+    const updatesById = new Map(updates.map((entry) => [entry.activeMission.contractId, entry]));
+    const nextMissions = activeMissions.map((activeMission) => {
+      const update = updatesById.get(activeMission.contractId);
+      return update
+        ? { ...activeMission, ...update.nextState, progress: update.nextState.progress }
+        : activeMission;
+    });
+    const progressSummary = updates
+      .map(({ contract, nextState }) =>
+        `${contract.name} is now ${formatContractObjectiveStatus(contract, nextState.progress)}.`
+      )
+      .join(" ");
+    const createdAt = new Date().toISOString();
 
     this.state = {
       ...this.state,
       sequence: this.state.sequence + 1,
       players: this.state.players.map((entry) =>
-        entry.seatId === seatId && entry.character.activeContract
+        entry.seatId === seatId
           ? {
               ...entry,
-              character: {
-                ...entry.character,
-                activeContract: {
-                  ...entry.character.activeContract,
-                  ...nextState,
-                  progress: nextProgress
-                }
-              }
+              character: setActiveMissions(entry.character, nextMissions)
             }
           : entry
       ),
@@ -4752,19 +4958,19 @@ export class GameRoomServer {
                 ...this.state.lastOutcomeSummary,
                 seatId,
                 movedToSectorId: player.sectorId,
-                summary: `${this.state.lastOutcomeSummary.summary} ${summary} ${contract.name} is now ${formatContractObjectiveStatus(contract, nextProgress)}.`
+                summary: `${this.state.lastOutcomeSummary.summary} ${summary} ${progressSummary}`
               }
         : this.state.lastOutcomeSummary,
       eventLog: [
         ...this.state.eventLog,
-        {
+        ...updates.map(({ contract, nextState }) => ({
           type: "CONTRACT_PROGRESS_UPDATED",
           seatId,
           contractId: contract.id,
-          progress: nextProgress,
+          progress: nextState.progress,
           summary,
-          createdAt: new Date().toISOString()
-        }
+          createdAt
+        }))
       ]
     };
 
@@ -4773,7 +4979,12 @@ export class GameRoomServer {
 
   private completeSatisfiedContract(seatId: string): boolean {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
-    const activeContract = player?.character.activeContract;
+    const activeContract = player
+      ? getActiveMissions(player.character).find((mission) => {
+          const contract = this.state.availableContracts.find((entry) => entry.id === mission.contractId);
+          return Boolean(contract && isContractObjectiveComplete(contract, mission));
+        }) ?? null
+      : null;
     const activeSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? null;
     if (
       !activeContract ||
@@ -4785,7 +4996,7 @@ export class GameRoomServer {
       this.state.pendingMissionSelection
     ) return false;
     const contract = this.state.availableContracts.find((entry) => entry.id === activeContract.contractId);
-    if (!contract || !isContractObjectiveComplete(contract, activeContract)) return false;
+    if (!contract) return false;
     this.applyAction({
       type: "COMPLETE_CONTRACT",
       seatId,
@@ -4807,7 +5018,7 @@ export class GameRoomServer {
     return true;
   }
 
-  private maybeTriggerAbilityOnContractAccepted(seatId: string): void {
+  private maybeTriggerAbilityOnContractAccepted(seatId: string, acceptedContractId?: string): void {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
 
     if (!player) {
@@ -4819,23 +5030,32 @@ export class GameRoomServer {
         return;
       }
 
-      const contract = this.state.availableContracts.find((entry) => entry.id === player.character.activeContract?.contractId) ?? null;
+      const activeMission = acceptedContractId
+        ? getActiveMission(player.character, acceptedContractId)
+        : getActiveMissions(player.character)[0] ?? null;
+      const contract = activeMission
+        ? this.state.availableContracts.find((entry) => entry.id === activeMission.contractId) ?? null
+        : null;
 
       this.applyAbilityMutation(
         seatId,
         "ledger-broker",
         "Ledger Broker banked hidden leverage into the newly accepted contract.",
         (entry) =>
-          entry.character.activeContract && contract
+          activeMission && contract
             ? {
                 ...entry,
-                character: {
-                  ...entry.character,
-                  activeContract: {
-                    ...entry.character.activeContract,
-                    progress: setContractProgressFloor(contract, entry.character.activeContract.progress, 1)
-                  }
-                }
+                character: setActiveMissions(
+                  entry.character,
+                  getActiveMissions(entry.character).map((mission) =>
+                    mission.contractId === activeMission.contractId
+                      ? {
+                          ...mission,
+                          progress: setContractProgressFloor(contract, mission.progress, 1)
+                        }
+                      : mission
+                  )
+                )
               }
             : entry
       );
@@ -4857,27 +5077,36 @@ export class GameRoomServer {
     }
 
     if (player.character.id === "rift-cartographer" && !this.hasAbilityTriggeredThisRound(seatId, "surveyor-cut")) {
-      const contract = this.state.availableContracts.find((entry) => entry.id === player.character.activeContract?.contractId) ?? null;
+      const activeMission = acceptedContractId
+        ? getActiveMission(player.character, acceptedContractId)
+        : getActiveMissions(player.character)[0] ?? null;
+      const contract = activeMission
+        ? this.state.availableContracts.find((entry) => entry.id === activeMission.contractId) ?? null
+        : null;
 
       this.applyAbilityMutation(
         seatId,
         "surveyor-cut",
         "Surveyor's Cut banked the fresh route lead as future leverage.",
         (entry) =>
-          entry.character.activeContract && contract
+          activeMission && contract
             ? {
                 ...entry,
                 private: {
                   ...entry.private,
                   notes: [...entry.private.notes, "Surveyor's Cut stored the mapped lead before the breach could distort it."]
                 },
-                character: {
-                  ...entry.character,
-                  activeContract: {
-                    ...entry.character.activeContract,
-                    progress: setContractProgressFloor(contract, entry.character.activeContract.progress, 1)
-                  }
-                }
+                character: setActiveMissions(
+                  entry.character,
+                  getActiveMissions(entry.character).map((mission) =>
+                    mission.contractId === activeMission.contractId
+                      ? {
+                          ...mission,
+                          progress: setContractProgressFloor(contract, mission.progress, 1)
+                        }
+                      : mission
+                  )
+                )
               }
             : entry
       );
@@ -5342,35 +5571,42 @@ export class GameRoomServer {
 
     if (
       player.character.id === "oathbroken-prince" &&
-      player.character.activeContract &&
+      getActiveMissions(player.character).length > 0 &&
       (effectKey === "outer_mirecoilTraffic" ||
         effectKey === "outer_hollowVeilSweep" ||
         effectKey === "outer_glassmereChorus") &&
       !this.hasAbilityTriggeredThisRound(seatId, "broken-claim")
     ) {
-      const contract = this.state.availableContracts.find((entry) => entry.id === player.character.activeContract?.contractId) ?? null;
+      const activeMission = getActiveMissions(player.character)[0] ?? null;
+      const contract = activeMission
+        ? this.state.availableContracts.find((entry) => entry.id === activeMission.contractId) ?? null
+        : null;
 
       this.applyAbilityMutation(
         seatId,
         "broken-claim",
         "Broken Claim turned the cleared lane into progress on the Prince's active objective.",
         (entry) =>
-          entry.character.activeContract && contract
+          activeMission && contract
             ? {
                 ...entry,
                 private: {
                   ...entry.private,
                   notes: [...entry.private.notes, "Broken Claim converted local leverage into objective progress."]
                 },
-                character: {
-                  ...entry.character,
-                  activeContract: {
-                    ...entry.character.activeContract,
-                    progress: advanceContractObjectiveProgress(contract, entry.character.activeContract.progress, {
-                      type: "enemy-defeated"
-                    })
-                  }
-                }
+                character: setActiveMissions(
+                  entry.character,
+                  getActiveMissions(entry.character).map((mission, index) =>
+                    index === 0
+                      ? {
+                          ...mission,
+                          progress: advanceContractObjectiveProgress(contract, mission.progress, {
+                            type: "enemy-defeated"
+                          })
+                        }
+                      : mission
+                  )
+                )
               }
             : entry
       );
@@ -5616,32 +5852,39 @@ export class GameRoomServer {
 
     if (
       player.character.id === "black-ledger-agent" &&
-      player.character.activeContract &&
+      getActiveMissions(player.character).length > 0 &&
       !this.hasAbilityTriggeredThisRound(seatId, "debt-knife")
     ) {
-      const contract = this.state.availableContracts.find((entry) => entry.id === player.character.activeContract?.contractId) ?? null;
+      const activeMission = getActiveMissions(player.character)[0] ?? null;
+      const contract = activeMission
+        ? this.state.availableContracts.find((entry) => entry.id === activeMission.contractId) ?? null
+        : null;
 
       this.applyAbilityMutation(
         seatId,
         "debt-knife",
         "Debt Knife pushed the marked target into sharper contract progress.",
         (entry) =>
-          entry.character.activeContract && contract
+          activeMission && contract
             ? {
                 ...entry,
                 private: {
                   ...entry.private,
                   notes: [...entry.private.notes, "Debt Knife carved extra leverage out of the marked kill."]
                 },
-                character: {
-                  ...entry.character,
-                  activeContract: {
-                    ...entry.character.activeContract,
-                    progress: advanceContractObjectiveProgress(contract, entry.character.activeContract.progress, {
-                      type: "enemy-defeated"
-                    })
-                  }
-                }
+                character: setActiveMissions(
+                  entry.character,
+                  getActiveMissions(entry.character).map((mission, index) =>
+                    index === 0
+                      ? {
+                          ...mission,
+                          progress: advanceContractObjectiveProgress(contract, mission.progress, {
+                            type: "enemy-defeated"
+                          })
+                        }
+                      : mission
+                  )
+                )
               }
             : entry
       );
@@ -6722,6 +6965,19 @@ export class GameRoomServer {
         });
         progressMade = true;
         continue;
+      }
+
+      if (
+        !this.state.pendingMissionSelection &&
+        (this.state.pendingMissionRewards?.length ?? 0) > 0 &&
+        !this.state.pendingEffect &&
+        !this.state.currentEncounter &&
+        !this.state.activeResolution &&
+        !this.state.pendingEnemyRoll &&
+        this.state.phase !== "resolution"
+      ) {
+        this.prepareNextMissionSelection(seatId);
+        progressMade = Boolean(this.state.pendingMissionSelection);
       }
 
       if (this.state.pendingMissionSelection) {
@@ -8005,6 +8261,14 @@ export class GameRoomServer {
     this.finishAssistedRoll(action.seatId, encounter.id, action.success);
     this.markFirstEligibleCharacterAbility(action.seatId, action.stat, "battle", encounter);
     if (action.success) {
+      if (encounter.missionReward) {
+        this.queueMissionReward({
+          ownerSeatId: action.seatId,
+          sourceKind: "battle",
+          sourceId: encounter.id,
+          sourceTitle: encounter.title
+        });
+      }
       this.maybeTriggerAbilityOnCombatVictory(action.seatId);
       this.applyScenarioOnEnemyDefeat(action.seatId);
       this.applyScenarioObjectiveTrigger(action.seatId, {
@@ -8714,6 +8978,14 @@ export class GameRoomServer {
       this.maybeTriggerAbilityOnCheckResolved(intent.seatId, checkPayload.checkStat, checkPayload.success);
     }
     if (!checkPayload || checkPayload.success) {
+      if (player.sectorId === "mirecoil-beacon" || player.sectorId === "transit-gate") {
+        this.queueMissionReward({
+          ownerSeatId: intent.seatId,
+          sourceKind: "tile",
+          sourceId: player.sectorId,
+          sourceTitle: boardSpace.name
+        });
+      }
       this.maybeAdvanceContractObjective(
         intent.seatId,
         {
@@ -13961,7 +14233,7 @@ export function createTvProjection(
         status: player.character.status,
         activeContract: null,
         privateObjectiveStatus: {
-          hasActiveContract: Boolean(player.character.activeContract),
+          hasActiveContract: getActiveMissions(player.character).length > 0,
           completedContracts: getCompletedContractCountForProjection(state, player.seatId)
         },
         stats: player.character.stats,
@@ -14127,18 +14399,35 @@ export function createPhoneProjection(
     seat?.selectedStartingContractId
       ? state.availableContracts.find((contract) => contract.id === seat.selectedStartingContractId) ?? null
       : null;
-  const activeContractCard =
-    player?.character.activeContract?.contractId
-      ? state.availableContracts.find((contract) => contract.id === player.character.activeContract?.contractId) ?? null
-      : null;
+  const activeMissionStates = player ? getActiveMissions(player.character) : [];
+  const activeContractCards = activeMissionStates
+    .map((activeMission) =>
+      state.availableContracts.find((contract) => contract.id === activeMission.contractId)
+    )
+    .filter((contract): contract is ContractCard => Boolean(contract));
+  const activeContractCard = activeContractCards[0] ?? null;
   const pendingMissionSelection = state.pendingMissionSelection?.ownerSeatId === seatId ? {
     id: state.pendingMissionSelection.id,
     completedContractId: state.pendingMissionSelection.completedContractId,
+    sourceKind: state.pendingMissionSelection.sourceKind,
+    sourceId: state.pendingMissionSelection.sourceId,
+    sourceTitle: state.pendingMissionSelection.sourceTitle,
     status: state.pendingMissionSelection.status,
     options: state.pendingMissionSelection.optionIds
       .map((contractId) => state.availableContracts.find((contract) => contract.id === contractId))
       .filter((contract): contract is ContractCard => Boolean(contract))
   } : null;
+  const pendingMissionRelicExchange =
+    state.pendingMissionRelicExchange?.ownerSeatId === seatId
+      ? {
+          id: state.pendingMissionRelicExchange.id,
+          status: state.pendingMissionRelicExchange.status,
+          selectedMissionIds: state.pendingMissionRelicExchange.selectedMissionIds,
+          options: state.pendingMissionRelicExchange.optionIds
+            .map((artifactId) => PROJECTION_GEAR_CATALOG.get(artifactId))
+            .filter((artifact): artifact is GearItem => Boolean(artifact))
+        }
+      : null;
   const reservationSeatId = state.seats.find((candidate) =>
     Boolean(candidate.displayName) && !candidate.kicked && resolveNamedPlayerRules({ displayName: candidate.displayName }).forcedCharacterId === NAMED_PLAYER_POPELORD_ID
   )?.seatId ?? null;
@@ -14532,7 +14821,12 @@ export function createPhoneProjection(
     startingContractOptions,
     selectedStartingContract,
     activeContractCard,
+    activeContractCards,
     pendingMissionSelection,
+    pendingMissionRelicExchange,
+    heldMissionRewardCount: (state.pendingMissionRewards ?? []).filter(
+      (reward) => reward.ownerSeatId === seatId
+    ).length,
     oathchainPrompt: oathchainEligible && oathchain && oathchainSignature ? { instanceId: oathchain.instanceId, contractId: activeContractCard!.id, contractSignature: oathchainSignature, currentCharges: oathchain.currentCharges ?? oathchain.charges ?? 0, maxCharges: oathchain.maxCharges ?? 2, chargeCost: 1, preview: "Spend 1 charge to reveal current valid Contract targets." } : null,
     activeOathchainReveal: player?.private.activeOathchainReveal?.contractSignature === oathchainSignature && state.phase === "action" && state.turnOrder[state.activeSeatIndex] === seatId ? player.private.activeOathchainReveal : null,
     lateJoinPending,

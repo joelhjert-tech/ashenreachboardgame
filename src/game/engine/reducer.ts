@@ -14,6 +14,8 @@ import type {
   CheckRequestedAction,
   CombatRequestedAction,
   CompleteContractAction,
+  MissionRelicClaimedAction,
+  MissionRelicExchangeOpenedAction,
   DiceRollStartedAction,
   EscalationAdvancedAction,
   EncounterDrawnAction,
@@ -148,6 +150,16 @@ import {
   describeContractObjective,
   isContractObjectiveComplete
 } from "../contracts/objectives.js";
+import {
+  addActiveMission,
+  getActiveMission,
+  getActiveMissions,
+  MAX_ACTIVE_MISSIONS,
+  MISSION_RELIC_EXCHANGE_COST,
+  MISSION_RELIC_OPTION_COUNT,
+  removeActiveMission,
+  setActiveMissions
+} from "../rules/missionLifecycle.js";
 import {
   applyEquipmentSuppressionChoice,
   completeEquipmentSuppressionLifecycle,
@@ -1504,11 +1516,11 @@ function canRaiseStat(state: GameState, seatId: string): void {
   }
 }
 
-function requireActiveContractCard(state: GameState, seatId: string): ContractCard | null {
+function requireActiveContractCard(state: GameState, seatId: string, contractId?: string): ContractCard | null {
   const player = requirePlayer(state, seatId);
-  const contractId = player.character.activeContract?.contractId;
+  const activeContractId = contractId ?? getActiveMissions(player.character)[0]?.contractId;
 
-  return contractId ? state.availableContracts.find((entry) => entry.id === contractId) ?? null : null;
+  return activeContractId ? state.availableContracts.find((entry) => entry.id === activeContractId) ?? null : null;
 }
 
 function canResolveScenarioConfrontation(state: GameState, seatId: string): void {
@@ -2565,19 +2577,21 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       {
         const player = requirePlayer(state, action.seatId);
-        const activeContract = player.character.activeContract;
-        const contract = activeContract
-          ? state.availableContracts.find((entry) => entry.id === activeContract.contractId) ?? null
-          : null;
+        const activeMissions = getActiveMissions(player.character);
         const trophyAward = action.success ? state.currentEncounter.trophyValue : 0;
         const defeatedTrophy = action.success ? createTrophyPileEntry(state.currentEncounter) : null;
         const trophyPileSummary = defeatedTrophy ? `${defeatedTrophy.name} added to Trophy Pile.` : "";
-        const nextProgress =
-          action.success && contract && activeContract
-            ? advanceContractObjectiveProgress(contract, activeContract.progress, {
-                type: "enemy-defeated"
-              })
-            : activeContract?.progress ?? null;
+        const nextActiveMissions = activeMissions.map((activeMission) => {
+          const contract = state.availableContracts.find((entry) => entry.id === activeMission.contractId) ?? null;
+          return action.success && contract
+            ? {
+                ...activeMission,
+                progress: advanceContractObjectiveProgress(contract, activeMission.progress, {
+                  type: "enemy-defeated"
+                })
+              }
+            : activeMission;
+        });
 
       return succeed({
         ...state,
@@ -2609,18 +2623,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         }),
         players: updateActivePlayer(state, action.seatId, (entry) => ({
           ...entry,
-          character: {
+          character: setActiveMissions({
             ...entry.character,
             trophies: entry.character.trophies + trophyAward,
-            trophyPile: defeatedTrophy ? [...(entry.character.trophyPile ?? []), defeatedTrophy] : entry.character.trophyPile,
-            activeContract:
-              entry.character.activeContract && nextProgress !== null
-                ? {
-                    ...entry.character.activeContract,
-                    progress: nextProgress
-                  }
-                : entry.character.activeContract
-          }
+            trophyPile: defeatedTrophy ? [...(entry.character.trophyPile ?? []), defeatedTrophy] : entry.character.trophyPile
+          }, nextActiveMissions)
         })),
         lastOutcomeSummary: state.lastOutcomeSummary
           ? {
@@ -4955,8 +4962,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       const player = requirePlayer(state, acceptAction.seatId);
 
-      if (player.character.activeContract) {
-        return reject(state, action, "This seat already has an active contract");
+      if (getActiveMissions(player.character).length >= MAX_ACTIVE_MISSIONS) {
+        return reject(state, action, `This seat already has ${MAX_ACTIVE_MISSIONS} active Missions`);
       }
 
       if ((player.character.completedContracts ?? []).includes(acceptAction.contractId)) {
@@ -4976,13 +4983,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         players: updateActivePlayer(state, acceptAction.seatId, (entry) => ({
           ...entry,
           private: { ...entry.private, activeOathchainReveal: null },
-          character: {
+          character: addActiveMission({
             ...entry.character,
-            activeContract: {
-              contractId: acceptAction.contractId,
-              progress: 0
-            }
-          }
+          }, {
+            contractId: acceptAction.contractId,
+            progress: 0
+          })
         })),
         lastOutcomeSummary: {
           seatId: acceptAction.seatId,
@@ -5017,13 +5023,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       const player = requirePlayer(state, completeAction.seatId);
-      const activeContract = player.character.activeContract;
+      const activeContract = getActiveMission(player.character, completeAction.contractId);
 
       if (!activeContract || activeContract.contractId !== completeAction.contractId) {
         return reject(state, action, "This seat does not have that contract active");
       }
 
-      const contract = completeAction.contract ?? requireActiveContractCard(state, completeAction.seatId);
+      const contract = completeAction.contract ?? requireActiveContractCard(state, completeAction.seatId, completeAction.contractId);
 
       if (!contract) {
         return reject(state, action, `Unknown contract ${completeAction.contractId}`);
@@ -5048,9 +5054,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         players: updateActivePlayer(rewardedState, completeAction.seatId, (entry) => ({
           ...entry,
           private: { ...entry.private, activeOathchainReveal: null },
-          character: {
+          character: removeActiveMission({
             ...entry.character,
-            activeContract: null,
             completedContracts: (entry.character.completedContracts ?? []).includes(contract.id)
               ? entry.character.completedContracts
               : [...(entry.character.completedContracts ?? []), contract.id],
@@ -5064,7 +5069,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
                 spent: false
               }
             ]
-          }
+          }, contract.id)
         }))
       };
 
@@ -5118,6 +5123,171 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           text: `Completed ${contract.name}. ${formatContractObjectiveStatus(contract, getContractObjectiveTarget(contract))}.`,
           effects: contract.reward.effects.flatMap((effect) => summarizeEffects(effect, true))
         }),
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "MISSION_RELIC_EXCHANGE_OPENED": {
+      const exchangeAction = action as MissionRelicExchangeOpenedAction;
+
+      try {
+        canManageGear(state, exchangeAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot open a Relic exchange");
+      }
+
+      if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect || state.activeResolution) {
+        return reject(state, action, "Resolve the current action before opening the Relic exchange");
+      }
+      if (state.pendingMissionRelicExchange) {
+        return reject(state, action, "A Relic exchange is already waiting");
+      }
+
+      const player = requirePlayer(state, exchangeAction.seatId);
+      const selectedMissionIds = exchangeAction.selectedMissionIds;
+      const completedMissionIds = new Set(player.character.completedContracts ?? []);
+      const recordsById = new Map(
+        (player.character.completedMissionRecords ?? []).map((record) => [record.missionId, record])
+      );
+      const invalidSelection =
+        selectedMissionIds.length !== MISSION_RELIC_EXCHANGE_COST ||
+        new Set(selectedMissionIds).size !== MISSION_RELIC_EXCHANGE_COST ||
+        selectedMissionIds.some(
+          (missionId) => !completedMissionIds.has(missionId) || recordsById.get(missionId)?.spent === true
+        );
+      const invalidOptions =
+        exchangeAction.options.length !== MISSION_RELIC_OPTION_COUNT ||
+        new Set(exchangeAction.options.map((option) => option.id)).size !== MISSION_RELIC_OPTION_COUNT ||
+        exchangeAction.options.some((option) => option.tier !== "artifact");
+
+      if (invalidSelection) {
+        return reject(state, action, "Relic exchanges require three exact unspent completed Missions");
+      }
+      if (invalidOptions) {
+        return reject(state, action, "Relic exchanges require two distinct Artifact options");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingMissionRelicExchange: {
+          id: exchangeAction.exchangeId,
+          ownerSeatId: exchangeAction.seatId,
+          selectedMissionIds: [...selectedMissionIds],
+          optionIds: exchangeAction.options.map((option) => option.id),
+          status: "awaitingSelection",
+          createdAt: exchangeAction.createdAt
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "MISSION_RELIC_CLAIMED": {
+      const claimAction = action as MissionRelicClaimedAction;
+
+      try {
+        canManageGear(state, claimAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot claim a Relic");
+      }
+
+      const exchange = state.pendingMissionRelicExchange;
+      if (
+        !exchange ||
+        exchange.id !== claimAction.exchangeId ||
+        exchange.ownerSeatId !== claimAction.seatId ||
+        !exchange.optionIds.includes(claimAction.artifactId) ||
+        claimAction.artifact.id !== claimAction.artifactId ||
+        claimAction.artifact.tier !== "artifact"
+      ) {
+        return reject(state, action, "Relic exchange offer is stale");
+      }
+
+      const player = requirePlayer(state, claimAction.seatId);
+      const completedMissionIds = new Set(player.character.completedContracts ?? []);
+      const recordsById = new Map(
+        (player.character.completedMissionRecords ?? []).map((record) => [record.missionId, record])
+      );
+      if (
+        exchange.selectedMissionIds.some(
+          (missionId) => !completedMissionIds.has(missionId) || recordsById.get(missionId)?.spent === true
+        )
+      ) {
+        return reject(state, action, "Selected Missions are no longer available");
+      }
+      if (player.character.heldGear.some((item) => item.id === claimAction.artifactId)) {
+        return reject(state, action, "That Artifact is already owned");
+      }
+
+      const completedMissionRecords = [
+        ...(player.character.completedMissionRecords ?? []),
+        ...(player.character.completedContracts ?? [])
+          .filter((missionId) => !recordsById.has(missionId))
+          .map((missionId, index) => ({
+            missionId,
+            completedByPlayerId: claimAction.seatId,
+            completedAtSequence:
+              Math.max(
+                -1,
+                ...(player.character.completedMissionRecords ?? []).map(
+                  (record) => record.completedAtSequence
+                )
+              ) +
+              index +
+              1,
+            rewardGranted: true,
+            spent: false
+          }))
+      ].map((record) =>
+        exchange.selectedMissionIds.includes(record.missionId)
+          ? {
+              ...record,
+              spent: true,
+              spentFor: `mission-relic-exchange:${exchange.id}`
+            }
+          : record
+      );
+      const withSpentMissions: PlayerState = {
+        ...player,
+        character: {
+          ...player.character,
+          completedContracts: (player.character.completedContracts ?? []).filter(
+            (missionId) => !exchange.selectedMissionIds.includes(missionId)
+          ),
+          completedMissionRecords
+        }
+      };
+      const withArtifact = addHeldGearToPlayer(withSpentMissions, {
+        type: "gain_gear",
+        gearId: claimAction.artifact.id,
+        gear: claimAction.artifact
+      });
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingMissionRelicExchange: null,
+        players: state.players.map((entry) =>
+          entry.seatId === claimAction.seatId ? withArtifact : entry
+        ),
+        lastOutcomeSummary: {
+          seatId: claimAction.seatId,
+          movedToSectorId: player.sectorId,
+          encounterCardId: claimAction.artifact.id,
+          encounterTitle: claimAction.artifact.name,
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: `${player.character.name} exchanged three completed Missions for ${claimAction.artifact.name}.`
+        },
         eventLog: [...state.eventLog, action]
       });
     }

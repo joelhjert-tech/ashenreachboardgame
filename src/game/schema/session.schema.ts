@@ -407,10 +407,31 @@ export const pendingCooperativeTestSchema = z.object({
 export const pendingMissionSelectionSchema = z.object({
   id: z.string().min(1),
   ownerSeatId: z.string().min(1),
-  completedContractId: z.string().min(1),
+  completedContractId: z.string().min(1).optional(),
+  sourceKind: z.enum(["completion", "tile", "battle"]).optional(),
+  sourceId: z.string().min(1).optional(),
+  sourceTitle: z.string().min(1).optional(),
   optionIds: z.array(z.string().min(1)).max(3),
   status: z.enum(["queued", "awaitingSelection"]),
   continuationPhase: phaseSchema,
+  createdAt: z.string().min(1)
+}).strict();
+
+export const pendingMissionRewardSchema = z.object({
+  id: z.string().min(1),
+  ownerSeatId: z.string().min(1),
+  sourceKind: z.enum(["completion", "tile", "battle"]),
+  sourceId: z.string().min(1),
+  sourceTitle: z.string().min(1),
+  createdAt: z.string().min(1)
+}).strict();
+
+export const pendingMissionRelicExchangeSchema = z.object({
+  id: z.string().min(1),
+  ownerSeatId: z.string().min(1),
+  selectedMissionIds: z.array(z.string().min(1)).length(3),
+  optionIds: z.array(z.string().min(1)).length(2),
+  status: z.literal("awaitingSelection"),
   createdAt: z.string().min(1)
 }).strict();
 
@@ -508,6 +529,8 @@ export const gameStateSchema = z.object({
   cooperativeAssistance: cooperativeAssistanceStateSchema.nullable().optional(),
   pendingCooperativeTest: pendingCooperativeTestSchema.nullable().optional(),
   pendingMissionSelection: pendingMissionSelectionSchema.nullable().optional(),
+  pendingMissionRewards: z.array(pendingMissionRewardSchema).optional(),
+  pendingMissionRelicExchange: pendingMissionRelicExchangeSchema.nullable().optional(),
   pendingEffect: effectSchema.nullable(),
   pendingEncounterDecision: pendingEncounterDecisionSchema.nullable().optional(),
   resolvedEncounterDecisionIds: z.array(z.string().min(1)).optional(),
@@ -729,6 +752,8 @@ export type ScenarioResultState = z.infer<typeof scenarioResultStateSchema>;
 export type CooperativeAssistanceState = z.infer<typeof cooperativeAssistanceStateSchema>;
 export type PendingCooperativeTest = z.infer<typeof pendingCooperativeTestSchema>;
 export type PendingMissionSelection = z.infer<typeof pendingMissionSelectionSchema>;
+export type PendingMissionReward = z.infer<typeof pendingMissionRewardSchema>;
+export type PendingMissionRelicExchange = z.infer<typeof pendingMissionRelicExchangeSchema>;
 export type GameState = z.infer<typeof gameStateSchema>;
 export type LegacyCompatibleGameState = z.infer<typeof legacyCompatibleGameStateSchema>;
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;

@@ -322,6 +322,7 @@ export interface PrivateCharacter {
   scars: string[];
   afflictions?: PlayerAfflictionSummary;
   activeContract: { contractId: string; progress: number; completedTargetIds?: string[]; salvageSpent?: number } | null;
+  activeContracts?: Array<{ contractId: string; progress: number; completedTargetIds?: string[]; salvageSpent?: number }>;
   completedContracts?: string[];
   completedMissionRecords?: Array<{
     missionId: string;
@@ -1476,12 +1477,23 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   startingContractOptions?: ContractCard[];
   selectedStartingContract?: ContractCard | null;
   activeContractCard?: ContractCard | null;
+  activeContractCards?: ContractCard[];
   pendingMissionSelection?: {
     id: string;
-    completedContractId: string;
+    completedContractId?: string;
+    sourceKind?: "completion" | "tile" | "battle";
+    sourceId?: string;
+    sourceTitle?: string;
     status: "queued" | "awaitingSelection";
     options: ContractCard[];
   } | null;
+  pendingMissionRelicExchange?: {
+    id: string;
+    status: "awaitingSelection";
+    selectedMissionIds: string[];
+    options: GearItem[];
+  } | null;
+  heldMissionRewardCount?: number;
   canReady?: boolean;
   readyDisabledReason?: string | null;
   privateRivalry?: PrivateRivalryPayload | null;
@@ -1858,6 +1870,8 @@ export type ClientIntent =
       contractId: string;
     }
   | { type: "SELECT_REPLACEMENT_CONTRACT"; seatId: string; selectionId: string; contractId: string }
+  | { type: "OPEN_MISSION_RELIC_EXCHANGE"; seatId: string; missionIds: string[] }
+  | { type: "CLAIM_MISSION_RELIC"; seatId: string; exchangeId: string; artifactId: string }
   | {
       type: "SCENARIO_CONFRONTATION_REQUESTED";
       seatId: string;

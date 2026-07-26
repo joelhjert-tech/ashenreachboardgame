@@ -11,6 +11,7 @@
   "stat": "command",
   "difficulty": 8,
   "trophyValue": 2,
+  "missionReward": true,
   "defeatReward": {
     "type": "gain_trophy",
     "amount": 2

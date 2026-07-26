@@ -33,14 +33,13 @@ export const abilitySchema = z.object({
 });
 
 export const characterStatusSchema = z.enum(["active", "recalled"]);
-export const activeContractSchema = z
-  .object({
-    contractId: z.string().min(1),
-    progress: z.number().int().min(0),
-    completedTargetIds: z.array(z.string().min(1)).optional(),
-    salvageSpent: z.number().int().min(0).optional()
-  })
-  .nullable();
+export const activeContractEntrySchema = z.object({
+  contractId: z.string().min(1),
+  progress: z.number().int().min(0),
+  completedTargetIds: z.array(z.string().min(1)).optional(),
+  salvageSpent: z.number().int().min(0).optional()
+});
+export const activeContractSchema = activeContractEntrySchema.nullable();
 
 export const trophyPileEntrySchema = z.object({
   cardId: z.string().min(1),
@@ -100,6 +99,11 @@ const characterFields = {
   wounds: z.number().int().min(0),
   scars: z.array(z.string()),
   activeContract: activeContractSchema,
+  /**
+   * Canonical multi-Mission state. `activeContract` remains the first-entry
+   * compatibility mirror for version-2 snapshots and older presentation code.
+   */
+  activeContracts: z.array(activeContractEntrySchema).max(3).optional(),
   completedContracts: z.array(z.string().min(1)).optional(),
   completedMissionRecords: completedMissionRecordsSchema.optional(),
   heldGear: z.array(gearItemSchema),
@@ -152,6 +156,7 @@ export type StatUpgrades = z.infer<typeof statUpgradeSchema>;
 export type Ability = z.infer<typeof abilitySchema>;
 export type TrophyPileEntry = z.infer<typeof trophyPileEntrySchema>;
 export type CharacterStatus = z.infer<typeof characterStatusSchema>;
+export type ActiveContractEntry = z.infer<typeof activeContractEntrySchema>;
 export type ActiveContract = z.infer<typeof activeContractSchema>;
 export type CompletedMissionRecord = z.infer<typeof completedMissionRecordSchema>;
 export type EquippedGear = z.infer<typeof equippedGearSchema>;

@@ -367,6 +367,156 @@ describe("canonical sector graph", () => {
     )).toHaveLength(1);
   });
 
+  it("exchanges exactly three completed Missions for one owner-selected Relic once", () => {
+    const state = createInitialSessionState("mission-relic-exchange", "single-player");
+    const player = state.players[0]!;
+    const completedMissionIds = state.availableContracts.slice(0, 3).map((contract) => contract.id);
+    state.status = "active";
+    state.phase = "action";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    player.character.completedContracts = [...completedMissionIds];
+    player.character.completedMissionRecords = completedMissionIds.map((missionId, index) => ({
+      missionId,
+      completedByPlayerId: "seat-1",
+      completedAtSequence: index + 1,
+      rewardGranted: true,
+      spent: false
+    }));
+    const server = new GameRoomServer(state);
+    const sent: Array<Record<string, unknown>> = [];
+    const client: ConnectedClient = {
+      seatId: "seat-1",
+      view: "phone",
+      socket: {
+        send: (payload: string) => sent.push(JSON.parse(payload)),
+        close() {}
+      } as unknown as ConnectedClient["socket"]
+    };
+
+    server.handleIntent(client, {
+      type: "OPEN_MISSION_RELIC_EXCHANGE",
+      seatId: "seat-1",
+      missionIds: completedMissionIds
+    });
+
+    const exchange = server.getState().pendingMissionRelicExchange!;
+    expect(exchange.selectedMissionIds).toEqual(completedMissionIds);
+    expect(exchange.optionIds).toHaveLength(2);
+    expect(new Set(exchange.optionIds).size).toBe(2);
+    const ownerProjection = createPhoneProjection(server.getState(), "seat-1") as unknown as PhonePatchPayload;
+    expect(ownerProjection.pendingMissionRelicExchange).toMatchObject({
+      id: exchange.id,
+      selectedMissionIds: completedMissionIds
+    });
+    expect(ownerProjection.pendingMissionRelicExchange?.options).toHaveLength(2);
+    expect(
+      (createTvProjection(server.getState()) as unknown as { pendingMissionRelicExchange?: unknown })
+        .pendingMissionRelicExchange
+    ).toBeUndefined();
+
+    const claimedArtifactId = exchange.optionIds[0]!;
+    server.handleIntent(client, {
+      type: "CLAIM_MISSION_RELIC",
+      seatId: "seat-1",
+      exchangeId: exchange.id,
+      artifactId: claimedArtifactId
+    });
+
+    const claimed = server.getState().players[0]!.character;
+    expect(server.getState().pendingMissionRelicExchange).toBeNull();
+    expect(claimed.completedContracts).toEqual([]);
+    expect(claimed.completedMissionRecords).toEqual(
+      expect.arrayContaining(
+        completedMissionIds.map((missionId) =>
+          expect.objectContaining({
+            missionId,
+            spent: true,
+            spentFor: `mission-relic-exchange:${exchange.id}`
+          })
+        )
+      )
+    );
+    expect(claimed.heldGear.filter((item) => item.id === claimedArtifactId)).toHaveLength(1);
+
+    server.handleIntent(client, {
+      type: "CLAIM_MISSION_RELIC",
+      seatId: "seat-1",
+      exchangeId: exchange.id,
+      artifactId: claimedArtifactId
+    });
+    expect(sent.at(-1)).toMatchObject({
+      type: "INTENT_REJECTED",
+      actionType: "CLAIM_MISSION_RELIC"
+    });
+    expect(server.getState().players[0]!.character.heldGear.filter((item) => item.id === claimedArtifactId)).toHaveLength(1);
+  });
+
+  it("fills three Mission slots from queued tile and battle rewards without replacing active Missions", () => {
+    const state = createInitialSessionState("three-active-missions", "single-player");
+    const firstTwo = state.availableContracts.slice(0, 2);
+    state.status = "active";
+    state.phase = "action";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.players[0]!.character.activeContract = { contractId: firstTwo[0]!.id, progress: 0 };
+    state.players[0]!.character.activeContracts = firstTwo.map((contract) => ({
+      contractId: contract.id,
+      progress: 0
+    }));
+    const server = new GameRoomServer(state);
+    const queueMissionReward = (
+      server as unknown as {
+        queueMissionReward: (reward: {
+          ownerSeatId: string;
+          sourceKind: "tile" | "battle";
+          sourceId: string;
+          sourceTitle: string;
+        }) => void;
+      }
+    ).queueMissionReward.bind(server);
+    const runAutomaticPhases = (
+      server as unknown as { runAutomaticPhases: (seatId: string) => void }
+    ).runAutomaticPhases.bind(server);
+
+    queueMissionReward({
+      ownerSeatId: "seat-1",
+      sourceKind: "tile",
+      sourceId: "mirecoil-beacon",
+      sourceTitle: "Rusted Transit Gate"
+    });
+    runAutomaticPhases("seat-1");
+    const selection = server.getState().pendingMissionSelection!;
+    const selectedMissionId = selection.optionIds[0]!;
+    const client: ConnectedClient = {
+      seatId: "seat-1",
+      view: "phone",
+      socket: { send() {}, close() {} } as unknown as ConnectedClient["socket"]
+    };
+    server.handleIntent(client, {
+      type: "SELECT_REPLACEMENT_CONTRACT",
+      seatId: "seat-1",
+      selectionId: selection.id,
+      contractId: selectedMissionId
+    });
+    expect(server.getState().players[0]!.character.activeContracts?.map((mission) => mission.contractId)).toEqual([
+      firstTwo[0]!.id,
+      firstTwo[1]!.id,
+      selectedMissionId
+    ]);
+
+    queueMissionReward({
+      ownerSeatId: "seat-1",
+      sourceKind: "battle",
+      sourceId: "red-maw-raiders",
+      sourceTitle: "Red-Maw Raiders"
+    });
+    runAutomaticPhases("seat-1");
+    expect(server.getState().pendingMissionSelection).toBeNull();
+    expect(server.getState().pendingMissionRewards).toHaveLength(1);
+    expect((createPhoneProjection(server.getState(), "seat-1") as unknown as PhonePatchPayload).heldMissionRewardCount).toBe(1);
+  });
+
   it("repairs a satisfied Contract on phone reconnect without repeating its reward", () => {
     const state = createInitialSessionState("reconnect-contract-completion", "single-player");
     const mission = loadContracts().get("contract-beacon")!;
