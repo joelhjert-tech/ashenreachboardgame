@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "reviewDate": "2026-07-26",
+  "device": {
+    "model": "Samsung Galaxy S21+",
+    "physicalPixels": {
+      "width": 1080,
+      "height": 2400
+    },
+    "chromeViewportCssPixels": {
+      "width": 384,
+      "height": 722
+    },
+    "devicePixelRatio": 2.8125,
+    "originalFontScale": 1,
+    "restoredFontScale": 1
+  },
+  "naturalGame": {
+    "scenario": "The Broken Seal",
+    "playerCount": 1,
+    "mode": "co-op",
+    "terminalStatus": "ended",
+    "terminalPhase": "broadcast",
+    "outcome": "defeat",
+    "durationMs": 68515,
+    "legalVisibleActions": 73,
+    "finalPressure": {
+      "value": 8,
+      "maximum": 8
+    },
+    "finalVictoryProgress": {
+      "value": 0,
+      "required": 2
+    },
+    "mechanicsSeen": [
+      "contract",
+      "cross-reach-guidance",
+      "enemy-battle",
+      "inventory",
+      "movement",
+      "pressure",
+      "result-ready",
+      "reward",
+      "shop",
+      "tile-challenge"
+    ],
+    "reconnectChecks": [
+      "result-ready-restored"
+    ],
+    "screenshots": 36,
+    "typographyCheckpoints": 12,
+    "phoneConsoleErrors": 0,
+    "tvConsoleErrors": 0,
+    "requestFailures": 0,
+    "horizontalOverflowDetections": 0,
+    "maximumCanvasNodes": 0,
+    "stall": null,
+    "evidenceDirectory": ".tmp-playtest/s21-single-player-readability-review/natural-attempt-4/broken-seal-1p"
+  },
+  "defects": [
+    {
+      "id": "pending-choice-stale-continue",
+      "status": "fixed",
+      "finalValue": "owner choice outranks orphan outcome acknowledgement",
+      "s21Evidence": ".tmp-playtest/s21-single-player-readability-review/natural-attempt-3",
+      "regression": "PhoneActionPanel forced-displacement outcome test"
+    },
+    {
+      "id": "setup-scroll-carryover",
+      "status": "fixed",
+      "finalValue": "document root, body, and setup scroller reset before paint",
+      "s21Evidence": ".tmp-playtest/s21-single-player-readability-review/setup-after-2",
+      "regression": "PhoneApp setup-step scroll reset test"
+    },
+    {
+      "id": "setup-back-target-height",
+      "status": "fixed",
+      "originalCssPixels": 36,
+      "finalCssPixels": 44,
+      "s21Evidence": ".tmp-playtest/s21-single-player-readability-review/enlarged-text-after",
+      "regression": "320px and 430px responsive setup matrix"
+    },
+    {
+      "id": "enlarged-operative-heading-and-filters",
+      "status": "fixed",
+      "finalValue": "wrapping heading, weighted filters, two-row narrow breakpoint",
+      "s21Evidence": ".tmp-playtest/s21-single-player-readability-review/enlarged-text-after",
+      "regression": "320px and 430px responsive setup matrix"
+    },
+    {
+      "id": "duplicate-visible-result-totals",
+      "status": "fixed",
+      "finalValue": "one central total seal; full comparison retained in accessible name",
+      "s21Evidence": ".tmp-playtest/s21-single-player-readability-review/natural-attempt-4/broken-seal-1p/result-ready-s21-physical.png",
+      "regression": "approach, hazard, battle, and result-ready component tests"
+    },
+    {
+      "id": "qa-driver-stale-button-index",
+      "status": "fixed",
+      "scope": "development-only evidence tooling",
+      "finalValue": "identity-based live control matching with projection retry",
+      "regression": "completed 73-action physical S21 run"
+    }
+  ],
+  "stressValidation": {
+    "enlargedText": {
+      "pageScale": 1.25,
+      "androidFontScale": 1.15,
+      "result": "pass",
+      "deviceRestored": true,
+      "evidenceDirectory": ".tmp-playtest/s21-single-player-readability-review/enlarged-text-after"
+    },
+    "responsive": [
+      {
+        "width": 320,
+        "height": 568,
+        "horizontalOverflow": false,
+        "clippedSetupHeadings": 0,
+        "clippedOperativeFilters": 0,
+        "smallVisibleSetupButtons": 0
+      },
+      {
+        "width": 430,
+        "height": 932,
+        "horizontalOverflow": false,
+        "clippedSetupHeadings": 0,
+        "clippedOperativeFilters": 0,
+        "smallVisibleSetupButtons": 0
+      }
+    ]
+  },
+  "validation": {
+    "content": "pass",
+    "typecheck": "pass",
+    "focusedPhoneTests": {
+      "status": "pass",
+      "tests": 110
+    },
+    "combinedSuite": {
+      "status": "pass",
+      "files": 187,
+      "tests": 1756,
+      "durationMs": 468620
+    },
+    "client": {
+      "status": "pass",
+      "files": 69,
+      "tests": 538
+    },
+    "engineAndRules": "pass",
+    "serverIntegration": {
+      "status": "pass",
+      "files": 45,
+      "tests": 389
+    },
+    "productionBuild": "pass",
+    "assetAudit": {
+      "status": "pass",
+      "present": 511,
+      "missing": 0,
+      "invalid": 0,
+      "placeholders": 0,
+      "releaseBlocking": 0
+    }
+  },
+  "protection": {
+    "gameplayRulesChanged": false,
+    "probabilitiesChanged": false,
+    "saveVersionChanged": false,
+    "protocolChanged": false,
+    "privacyBoundaryChanged": false,
+    "artworkFilesChanged": 0,
+    "filesStaged": 0,
+    "committed": false,
+    "pushed": false
+  }
+}

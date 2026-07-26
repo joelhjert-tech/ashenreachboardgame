@@ -1,0 +1,33 @@
+{
+  "id": "tithe-gnawer",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Tithe Gnawer",
+  "enemyName": "Tithe Gnawer",
+  "text": "A quick pale scavenger spills from the tribute ducts, clutching tithe tags stolen for the Pallid Curator.",
+  "flavor": "It knows the value of everything except a life.",
+  "severity": 2,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 5,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "beast",
+  "threatLane": "red",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "salvage",
+    "trophy",
+    "wound",
+    "scenario"
+  ],
+  "imagePrompt": "Original Ashenreach Tithe Gnawer, a small hunched pale-furred tribute scavenger with long torn ears, copper muzzle brace, sensory filaments, oversized hands, powerful feet, and a sack of stolen tithe tags, emerging from a black-iron tribute duct, cinematic grimdark science-fantasy card art, no text"
+}

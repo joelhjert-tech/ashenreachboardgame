@@ -72,6 +72,7 @@ interface DomSnapshot {
 
 interface ChosenAction {
   buttonIndex: number;
+  button: DomButton;
   label: string;
   reason: string;
 }
@@ -100,12 +101,42 @@ interface ViewportEvidence {
   canvasCount: number;
 }
 
+interface TypographyEvidence {
+  checkpoint: string;
+  capturedAt: string;
+  viewport: { width: number; height: number; dpr: number };
+  samples: Array<{
+    selector: string;
+    sample: string;
+    kind: "interactive" | "heading" | "body" | "metadata";
+    fontSizePx: number;
+    lineHeightPx: number;
+    width: number;
+    height: number;
+    targetWidth: number | null;
+    targetHeight: number | null;
+    clippedX: boolean;
+    clippedY: boolean;
+    overlapsNavigation: boolean;
+    belowTarget: boolean;
+    touchTargetTooSmall: boolean;
+  }>;
+  counts: {
+    visibleText: number;
+    belowTarget: number;
+    clipped: number;
+    navigationOverlap: number;
+    smallTouchTargets: number;
+  };
+}
+
 interface CampaignCaseResult {
   id: string;
   scenarioId: string;
   scenarioName: string;
   playerCount: number;
   interactionMode: InteractionMode;
+  textScale: number;
   roomCode: string;
   startedAt: string;
   completedAt: string;
@@ -127,6 +158,7 @@ interface CampaignCaseResult {
   stall: string | null;
   actions: ActionEvidence[];
   viewports: ViewportEvidence[];
+  typography: TypographyEvidence[];
 }
 
 interface CampaignSummary {
@@ -151,7 +183,7 @@ interface PhoneSurface {
   readonly consoleErrors: string[];
   readonly requestFailures: string[];
   evaluate<T>(expression: string): Promise<T>;
-  clickButton(index: number): Promise<void>;
+  clickButton(button: DomButton): Promise<boolean>;
   fillInput(name: string, value: string): Promise<void>;
   snapshot(): Promise<DomSnapshot>;
   screenshot(path: string): Promise<void>;
@@ -166,6 +198,7 @@ const outputRoot = resolve(process.env.ASHEN_REACH_CAMPAIGN_OUTPUT ?? ".tmp-play
 const maxActions = Number(readArg("max-actions") ?? process.env.ASHEN_REACH_CAMPAIGN_MAX_ACTIONS ?? 1200);
 const maxStallMs = Number(readArg("max-stall-ms") ?? process.env.ASHEN_REACH_CAMPAIGN_MAX_STALL_MS ?? 20_000);
 const selectedCase = readArg("case") ?? "all";
+const textScale = Number(readArg("text-scale") ?? process.env.ASHEN_REACH_CAMPAIGN_TEXT_SCALE ?? 1);
 
 const campaignCases: CampaignCase[] = [
   {
@@ -297,6 +330,98 @@ const snapshotExpression = `(() => {
   };
 })()`;
 
+const typographyExpression = `(() => {
+  const normalize = (value) => String(value ?? "").replace(/\\s+/g, " ").trim();
+  const privateSelector = [
+    '[data-testid="phone-private-match-result"]',
+    '.phone-objective-card--agenda',
+    '.phone-objective-detail--private',
+    '[data-private="true"]'
+  ].join(",");
+  const navigation = document.querySelector(".phone-portrait-bottom-nav");
+  const navigationRect = navigation?.getBoundingClientRect() ?? null;
+  const directText = (element) => [...element.childNodes]
+    .filter((node) => node.nodeType === Node.TEXT_NODE)
+    .map((node) => node.textContent ?? "")
+    .join(" ");
+  const elementSelector = (element) => {
+    const testId = element.getAttribute("data-testid");
+    if (testId) return '[data-testid="' + testId + '"]';
+    const classes = [...element.classList].slice(0, 3);
+    return element.tagName.toLowerCase() + (classes.length ? "." + classes.join(".") : "");
+  };
+  const classify = (element, style, interactive) => {
+    if (interactive) return "interactive";
+    if (/^H[1-6]$/.test(element.tagName) || element.getAttribute("role") === "heading") return "heading";
+    const className = String(element.className ?? "");
+    if (/eyebrow|meta|label|kicker|caption|micro|overline|tag|badge|step/i.test(className)) return "metadata";
+    if (Number.parseFloat(style.fontSize) <= 12) return "metadata";
+    return "body";
+  };
+  const targetFor = (kind) => kind === "interactive" || kind === "heading" ? 16 : kind === "body" ? 14 : 12;
+  const elements = [...document.querySelectorAll("body *")];
+  const samples = [];
+  for (const element of elements) {
+    if (element.closest(privateSelector)) continue;
+    const text = normalize(directText(element));
+    if (!text) continue;
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    if (
+      rect.width <= 0 ||
+      rect.height <= 0 ||
+      rect.bottom <= 0 ||
+      rect.top >= innerHeight ||
+      rect.right <= 0 ||
+      rect.left >= innerWidth ||
+      style.display === "none" ||
+      style.visibility === "hidden" ||
+      Number.parseFloat(style.opacity || "1") <= 0.01
+    ) continue;
+    const interactiveElement = element.closest("button, a, input, select, textarea, [role=button], [role=tab], [role=radio]");
+    const interactive = Boolean(interactiveElement);
+    const targetRect = interactiveElement?.getBoundingClientRect() ?? null;
+    const kind = classify(element, style, interactive);
+    const fontSizePx = Number.parseFloat(style.fontSize);
+    const parsedLineHeight = Number.parseFloat(style.lineHeight);
+    const lineHeightPx = Number.isFinite(parsedLineHeight) ? parsedLineHeight : fontSizePx * 1.2;
+    const target = targetFor(kind);
+    const overlapsNavigation = Boolean(
+      navigationRect &&
+      !element.closest(".phone-portrait-bottom-nav") &&
+      rect.bottom > navigationRect.top + 1
+    );
+    samples.push({
+      selector: elementSelector(element),
+      sample: text.slice(0, 140),
+      kind,
+      fontSizePx: Math.round(fontSizePx * 100) / 100,
+      lineHeightPx: Math.round(lineHeightPx * 100) / 100,
+      width: Math.round(rect.width * 100) / 100,
+      height: Math.round(rect.height * 100) / 100,
+      targetWidth: targetRect ? Math.round(targetRect.width * 100) / 100 : null,
+      targetHeight: targetRect ? Math.round(targetRect.height * 100) / 100 : null,
+      clippedX: element.scrollWidth > element.clientWidth + 1,
+      clippedY: element.scrollHeight > element.clientHeight + 1,
+      overlapsNavigation,
+      belowTarget: fontSizePx + 0.01 < target,
+      touchTargetTooSmall: Boolean(targetRect && (targetRect.width < 44 || targetRect.height < 44))
+    });
+  }
+  return {
+    capturedAt: new Date().toISOString(),
+    viewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio },
+    samples,
+    counts: {
+      visibleText: samples.length,
+      belowTarget: samples.filter((sample) => sample.belowTarget).length,
+      clipped: samples.filter((sample) => sample.clippedX || sample.clippedY).length,
+      navigationOverlap: samples.filter((sample) => sample.overlapsNavigation).length,
+      smallTouchTargets: samples.filter((sample) => sample.touchTargetTooSmall).length
+    }
+  };
+})()`;
+
 function readArg(name: string): string | null {
   const prefix = `--${name}=`;
   return process.argv.find((entry) => entry.startsWith(prefix))?.slice(prefix.length) ?? null;
@@ -402,7 +527,14 @@ export function chooseCampaignAction(snapshot: DomSnapshot): ChosenAction | null
   if (buttons.length === 0) return null;
 
   const use = (button: DomButton | null, reason: string): ChosenAction | null =>
-    button ? { buttonIndex: button.index, label: safeActionLabel(button.text || button.ariaLabel), reason } : null;
+    button
+      ? {
+          buttonIndex: button.index,
+          button,
+          label: safeActionLabel(button.text || button.ariaLabel),
+          reason
+        }
+      : null;
 
   const returnToAction = firstMatching(buttons, [/^return to /i]);
   if (returnToAction) return use(returnToAction, "return-to-required-action");
@@ -576,15 +708,26 @@ class BrowserPhoneSurface implements PhoneSurface {
     return this.page.evaluate((source) => (0, eval)(source) as T, expression);
   }
 
-  async clickButton(index: number): Promise<void> {
-    await this.page.evaluate((buttonIndex) => {
-      const button = document.querySelectorAll<HTMLButtonElement>("button")[buttonIndex];
-      if (!button || button.disabled || button.getAttribute("aria-disabled") === "true") {
-        throw new Error(`Button ${buttonIndex} is missing or disabled`);
-      }
+  async clickButton(expected: DomButton): Promise<boolean> {
+    return this.page.evaluate((candidate) => {
+      const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>("button"));
+      const matches = (button: HTMLButtonElement) => {
+        const text = String(button.textContent ?? "").replace(/\s+/g, " ").trim();
+        const ariaLabel = String(button.getAttribute("aria-label") ?? "").replace(/\s+/g, " ").trim();
+        const testId = String(button.getAttribute("data-testid") ?? "").trim();
+        return (
+          (!candidate.testId || testId === candidate.testId) &&
+          (!candidate.ariaLabel || ariaLabel === candidate.ariaLabel) &&
+          (!candidate.text || text === candidate.text)
+        );
+      };
+      const indexed = buttons[candidate.index];
+      const button = indexed && matches(indexed) ? indexed : buttons.find(matches);
+      if (!button || button.disabled || button.getAttribute("aria-disabled") === "true") return false;
       button.scrollIntoView({ block: "center", inline: "nearest" });
       button.click();
-    }, index);
+      return true;
+    }, expected);
   }
 
   async fillInput(name: string, value: string): Promise<void> {
@@ -616,7 +759,7 @@ class AndroidCdpPhone implements PhoneSurface {
   readonly requestFailures: string[] = [];
   private browserSocket: WebSocket | null = null;
   private outerId = 0;
-  private innerId = 100;
+  private innerId = 100_000;
   private readonly outerPending = new Map<number, PendingCommand>();
   private readonly innerPending = new Map<number, PendingCommand>();
   private sessionId: string | null = null;
@@ -657,19 +800,27 @@ class AndroidCdpPhone implements PhoneSurface {
     await this.outer("Target.activateTarget", { targetId: created.targetId });
     const attached = await this.outer("Target.attachToTarget", {
       targetId: created.targetId,
-      flatten: false
+      flatten: true
     }) as { sessionId: string };
     this.sessionId = attached.sessionId;
     await this.inner("Runtime.enable");
     await this.inner("Page.enable");
     await this.inner("Network.enable");
     await this.waitFor("document.readyState === 'complete' || document.readyState === 'interactive'", 15_000);
+    if (textScale !== 1) {
+      await this.evaluate(`(() => {
+        document.documentElement.style.fontSize = ${JSON.stringify(`${Math.round(textScale * 100)}%`)};
+        document.documentElement.dataset.qaTextScale = ${JSON.stringify(String(textScale))};
+        return getComputedStyle(document.documentElement).fontSize;
+      })()`);
+    }
   }
 
   private handleMessage(raw: string): void {
     const message = JSON.parse(raw) as {
       id?: number;
       method?: string;
+      sessionId?: string;
       error?: { message: string };
       result?: Record<string, unknown>;
       params?: {
@@ -681,12 +832,24 @@ class AndroidCdpPhone implements PhoneSurface {
         url?: string;
       };
     };
+    if (message.sessionId && message.id && this.innerPending.has(message.id)) {
+      const pending = this.innerPending.get(message.id)!;
+      this.innerPending.delete(message.id);
+      clearTimeout(pending.timer);
+      if (message.error) pending.reject(new Error(message.error.message));
+      else pending.resolve(message.result ?? {});
+      return;
+    }
     if (message.id && this.outerPending.has(message.id)) {
       const pending = this.outerPending.get(message.id)!;
       this.outerPending.delete(message.id);
       clearTimeout(pending.timer);
       if (message.error) pending.reject(new Error(message.error.message));
       else pending.resolve(message.result ?? {});
+      return;
+    }
+    if (message.sessionId && message.method) {
+      this.recordInnerEvent(message.method, message.params);
       return;
     }
     if (message.method === "Target.receivedMessageFromTarget" && message.params?.message) {
@@ -712,20 +875,34 @@ class AndroidCdpPhone implements PhoneSurface {
         else pending.resolve(inner.result ?? {});
         return;
       }
-      if (inner.method === "Runtime.consoleAPICalled" && inner.params?.type === "error") {
-        const messageText = (inner.params.args ?? []).map((entry) => entry.value ?? entry.description ?? "").join(" ");
-        this.consoleErrors.push(String(messageText));
-      }
-      if (inner.method === "Runtime.exceptionThrown") {
-        this.consoleErrors.push(
-          inner.params?.exceptionDetails?.exception?.description ??
-          inner.params?.exceptionDetails?.text ??
-          "Uncaught S21 page exception"
-        );
-      }
-      if (inner.method === "Network.loadingFailed" && !inner.params?.canceled) {
-        this.requestFailures.push(`${inner.params?.url ?? "network request"} ${inner.params?.errorText ?? "failed"}`);
-      }
+      if (inner.method) this.recordInnerEvent(inner.method, inner.params);
+    }
+  }
+
+  private recordInnerEvent(
+    method: string,
+    params: {
+      type?: string;
+      args?: Array<{ value?: unknown; description?: string }>;
+      exceptionDetails?: { text?: string; exception?: { description?: string } };
+      errorText?: string;
+      canceled?: boolean;
+      url?: string;
+    } | undefined
+  ): void {
+    if (method === "Runtime.consoleAPICalled" && params?.type === "error") {
+      const messageText = (params.args ?? []).map((entry) => entry.value ?? entry.description ?? "").join(" ");
+      this.consoleErrors.push(String(messageText));
+    }
+    if (method === "Runtime.exceptionThrown") {
+      this.consoleErrors.push(
+        params?.exceptionDetails?.exception?.description ??
+        params?.exceptionDetails?.text ??
+        "Uncaught S21 page exception"
+      );
+    }
+    if (method === "Network.loadingFailed" && !params?.canceled) {
+      this.requestFailures.push(`${params?.url ?? "network request"} ${params?.errorText ?? "failed"}`);
     }
   }
 
@@ -744,7 +921,9 @@ class AndroidCdpPhone implements PhoneSurface {
   }
 
   private async inner(method: string, params: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
-    if (!this.sessionId) throw new Error("S21 CDP target is not attached");
+    if (!this.sessionId || !this.browserSocket || this.browserSocket.readyState !== WebSocket.OPEN) {
+      throw new Error("S21 CDP target is not attached");
+    }
     const id = ++this.innerId;
     const result = new Promise<Record<string, unknown>>((resolvePromise, reject) => {
       const timer = setTimeout(() => {
@@ -752,10 +931,19 @@ class AndroidCdpPhone implements PhoneSurface {
       }, 12_000);
       this.innerPending.set(id, { resolve: resolvePromise, reject, timer });
     });
-    await this.outer("Target.sendMessageToTarget", {
-      sessionId: this.sessionId,
-      message: JSON.stringify({ id, method, params })
-    });
+    try {
+      this.browserSocket.send(JSON.stringify({
+        id,
+        method,
+        params,
+        sessionId: this.sessionId
+      }));
+    } catch (error) {
+      const pending = this.innerPending.get(id);
+      if (pending) clearTimeout(pending.timer);
+      this.innerPending.delete(id);
+      throw error;
+    }
     return result;
   }
 
@@ -779,12 +967,18 @@ class AndroidCdpPhone implements PhoneSurface {
     return response.result?.value as T;
   }
 
-  async clickButton(index: number): Promise<void> {
-    await this.evaluate(`(() => {
-      const button = document.querySelectorAll("button")[${index}];
-      if (!button || button.disabled || button.getAttribute("aria-disabled") === "true") {
-        throw new Error("Button ${index} is missing or disabled");
-      }
+  async clickButton(expected: DomButton): Promise<boolean> {
+    return this.evaluate<boolean>(`(() => {
+      const expected = ${JSON.stringify(expected)};
+      const normalize = (value) => String(value ?? "").replace(/\\s+/g, " ").trim();
+      const buttons = [...document.querySelectorAll("button")];
+      const matches = (button) =>
+        (!expected.testId || normalize(button.getAttribute("data-testid")) === expected.testId) &&
+        (!expected.ariaLabel || normalize(button.getAttribute("aria-label")) === expected.ariaLabel) &&
+        (!expected.text || normalize(button.textContent) === expected.text);
+      const indexed = buttons[expected.index];
+      const button = indexed && matches(indexed) ? indexed : buttons.find(matches);
+      if (!button || button.disabled || button.getAttribute("aria-disabled") === "true") return false;
       button.scrollIntoView({ block: "center", inline: "nearest" });
       button.click();
       return true;
@@ -878,8 +1072,7 @@ async function clickMatching(
     latest = await surface.snapshot();
     const match = firstMatching(visibleEnabled(latest), patterns);
     if (match) {
-      await surface.clickButton(match.index);
-      return match;
+      if (await surface.clickButton(match)) return match;
     }
     await sleep(150);
   }
@@ -892,19 +1085,24 @@ async function clickMatching(
 
 async function setupPhone(
   surface: PhoneSurface,
-  playerIndex: number
+  playerIndex: number,
+  onCheckpoint?: (checkpoint: "join" | "piece-selection" | "operative-selection" | "mission-selection") => Promise<void>
 ): Promise<void> {
   await waitForText(surface, /join room/i);
   await surface.fillInput("playerName", playerNames[playerIndex]!);
+  await onCheckpoint?.("join");
   await clickMatching(surface, [/^join game$/i]);
   await waitForText(surface, /choose piece/i);
+  await onCheckpoint?.("piece-selection");
   await clickMatching(surface, [new RegExp(`^${pieceNames[playerIndex]}`, "i")]).catch(() => undefined);
   await sleep(250);
   await clickMatching(surface, [/^continue to operative$/i]);
   await sleep(350);
+  await onCheckpoint?.("operative-selection");
   await clickMatching(surface, [new RegExp(`^${operativeNames[playerIndex]}`, "i")]);
   await sleep(350);
   await waitForText(surface, /choose starting mission/i);
+  await onCheckpoint?.("mission-selection");
   await clickMatching(surface, [/^select mission$/i]);
   await sleep(250);
   await clickMatching(surface, [/^ready$/i]);
@@ -954,7 +1152,8 @@ async function captureEvidence(
   category: string,
   s21: AndroidCdpPhone,
   tv: Page,
-  screenshots: string[]
+  screenshots: string[],
+  typography: TypographyEvidence[]
 ): Promise<void> {
   const s21PageName = `${category}-s21-page.png`;
   const s21PhysicalName = `${category}-s21-physical.png`;
@@ -977,6 +1176,13 @@ async function captureEvidence(
   try {
     await s21.screenshot(join(caseDirectory, s21PageName));
     await capturePhysicalDevice(join(caseDirectory, s21PhysicalName));
+    const measurement = await s21.evaluate<Omit<TypographyEvidence, "checkpoint">>(typographyExpression);
+    const checkpointMeasurement: TypographyEvidence = { checkpoint: category, ...measurement };
+    typography.push(checkpointMeasurement);
+    await writeFile(
+      join(caseDirectory, `${category}-text-metrics.json`),
+      JSON.stringify(checkpointMeasurement, null, 2)
+    );
   } finally {
     await s21.evaluate(`document.getElementById("campaign-private-redaction")?.remove()`).catch(() => undefined);
   }
@@ -1116,13 +1322,16 @@ async function runCase(browser: Browser, campaignCase: CampaignCase): Promise<Ca
   const mechanics = new Set<string>();
   const actions: ActionEvidence[] = [];
   const viewports: ViewportEvidence[] = [];
+  const typography: TypographyEvidence[] = [];
   const capturedCategories = new Set<string>();
   let stall: string | null = null;
   let terminal: SessionSummary = await api<SessionSummary>("/api/session");
   const tv = await createTv(browser, session);
 
   try {
-    await setupPhone(s21, 0);
+    await setupPhone(s21, 0, async (checkpoint) => {
+      await captureEvidence(caseDirectory, checkpoint, s21, tv.page, screenshots, typography);
+    });
     for (let index = 1; index < campaignCase.playerCount; index += 1) {
       const phone = await BrowserPhoneSurface.create(
         browser,
@@ -1134,7 +1343,7 @@ async function runCase(browser: Browser, campaignCase: CampaignCase): Promise<Ca
     }
     await clickMatching(s21, [/^start game$/i], 20_000);
     await waitForText(s21, /roll movement|waiting for/i, 20_000);
-    await captureEvidence(caseDirectory, "game-start", s21, tv.page, screenshots);
+      await captureEvidence(caseDirectory, "game-start", s21, tv.page, screenshots, typography);
 
     const loopStarted = Date.now();
     let lastProgressAt = Date.now();
@@ -1202,17 +1411,21 @@ async function runCase(browser: Browser, campaignCase: CampaignCase): Promise<Ca
             seat: seatIndex + 1,
             snapshot
           }, null, 2));
-          await captureEvidence(caseDirectory, "stall", s21, tv.page, screenshots);
+          await captureEvidence(caseDirectory, "stall", s21, tv.page, screenshots, typography);
           break campaignLoop;
         }
 
         const category = captureCategory(snapshot, chosen);
         if (category && !capturedCategories.has(category)) {
           capturedCategories.add(category);
-          await captureEvidence(caseDirectory, category, s21, tv.page, screenshots);
+          await captureEvidence(caseDirectory, category, s21, tv.page, screenshots, typography);
         }
 
-        await surface.clickButton(chosen.buttonIndex);
+        if (!await surface.clickButton(chosen.button)) {
+          acted = true;
+          await sleep(180);
+          break;
+        }
         actionsPerformed += 1;
         lastProgressAt = Date.now();
         actions.push({
@@ -1252,7 +1465,7 @@ async function runCase(browser: Browser, campaignCase: CampaignCase): Promise<Ca
           }));
           stall = JSON.stringify(phoneSummaries);
           await writeFile(join(caseDirectory, "stall.json"), JSON.stringify(phoneSummaries, null, 2));
-          await captureEvidence(caseDirectory, "stall", s21, tv.page, screenshots);
+          await captureEvidence(caseDirectory, "stall", s21, tv.page, screenshots, typography);
           break;
         }
         await sleep(300);
@@ -1261,7 +1474,7 @@ async function runCase(browser: Browser, campaignCase: CampaignCase): Promise<Ca
 
     terminal = await api<SessionSummary>("/api/session");
     if (terminal.status === "ended") {
-      await captureEvidence(caseDirectory, "endgame", s21, tv.page, screenshots);
+      await captureEvidence(caseDirectory, "endgame", s21, tv.page, screenshots, typography);
     }
     const completedAt = new Date();
     const outcome = terminal.status === "ended" ? await inferOutcome(tv.page, phones) : "incomplete";
@@ -1282,6 +1495,7 @@ async function runCase(browser: Browser, campaignCase: CampaignCase): Promise<Ca
       scenarioName: campaignCase.scenarioName,
       playerCount: campaignCase.playerCount,
       interactionMode: campaignCase.interactionMode,
+      textScale,
       roomCode: session.roomCode,
       startedAt: startedAt.toISOString(),
       completedAt: completedAt.toISOString(),
@@ -1302,7 +1516,8 @@ async function runCase(browser: Browser, campaignCase: CampaignCase): Promise<Ca
       canvasCountMaximum: Math.max(0, ...viewports.map((entry) => entry.canvasCount)),
       stall,
       actions,
-      viewports
+      viewports,
+      typography
     };
     await writeFile(join(caseDirectory, "result.json"), JSON.stringify(result, null, 2));
     return result;

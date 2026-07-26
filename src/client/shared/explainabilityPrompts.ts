@@ -275,7 +275,10 @@ function getScenarioSummary(payload: PublicPatchPayload): string {
     return `Global Escalation ${payload.escalationLevel}/${payload.escalationThreshold}.`;
   }
 
-  return `${pressure.objectiveProgress.label}: ${pressure.objectiveProgress.current}/${pressure.objectiveProgress.required}. Loss Pressure: ${pressure.collapseTrack.current}/${pressure.collapseTrack.max}.`;
+  const lossPressure = pressure.collapseTrack.failureAtMax
+    ? `Loss Pressure: ${pressure.collapseTrack.current}/${pressure.collapseTrack.max}.`
+    : "Loss Pressure: disabled.";
+  return `${pressure.objectiveProgress.label}: ${pressure.objectiveProgress.current}/${pressure.objectiveProgress.required}. ${lossPressure}`;
 }
 
 export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | null): CurrentTablePrompt {

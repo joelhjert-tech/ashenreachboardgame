@@ -26,7 +26,7 @@ function apply(state: ReturnType<typeof activeBrokenSealState>, action: GameActi
 
 describe("scenario state ownership", () => {
   it("uses the canonical center sector as the final location for every scenario", () => {
-    expect(SCENARIOS).toHaveLength(7);
+    expect(SCENARIOS).toHaveLength(8);
     expect(getBoardSpace("center_cinder_gate")?.id).toBe("center_cinder_gate");
     for (const scenario of SCENARIOS) {
       expect(isScenarioConfrontationSpace("center_cinder_gate"), scenario.id).toBe(true);

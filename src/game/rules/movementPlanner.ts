@@ -22,6 +22,12 @@ export type MovementRoutePlan = {
   blockedRoutes: BlockedMovementRoute[];
 };
 
+export type TransitionRouteAidDestination = {
+  sectorId: string;
+  route: string[];
+  distance: number;
+};
+
 function hashRouteIdentity(value: string): string {
   let hash = 0x811c9dc5;
   for (let index = 0; index < value.length; index += 1) {
@@ -47,6 +53,59 @@ function identifyBlockedRoute(state: GameState, seatId: string, route: Omit<Bloc
 
 function getPlayer(state: GameState, seatId: string): PlayerState | null {
   return state.players.find((entry) => entry.seatId === seatId) ?? null;
+}
+
+export function buildTransitionRouteAidDestinations(
+  state: GameState,
+  seatId: string
+): TransitionRouteAidDestination[] {
+  const player = getPlayer(state, seatId);
+  if (!player) return [];
+  const originId = player.character.currentSpaceId;
+  const origin = getBoardSpace(originId);
+  if (!origin || origin.tier === "center") return [];
+
+  const transitionIds = new Set(
+    RIFTFALL_BOARD_NODES
+      .filter((node) => {
+        const space = getBoardSpace(node.id);
+        return space?.tier === origin.tier && node.connections.some((neighborId) => {
+          const neighbor = getBoardSpace(neighborId);
+          return Boolean(neighbor && neighbor.tier !== origin.tier);
+        });
+      })
+      .map((node) => node.id)
+  );
+  transitionIds.delete(originId);
+
+  const queue: Array<{ sectorId: string; route: string[] }> = [{ sectorId: originId, route: [originId] }];
+  const visited = new Set([originId]);
+  const destinations: TransitionRouteAidDestination[] = [];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current) break;
+    if (transitionIds.has(current.sectorId)) {
+      destinations.push({
+        sectorId: current.sectorId,
+        route: current.route,
+        distance: current.route.length - 1
+      });
+    }
+    const sector = state.sectors.find((entry) => entry.id === current.sectorId);
+    for (const neighborId of sector?.neighbors ?? []) {
+      if (visited.has(neighborId)) continue;
+      const neighbor = getBoardSpace(neighborId);
+      if (neighbor?.tier !== origin.tier) continue;
+      if (getMovementStepBlockReason(state, player, current.sectorId, neighborId)) continue;
+      visited.add(neighborId);
+      queue.push({ sectorId: neighborId, route: [...current.route, neighborId] });
+    }
+  }
+
+  return destinations.sort((left, right) =>
+    left.distance - right.distance || left.sectorId.localeCompare(right.sectorId)
+  );
 }
 
 export function hasMovementRollForSeat(state: GameState, seatId: string): boolean {

@@ -3059,6 +3059,64 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/black route fuse \+3/i);
   });
 
+  it("restores the battle roll after an authoritative submission rejection", () => {
+    const onIntent = vi.fn();
+    const battlePatch = createPatch({
+      activeResolution: {
+        id: "seat-1:threat:cinder-veil-stalker:retry",
+        playerId: "seat-1",
+        source: "threat",
+        stage: "battle_setup",
+        card: {
+          id: "cinder-veil-stalker",
+          title: "Cinder-Veil Stalker",
+          type: "enemy",
+          artType: "threat"
+        },
+        battle: {
+          enemyName: "Cinder-Veil Stalker",
+          stat: "grit",
+          difficulty: 8,
+          modifiers: []
+        }
+      }
+    });
+    const { rerender } = render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={battlePatch}
+        requiredActionSubmissionPending={false}
+      />
+    );
+
+    const roll = screen.getByRole("button", { name: /roll grit/i });
+    fireEvent.click(roll);
+    expect(roll).toBeDisabled();
+    expect(roll).toHaveTextContent(/submitting roll/i);
+
+    rerender(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={battlePatch}
+        requiredActionSubmissionPending
+      />
+    );
+    rerender(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={battlePatch}
+        requiredActionSubmissionPending={false}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /roll grit/i })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: /roll grit/i }));
+    expect(onIntent).toHaveBeenCalledTimes(2);
+  });
+
   it("renders the production Duel Aperture battle layout from canonical state and intents", () => {
     const onIntent = vi.fn();
     render(
@@ -3892,5 +3950,65 @@ describe("PhoneActionPanel", () => {
     });
     expect(screen.getByRole("button", { name: /accept consequence/i })).toBeInTheDocument();
     expect(screen.queryByText(/heat-sink prayer/i)).not.toBeInTheDocument();
+  });
+
+  it("gates every arrival action while authoritative movement is still playing on TV", () => {
+    render(<PhoneActionPanel characters={characters} onIntent={vi.fn()} patch={createPatch({
+      phase: "sector",
+      encounter: null,
+      movementPresentationGate: {
+        eventId: "movement:seat-1:12",
+        ownerSeatId: "seat-1",
+        ownerDisplayName: "Lane",
+        destinationSectorId: "glassmere-spindle",
+        destinationSectorName: "Glassmere Spindle",
+        deadlineAt: "2026-07-26T12:00:05.000Z"
+      }
+    })} />);
+
+    expect(screen.getByRole("heading", { name: /movement playing on tv/i })).toBeInTheDocument();
+    expect(screen.getByText(/arrival actions unlock after the piece lands/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /continue|open shop|end turn/i })).not.toBeInTheDocument();
+  });
+
+  it("offers the setup host one direct Start New Game action after defeat", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+    const base = createPatch();
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={createPatch({
+      status: "ended",
+      phase: "action",
+      winnerSeatId: null,
+      selfIsSetupHost: true,
+      matchProgress: {
+        revision: 12,
+        mode: "solo",
+        stage: "defeat",
+        winProgress: null,
+        lossPressure: null,
+        thresholdWarning: null,
+        finalStage: null,
+        publicResult: {
+          id: "result:defeat:12",
+          outcome: "defeat",
+          title: "The Reach closes",
+          missionName: "The Broken Seal",
+          reason: "The expedition has failed.",
+          modeLabel: "Solo",
+          winningDisplayNames: [],
+          operativeDisplayNames: ["Sable Vey"],
+          finalWinProgress: null,
+          finalLossPressure: null,
+          finalStageReached: true
+        },
+        allowedCommands: ["return_to_lobby"]
+      },
+      self: { ...base.self!, seatId: "seat-1" }
+    })} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /start new game/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "RETURN_TO_LOBBY_REQUESTED",
+      seatId: "seat-1"
+    });
   });
 });

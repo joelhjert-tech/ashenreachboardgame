@@ -25,7 +25,12 @@ import {
 import { getThreatPresentationCategory } from "../game/cards/cardCategories.js";
 import { resolveBoardTextChoice, resolveBoardTextEffect, type BoardTextDeckKind } from "../game/data/boardTextEffects.js";
 import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
-import { getScenarioDefinition, isScenarioEligibleForSession, type ScenarioDefinition } from "../game/data/scenarios.js";
+import {
+  SCENARIOS,
+  getScenarioDefinition,
+  isScenarioEligibleForSession,
+  type ScenarioDefinition
+} from "../game/data/scenarios.js";
 import { getScenarioSheetArtPath } from "../game/data/scenarioSheetArt.js";
 import { getCharacterPresentation, type CharacterPresentation } from "../game/data/characterPresentation.js";
 import {
@@ -87,6 +92,7 @@ import {
 } from "../game/rules/nemesisRelay.js";
 import {
   buildMovementRoutePlan,
+  buildTransitionRouteAidDestinations,
   getForcedDisplacementDestination,
   getMovementStepBlockReason,
   getRingTrackNeighbor,
@@ -306,6 +312,11 @@ const MASTER_ALPHA_ID = "char_master_alpha";
 const LEGACY_SCAR_SINK_PRAYER_ID = "heat-sink-prayer";
 const RECENT_ENCOUNTER_LIMIT = 12;
 const STARTING_CONTRACT_OPTION_COUNT = 3;
+const SCENARIO_OWNED_THREAT_IDS = new Set(
+  SCENARIOS.flatMap((scenario) =>
+    Object.values(scenario.threatLaneOverrides ?? {}).flatMap((cardIds) => cardIds ?? [])
+  )
+);
 
 const NEMESIS_OPPOSITION = {
   strength: { attackStat: "grit", label: "Overpower" },
@@ -317,6 +328,7 @@ const CONFRONTATION_BASE_DIFFICULTY = 6;
 const SCAR_CARDS = loadScarCards();
 const AFFLICTION_CARDS = loadAfflictionCards();
 const PROJECTION_GEAR_CATALOG = loadGear();
+const PROJECTION_FOLLOWER_CATALOG = loadFollowers();
 const PROJECTION_THREAT_CATALOG = loadThreatCards();
 
 const nemesisByScenarioId = new Map<string, NemesisDefinition>(
@@ -404,13 +416,20 @@ interface ReturnToLobbyMessage {
   type: "RETURN_TO_LOBBY";
 }
 
-type HostCommandMessage = KickSeatMessage | RestartSessionMessage | ReturnToLobbyMessage;
+interface MovementPresentationCompletedMessage {
+  type: "MOVEMENT_PRESENTATION_COMPLETED";
+  eventId: string;
+}
+
+type HostCommandMessage = KickSeatMessage | RestartSessionMessage | ReturnToLobbyMessage | MovementPresentationCompletedMessage;
 type ClientMessage = ClientIntent | RejoinMessage | HostCommandMessage;
 
 const CLIENT_INTENT_TYPES = new Set<string>([
   "HOST_VIEW_REQUESTED",
+  "RETURN_TO_LOBBY_REQUESTED",
   "MOVEMENT_DESTINATION_PREVIEWED",
   "MOVE_REQUESTED",
+  "USE_TRANSITION_ROUTE_AID",
   "ADJUST_MOVEMENT_REQUESTED",
   "SELECT_ROUTE_STAR_VARIANT",
   "ACTIVATE_GATE_SAINT",
@@ -611,6 +630,7 @@ export class GameRoomServer {
   private hostToken: string | null = null;
   private enemyRollTimeout: ReturnType<typeof setTimeout> | null = null;
   private resolutionAutoContinueTimeout: ReturnType<typeof setTimeout> | null = null;
+  private movementPresentationTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly movementPreviewBySeatId = new Map<string, { destinationId: string; routeId: string }>();
   private hostView: {
     mode: "signal" | "map";
@@ -865,12 +885,31 @@ export class GameRoomServer {
         throw new IntentRejectedError(intent.type, "Only phone clients with seats can submit intents");
       }
 
+      if (intent.seatId !== client.seatId) {
+        throw new IntentRejectedError(intent.type, "Seat mismatch between token and submitted intent");
+      }
+
+      if (intent.type === "RETURN_TO_LOBBY_REQUESTED") {
+        if (this.state.status !== "ended") {
+          throw new IntentRejectedError(intent.type, "A new game can only begin after the current result is complete");
+        }
+        if (this.state.setupHostSeatId !== intent.seatId) {
+          throw new IntentRejectedError(intent.type, "Only the setup host can start the next game");
+        }
+        this.restartActiveSession(true);
+        this.broadcastPatch();
+        return;
+      }
+
       if (this.state.status === "ended") {
         throw new IntentRejectedError(intent.type, "Session has ended. Only the host can restart it.");
       }
 
-      if (intent.seatId !== client.seatId) {
-        throw new IntentRejectedError(intent.type, "Seat mismatch between token and submitted intent");
+      if (this.state.movementPresentationGate) {
+        throw new IntentRejectedError(
+          intent.type,
+          "Movement is still playing on the host display"
+        );
       }
 
       if (intent.type === "HOST_VIEW_REQUESTED") {
@@ -1136,6 +1175,11 @@ export class GameRoomServer {
       }
       if (intent.type === "ADJUST_MOVEMENT_REQUESTED") {
         this.movementPreviewBySeatId.delete(intent.seatId);
+      }
+      if (intent.type === "USE_TRANSITION_ROUTE_AID") {
+        this.resolveTransitionRouteAidIntent(intent);
+        this.broadcastPatch();
+        return;
       }
       const action = this.intentToAction(intent);
       this.applyAction(action);
@@ -1850,7 +1894,12 @@ export class GameRoomServer {
   }
 
   private isHostCommand(message: unknown): message is HostCommandMessage {
-    return isRecord(message) && (message.type === "KICK_SEAT" || message.type === "RESTART_SESSION" || message.type === "RETURN_TO_LOBBY");
+    return isRecord(message) && (
+      message.type === "KICK_SEAT" ||
+      message.type === "RESTART_SESSION" ||
+      message.type === "RETURN_TO_LOBBY" ||
+      message.type === "MOVEMENT_PRESENTATION_COMPLETED"
+    );
   }
 
   private parseClientMessage(message: unknown): ClientIntent | HostCommandMessage {
@@ -1871,6 +1920,11 @@ export class GameRoomServer {
 
     if (type === "RETURN_TO_LOBBY") {
       return message as unknown as ReturnToLobbyMessage;
+    }
+
+    if (type === "MOVEMENT_PRESENTATION_COMPLETED") {
+      requireStringField(message, "eventId", type);
+      return message as unknown as MovementPresentationCompletedMessage;
     }
 
     if (!CLIENT_INTENT_TYPES.has(type)) {
@@ -1894,6 +1948,14 @@ export class GameRoomServer {
         requireStringField(message, "toSectorId", type);
         if (message.routeId !== undefined) requireStringField(message, "routeId", type);
         if (message.movementRevision !== undefined && (!Number.isInteger(message.movementRevision) || Number(message.movementRevision) < 1)) throw new IntentRejectedError(type, "Movement revision must be a positive integer");
+        break;
+      case "USE_TRANSITION_ROUTE_AID":
+        requireEnumField(message, "sourceKind", new Set(["gear", "follower"]), type);
+        requireStringField(message, "instanceId", type);
+        requireStringField(message, "destinationSectorId", type);
+        if (!Number.isInteger(message.movementRevision) || Number(message.movementRevision) < 0) {
+          throw new IntentRejectedError(type, "Movement revision must be a non-negative integer");
+        }
         break;
       case "MOVEMENT_ROLL_REQUESTED":
         break;
@@ -2040,7 +2102,7 @@ export class GameRoomServer {
         }
         break;
       case "SHOP_BROWSE_SELECTED":
-        requireEnumField(message, "view", new Set(["categories", "equipment", "supplies", "artifacts", "services", "sell"]), type);
+        requireEnumField(message, "view", new Set(["categories", "equipment", "supplies", "artifacts", "route-aids", "services", "sell"]), type);
         if (message.selectedId !== undefined && message.selectedId !== null && typeof message.selectedId !== "string") {
           throw new IntentRejectedError(type, "Malformed intent: selectedId must be a stable string ID");
         }
@@ -2133,6 +2195,11 @@ export class GameRoomServer {
 
     if (command.type === "KICK_SEAT") {
       this.kickSeat(command.targetSeatId);
+      return;
+    }
+
+    if (command.type === "MOVEMENT_PRESENTATION_COMPLETED") {
+      this.completeMovementPresentation(command.eventId);
       return;
     }
 
@@ -3119,6 +3186,8 @@ export class GameRoomServer {
         ? "buy-supplies"
         : intent.view === "artifacts"
           ? "trade-missions-for-artifact"
+          : intent.view === "route-aids"
+            ? "buy-route-aids"
           : null;
 
     if (expectedService && (!reveal || reveal.serviceId !== expectedService)) {
@@ -3290,6 +3359,31 @@ export class GameRoomServer {
             createdAt
           } satisfies ShopStockRevealedAction;
         }
+      case "buy-route-aids": {
+        const ownedIds = new Set([
+          ...player.character.heldGear.map((item) => item.id),
+          ...(player.character.followers ?? []).map((follower) => follower.id)
+        ]);
+        const stock = [
+          this.gear.get("breachline-sextant"),
+          this.gear.get("gateward-spindle"),
+          this.followers.get("mara-vell-cinder-cartographer"),
+          this.followers.get("knuckle-rail-scent-hound")
+        ].filter((entry): entry is NonNullable<typeof entry> => Boolean(entry && !ownedIds.has(entry.id)));
+        if (stock.length === 0) throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+        return {
+          type: "SHOP_STOCK_REVEALED",
+          seatId: intent.seatId,
+          serviceId: "buy-route-aids",
+          serviceLabel: "Browse Route Aids",
+          shopName,
+          sectorId: player.character.currentSpaceId,
+          cost: {},
+          stock,
+          summary: `${actorName} opened the route-aid cabinet. ${stock.length} public offers are available.`,
+          createdAt
+        } satisfies ShopStockRevealedAction;
+      }
       case "buy-treatment":
         return {
           ...base,
@@ -3425,7 +3519,7 @@ export class GameRoomServer {
   private createShopPurchaseAction(
     intent: Extract<ClientIntent, { type: "SHOP_PURCHASE_REQUESTED" }>,
     createdAt: string
-  ): ShopPurchaseResolvedAction {
+  ): GameAction {
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
 
     if (!player) {
@@ -3458,16 +3552,50 @@ export class GameRoomServer {
       throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
     }
 
+    const follower = reveal.serviceId === "buy-route-aids" ? this.followers.get(intent.cardId) : undefined;
     const gear = this.gear.get(intent.cardId);
 
-    if (!gear) {
+    if (!gear && !follower) {
       throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
     }
 
+    if (follower) {
+      if (!["mara-vell-cinder-cartographer", "knuckle-rail-scent-hound"].includes(follower.id)) {
+        throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+      }
+      if ((player.character.followers ?? []).some((owned) => owned.id === follower.id)) {
+        throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+      }
+      const cost = { salvage: 4 };
+      if ((player.character.salvage ?? 0) < cost.salvage) {
+        throw new Error(SHOP_FAILURE_REASONS.insufficientSalvage);
+      }
+      return {
+        type: "SHOP_FOLLOWER_PURCHASE_RESOLVED",
+        seatId: intent.seatId,
+        serviceId: "buy-route-aids",
+        shopName: boardSpace.name,
+        sectorId: player.character.currentSpaceId,
+        cardId: follower.id,
+        cost,
+        gainedFollower: {
+          ...follower,
+          instanceId: `${follower.id}:${intent.seatId}:${this.state.sequence + 1}`,
+          currentCharges: follower.startingCharges ?? 2
+        },
+        discardedStockIds: reveal.stockIds.filter((cardId) => cardId !== follower.id),
+        summary: `${player.character.name} recruited ${follower.name} for 4 Salvage.`,
+        createdAt
+      };
+    }
+
+    if (!gear) throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+
     const stockCategory = getShopStockCategoryForService(boardSpace, reveal.serviceId);
 
+    const isRouteAid = reveal.serviceId === "buy-route-aids" && gear.chargedEffect === "selectTransitionSector";
     const isMarketFallback = reveal.serviceId === "buy-gear" && isGearAvailableFromShopCategory(gear, "market");
-    if (!stockCategory || (!isGearAvailableFromShopCategory(gear, stockCategory) && !isMarketFallback) ||
+    if ((!stockCategory && !isRouteAid) || (!isRouteAid && !isGearAvailableFromShopCategory(gear, stockCategory!) && !isMarketFallback) ||
       (reveal.serviceId === "buy-supplies" && gear.subtype !== "supply")) {
       throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
     }
@@ -3482,7 +3610,9 @@ export class GameRoomServer {
     }
 
     const isArtifactExchange = reveal.serviceId === "trade-missions-for-artifact";
-    const cost = isArtifactExchange
+    const cost = isRouteAid
+      ? { salvage: 5 }
+      : isArtifactExchange
       ? { completedContracts: ARTIFACT_EXCHANGE_CONTRACT_COST }
       : { salvage: getShopGearCost(gear) };
 
@@ -4633,9 +4763,12 @@ export class GameRoomServer {
     const existing = this.state.threatDrawBags?.[lane];
     if (existing && existing.remainingCardIds.length > 0) return;
 
-    const laneCardIds = [...this.threats.values()]
-      .filter((card) => card.threatLane === lane)
-      .map((card) => card.id);
+    const scenarioLaneOverride = getScenarioDefinition(this.state.activeScenarioId)?.threatLaneOverrides?.[lane];
+    const laneCardIds = scenarioLaneOverride
+      ? [...scenarioLaneOverride]
+      : [...this.threats.values()]
+          .filter((card) => card.threatLane === lane && !SCENARIO_OWNED_THREAT_IDS.has(card.id))
+          .map((card) => card.id);
     const shuffled = this.shuffleThreatIds(laneCardIds);
     const recent = new Set(this.state.recentEncounterCardIds ?? []);
     const orderedCardIds = existing
@@ -6059,6 +6192,10 @@ export class GameRoomServer {
       return;
     }
 
+    if (delta > 0 && getScenarioDefinition(this.state.activeScenarioId)?.lossPressureEnabled === false) {
+      return;
+    }
+
     if (source && (this.state.resolvedEscalationSourceEventIds ?? []).includes(source.eventId)) {
       return;
     }
@@ -6626,6 +6763,10 @@ export class GameRoomServer {
 
   private restartActiveSession(reconfigureLobby = false): void {
     const connectedTurnOrder = this.getConnectedRestartSeatIds();
+    if (this.movementPresentationTimeout) {
+      clearTimeout(this.movementPresentationTimeout);
+      this.movementPresentationTimeout = null;
+    }
 
     this.state = {
       ...this.state,
@@ -6647,6 +6788,7 @@ export class GameRoomServer {
       currentEncounter: null,
       recentEncounterCardIds: [],
       threatDrawBags: {},
+      movementPresentationGate: null,
       devouredThreatSectorIds: [],
       sectors: this.state.sectors.map((sector) => ({ ...sector, persistentThreatIds: [] })),
       tileArrivalThreatProgress: null,
@@ -8832,6 +8974,13 @@ export class GameRoomServer {
       createdAt: movementCreatedAt
     } satisfies MovementResolvedAction);
     if (success) {
+      this.beginMovementPresentationGate(
+        intent.seatId,
+        fromSectorId,
+        intent.toSectorId,
+        selectedRoute?.route ?? [fromSectorId, intent.toSectorId],
+        movementCreatedAt
+      );
       const destination = getBoardSpace(intent.toSectorId);
       this.maybeAdvanceContractObjective(intent.seatId, {
         type: "sector-visited", sectorId: intent.toSectorId, sectorTags: destination?.tags ?? []
@@ -8854,6 +9003,117 @@ export class GameRoomServer {
       selectedDestinationId: success ? intent.toSectorId : fromSectorId,
       route: selectedRoute?.route ?? [fromSectorId, intent.toSectorId]
     });
+  }
+
+  private resolveTransitionRouteAidIntent(
+    intent: Extract<ClientIntent, { type: "USE_TRANSITION_ROUTE_AID" }>
+  ): void {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+    if (!player) throw new IntentRejectedError(intent.type, "Unknown route-aid owner");
+    if (this.state.phase !== "navigation" || this.state.movementRolls?.[intent.seatId]) {
+      throw new IntentRejectedError(intent.type, "Route aids may only be used before rolling movement");
+    }
+    const revision = this.state.movementRouteRevisions?.[intent.seatId] ?? 0;
+    if (intent.movementRevision !== revision) {
+      throw new IntentRejectedError(intent.type, "Route-aid movement revision is stale");
+    }
+    const destination = buildTransitionRouteAidDestinations(this.state, intent.seatId)
+      .find((entry) => entry.sectorId === intent.destinationSectorId);
+    if (!destination) {
+      throw new IntentRejectedError(intent.type, "Choose a legal transition sector in the current reach");
+    }
+    const fromSectorId = player.character.currentSpaceId;
+    const createdAt = new Date().toISOString();
+    this.applyAction({
+      type: "TRANSITION_ROUTE_AID_USED",
+      seatId: intent.seatId,
+      sourceKind: intent.sourceKind,
+      instanceId: intent.instanceId,
+      fromSectorId,
+      toSectorId: destination.sectorId,
+      route: destination.route,
+      movementRevision: revision,
+      createdAt
+    });
+    this.beginMovementPresentationGate(
+      intent.seatId,
+      fromSectorId,
+      destination.sectorId,
+      destination.route,
+      createdAt
+    );
+    this.maybeAdvanceContractObjective(intent.seatId, {
+      type: "sector-visited",
+      sectorId: destination.sectorId,
+      sectorTags: getBoardSpace(destination.sectorId)?.tags ?? []
+    }, `Visited ${getBoardSpace(destination.sectorId)?.name ?? destination.sectorId}.`);
+    this.applyScenarioOnSectorEntered(intent.seatId, destination.sectorId);
+    this.runAutomaticPhases(intent.seatId);
+  }
+
+  private beginMovementPresentationGate(
+    seatId: string,
+    fromSectorId: string,
+    toSectorId: string,
+    route: string[],
+    createdAt: string
+  ): void {
+    const hostTvConnected = [...this.clients].some(
+      (client) => client.view === "tv" && client.isHost && client.socket.readyState === 1
+    );
+    // Headless rules simulations and rooms without a host display must not
+    // wait on an acknowledgement that no TV can send.
+    if (!hostTvConnected) {
+      this.state = { ...this.state, movementPresentationGate: null };
+      return;
+    }
+
+    if (this.movementPresentationTimeout) {
+      clearTimeout(this.movementPresentationTimeout);
+      this.movementPresentationTimeout = null;
+    }
+
+    const normalizedRoute = route.length > 0 ? route : [fromSectorId, toSectorId];
+    let durationMs = 380 + 720;
+    for (let index = 0; index < normalizedRoute.length - 1; index += 1) {
+      const from = getBoardSpace(normalizedRoute[index] ?? "");
+      const to = getBoardSpace(normalizedRoute[index + 1] ?? "");
+      durationMs += from?.tier && to?.tier && from.tier !== to.tier ? 840 : 640;
+    }
+    const fallbackMs = Math.min(12_000, Math.max(1_800, durationMs + 1_200));
+    const eventId = `movement-presentation:${seatId}:${this.state.sequence}:${toSectorId}`;
+    const deadlineAt = new Date(Date.now() + fallbackMs).toISOString();
+
+    this.state = {
+      ...this.state,
+      movementPresentationGate: {
+        eventId,
+        seatId,
+        fromSectorId,
+        toSectorId,
+        route: normalizedRoute,
+        createdAt,
+        deadlineAt
+      }
+    };
+
+    this.movementPresentationTimeout = setTimeout(() => {
+      this.completeMovementPresentation(eventId);
+      this.broadcastPatch();
+    }, fallbackMs);
+    this.movementPresentationTimeout.unref?.();
+  }
+
+  private completeMovementPresentation(eventId: string): void {
+    if (this.state.movementPresentationGate?.eventId !== eventId) return;
+    if (this.movementPresentationTimeout) {
+      clearTimeout(this.movementPresentationTimeout);
+      this.movementPresentationTimeout = null;
+    }
+    this.state = {
+      ...this.state,
+      movementPresentationGate: null
+    };
   }
 
   private shouldPreventMovementFailure(): boolean {
@@ -10595,8 +10855,9 @@ type PublicShopService = {
 type PublicShopStockItem = {
   cardId: string;
   name: string;
-  type: "gear" | "artifact";
-  shopCategories: ShopCategory[];
+  type: "gear" | "artifact" | "follower";
+  artCardId?: string;
+  shopCategories?: ShopCategory[];
   cost: {
     salvage?: number;
     wounds?: number;
@@ -11665,18 +11926,39 @@ function buildPublicShopStock(
     ...player.character.heldGear.map((item) => item.id),
     ...Object.values(player.character.equippedGear).filter((id): id is string => Boolean(id))
   ]);
+  const ownedFollowerIds = new Set((player.character.followers ?? []).map((follower) => follower.id));
 
-  return reveal.stockIds
-    .map((cardId) => PROJECTION_GEAR_CATALOG.get(cardId))
-    .filter((item): item is GearItem => Boolean(item))
-    .map((item) => {
+  return reveal.stockIds.flatMap((cardId): PublicShopStockItem[] => {
+    const follower = PROJECTION_FOLLOWER_CATALOG.get(cardId);
+    if (follower) {
+      const cost = { salvage: follower.cost ?? 4 };
+      const payment = canPayShopCost(player, state, cost);
+      const alreadyOwned = ownedFollowerIds.has(follower.id);
+      return [{
+        cardId: follower.id,
+        name: follower.name,
+        type: "follower" as const,
+        artCardId: follower.artCardId,
+        cost,
+        summary: follower.text,
+        lore: follower.flavor,
+        rarity: follower.tier ?? "standard",
+        stock: 1,
+        affordable: payment.enabled && !alreadyOwned,
+        disabledReason: alreadyOwned ? "Already following" : payment.disabledReason
+      } satisfies PublicShopStockItem];
+    }
+    const item = PROJECTION_GEAR_CATALOG.get(cardId);
+    if (!item) return [];
       const cost = artifactExchange
         ? { completedContracts: ARTIFACT_EXCHANGE_CONTRACT_COST }
-        : { salvage: getPublicGearShopCost(item) };
+        : reveal.serviceId === "buy-route-aids"
+          ? { salvage: 5 }
+          : { salvage: getPublicGearShopCost(item) };
       const payment = canPayShopCost(player, state, cost);
       const alreadyOwned = ownedGearIds.has(item.id);
 
-      return {
+      return [{
         cardId: item.id,
         name: item.name,
         type: item.tier === "artifact" ? "artifact" : "gear",
@@ -11688,7 +11970,7 @@ function buildPublicShopStock(
         stock: 1,
         affordable: payment.enabled && !alreadyOwned,
         disabledReason: alreadyOwned ? "Already held" : payment.disabledReason
-      } satisfies PublicShopStockItem;
+      } satisfies PublicShopStockItem];
     });
 }
 
@@ -11774,6 +12056,12 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
         id: "buy-gear",
         label: "Browse Equipment",
         shopCategory: getShopStockCategoryForService(boardSpace, "buy-gear") ?? undefined,
+        cost: {}
+      }),
+      createShopService(player, state, {
+        id: "buy-route-aids",
+        label: "Browse Route Aids",
+        shopCategory: "relic-dealer",
         cost: {}
       }),
       createShopService(player, state, {
@@ -11908,6 +12196,10 @@ function buildPublicShopEncounter(
     latestAction?.type === "SHOP_PURCHASE_RESOLVED" && latestAction.seatId === activePlayer.seatId
       ? (latestAction as ShopPurchaseResolvedAction)
       : null;
+  const latestFollowerPurchase =
+    latestAction?.type === "SHOP_FOLLOWER_PURCHASE_RESOLVED" && latestAction.seatId === activePlayer.seatId
+      ? latestAction
+      : null;
   const latestSale =
     latestAction?.type === "SHOP_SELL_RESOLVED" && latestAction.seatId === activePlayer.seatId
       ? (latestAction as ShopSellResolvedAction)
@@ -11937,6 +12229,7 @@ function buildPublicShopEncounter(
   const localServices = services.filter((service) => ![
     "buy-gear",
     "buy-supplies",
+    "buy-route-aids",
     "trade-missions-for-artifact",
     "sell-gear"
   ].includes(service.id));
@@ -11961,6 +12254,13 @@ function buildPublicShopEncounter(
       label: "Artifacts",
       description: "Sealed relics exchanged for completed Contracts",
       service: serviceById("trade-missions-for-artifact")!
+    } : null,
+    serviceById("buy-route-aids") ? {
+      id: "route-aids" as const,
+      view: "route-aids" as const,
+      label: "Route Aids",
+      description: "Charged guides and instruments for reaching transition sectors",
+      service: serviceById("buy-route-aids")!
     } : null,
     localServices.length > 0 ? {
       id: "services" as const,
@@ -12076,13 +12376,15 @@ function buildPublicShopEncounter(
           shopName: boardSpace.name,
           action: latestSale
             ? "sell"
+            : latestFollowerPurchase
+              ? "buy"
             : latestPurchase?.serviceId === "trade-missions-for-artifact"
               ? "artifactExchange"
               : latestPurchase ? "buy" : "Recent outcome",
-          gained: latestPurchase?.gainedGear.name,
+          gained: latestPurchase?.gainedGear.name ?? latestFollowerPurchase?.gainedFollower.name,
           sold: latestSale?.soldGear.name,
           salvageDelta: latestSale?.salvageDelta,
-          costPaid: latestPurchase?.cost,
+          costPaid: latestPurchase?.cost ?? latestFollowerPurchase?.cost,
           remainingSalvage: salvage,
           summary: latest.summary
         }
@@ -12763,7 +13065,9 @@ function buildMatchProgressPresentation(
     return delta.sign === "loss" ? -Math.abs(delta.value) : Math.abs(delta.value);
   };
   const winRemaining = Math.max(0, objectiveRequired - objectiveCurrent);
-  const lossRemaining = Math.max(0, pressure.collapseTrack.max - pressure.collapseTrack.current);
+  const lossRemaining = pressure.collapseTrack.failureAtMax
+    ? Math.max(0, pressure.collapseTrack.max - pressure.collapseTrack.current)
+    : null;
   const resultStatus = state.scenarioResult.status !== "unresolved"
     ? state.scenarioResult.status
     : state.status === "ended"
@@ -12844,10 +13148,12 @@ function buildMatchProgressPresentation(
       current: objectiveCurrent,
       required: objectiveRequired
     },
-    finalLossPressure: {
-      current: pressure.collapseTrack.current,
-      required: pressure.collapseTrack.max
-    },
+    finalLossPressure: pressure.collapseTrack.failureAtMax
+      ? {
+          current: pressure.collapseTrack.current,
+          required: pressure.collapseTrack.max
+        }
+      : null,
     finalStageReached: state.scenarioConfrontation.active || state.scenarioResult.sourceType === "confrontation"
   };
 
@@ -12877,14 +13183,16 @@ function buildMatchProgressPresentation(
       change: signedChange(latestWinDelta),
       changeReason: latestWinDelta?.publicText ?? null
     },
-    lossPressure: {
-      current: pressure.collapseTrack.current,
-      required: pressure.collapseTrack.max,
-      label: "Loss Pressure",
-      changeId: latestLossDelta?.id ?? null,
-      change: signedChange(latestLossDelta),
-      changeReason: latestLossDelta?.publicText ?? null
-    },
+    lossPressure: pressure.collapseTrack.failureAtMax
+      ? {
+          current: pressure.collapseTrack.current,
+          required: pressure.collapseTrack.max,
+          label: "Loss Pressure",
+          changeId: latestLossDelta?.id ?? null,
+          change: signedChange(latestLossDelta),
+          changeReason: latestLossDelta?.publicText ?? null
+        }
+      : null,
     thresholdWarning,
     finalStage,
     publicResult,
@@ -14519,6 +14827,18 @@ export function createTvProjection(
     activeResolution: projectActiveResolutionForViewer(state, null),
     battlePresentation: buildBattlePresentation(state, null),
     shopEncounter,
+    movementPresentationGate: state.movementPresentationGate
+      ? {
+          eventId: state.movementPresentationGate.eventId,
+          ownerSeatId: state.movementPresentationGate.seatId,
+          ownerDisplayName: state.seats.find((seat) => seat.seatId === state.movementPresentationGate?.seatId)?.displayName
+            ?? state.movementPresentationGate.seatId,
+          destinationSectorId: state.movementPresentationGate.toSectorId,
+          destinationSectorName: state.sectors.find((sector) => sector.id === state.movementPresentationGate?.toSectorId)?.name
+            ?? state.movementPresentationGate.toSectorId,
+          deadlineAt: state.movementPresentationGate.deadlineAt
+        }
+      : null,
     movementPlanner: activeSeatId
       ? (() => {
           const planner = buildPublicMovementPlanner(state, activeSeatId);
@@ -14685,6 +15005,58 @@ export function createPhoneProjection(
     ? state.pendingGearEquipChoice
     : null;
   const phoneMovementPlanner = buildPhoneMovementPlanner(state, seatId);
+  const transitionRouteAid = (() => {
+    if (
+      !player ||
+      state.status !== "active" ||
+      state.phase !== "navigation" ||
+      state.turnOrder[state.activeSeatIndex] !== seatId ||
+      state.movementRolls?.[seatId]
+    ) return null;
+    const sources = [
+      ...player.character.heldGear.flatMap((item) => {
+        const charges = item.currentCharges ?? item.charges ?? 0;
+        return item.chargedEffect === "selectTransitionSector" &&
+          item.instanceId &&
+          player.character.equippedGear.utility === item.id &&
+          charges > 0
+          ? [{
+              sourceKind: "gear" as const,
+              instanceId: item.instanceId,
+              name: item.name,
+              currentCharges: charges,
+              maxCharges: item.maxCharges ?? 2
+            }]
+          : [];
+      }),
+      ...(player.character.followers ?? []).flatMap((follower) => {
+        const charges = follower.currentCharges ?? follower.startingCharges ?? 0;
+        return follower.chargedEffect === "selectTransitionSector" &&
+          follower.instanceId &&
+          charges > 0
+          ? [{
+              sourceKind: "follower" as const,
+              instanceId: follower.instanceId,
+              name: follower.name,
+              currentCharges: charges,
+              maxCharges: follower.maxCharges ?? 2
+            }]
+          : [];
+      })
+    ];
+    if (sources.length === 0) return null;
+    return {
+      revision: state.movementRouteRevisions?.[seatId] ?? 0,
+      sources,
+      destinations: buildTransitionRouteAidDestinations(state, seatId).map((destination) => ({
+        ...destination,
+        name: state.sectors.find((sector) => sector.id === destination.sectorId)?.name ?? destination.sectorId,
+        routeNames: destination.route.map((sectorId) =>
+          state.sectors.find((sector) => sector.id === sectorId)?.name ?? sectorId
+        )
+      }))
+    };
+  })();
   const phoneShopEncounter = buildPublicShopEncounter(state, state.players, seatId);
   const privateRivalry = buildPrivateRivalryProjection(state, player) as import("../client/shared/types.js").PrivateRivalryPayload | null;
   const ownerPrivateResult: import("../client/shared/types.js").OwnerPrivateMatchResult | null =
@@ -15009,6 +15381,7 @@ export function createPhoneProjection(
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
     movementPlanner: phoneMovementPlanner,
+    transitionRouteAid,
     sectorExplorationSummary: buildPublicSectorExplorationSummary(state, seatId),
     privateRivalry,
     soloReroll: buildSoloRerollProjection(state, seatId),

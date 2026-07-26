@@ -398,7 +398,7 @@ function validateContentFloors(): void {
     ["artifacts", artifacts.size, 12, 30],
     ["escalations", escalations.size, 15, 25],
     ["contracts", contracts.size, 20, 36],
-    ["followers", followers.size, 15, 25],
+    ["followers", followers.size, 15, 26],
     ["scars", scars.size, 24, 24],
     ["afflictions", afflictions.size, 30, 30]
   ] as const;
@@ -434,11 +434,11 @@ function effectGrantsFollower(effect: EncounterEffect | null | undefined, follow
 }
 
 function validateFollowerAcquisitionCoverage(): void {
-  if (followers.size !== 24) errors.push(`Follower catalog must contain exactly 24 definitions; found ${followers.size}`);
+  if (followers.size !== 26) errors.push(`Follower catalog must contain exactly 26 definitions; found ${followers.size}`);
   const normalFollowers = [...followers.values()].filter((follower) => !follower.qaOnly);
   const qaFollowers = [...followers.values()].filter((follower) => follower.qaOnly);
-  if (normalFollowers.length !== 21 || qaFollowers.length !== 3) {
-    errors.push(`Follower catalog must contain 21 normal and 3 QA-only followers; found ${normalFollowers.length}/${qaFollowers.length}`);
+  if (normalFollowers.length !== 23 || qaFollowers.length !== 3) {
+    errors.push(`Follower catalog must contain 23 normal and 3 QA-only followers; found ${normalFollowers.length}/${qaFollowers.length}`);
   }
 
   for (const follower of normalFollowers) {
@@ -623,6 +623,24 @@ function validateScenarioCoverage(): void {
       errors.push(`Scenario ${scenario.id} has no supportedModes`);
     }
 
+    for (const [lane, cardIds] of Object.entries(scenario.threatLaneOverrides ?? {})) {
+      if (!cardIds || cardIds.length === 0) {
+        errors.push(`Scenario ${scenario.id} has an empty ${lane} threatLaneOverride`);
+        continue;
+      }
+      if (new Set(cardIds).size !== cardIds.length) {
+        errors.push(`Scenario ${scenario.id} repeats a card in its ${lane} threatLaneOverride`);
+      }
+      for (const cardId of cardIds) {
+        const threat = threats.get(cardId);
+        if (!threat) {
+          errors.push(`Scenario ${scenario.id} references missing scenario-owned Threat ${cardId}`);
+        } else if (threat.threatLane !== lane) {
+          errors.push(`Scenario ${scenario.id} assigns ${cardId} to ${lane}, but the card belongs to ${threat.threatLane ?? "no lane"}`);
+        }
+      }
+    }
+
     if (!scenario.publicDisplay.modeLabel || !scenario.publicDisplay.objective || !scenario.publicDisplay.privacy) {
       errors.push(`Scenario ${scenario.id} has incomplete publicDisplay metadata`);
     }
@@ -722,6 +740,11 @@ function validateCanonicalDecks(): void {
     anomaly: new Set(canonicalSectors.flatMap((sector) => sector.encounterDecks.anomaly)),
     escalation: new Set(canonicalSectors.flatMap((sector) => sector.encounterDecks.escalation))
   };
+  const scenarioThreatIds = new Set(
+    SCENARIOS.flatMap((scenario) =>
+      Object.values(scenario.threatLaneOverrides ?? {}).flatMap((cardIds) => cardIds ?? [])
+    )
+  );
   const tileChallengeArtIds = new Set([...tileChallenges.values()].map((challenge) => challenge.artCardId));
 
   for (const lane of ["red", "blue", "yellow"] as const) {
@@ -737,8 +760,13 @@ function validateCanonicalDecks(): void {
   }
 
   for (const card of threats.values()) {
-    if (!canonicalDeckIds.threat.has(card.id) && !tileChallengeArtIds.has(card.id)) {
-      errors.push(`Threat ${card.id} is not reachable from a canonical sector deck or recurring tile challenge`);
+    if (
+      card.region !== "global" &&
+      !canonicalDeckIds.threat.has(card.id) &&
+      !scenarioThreatIds.has(card.id) &&
+      !tileChallengeArtIds.has(card.id)
+    ) {
+      errors.push(`Threat ${card.id} is not reachable from a canonical sector deck, scenario bag, or recurring tile challenge`);
     }
   }
 
@@ -773,7 +801,7 @@ function validateDiscoveryThreat(card: ThreatCard): void {
   }
   for (const gearId of gearIds) {
     const item = gear.get(gearId);
-    if (!item || item.tier === "artifact" || item.qaOnly || gearId.startsWith("qa_")) {
+    if (!item || (item.tier === "artifact" && item.chargedEffect !== "selectTransitionSector") || item.qaOnly || gearId.startsWith("qa_")) {
       errors.push(`Discovery Threat ${card.id} references ineligible normal Equipment ${gearId}`);
     }
   }

@@ -143,6 +143,7 @@ export function buildScenarioPressureState(state: GameState, pressureSummary: st
 
   const scenarioMax = getScenarioPressureMax(state, scenario);
   const collapseMax = getEscalationCollapseLevel(state.sessionMode);
+  const lossPressureEnabled = scenario.lossPressureEnabled !== false;
   const objectiveCurrent = scenario.id === "scenario_broken_seal"
     ? state.scenarioConfrontation.progress.restorationMarks ?? 0
     : state.scenarioProgress[scenario.winConditionKey] ?? 0;
@@ -164,14 +165,18 @@ export function buildScenarioPressureState(state: GameState, pressureSummary: st
       collapseRule: scenario.pressureTrack.collapseRule
     },
     collapseTrack: {
-      name: "Escalation",
-      current: clamp(state.escalationLevel, 0, collapseMax),
-      max: collapseMax,
-      modifier: getEscalationModifier(state.escalationLevel),
-      difficultyBonus: getEscalationModifier(state.escalationLevel),
-      failureAtMax: true,
-      tickTiming: "End of round after the last active operative completes a turn.",
-      collapseRule: `At ${collapseMax} escalation, the public scenario fails.`
+      name: lossPressureEnabled ? "Escalation" : "No Loss Pressure",
+      current: lossPressureEnabled ? clamp(state.escalationLevel, 0, collapseMax) : 0,
+      max: lossPressureEnabled ? collapseMax : 1,
+      modifier: lossPressureEnabled ? getEscalationModifier(state.escalationLevel) : 0,
+      difficultyBonus: lossPressureEnabled ? getEscalationModifier(state.escalationLevel) : 0,
+      failureAtMax: lossPressureEnabled,
+      tickTiming: lossPressureEnabled
+        ? "End of round after the last active operative completes a turn."
+        : "Disabled for this scenario.",
+      collapseRule: lossPressureEnabled
+        ? `At ${collapseMax} escalation, the public scenario fails.`
+        : "This scenario cannot fail from Global Escalation or round pressure."
     },
     objectiveProgress: {
       label: humanizeProgressKey(scenario.winConditionKey),

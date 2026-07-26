@@ -6,6 +6,16 @@ const style =
 
 export const uiPrompts: ImagePromptSpec[] = [
   {
+    id: "signal_theatre_shopkeeper_establishment",
+    fileName: "shopkeeper-establishment.png",
+    outputPath: "/assets/riftfall/ui/signal-theatre/shopkeeper-establishment.png",
+    assetType: "background",
+    size: "wide",
+    prompt: `${style}; cinematic 16:9 industrial relic shop interior carved into an ancient station, severe original ash-cloth shopkeeper behind a broad brass-blackened-iron counter, reliquary shelves and signal lamps framing clean central negative space for a TV offer carousel, warm ember gold against cold cyan light, no text, no logo`,
+    negativePrompt: sharedNegativePrompt,
+    usage: "Development-only Signal Theatre shop prototype background pending visual approval."
+  },
+  {
     id: "ui_card_frame_red",
     fileName: "ui_card_frame_red.png",
     outputPath: "/assets/riftfall/ui/ui_card_frame_red.png",

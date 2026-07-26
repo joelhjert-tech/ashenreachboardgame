@@ -60,10 +60,10 @@ function resolveGearReward(slotOccupied: boolean) {
 }
 
 describe("discovery encounters and authoritative Equipment eligibility", () => {
-  it("keeps 109 cards while exposing six Equipment and four Follower discoveries", () => {
+  it("keeps 116 cards while exposing six Equipment and four Follower discoveries", () => {
     const cards = [...loadThreatCards().values()];
     const discoveries = cards.filter((card) => getThreatPresentationCategory(card) === "asset");
-    expect(cards).toHaveLength(109);
+    expect(cards).toHaveLength(116);
     expect(discoveries).toHaveLength(10);
     expect(discoveries.filter((card) => card.resourceTags?.includes("gear"))).toHaveLength(6);
     expect(discoveries.filter((card) => card.resourceTags?.includes("follower"))).toHaveLength(4);

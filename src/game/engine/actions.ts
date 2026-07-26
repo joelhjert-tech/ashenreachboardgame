@@ -4,6 +4,7 @@ import type { LegacyCompatibleEncounterEffect } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
 import type { AfflictionCard } from "../schema/affliction.schema.js";
 import type { GearItem, GearSlot } from "../schema/gear.schema.js";
+import type { Follower } from "../schema/follower.schema.js";
 import type { ActiveOathchainReveal, NemesisChampion, Phase } from "../schema/session.schema.js";
 import type { DiceRollResult } from "./dice.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
@@ -37,6 +38,16 @@ export interface MoveRequestedAction extends BaseAction {
   voidKeyInstanceId?: string;
   routeId?: string;
   movementRevision?: number;
+}
+
+export interface TransitionRouteAidUsedAction extends BaseAction {
+  type: "TRANSITION_ROUTE_AID_USED";
+  sourceKind: "gear" | "follower";
+  instanceId: string;
+  fromSectorId: string;
+  toSectorId: string;
+  route: string[];
+  movementRevision: number;
 }
 
 export interface MovementRollRequestedAction extends BaseAction {
@@ -441,7 +452,7 @@ export interface ShopStockRevealedAction extends BaseAction {
   shopName: string;
   sectorId: string;
   cost: ShopServiceCost;
-  stock: GearItem[];
+  stock: Array<GearItem | Follower>;
   artifactRequisitionId?: string;
   reservedCompletedMissionIds?: string[];
   summary: string;
@@ -450,7 +461,7 @@ export interface ShopStockRevealedAction extends BaseAction {
 export interface ShopBrowseSelectedAction extends BaseAction {
   type: "SHOP_BROWSE_SELECTED";
   sectorId: string;
-  view: "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell";
+  view: "categories" | "equipment" | "supplies" | "artifacts" | "route-aids" | "services" | "sell";
   selectedId: string | null;
 }
 
@@ -465,6 +476,18 @@ export interface ShopPurchaseResolvedAction extends BaseAction {
   discardedStockIds: string[];
   spentCompletedContractIds?: string[];
   artifactRequisitionId?: string;
+  summary: string;
+}
+
+export interface ShopFollowerPurchaseResolvedAction extends BaseAction {
+  type: "SHOP_FOLLOWER_PURCHASE_RESOLVED";
+  serviceId: "buy-route-aids";
+  shopName: string;
+  sectorId: string;
+  cardId: string;
+  cost: ShopServiceCost;
+  gainedFollower: Follower;
+  discardedStockIds: string[];
   summary: string;
 }
 
@@ -797,6 +820,7 @@ export type GameAction =
   | SessionStartedAction
   | NamedPlayerRulesReconciledAction
   | MoveRequestedAction
+  | TransitionRouteAidUsedAction
   | MovementRollRequestedAction
   | AdjustMovementRequestedAction
   | SelectRouteStarVariantAction
@@ -847,6 +871,7 @@ export type GameAction =
   | ShopStockRevealedAction
   | ShopBrowseSelectedAction
   | ShopPurchaseResolvedAction
+  | ShopFollowerPurchaseResolvedAction
   | ShopSellResolvedAction
   | ShopSkippedAction
   | AcceptContractAction
@@ -936,6 +961,10 @@ export type ClientIntent =
       mode: "signal" | "map";
     }
   | {
+      type: "RETURN_TO_LOBBY_REQUESTED";
+      seatId: string;
+    }
+  | {
       type: "MOVEMENT_DESTINATION_PREVIEWED";
       seatId: string;
       toSectorId: string | null;
@@ -949,6 +978,14 @@ export type ClientIntent =
       voidKeyInstanceId?: string;
       routeId?: string;
       movementRevision?: number;
+    }
+  | {
+      type: "USE_TRANSITION_ROUTE_AID";
+      seatId: string;
+      sourceKind: "gear" | "follower";
+      instanceId: string;
+      destinationSectorId: string;
+      movementRevision: number;
     }
   | {
       type: "MOVEMENT_ROLL_REQUESTED";
@@ -1138,7 +1175,7 @@ export type ClientIntent =
   | {
       type: "SHOP_BROWSE_SELECTED";
       seatId: string;
-      view: "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell";
+      view: "categories" | "equipment" | "supplies" | "artifacts" | "route-aids" | "services" | "sell";
       selectedId?: string | null;
     }
   | {

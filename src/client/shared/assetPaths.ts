@@ -144,12 +144,14 @@ export function getSignalTheatreAssetPaths(): {
   operativeBeacon: string;
   arrivalSeal: string;
   journeyPath: string;
+  shopkeeperEstablishment: string;
 } {
   return {
     worldStage: "/assets/riftfall/ui/signal-theatre/world-stage.png",
     operativeBeacon: "/assets/riftfall/ui/signal-theatre/operative-beacon.png",
     arrivalSeal: "/assets/riftfall/ui/signal-theatre/arrival-seal.png",
-    journeyPath: "/assets/riftfall/ui/signal-theatre/journey-path.png"
+    journeyPath: "/assets/riftfall/ui/signal-theatre/journey-path.png",
+    shopkeeperEstablishment: "/assets/riftfall/ui/signal-theatre/shopkeeper-establishment.png"
   };
 }
 

@@ -58,6 +58,10 @@ import {
   type SignalCartographyFixture
 } from "./SignalCartographyPrototype.js";
 import {
+  TvScenarioApprovalPrototype,
+  TvShopApprovalPrototype
+} from "./TvApprovalPrototypes.js";
+import {
   getMovementArrivalModel,
   type MovementArrivalModel
 } from "./hostMovementPresentation.js";
@@ -2878,7 +2882,7 @@ function EndgameOverlay({
         </article>
         <article>
           <span>Loss Pressure</span>
-          <strong>{result.finalLossPressure ? `${result.finalLossPressure.current} / ${result.finalLossPressure.required}` : "Not tracked"}</strong>
+          <strong>{result.finalLossPressure ? `${result.finalLossPressure.current} / ${result.finalLossPressure.required}` : "Disabled"}</strong>
         </article>
         <article>
           <span>Operatives</span>
@@ -2890,7 +2894,9 @@ function EndgameOverlay({
         </article>
       </div>
       {onReturnToLobby && patch.payload.matchProgress?.allowedCommands.includes("return_to_lobby") ? (
-        <button type="button" className="tv-endgame-primary" onClick={onReturnToLobby}>Return to Lobby</button>
+        <button type="button" className="tv-endgame-primary" onClick={onReturnToLobby}>
+          {result.outcome === "defeat" ? "Start New Game" : "Return to Lobby"}
+        </button>
       ) : null}
     </section>
   );
@@ -2928,6 +2934,7 @@ export function TvApp(): ReactElement {
     hostToken
   });
   const previousPatchRef = useRef<StatePatch<PublicPatchPayload> | null>(null);
+  const previousMovementPresentationRef = useRef<MovementArrivalModel | null>(null);
   const commandMainRef = useRef<HTMLElement | null>(null);
   const previousBattleModeRef = useRef(false);
 
@@ -2953,6 +2960,15 @@ export function TvApp(): ReactElement {
   const publicPatch = patch as StatePatch<PublicPatchPayload> | null;
   const synchronized = subscriptionSynchronized ?? status === "open";
   const authoritativePresentationReady = status === "open" && synchronized;
+
+  useEffect(() => {
+    const previous = previousMovementPresentationRef.current;
+    const gate = publicPatch?.payload.movementPresentationGate;
+    if (previous && !movementPresentation && gate) {
+      sendIntent({ type: "MOVEMENT_PRESENTATION_COMPLETED", eventId: gate.eventId });
+    }
+    previousMovementPresentationRef.current = movementPresentation;
+  }, [movementPresentation, publicPatch?.payload.movementPresentationGate, sendIntent]);
   const audio = useAshenReachAudio(publicPatch);
   const effectiveRoomCode = roomCode ?? publicPatch?.sessionId ?? null;
   const joinedSeats = publicPatch?.payload.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
@@ -3228,7 +3244,22 @@ export function TvApp(): ReactElement {
   const cartographyFixture = import.meta.env.DEV
     ? new URLSearchParams(window.location.search).get("cartographyFixture")
     : null;
+  const approvalPrototype = import.meta.env.DEV
+    ? new URLSearchParams(window.location.search).get("tvPrototype")
+    : null;
   const signalTheatreMode = new URLSearchParams(window.location.search).get("hostDesign") !== "legacy";
+  if (approvalPrototype === "shop") {
+    return <TvShopApprovalPrototype />;
+  }
+  if (approvalPrototype === "scenario") {
+    return (
+      <TvScenarioApprovalPrototype
+        scenario={selectedScenario}
+        playerCount={playerCount}
+        hostName={activeSeat?.displayName ?? "Expedition Host"}
+      />
+    );
+  }
   if (cartographyFixture && ["route", "challenge", "dense"].includes(cartographyFixture)) {
     return (
       <SignalCartographyPrototype
@@ -3263,6 +3294,12 @@ export function TvApp(): ReactElement {
         currentStepCopy={currentStepCopy}
         synchronized={authoritativePresentationReady}
         connectionStatus={status}
+        onMovementPresentationCompleted={(eventId) => {
+          const gate = publicPatch?.payload.movementPresentationGate;
+          if (gate?.eventId) {
+            sendIntent({ type: "MOVEMENT_PRESENTATION_COMPLETED", eventId: gate.eventId });
+          }
+        }}
       />
     );
   }
@@ -3297,7 +3334,18 @@ export function TvApp(): ReactElement {
         {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
         {sessionNotice && <div className="tv-banner">{sessionNotice}</div>}
         <HostAudioControls audio={audio} />
-        <EndgameOverlay patch={publicPatch} onReturnToLobby={hostToken ? () => setReturnLobbyConfirmOpen(true) : undefined} />
+        <EndgameOverlay
+          patch={publicPatch}
+          onReturnToLobby={hostToken
+            ? () => {
+                if (publicPatch?.payload.matchProgress?.publicResult?.outcome === "defeat") {
+                  sendIntent({ type: "RETURN_TO_LOBBY" });
+                  return;
+                }
+                setReturnLobbyConfirmOpen(true);
+              }
+            : undefined}
+        />
         <MatchProgressFeedback progress={publicPatch?.payload.matchProgress} />
         <FinalStageOverlay progress={publicPatch?.payload.matchProgress} />
         {!authoritativePresentationReady && <HostNetworkOverlay status={status} synchronized={synchronized} />}

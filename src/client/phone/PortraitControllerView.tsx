@@ -1720,6 +1720,7 @@ export function PortraitControllerView({
                   characters={characters}
                   onIntent={sendRequiredIntent}
                   patch={patch}
+                  requiredActionSubmissionPending={Boolean(pendingRequiredIntent)}
                   selectedTurnTab={focusedResolutionTab}
                   hideTurnTabs
                   onLeaveRoom={handleLeave}
@@ -1730,6 +1731,7 @@ export function PortraitControllerView({
                   characters={characters}
                   onIntent={sendRequiredIntent}
                   patch={patch}
+                  requiredActionSubmissionPending={Boolean(pendingRequiredIntent)}
                   selectedTurnTab={focusedResolutionTab}
                   hideTurnTabs
                   onLeaveRoom={handleLeave}
@@ -2052,6 +2054,7 @@ export function PortraitControllerView({
                     characters={characters}
                     onIntent={sendRequiredIntent}
                     patch={patch}
+                    requiredActionSubmissionPending={Boolean(pendingRequiredIntent)}
                     selectedTurnTab={activeTab}
                     onSelectedTurnTab={setActiveTab}
                     hideTurnTabs

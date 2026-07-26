@@ -173,11 +173,11 @@ describe("Heat Retirement H3 floor-zero Salvage Threats", () => {
       expect(getRuntimeCardArtPath("threat", target.id)).toBe(`/assets/cards/threats/yellow/${target.id}.png`);
       expect(createCanonicalSectorGraph().filter((sector) => sector.encounterDecks.threat.includes(target.id))).toHaveLength(target.graphCount);
     }
-    expect(threats.size).toBe(109);
+    expect(threats.size).toBe(116);
     expect([...threats.values()].reduce<Record<string, number>>((counts, card) => {
       counts[card.threatLane ?? "missing"] = (counts[card.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
-    }, {})).toEqual({ red: 26, blue: 35, yellow: 48 });
+    }, {})).toEqual({ red: 30, blue: 36, yellow: 50 });
   });
 
   it.each(TARGETS)("$id applies the approved floor-zero actual loss at 3, 1, and 0 Salvage", (target) => {

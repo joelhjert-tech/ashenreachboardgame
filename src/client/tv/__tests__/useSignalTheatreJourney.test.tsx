@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
-import { act, renderHook } from "@testing-library/react";
+import { act, render, renderHook, screen } from "@testing-library/react";
+import { useState, type ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PublicPatchPayload, StatePatch } from "../../shared/types.js";
 import { hostPresentationTimings, signalJourneyVisualTimings } from "../../shared/motionTokens.js";
@@ -111,6 +112,59 @@ describe("Signal Theatre authoritative journey", () => {
 
     act(() => vi.advanceTimersByTime(2_000));
     expect(result.current).toBeNull();
+  });
+
+  it("acknowledges the completed landing exactly once", () => {
+    vi.useFakeTimers();
+    const onCompleted = vi.fn();
+    const { result } = renderHook(() => useSignalTheatreJourney({
+      patch: patch("ashen-chapel", false, 12),
+      previousPatch: patch("ashwake-crossing", true, 11),
+      synchronized: true,
+      onCompleted
+    }));
+
+    act(() => vi.advanceTimersByTime(hostPresentationTimings.movementStartMs));
+    act(() => vi.advanceTimersByTime(hostPresentationTimings.movementCrossRingMs));
+    act(() => vi.advanceTimersByTime(hostPresentationTimings.movementSegmentMs));
+    act(() => vi.advanceTimersByTime(hostPresentationTimings.movementArrivalMs));
+    expect(result.current).toBeNull();
+    expect(onCompleted).toHaveBeenCalledTimes(1);
+  });
+
+  it("acknowledges landing after the journey update instead of during child render", () => {
+    vi.useFakeTimers();
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    function JourneyChild({ onCompleted }: { onCompleted: () => void }): ReactElement | null {
+      useSignalTheatreJourney({
+        patch: patch("ashen-chapel", false, 12),
+        previousPatch: patch("ashwake-crossing", true, 11),
+        synchronized: true,
+        onCompleted
+      });
+      return null;
+    }
+
+    function Parent(): ReactElement {
+      const [completed, setCompleted] = useState(false);
+      return (
+        <>
+          <JourneyChild onCompleted={() => setCompleted(true)} />
+          <span>{completed ? "complete" : "playing"}</span>
+        </>
+      );
+    }
+
+    render(<Parent />);
+    act(() => vi.advanceTimersByTime(hostPresentationTimings.movementStartMs));
+    act(() => vi.advanceTimersByTime(hostPresentationTimings.movementCrossRingMs));
+    act(() => vi.advanceTimersByTime(hostPresentationTimings.movementSegmentMs));
+    act(() => vi.advanceTimersByTime(hostPresentationTimings.movementArrivalMs));
+
+    expect(screen.getByText("complete")).toBeTruthy();
+    expect(consoleError.mock.calls.flat().join(" ")).not.toContain("Cannot update a component");
+    consoleError.mockRestore();
   });
 
   it("does not replay motion while restoring an authoritative stable patch", () => {

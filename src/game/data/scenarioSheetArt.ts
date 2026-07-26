@@ -7,6 +7,7 @@ const scenarioSheetArtByScenarioId: Partial<Record<string, string>> = {
   scenario_devourer_beneath: "/assets/scenarios/ashwalk-breach.png",
   scenario_labyrinth_engine: "/assets/scenarios/manufactorum-hollow-choir.png",
   scenario_dying_star: "/assets/scenarios/relic-core-awakens.png",
+  scenario_grinning_tithe: "/assets/scenarios/grinning-tithe.png",
   scenario_broken_concordance: "/assets/scenarios/broken-concordance.png"
 };
 
@@ -17,6 +18,7 @@ const scenarioSheetOutputByAssetId: Partial<Record<string, string>> = {
   scenario_sheet_devourer_beneath: "/assets/scenarios/ashwalk-breach.png",
   scenario_sheet_labyrinth_engine: "/assets/scenarios/manufactorum-hollow-choir.png",
   scenario_sheet_dying_star: "/assets/scenarios/relic-core-awakens.png",
+  scenario_sheet_grinning_tithe: "/assets/scenarios/grinning-tithe.png",
   scenario_sheet_broken_concordance: "/assets/scenarios/broken-concordance.png"
 };
 

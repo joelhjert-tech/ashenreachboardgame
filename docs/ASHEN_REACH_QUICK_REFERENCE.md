@@ -124,7 +124,7 @@ The sixteen standard passive +1 cards use the same rule: while the exact copy is
 
 ## Cooperative reminders
 
-- Share the scenario objective and Loss Pressure.
+- Share the scenario objective and Loss Pressure when the active scenario enables it.
 - Owner-private choices remain with the owning phone.
 - Before an eligible co-op skill roll, the active operative may ask up to two teammates for help.
 - Each helper accepts or declines and adds only their printed base value in the tested skill. Helpers roll no dice and add no gear or modifiers.
@@ -141,7 +141,7 @@ The sixteen standard passive +1 cards use the same rule: while the exact copy is
 ## Pressure glossary
 
 - **Win Progress:** objective completion.
-- **Loss Pressure:** scenario defeat track.
+- **Loss Pressure:** scenario defeat track when enabled. The Grinning Tithe disables it and cannot lose through Global Escalation.
 - **Global Escalation:** round pressure and difficulty growth.
 - **Wounds:** immediate operative harm.
 - **Scars/Afflictions:** lasting conditions.

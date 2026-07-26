@@ -27,6 +27,7 @@ import type {
   MovementRolledAction,
   MovementRollRequestedAction,
   MoveRequestedAction,
+  TransitionRouteAidUsedAction,
   NemesisCombatResolvedAction,
   NemesisDefeatedAction,
   NemesisMovedAction,
@@ -47,6 +48,7 @@ import type {
   SpaceTextResolvedAction,
   ShopSkippedAction,
   ShopPurchaseResolvedAction,
+  ShopFollowerPurchaseResolvedAction,
   ShopSellResolvedAction,
   ShopServiceResolvedAction,
   ShopServiceCost,
@@ -131,7 +133,7 @@ import {
 } from "../rules/nextNormalMovementRollModifier.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
-import { buildMovementRoutePlan, getForcedDisplacementDestination, getOwnerSelectedForcedDisplacementCandidates, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
+import { buildMovementRoutePlan, buildTransitionRouteAidDestinations, getForcedDisplacementDestination, getOwnerSelectedForcedDisplacementCandidates, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
 import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { canRiftAnchorSpikeSuppress } from "../rules/forcedDisplacement.js";
 import { resolveFloorZeroSalvageLoss, THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS } from "../rules/salvageLoss.js";
@@ -1571,6 +1573,107 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         sequence: state.sequence + 1,
         eventLog: [...state.eventLog, action]
       });
+    case "TRANSITION_ROUTE_AID_USED": {
+      const routeAid = action as TransitionRouteAidUsedAction;
+      try {
+        ensureSeatTurn(state, routeAid.seatId);
+        ensureSeatCanTakeNormalTurnAction(state, routeAid.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot use a route aid");
+      }
+      if (state.phase !== "navigation" || state.movementRolls?.[routeAid.seatId]) {
+        return reject(state, action, "Route aids may only be used before rolling movement");
+      }
+      const player = requirePlayer(state, routeAid.seatId);
+      if (player.character.currentSpaceId !== routeAid.fromSectorId) {
+        return reject(state, action, "Route-aid origin is stale");
+      }
+      if ((state.movementRouteRevisions?.[routeAid.seatId] ?? 0) !== routeAid.movementRevision) {
+        return reject(state, action, "Route-aid movement revision is stale");
+      }
+      const destination = buildTransitionRouteAidDestinations(state, routeAid.seatId)
+        .find((entry) => entry.sectorId === routeAid.toSectorId);
+      if (!destination || destination.route.join("|") !== routeAid.route.join("|")) {
+        return reject(state, action, "Route aid must use the current canonical same-reach route");
+      }
+
+      let sourceValid = false;
+      const nextCharacter = { ...player.character };
+      if (routeAid.sourceKind === "gear") {
+        const source = player.character.heldGear.find((item) =>
+          item.instanceId === routeAid.instanceId &&
+          item.chargedEffect === "selectTransitionSector"
+        );
+        const charges = source?.currentCharges ?? source?.charges ?? 0;
+        sourceValid = Boolean(source && charges > 0 && player.character.equippedGear.utility === source.id);
+        nextCharacter.heldGear = player.character.heldGear.map((item) =>
+          item.instanceId === routeAid.instanceId
+            ? { ...item, currentCharges: Math.max(0, charges - 1), maxCharges: item.maxCharges ?? 2 }
+            : item
+        );
+      } else {
+        const source = player.character.followers?.find((follower) =>
+          follower.instanceId === routeAid.instanceId &&
+          follower.chargedEffect === "selectTransitionSector"
+        );
+        const charges = source?.currentCharges ?? source?.startingCharges ?? 0;
+        sourceValid = Boolean(source && charges > 0);
+        nextCharacter.followers = (player.character.followers ?? []).map((follower) =>
+          follower.instanceId === routeAid.instanceId
+            ? { ...follower, currentCharges: Math.max(0, charges - 1), maxCharges: follower.maxCharges ?? 2 }
+            : follower
+        );
+      }
+      if (!sourceValid) {
+        return reject(state, action, "Route aid is unavailable, unequipped, depleted, or stale");
+      }
+
+      nextCharacter.currentSpaceId = routeAid.toSectorId;
+      const destinationName = state.sectors.find((sector) => sector.id === routeAid.toSectorId)?.name ?? routeAid.toSectorId;
+      return succeed({
+        ...state,
+        phase: "sector",
+        resolutionSource: null,
+        sequence: state.sequence + 1,
+        tileChallengeProgress: null,
+        tileArrivalThreatProgress: {
+          arrivalId: `arrival:${routeAid.seatId}:${routeAid.toSectorId}:${state.sequence + 1}`,
+          seatId: routeAid.seatId,
+          sectorId: routeAid.toSectorId,
+          nextThreatIconIndex: 0
+        },
+        players: state.players.map((entry) => entry.seatId === routeAid.seatId
+          ? { ...entry, sectorId: routeAid.toSectorId, character: nextCharacter }
+          : entry),
+        lastOutcomeSummary: {
+          seatId: routeAid.seatId,
+          movedToSectorId: routeAid.toSectorId,
+          encounterCardId: null,
+          encounterTitle: destinationName,
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: `Route aid carried the operative to ${destinationName}.`
+        },
+        eventLog: [...state.eventLog, action]
+      }, [{
+        type: "MOVED",
+        seatId: routeAid.seatId,
+        fromSectorId: routeAid.fromSectorId,
+        toSectorId: routeAid.toSectorId,
+        createdAt: routeAid.createdAt
+      }]);
+    }
     case "MOVE_REQUESTED": {
       const moveAction = action as MoveRequestedAction;
 
@@ -4756,6 +4859,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           sectorId: revealAction.sectorId,
           view: revealAction.serviceId === "buy-supplies"
             ? "supplies"
+            : revealAction.serviceId === "buy-route-aids"
+              ? "route-aids"
             : revealAction.serviceId === "trade-missions-for-artifact"
               ? "artifacts"
               : "equipment",
@@ -4857,6 +4962,54 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           sectorId: updatedPlayer.sectorId,
           shopName: purchaseAction.shopName,
           summary: purchaseAction.summary
+        }),
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SHOP_FOLLOWER_PURCHASE_RESOLVED": {
+      const purchase = action as ShopFollowerPurchaseResolvedAction;
+      const player = requirePlayer(state, purchase.seatId);
+      if (player.character.currentSpaceId !== purchase.sectorId) {
+        return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
+      }
+      if ((player.character.salvage ?? 0) < (purchase.cost.salvage ?? 0)) {
+        return reject(state, action, SHOP_FAILURE_REASONS.insufficientSalvage);
+      }
+      if ((player.character.followers ?? []).some((follower) => follower.id === purchase.gainedFollower.id)) {
+        return reject(state, action, SHOP_FAILURE_REASONS.itemUnavailable);
+      }
+      const gainedFollower = {
+        ...purchase.gainedFollower,
+        instanceId: purchase.gainedFollower.instanceId
+          ?? `${purchase.gainedFollower.id}:${purchase.seatId}:${state.sequence + 1}`,
+        currentCharges: purchase.gainedFollower.startingCharges ?? purchase.gainedFollower.currentCharges
+      };
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players: updateActivePlayer(state, purchase.seatId, (entry) => ({
+          ...entry,
+          character: {
+            ...entry.character,
+            salvage: Math.max(0, (entry.character.salvage ?? 0) - (purchase.cost.salvage ?? 0)),
+            followers: [...(entry.character.followers ?? []), gainedFollower]
+          }
+        })),
+        shopStockReveals: (state.shopStockReveals ?? []).filter(
+          (reveal) => !(reveal.seatId === purchase.seatId && reveal.sectorId === purchase.sectorId)
+        ),
+        shopBrowseSelection: {
+          seatId: purchase.seatId,
+          sectorId: purchase.sectorId,
+          view: "route-aids",
+          selectedId: null,
+          updatedAt: purchase.createdAt
+        },
+        lastOutcomeSummary: buildShopOutcomeSummary({
+          seatId: purchase.seatId,
+          sectorId: purchase.sectorId,
+          shopName: purchase.shopName,
+          summary: purchase.summary
         }),
         eventLog: [...state.eventLog, action]
       });

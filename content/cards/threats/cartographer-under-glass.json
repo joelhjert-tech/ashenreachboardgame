@@ -1,0 +1,21 @@
+{
+  "id": "cartographer-under-glass",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Cartographer Under Glass",
+  "text": "A living map chamber holds Mara Vell inside a loop of false corridors. Break the command pattern and she joins the expedition.",
+  "flavor": "Every exit returns to the same ash mark.",
+  "severity": 3,
+  "stat": "command",
+  "difficulty": 7,
+  "successEffect": { "type": "gain_follower", "followerId": "mara-vell-cinder-cartographer" },
+  "failEffect": { "type": "take_wound", "amount": 1 },
+  "enemyFamily": "hazard",
+  "threatLane": "yellow",
+  "resolutionType": "asset",
+  "region": "global",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": ["follower", "movement", "wound"],
+  "imagePrompt": "Original Ashenreach cinder cartographer trapped inside a fractured glass route chamber, angular industrial corridors repeating around her, dark science-fantasy cinematic card art, no text, no logo"
+}

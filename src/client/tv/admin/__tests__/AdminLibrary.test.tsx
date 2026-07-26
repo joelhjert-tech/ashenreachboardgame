@@ -12,22 +12,22 @@ describe("AdminLibrary", () => {
     const search = screen.getByLabelText(/search archive/i);
     fireEvent.change(search, { target: { value: "ash-choir-crusader" } });
     expect(screen.getAllByRole("button", { name: /ash choir crusader/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/1 of 361 cards/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/1 of 372 cards/i).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: /clear filters/i }));
     expect(search).toHaveValue("");
-    expect(screen.getAllByText(/361 of 361 cards/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/372 of 372 cards/i).length).toBeGreaterThan(0);
   });
 
   it("combines card-type, difficulty, skill, and folder filters", () => {
     render(<AdminLibrary onClose={vi.fn()} />);
     const filters = screen.getByRole("navigation", { name: /library filters/i });
-    fireEvent.click(within(filters).getByRole("button", { name: /Threat109/i }));
+    fireEvent.click(within(filters).getByRole("button", { name: /Threat116/i }));
     fireEvent.change(screen.getByLabelText(/^difficulty$/i), { target: { value: "8" } });
     fireEvent.change(screen.getByLabelText(/^skill$/i), { target: { value: "signal" } });
     fireEvent.change(screen.getByLabelText(/^folder$/i), { target: { value: "content/cards/threats/" } });
-    const count = Number(screen.getAllByText(/\d+ of 361 cards/i)[0]?.textContent?.split(" ")[0]);
+    const count = Number(screen.getAllByText(/\d+ of 372 cards/i)[0]?.textContent?.split(" ")[0]);
     expect(count).toBeGreaterThan(0);
-    expect(count).toBeLessThan(109);
+    expect(count).toBeLessThan(116);
   });
 
   it("opens an inspector with lore and canonical source and art locations", () => {
@@ -54,8 +54,8 @@ describe("AdminLibrary", () => {
   it("keeps duplicate artwork references out of the missing-artwork filter", () => {
     render(<AdminLibrary onClose={vi.fn()} />);
     const filters = screen.getByRole("navigation", { name: /library filters/i });
-    fireEvent.click(within(filters).getByRole("button", { name: /missing artwork111/i }));
-    expect(screen.getAllByText(/111 of 361 cards/i).length).toBeGreaterThan(0);
+    fireEvent.click(within(filters).getByRole("button", { name: /missing artwork105/i }));
+    expect(screen.getAllByText(/105 of 372 cards/i).length).toBeGreaterThan(0);
     expect(screen.queryByText("Rift Whispers")).not.toBeInTheDocument();
   });
 
@@ -64,7 +64,7 @@ describe("AdminLibrary", () => {
     const filters = screen.getByRole("navigation", { name: /library filters/i });
     fireEvent.click(within(filters).getByRole("button", { name: /Scar24/i }));
     fireEvent.change(screen.getByLabelText(/^scar source$/i), { target: { value: "rift" } });
-    expect(screen.getAllByText(/4 of 361 cards/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/4 of 372 cards/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /rift-eye/i })).toBeInTheDocument();
   });
 

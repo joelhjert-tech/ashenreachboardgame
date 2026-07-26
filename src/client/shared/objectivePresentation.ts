@@ -149,12 +149,12 @@ export function buildSharedMissionPresentation(patch: PhonePatchPayload | null):
       required: patch.matchProgress.lossPressure.required,
       label: patch.matchProgress.lossPressure.label,
       complete: patch.matchProgress.lossPressure.current >= patch.matchProgress.lossPressure.required
-    } : patch?.scenarioPressure ? {
+    } : patch?.scenarioPressure && patch.scenarioPressure.collapseTrack.failureAtMax !== false ? {
       current: patch.scenarioPressure.collapseTrack.current,
       required: patch.scenarioPressure.collapseTrack.max,
       label: "Loss Pressure",
       complete: patch.scenarioPressure.collapseTrack.current >= patch.scenarioPressure.collapseTrack.max
-    } : patch ? {
+    } : patch && !patch.scenarioPressure ? {
       current: patch.escalationLevel,
       required: patch.escalationThreshold,
       label: "Loss Pressure",

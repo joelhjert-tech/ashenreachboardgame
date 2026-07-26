@@ -59,11 +59,11 @@ describe("Grothak, the Gorged King", () => {
       woundOnLoss: { type: "take_wound", amount: 2 }
     });
     expect(threats.has("throne-soot-knight")).toBe(false);
-    expect(threats.size).toBe(109);
+    expect(threats.size).toBe(116);
     expect([...threats.values()].reduce<Record<string, number>>((counts, card) => {
       counts[card.threatLane ?? "missing"] = (counts[card.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
-    }, {})).toEqual({ red: 26, blue: 35, yellow: 48 });
+    }, {})).toEqual({ red: 30, blue: 36, yellow: 50 });
     expect(createCanonicalSectorGraph().filter((sector) => sector.encounterDecks.threat.includes(grothak.id))).toHaveLength(3);
     expect(getRuntimeCardArtPath("threat", grothak.id)).toBe("/assets/cards/threats/yellow/grothak-gorged-king.png");
     expect(JSON.stringify(grothak)).not.toMatch(/gain_heat|lose_heat|\bHeat\b/);

@@ -59,6 +59,10 @@ type ClientSocketMessage =
     }
   | {
       type: "RETURN_TO_LOBBY";
+    }
+  | {
+      type: "MOVEMENT_PRESENTATION_COMPLETED";
+      eventId: string;
     };
 
 function cloneCharacter(character: Character | undefined): Character {
@@ -3187,6 +3191,83 @@ describe("roomServer websocket integration", () => {
     expect(reconfigured.seats.map((seat) => seat.displayName)).toEqual([originalSeat1.displayName, originalSeat2.displayName]);
     expect(reconfigured.seats.map((seat) => seat.joinToken)).toEqual([originalSeat1.joinToken, originalSeat2.joinToken]);
     expect(reconfigured.seats.every((seat) => seat.characterSelected === false && seat.ready === false)).toBe(true);
+  }, 20000);
+
+  it("blocks phone actions until the host TV acknowledges the exact movement presentation", async () => {
+    const state = createState({
+      movementPresentationGate: {
+        eventId: "movement:seat-1:12",
+        seatId: "seat-1",
+        fromSectorId: "seat-1-start",
+        toSectorId: "hazard-east",
+        route: ["seat-1-start", "hazard-east"],
+        createdAt: "2026-07-26T12:00:00.000Z",
+        deadlineAt: "2099-07-26T12:00:10.000Z"
+      }
+    });
+    harness = await startHarness([0], state);
+
+    const hostTv = await connectClient(`ws://127.0.0.1:${harness.port}/?view=tv&hostToken=${encodeURIComponent(harness.hostToken)}`);
+    const phone1 = await connectClient(
+      `ws://127.0.0.1:${harness.port}/?view=phone&token=${createJoinToken({ sessionId: "session-alpha", seatId: "seat-1" })}`
+    );
+    probes.push(hostTv, phone1);
+
+    const rejectedMarker = phone1.mark();
+    phone1.send({ type: "MOVEMENT_ROLL_REQUESTED", seatId: "seat-1" });
+    const rejected = await phone1.waitForSince(
+      rejectedMarker,
+      (message) => message.type === "INTENT_REJECTED" && message.actionType === "MOVEMENT_ROLL_REQUESTED"
+    );
+    expect(isIntentRejected(rejected) && rejected.reason).toContain("Movement is still playing");
+
+    const staleMarker = hostTv.mark();
+    hostTv.send({ type: "MOVEMENT_PRESENTATION_COMPLETED", eventId: "movement:stale" });
+    await hostTv.waitForSince(staleMarker, (message) => message.type === "STATE_PATCH");
+    expect(harness.roomServer.getState().movementPresentationGate?.eventId).toBe("movement:seat-1:12");
+
+    const completedMarker = hostTv.mark();
+    hostTv.send({ type: "MOVEMENT_PRESENTATION_COMPLETED", eventId: "movement:seat-1:12" });
+    await hostTv.waitForSince(completedMarker, (message) =>
+      message.type === "STATE_PATCH" && (message.payload as { movementPresentationGate?: unknown }).movementPresentationGate === null
+    );
+    expect(harness.roomServer.getState().movementPresentationGate).toBeNull();
+  }, 20000);
+
+  it("lets only the setup host phone return a completed defeat to mode selection", async () => {
+    const state = createState({
+      status: "ended",
+      phase: "action",
+      winnerSeatId: null,
+      setupHostSeatId: "seat-1",
+      lobbyConfigured: true
+    });
+    harness = await startHarness([0], state);
+
+    const phone1 = await connectClient(
+      `ws://127.0.0.1:${harness.port}/?view=phone&token=${createJoinToken({ sessionId: "session-alpha", seatId: "seat-1" })}`
+    );
+    const phone2 = await connectClient(
+      `ws://127.0.0.1:${harness.port}/?view=phone&token=${createJoinToken({ sessionId: "session-alpha", seatId: "seat-2" })}`
+    );
+    probes.push(phone1, phone2);
+
+    const deniedMarker = phone2.mark();
+    phone2.send({ type: "RETURN_TO_LOBBY_REQUESTED", seatId: "seat-2" });
+    const denied = await phone2.waitForSince(
+      deniedMarker,
+      (message) => message.type === "INTENT_REJECTED" && message.actionType === "RETURN_TO_LOBBY_REQUESTED"
+    );
+    expect(isIntentRejected(denied) && denied.reason).toContain("setup host");
+
+    const acceptedMarker = phone1.mark();
+    phone1.send({ type: "RETURN_TO_LOBBY_REQUESTED", seatId: "seat-1" });
+    await phone1.waitForSince(acceptedMarker, statePatchWithStatus("lobby", null));
+
+    const returned = harness.roomServer.getState();
+    expect(returned.lobbyConfigured).toBe(false);
+    expect(returned.setupHostSeatId).toBe("seat-1");
+    expect(returned.seats.filter((seat) => !seat.kicked).every((seat) => !seat.ready && !seat.characterSelected)).toBe(true);
   }, 20000);
 
   it("requires a fresh operative and mission after restart and starts with the newly confirmed character", async () => {

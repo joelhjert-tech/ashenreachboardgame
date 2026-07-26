@@ -1,0 +1,22 @@
+{
+  "id": "rail-scent-kennelmaster",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Rail-Scent Kennelmaster",
+  "enemyName": "Rail-Scent Kennelmaster",
+  "text": "A masked handler drags the captured route hound Knuckle through a furnace rail yard.",
+  "flavor": "The hound already knows which chain will break first.",
+  "severity": 4,
+  "stat": "grit",
+  "difficulty": 8,
+  "trophyValue": 4,
+  "defeatReward": { "type": "gain_follower", "followerId": "knuckle-rail-scent-hound" },
+  "woundOnLoss": { "type": "take_wound", "amount": 1 },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "region": "global",
+  "rarity": "rare",
+  "tempo": "push",
+  "resourceTags": ["follower", "movement", "trophy", "wound"],
+  "imagePrompt": "Original Ashenreach masked rail-yard kennelmaster holding a heavy chain attached to a compact soot-dark tracking hound with brass sensory plates, furnace rails and ash, cinematic grimdark science-fantasy card art, no text, no logo"
+}

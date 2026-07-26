@@ -1,0 +1,32 @@
+{
+  "id": "copper-snout-bailiff",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Copper-Snout Bailiff",
+  "enemyName": "Copper-Snout Bailiff",
+  "text": "The Curator's broad enforcer blocks the route with a collection hook and a muzzle built to break sealed doors.",
+  "flavor": "Every debt sounds the same beneath the ram.",
+  "severity": 4,
+  "region": "global",
+  "stat": "forge",
+  "difficulty": 9,
+  "trophyValue": 4,
+  "defeatReward": {
+    "type": "gain_trophy",
+    "amount": 4
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 2
+  },
+  "enemyFamily": "beast",
+  "threatLane": "red",
+  "rarity": "rare",
+  "tempo": "stall",
+  "resourceTags": [
+    "trophy",
+    "wound",
+    "scenario"
+  ],
+  "imagePrompt": "Original Ashenreach Copper-Snout Bailiff, a broad pale-furred tithe beast with iron-ringed ears, oxidized copper muzzle ram, massive banded arms, crushing hands, heavy feet, and an industrial collection hook in a scorched tribute corridor, cinematic grimdark science-fantasy card art, no text"
+}

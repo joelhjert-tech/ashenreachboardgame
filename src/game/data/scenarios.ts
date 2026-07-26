@@ -78,6 +78,8 @@ export interface ScenarioDefinition {
   name: string;
   theme: string;
   pressureRule: string;
+  /** False when the scenario cannot end through Global Escalation or another loss-pressure track. */
+  lossPressureEnabled?: boolean;
   expectedDuration: string;
   mode: ScenarioMode;
   /** Optional third-Scar policy. Production scenarios currently use the canonical retire default. */
@@ -90,6 +92,8 @@ export interface ScenarioDefinition {
   lossCondition: string;
   pressureTrack: ScenarioPressureTrack;
   boardHooks: ScenarioBoardHooks;
+  /** Scenario-owned Threat lane contents. Cards listed here stay out of normal global lane bags. */
+  threatLaneOverrides?: Partial<Record<"red" | "blue" | "yellow", string[]>>;
   progressSources: string[];
   finalGateRequirement: string;
   scenarioRewards: ScenarioRewardDefinition[];
@@ -118,6 +122,13 @@ export interface ScenarioDefinition {
 }
 
 export const ENGINE_MODE_ROTATION = ["command", "grit", "signal", "guile", "forge"] as const satisfies readonly ScenarioConfrontationStat[];
+
+export const GRINNING_TITHE_SCENARIO_ID = "scenario_grinning_tithe" as const;
+export const GRINNING_TITHE_MINION_IDS = [
+  "tithe-gnawer",
+  "bell-ear-stalker",
+  "copper-snout-bailiff"
+] as const;
 
 export function getEngineModeName(modeIndex: number): string {
   const mode = ENGINE_MODE_ROTATION[modeIndex % ENGINE_MODE_ROTATION.length] ?? "command";
@@ -929,6 +940,130 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Collapsing blue-white star trapped in a black shrine reactor, bronze vanes cracking under heat bloom and ash, operatives racing across a command platform, printable scenario sheet illustration, no text."
   },
   {
+    id: GRINNING_TITHE_SCENARIO_ID,
+    name: "The Grinning Tithe",
+    theme:
+      "An ancient collector has occupied the Cinder Gate and sent its pale retinue into every tribute road. There is no collapsing clock and no ritual to prepare: cross the Reach, survive the collectors, and bring down the Pallid Curator.",
+    pressureRule:
+      "This scenario has no loss pressure. Global Escalation does not rise, does not modify difficulty, and cannot end the session.",
+    lossPressureEnabled: false,
+    expectedDuration: "45-70 min",
+    mode: "coop",
+    supportedPlayerCounts: { min: 1, max: 6 },
+    supportedModes: ["solo", "co-op"],
+    publicDisplay: {
+      modeLabel: "Solo / Co-op Boss Hunt",
+      objective: "Reach the Cinder Gate and defeat the Pallid Curator.",
+      privacy: "Boss health and retinue encounters are public; normal private phone choices remain private."
+    },
+    privateMetadata: {
+      reservedForPhonePayloads: false,
+      hiddenAgendaReveal: "not-implemented",
+      notes: "No Rivalry agenda or secondary scenario objective is active."
+    },
+    victoryCondition: "Earn shared victory by dealing 6 wounds to the Pallid Curator through successful final confrontation checks.",
+    lossCondition: "There is no pressure-based scenario loss. Operatives may be wounded or recalled, but the hunt continues until the boss falls.",
+    pressureTrack: {
+      name: "No Loss Pressure",
+      start: 0,
+      max: 1,
+      tickTiming: "Disabled for the entire session.",
+      collapseRule: "This scenario cannot fail from Global Escalation or round pressure."
+    },
+    boardHooks: {
+      redThreat: "Every Red Threat icon draws from the shuffled Pallid Retinue bag.",
+      blueThreat: "Blue Threats retain their normal server-shuffled lane behavior.",
+      yellowThreat: "Yellow Threats retain their normal server-shuffled lane behavior.",
+      shop: "Services remain available under their normal successful-clear rules and do not advance the boss hunt.",
+      anomaly: "Anomalies remain optional preparation and do not gate the final confrontation."
+    },
+    threatLaneOverrides: {
+      red: [...GRINNING_TITHE_MINION_IDS]
+    },
+    progressSources: [
+      "Pass a confrontation check against the Pallid Curator at the Cinder Gate to deal 1 wound."
+    ],
+    finalGateRequirement: "Reach the Cinder Gate. No token, Contract, Artifact, or pressure threshold is required.",
+    scenarioRewards: [
+      {
+        id: "curators-broken-ledger",
+        name: "Curator's Broken Ledger",
+        type: "boon",
+        text: "A public victory record confirming that the Pallid Curator's tribute ledger was destroyed."
+      },
+      {
+        id: "silent-bell-clapper",
+        name: "Silent Bell Clapper",
+        type: "tactic",
+        text: "A narrative trophy recovered from the defeated Pallid Retinue."
+      },
+      {
+        id: "tithe-gate-seal",
+        name: "Tithe-Gate Seal",
+        type: "artifact",
+        text: "A ceremonial final-result marker taken from the Curator's tribute dais."
+      },
+      {
+        id: "pallid-retinue-broken",
+        name: "Pallid Retinue Broken",
+        type: "boon",
+        text: "The shared endgame record showing that the retinue no longer answers the Cinder Gate."
+      }
+    ],
+    nemesis: "The Pallid Curator",
+    shopInteractions: [
+      "Normal shops, healing, recruitment, and repair remain available but never gate or advance the boss confrontation."
+    ],
+    tileEventHooks: [
+      "Red Threat icons use only Tithe Gnawer, Bell-Ear Stalker, and Copper-Snout Bailiff while this scenario is active.",
+      "The three-card retinue bag is shared by all operatives, draws without replacement, and reshuffles only after exhaustion."
+    ],
+    modeScaling: {
+      singlePlayer: "One operative can damage the boss across repeated visits; no pressure clock shortens the hunt.",
+      multiplayer: "All operatives share the same six-wound boss track and shuffled retinue bag."
+    },
+    setup: [
+      "Set Global Escalation to 0 and disable all positive loss-pressure gains.",
+      "Prepare the three-card Pallid Retinue Red Threat bag.",
+      "Place the Pallid Curator at the Cinder Gate with 6 life."
+    ],
+    specialRules: [
+      "Global Escalation cannot increase and cannot cause defeat.",
+      "Every Red Threat draw comes from the shuffled Pallid Retinue bag.",
+      "Retinue cards resolve as normal public enemy battles and keep their printed rewards and wounds.",
+      "The Pallid Retinue bag is shared, draws without replacement, and reshuffles only after all three minions have appeared.",
+      "The Cinder Gate confrontation is always unlocked. Each passed boss check deals 1 wound to the Pallid Curator.",
+      "The session ends in shared victory immediately when the Pallid Curator takes its sixth wound."
+    ],
+    confrontationTitle: "Break the Pallid Curator",
+    confrontationSteps: [
+      "Overpower the Curator with Grit against difficulty 12.",
+      "Outwit the Curator with Guile against difficulty 10.",
+      "Each passed check deals 1 wound. Each failed check deals 1 wound to the operative.",
+      "Boss damage persists between operatives and visits."
+    ],
+    victoryText: "When the shared boss track reaches 6 wounds, the Pallid Curator is defeated and every operative wins.",
+    designFeel: "A direct, pressure-free hunt with recurring random minions and a persistent cooperative boss health track.",
+    difficulty: "medium",
+    recommendedRolloutOrder: 8,
+    confrontationText:
+      "At the Cinder Gate, overpower and outwit the Pallid Curator. Every successful check wounds the boss; six wounds end the hunt.",
+    winConditionKey: "curatorWounds",
+    victoryThreshold: 6,
+    buildConfrontationPlan: (context) => ({
+      checks: [
+        { stat: "grit", difficulty: 12, label: "Overpower the Pallid Curator" },
+        { stat: "guile", difficulty: 10, label: "Outwit the Pallid Curator" }
+      ],
+      markLabel: "wound on the Pallid Curator",
+      effect: null,
+      victorySummary: `${context.playerName} struck the final blow and ended the Grinning Tithe.`
+    }),
+    sheetArtAssetId: "scenario_sheet_grinning_tithe",
+    sheetArtPrompt:
+      "The Pallid Curator, an original compact but commanding pale tribute-beast with huge asymmetrical ears, rose-copper ceramic snout, one natural eye and one magenta signal lens, tufted filaments, oversized hands and feet, black-iron collector regalia, six-spoke mechanical tithe halo and articulated tool limbs, centered on a broken tribute dais in the black-iron Cinder Gate while smaller varied pale retinue creatures emerge from ducts, magenta breach lightning, cold blue rim light and restrained ember accents, cinematic grimdark science-fantasy portrait scenario art, no text."
+  },
+  {
     id: "scenario_broken_concordance",
     name: "The Broken Concordance",
     theme:
@@ -1043,8 +1178,18 @@ export function isScenarioEligibleForSession(
   gameMode: "standard" | "nemesis_relay",
   playerCount: number
 ): boolean {
+  if (scenario.id === GRINNING_TITHE_SCENARIO_ID) {
+    return playerCount >= scenario.supportedPlayerCounts.min &&
+      playerCount <= scenario.supportedPlayerCounts.max &&
+      gameMode === "standard" &&
+      (
+        sessionMode === "single-player" ||
+        (sessionMode === "multiplayer" && interactionMode === "co-op")
+      );
+  }
+
   // Existing scenarios predate runtime mode filtering; retain their accepted setup combinations.
-  // The Broken Concordance is the first scenario whose cooperative-only boundary is authoritative.
+  // The Broken Concordance keeps its stricter cooperative-only boundary.
   if (scenario.id !== "scenario_broken_concordance") return true;
   return playerCount >= scenario.supportedPlayerCounts.min &&
     playerCount <= scenario.supportedPlayerCounts.max &&

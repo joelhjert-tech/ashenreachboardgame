@@ -43,6 +43,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/beacon-cable-snare.png"
   },
   {
+    "cardId": "bell-ear-stalker",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/bell-ear-stalker.png"
+  },
+  {
     "cardId": "bell-mask-pilgrim",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/bell-mask-pilgrim.png"
@@ -68,6 +73,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/breach-lens-overload.png"
   },
   {
+    "cardId": "breachline-survey-vault",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/breachline-survey-vault.png"
+  },
+  {
     "cardId": "bridge-toll-runt",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/bridge-toll-runt.png"
@@ -76,6 +86,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "broken-mast-collapse",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/broken-mast-collapse.png"
+  },
+  {
+    "cardId": "cartographer-under-glass",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/cartographer-under-glass.png"
   },
   {
     "cardId": "chain-maul-salvager",
@@ -128,6 +143,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/coffin-frame-automaton.png"
   },
   {
+    "cardId": "copper-snout-bailiff",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/copper-snout-bailiff.png"
+  },
+  {
     "cardId": "copperjaw-vermin",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/copperjaw-vermin.png"
@@ -171,6 +191,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "gateblind-pulse",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/gateblind-pulse.png"
+  },
+  {
+    "cardId": "gateward-claim-jacker",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/gateward-claim-jacker.png"
   },
   {
     "cardId": "glass-chime-swarm",
@@ -338,6 +363,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/pale-toll-enforcer.png"
   },
   {
+    "cardId": "rail-scent-kennelmaster",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/rail-scent-kennelmaster.png"
+  },
+  {
     "cardId": "red-march-cannoneer",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/red-march-cannoneer.png"
@@ -486,6 +516,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "suture-storm",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/suture-storm.png"
+  },
+  {
+    "cardId": "tithe-gnawer",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/tithe-gnawer.png"
   },
   {
     "cardId": "toll-scrip-urchins",
@@ -875,7 +910,7 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
   {
     "cardId": "artifact-fandiablos",
     "cardType": "artifact",
-    "outputPath": "/assets/cards/artifacts/artifact-fandiablos.webp"
+    "outputPath": "/assets/cards/artifacts/artifact-fandiablos.png"
   },
   {
     "cardId": "artifact-gate-saint-key",
@@ -983,9 +1018,19 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/artifacts/artifact-zoey-thorn-violet.png"
   },
   {
+    "cardId": "artifact-breachline-sextant",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-breachline-sextant.png"
+  },
+  {
     "cardId": "artifact-coffin-rig",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-coffin-rig.png"
+  },
+  {
+    "cardId": "artifact-gateward-spindle",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-gateward-spindle.png"
   },
   {
     "cardId": "artifact-grave-lens",
@@ -1006,6 +1051,46 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "artifact-veil-hook",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-veil-hook.png"
+  },
+  {
+    "cardId": "artifact-fandiablos",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-fandiablos.png"
+  },
+  {
+    "cardId": "artifact-knuckle-rail-scent-hound",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-knuckle-rail-scent-hound.png"
+  },
+  {
+    "cardId": "artifact-lucy-hell-puppy",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-lucy-hell-puppy.png"
+  },
+  {
+    "cardId": "artifact-mara-vell-cinder-cartographer",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-mara-vell-cinder-cartographer.png"
+  },
+  {
+    "cardId": "artifact-mira-rift-twin",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-mira-rift-twin.png"
+  },
+  {
+    "cardId": "artifact-murkclaw-gravecrow",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-murkclaw-gravecrow.png"
+  },
+  {
+    "cardId": "artifact-rune-eye-raven",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-rune-eye-raven.png"
+  },
+  {
+    "cardId": "artifact-zoey-thorn-violet",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-zoey-thorn-violet.png"
   },
   {
     "cardId": "ashlock-cleaver",

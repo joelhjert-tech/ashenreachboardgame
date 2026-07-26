@@ -138,6 +138,36 @@ export const nemeses: NemesisDefinition[] = [
     uiNotes: "He should feel canonical to Ashen Reach without resembling a stock machine cult."
   },
   {
+    id: "nemesis_pallid_curator",
+    name: "The Pallid Curator",
+    title: "Master of the Grinning Tithe",
+    faction: "Pallid Retinue",
+    scenarioId: "scenario_grinning_tithe",
+    bounty: "Win the scenario and break the tribute ledger.",
+    loreRole: "An ancient tribute collector that treats every living memory as an unpaid offering to the Cinder Gate.",
+    gameplayRole: "Persistent cooperative boss with no loss-pressure clock.",
+    linkedMechanic: "Shared boss wounds and a scenario-owned shuffled Red minion bag.",
+    stats: { strength: 6, cunning: 4, life: 6 },
+    abilities: [
+      {
+        timing: "start_of_confrontation",
+        text: "The Curator opens the tithe ledger and measures the intruder by force and guile."
+      },
+      {
+        timing: "after_character_fail",
+        text: "Each failed confrontation check deals 1 wound to the operative."
+      },
+      {
+        timing: "passive",
+        text: "Damage persists between operatives and visits. The sixth wound defeats the Curator."
+      }
+    ],
+    imagePrompt:
+      "Original compact pale-furred Ashenreach tribute beast with huge ears, rose-copper ceramic snout, one natural eye and one magenta signal lens, tufted filaments, oversized hands and feet, black-iron collector regalia, six-spoke mechanical tithe halo, articulated tool limbs, chain-ledger staff, Cinder Gate tribute vault, cinematic grimdark science-fantasy.",
+    negativePrompt: baseNegativePrompt,
+    uiNotes: "Read as a compact but commanding boss. Keep the tithe halo, asymmetrical eyes, broad hands, and feet visible at phone and TV scale."
+  },
+  {
     id: "nemesis_hollow_regent",
     name: "The Hollow Regent",
     title: "Custodian of the Core Court",

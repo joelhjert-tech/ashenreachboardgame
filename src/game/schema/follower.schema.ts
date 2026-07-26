@@ -10,11 +10,11 @@ export const followerRoleSchema = z.enum([
   "informant",
   "companion"
 ]);
-export const followerUseLimitSchema = z.enum(["oncePerTurn", "oncePerRound", "discard"]);
+export const followerUseLimitSchema = z.enum(["oncePerTurn", "oncePerRound", "discard", "charge"]);
 export const followerLossConditionSchema = z.enum(["wound", "combatLoss", "choice"]);
 export const legacyFollowerLossConditionSchema = z.enum(["wound", "heat", "combatLoss", "choice"]);
 export const followerTierSchema = z.enum(["standard", "legendary", "ultimate"]);
-export const followerEffectModelSchema = z.enum(["exhaust"]);
+export const followerEffectModelSchema = z.enum(["exhaust", "charged"]);
 export const followerResetWindowSchema = z.enum(["round"]);
 export const followerAbilityIdSchema = z.enum([
   "prevent_equipment_loss",
@@ -64,23 +64,51 @@ const followerFields = {
   activeEffect: z.unknown().optional(),
   useLimit: followerUseLimitSchema.optional(),
   loyalty: z.number().int().min(0).max(5).optional()
+  ,cost: z.number().int().min(0).optional()
+  ,currentCharges: z.number().int().min(0).optional()
+  ,maxCharges: z.number().int().positive().optional()
+  ,startingCharges: z.number().int().positive().optional()
+  ,chargeCost: z.number().int().positive().optional()
+  ,rechargeRule: z.literal("none").optional()
+  ,chargedEffect: z.literal("selectTransitionSector").optional()
 };
 
 function validateFollowerLifecycle(
   follower: {
-    effectModel?: "exhaust";
+    effectModel?: "exhaust" | "charged";
     activationTiming?: unknown[];
     resetWindow?: "round";
     exhaustEffect?: string;
-    useLimit?: "oncePerTurn" | "oncePerRound" | "discard";
+    useLimit?: "oncePerTurn" | "oncePerRound" | "discard" | "charge";
+    currentCharges?: number;
+    maxCharges?: number;
+    startingCharges?: number;
+    chargeCost?: number;
+    rechargeRule?: "none";
+    chargedEffect?: "selectTransitionSector";
   },
   context: z.RefinementCtx
 ): void {
-  if (follower.effectModel !== "exhaust") return;
-  if (!follower.activationTiming?.length) context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust followers require activation timing", path: ["activationTiming"] });
-  if (!follower.resetWindow) context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust followers require a reset window", path: ["resetWindow"] });
-  if (!follower.exhaustEffect) context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust followers require a typed effect", path: ["exhaustEffect"] });
-  if (follower.useLimit === "discard") context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust followers cannot be consumable", path: ["useLimit"] });
+  if (follower.effectModel === "exhaust") {
+    if (!follower.activationTiming?.length) context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust followers require activation timing", path: ["activationTiming"] });
+    if (!follower.resetWindow) context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust followers require a reset window", path: ["resetWindow"] });
+    if (!follower.exhaustEffect) context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust followers require a typed effect", path: ["exhaustEffect"] });
+    if (follower.useLimit === "discard") context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust followers cannot be consumable", path: ["useLimit"] });
+    return;
+  }
+  if (follower.effectModel === "charged") {
+    if (
+      follower.useLimit !== "charge" ||
+      follower.maxCharges !== 2 ||
+      follower.startingCharges !== 2 ||
+      follower.chargeCost !== 1 ||
+      follower.rechargeRule !== "none" ||
+      follower.chargedEffect !== "selectTransitionSector" ||
+      !follower.activationTiming?.includes("movement")
+    ) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "route-aid followers require exactly two non-rechargeable transition-route charges", path: ["effectModel"] });
+    }
+  }
 }
 
 export const followerSchema = z.object(followerFields).strict().superRefine((follower, context) => {

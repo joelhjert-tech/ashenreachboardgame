@@ -4,7 +4,7 @@ This document is the short-form rules reference for the current repository imple
 
 ## Goal
 
-Win by advancing the active scenario and completing its confrontation before escalation overtakes the table.
+Win by advancing the active scenario and completing its confrontation. Most scenarios must finish before escalation overtakes the table; an authored pressure-free scenario explicitly disables that loss condition.
 
 Lose if escalation reaches the collapse threshold for the current session mode.
 
@@ -97,6 +97,8 @@ Implemented scenarios:
 4. The Devourer Beneath
 5. The Labyrinth Engine
 6. The Dying Star
+7. The Broken Concordance
+8. The Grinning Tithe
 
 Each scenario has:
 
@@ -104,6 +106,8 @@ Each scenario has:
 - ambient pressure rules
 - a confrontation sequence
 - a victory threshold
+
+The Grinning Tithe is the pressure-free exception: Global Escalation cannot rise or cause defeat. Every Red Threat draw comes from its shared shuffled three-card Pallid Retinue bag, and the only shared scenario objective is dealing 6 wounds to the Pallid Curator at the Cinder Gate.
 
 ## Escalation
 

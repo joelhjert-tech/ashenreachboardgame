@@ -995,7 +995,7 @@ describe("PhoneInventoryPanel", () => {
     openInventoryCategory(/followers.*records/i);
     expect(screen.getByText("Fandiablos")).toBeInTheDocument();
     expect(screen.getByText(/before threat draw/i)).toBeInTheDocument();
-    expect(document.querySelector('img[src="/assets/cards/artifacts/artifact-fandiablos.webp"]')).toBeInTheDocument();
+    expect(document.querySelector('img[src="/assets/cards/artifacts/artifact-fandiablos.png"]')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /use.*1 wound/i }));
 

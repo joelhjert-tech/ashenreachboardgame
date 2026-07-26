@@ -1,0 +1,22 @@
+{
+  "id": "gateward-claim-jacker",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Gateward Claim-Jacker",
+  "enemyName": "Gateward Claim-Jacker",
+  "text": "A plated route thief winds a stolen spindle into its chest and charges anyone approaching a depth gate.",
+  "flavor": "It owns every road it can reach with a chain.",
+  "severity": 4,
+  "stat": "forge",
+  "difficulty": 9,
+  "trophyValue": 4,
+  "defeatReward": { "type": "gain_gear", "gearId": "gateward-spindle" },
+  "woundOnLoss": { "type": "take_wound", "amount": 2 },
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "region": "global",
+  "rarity": "rare",
+  "tempo": "stall",
+  "resourceTags": ["gear", "movement", "trophy", "wound"],
+  "imagePrompt": "Original Ashenreach armored route thief with chain winches and a brass-black gate spindle embedded in its chest, standing in a deep industrial passage, cinematic grimdark science-fantasy card art, no text, no logo"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "breachline-survey-vault",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Breachline Survey Vault",
+  "text": "A dead survey chamber wakes and demands a clean signal bearing before releasing its last instrument.",
+  "flavor": "The route exists. The machine only wants proof.",
+  "severity": 3,
+  "stat": "signal",
+  "difficulty": 7,
+  "successEffect": { "type": "gain_gear", "gearId": "breachline-sextant" },
+  "failEffect": { "type": "take_wound", "amount": 1 },
+  "enemyFamily": "machine",
+  "threatLane": "blue",
+  "resolutionType": "asset",
+  "region": "global",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": ["gear", "movement", "wound"],
+  "imagePrompt": "Original Ashenreach survey vault with a suspended iron sextant, dead signal lenses, scorched route diagrams expressed only as abstract light, dark industrial science-fantasy, cinematic card art, no text, no logo"
+}

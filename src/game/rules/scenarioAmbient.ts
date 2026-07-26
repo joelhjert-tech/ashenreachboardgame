@@ -1,5 +1,9 @@
 import { createEmptyScenarioPreparationState, type GameState, type ScenarioPreparationState, type SessionMode } from "../schema/session.schema.js";
-import { ENGINE_MODE_ROTATION, getEngineModeName } from "../data/scenarios.js";
+import {
+  ENGINE_MODE_ROTATION,
+  GRINNING_TITHE_SCENARIO_ID,
+  getEngineModeName
+} from "../data/scenarios.js";
 import { getEquippedGearBonus } from "../engine/gear.js";
 import { getEscalationModifier } from "../engine/escalation.js";
 import { getBrokenSealTokenLimit, isSinglePlayerMode } from "./soloTuning.js";
@@ -604,6 +608,16 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         summary: `Recovered artifact output steadies the star. ${gainedGearCount * 2} Starfire token${gainedGearCount === 1 ? "" : "s"} return to the track.`
       };
     }
+  },
+  [GRINNING_TITHE_SCENARIO_ID]: {
+    initialProgress: { curatorWounds: 0 },
+    describePressure: (state) =>
+      `No loss pressure. The Pallid Curator has taken ${state.scenarioProgress.curatorWounds ?? 0}/6 wounds; Red Threats draw from the shared shuffled Pallid Retinue.`,
+    buildTelemetry: (state) => [
+      { label: "Pallid Curator", value: `${state.scenarioProgress.curatorWounds ?? 0}/6 wounds` },
+      { label: "Loss Pressure", value: "Disabled" },
+      { label: "Red Encounters", value: "Random Pallid Retinue" }
+    ]
   },
   scenario_broken_concordance: {
     initialProgress: {},

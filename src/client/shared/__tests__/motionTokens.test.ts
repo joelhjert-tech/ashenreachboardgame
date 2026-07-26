@@ -22,10 +22,10 @@ describe("motion tokens", () => {
     expect(hostPresentationTimings).toMatchObject({
       cardFlipMs: 840,
       diceRollMs: 1200,
-      movementStartMs: 300,
-      movementSegmentMs: 520,
-      movementCrossRingMs: 680,
-      movementArrivalMs: 600
+      movementStartMs: 380,
+      movementSegmentMs: 640,
+      movementCrossRingMs: 840,
+      movementArrivalMs: 720
     });
     expect(hostPresentationTimings.movementCrossRingMs).toBeGreaterThan(hostPresentationTimings.movementSegmentMs);
   });

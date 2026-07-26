@@ -1,0 +1,32 @@
+{
+  "id": "bell-ear-stalker",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Bell-Ear Stalker",
+  "enemyName": "Bell-Ear Stalker",
+  "text": "A lean retinue hunter crosses the machinery ravine without ringing the iron bells sewn through its ears.",
+  "flavor": "The bells sound only after it has chosen what to take.",
+  "severity": 3,
+  "region": "global",
+  "stat": "guile",
+  "difficulty": 7,
+  "trophyValue": 3,
+  "defeatReward": {
+    "type": "gain_trophy",
+    "amount": 3
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "beast",
+  "threatLane": "red",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "trophy",
+    "wound",
+    "scenario"
+  ],
+  "imagePrompt": "Original Ashenreach Bell-Ear Stalker, a lean pale-furred hunter with long asymmetrical ears hung with small iron bells, narrow copper-ceramic snout guard, swept sensory filaments, grasping hands, springing feet, and a patched collector harness crouched on a machinery bridge, cinematic grimdark science-fantasy card art, no text"
+}

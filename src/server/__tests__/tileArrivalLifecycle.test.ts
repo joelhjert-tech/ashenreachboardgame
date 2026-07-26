@@ -73,7 +73,7 @@ describe("canonical tile arrival lifecycle", () => {
     expect(server.getState().currentEncounter).not.toBeNull();
     expect(server.getState().currentEncounter?.threatLane).toBe("red");
     expect(server.getState().tileArrivalThreatProgress?.nextThreatIconIndex).toBe(1);
-    expect(server.getState().threatDrawBags?.red?.remainingCardIds).toHaveLength(25);
+    expect(server.getState().threatDrawBags?.red?.remainingCardIds).toHaveLength(26);
     expect(server.getState().sectors.find((sector) => sector.id === "middle_guardian_span")?.encounterDecks.threat).toEqual([]);
   });
 });

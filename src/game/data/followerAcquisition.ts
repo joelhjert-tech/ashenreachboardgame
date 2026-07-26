@@ -39,7 +39,9 @@ export const FOLLOWER_ACQUISITION_SOURCES: readonly FollowerAcquisitionSource[] 
   { followerId: "votive-gunner", sourceType: "board", sourceId: "middle_redMarchBargain", mode: "existing-content", tier: "standard", label: "Red March Outpost" },
   { followerId: "webglass-runner", sourceType: "board", sourceId: "middle_webglassFracture", mode: "fixed", tier: "common", label: "Webglass Fracture" },
   { followerId: "webglass-runner", sourceType: "threat", sourceId: "false-route-procession", mode: "fixed", tier: "common", label: "False-Route Procession" },
-  { followerId: "zoey-thorn-violet", sourceType: "artifact", sourceId: "artifact-zoey-thorn-violet", mode: "random-artifact", tier: "rare", label: "Red March artifact cache" }
+  { followerId: "zoey-thorn-violet", sourceType: "artifact", sourceId: "artifact-zoey-thorn-violet", mode: "random-artifact", tier: "rare", label: "Red March artifact cache" },
+  { followerId: "mara-vell-cinder-cartographer", sourceType: "threat", sourceId: "cartographer-under-glass", mode: "fixed", tier: "rare", label: "Cartographer Under Glass" },
+  { followerId: "knuckle-rail-scent-hound", sourceType: "threat", sourceId: "rail-scent-kennelmaster", mode: "fixed", tier: "rare", label: "Rail-Scent Kennelmaster" }
 ] as const;
 
 export const QA_FOLLOWER_IDS = new Set([

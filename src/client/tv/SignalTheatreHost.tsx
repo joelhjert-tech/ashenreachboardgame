@@ -43,6 +43,7 @@ interface SignalTheatreHostProps {
   currentStepCopy: string;
   synchronized: boolean;
   connectionStatus: string;
+  onMovementPresentationCompleted?: (eventId: string) => void;
 }
 
 interface SignalRouteModel {
@@ -254,10 +255,16 @@ export function SignalTheatreHost({
   activePlayer,
   currentStepCopy,
   synchronized,
-  connectionStatus
+  connectionStatus,
+  onMovementPresentationCompleted
 }: SignalTheatreHostProps): ReactElement {
   const payload = patch?.payload ?? null;
-  const journey = useSignalTheatreJourney({ patch, previousPatch, synchronized });
+  const journey = useSignalTheatreJourney({
+    patch,
+    previousPatch,
+    synchronized,
+    onCompleted: onMovementPresentationCompleted
+  });
   const confirmedDestination = payload?.movementPlanner?.selectedDestinationId
     ? payload.movementPlanner.destinations.find(
       (destination) => destination.sectorId === payload.movementPlanner?.selectedDestinationId

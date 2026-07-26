@@ -43,6 +43,7 @@ export type PhaseOneQaFixture =
         | "four-routes"
         | "medium-routes"
         | "long-routes"
+        | "route-aid-ready"
         | "confirmed"
         | "approach-success"
         | "approach-setback";
@@ -1695,7 +1696,7 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
     const approachResult = fixture.stage === "approach-success" || fixture.stage === "approach-setback";
     const approachSuccess = fixture.stage === "approach-success";
     state.phase = approachResult ? "resolution" : "navigation";
-    state.movementRolls = fixture.stage === "roll-required" || fixture.stage === "confirmed" || approachResult
+    state.movementRolls = fixture.stage === "roll-required" || fixture.stage === "route-aid-ready" || fixture.stage === "confirmed" || approachResult
       ? undefined
       : {
           ...(state.movementRolls ?? {}),
@@ -1704,6 +1705,25 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
     state.pendingTileChallenge = null;
     placePlayer(state, seatId, fixture.stage === "confirmed" || approachSuccess ? "votive-engine-room" : "ashwake-crossing");
     setContract(state, seatId, routeContractId, 0);
+    if (fixture.stage === "route-aid-ready") {
+      const player = state.players.find((entry) => entry.seatId === seatId);
+      const sextant = loadGear().get("breachline-sextant");
+      const mara = loadFollowers().get("mara-vell-cinder-cartographer");
+      if (!player || !sextant || !mara) throw new Error("QA fixture cannot load transition route aids");
+      player.character.heldGear = [
+        ...player.character.heldGear.filter((item) => item.id !== sextant.id),
+        { ...sextant, instanceId: "qa-route-aid-sextant", currentCharges: 2, maxCharges: 2 }
+      ];
+      player.character.equippedGear.utility = sextant.id;
+      player.character.equippedGearInstances = {
+        ...(player.character.equippedGearInstances ?? { weapon: null, armor: null, utility: null }),
+        utility: "qa-route-aid-sextant"
+      };
+      player.character.followers = [
+        ...(player.character.followers ?? []).filter((follower) => follower.id !== mara.id),
+        { ...mara, instanceId: "qa-route-aid-mara", currentCharges: 2, maxCharges: 2 }
+      ];
+    }
     if (approachResult) {
       clearResolution(state);
       state.phase = "resolution";

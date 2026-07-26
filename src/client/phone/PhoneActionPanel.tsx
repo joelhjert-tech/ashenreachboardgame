@@ -94,6 +94,7 @@ interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
   onIntent: (intent: ClientIntent) => void;
   patch: PhonePatchPayload;
+  requiredActionSubmissionPending?: boolean;
   selectedTurnTab?: TurnActionTab;
   onSelectedTurnTab?: (tab: TurnActionTab) => void;
   hideTurnTabs?: boolean;
@@ -1895,12 +1896,13 @@ function PhoneShopPanel({
   const shopView = artifactChoiceActive
     ? "artifacts"
     : shopEncounter.browseSelection?.view ?? (revealedStock.length > 0 ? "equipment" : "categories");
-  const stockViews = new Set(["equipment", "supplies", "artifacts"]);
+  const stockViews = new Set(["equipment", "supplies", "artifacts", "route-aids"]);
   const categories = shopEncounter.presentation?.categories ?? [
     shopEncounter.services.find((service) => service.id === "buy-supplies") ? { id: "items" as const, view: "supplies" as const, label: "Items", description: "Field supplies", available: true, offerCount: null, unavailableReason: undefined } : null,
     shopEncounter.services.find((service) => service.id === "buy-gear") ? { id: "equipment" as const, view: "equipment" as const, label: "Equipment", description: "Tools and armour", available: true, offerCount: revealedStock.length || null, unavailableReason: undefined } : null,
     shopEncounter.services.find((service) => service.id === "trade-missions-for-artifact") ? { id: "artifacts" as const, view: "artifacts" as const, label: "Artifacts", description: "Contract exchange", available: true, offerCount: null, unavailableReason: undefined } : null,
-    serviceActions.some((service) => !["buy-gear", "buy-supplies", "trade-missions-for-artifact"].includes(service.id)) ? { id: "services" as const, view: "services" as const, label: "Services", description: "Local services", available: true, offerCount: serviceActions.length, unavailableReason: undefined } : null,
+    shopEncounter.services.find((service) => service.id === "buy-route-aids") ? { id: "route-aids" as const, view: "route-aids" as const, label: "Route Aids", description: "Charged route guides", available: true, offerCount: shopView === "route-aids" ? revealedStock.length : null, unavailableReason: undefined } : null,
+    serviceActions.some((service) => !["buy-gear", "buy-supplies", "buy-route-aids", "trade-missions-for-artifact"].includes(service.id)) ? { id: "services" as const, view: "services" as const, label: "Services", description: "Local services", available: true, offerCount: serviceActions.length, unavailableReason: undefined } : null,
     (shopEncounter.sellableCount ?? sellInventory.filter((item) => item.sellable).length) > 0 ? { id: "sell" as const, view: "sell" as const, label: "Sell", description: "Trade held Equipment", available: true, offerCount: shopEncounter.sellableCount ?? sellInventory.filter((item) => item.sellable).length, unavailableReason: undefined } : null
   ].filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
   const selectedStock = revealedStock.find((item) => item.cardId === focusedOfferId)
@@ -1916,7 +1918,7 @@ function PhoneShopPanel({
   const ownerSalvage = shopEncounter.activePlayer.salvage;
 
   function selectShopView(
-    view: "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell",
+    view: "categories" | "equipment" | "supplies" | "artifacts" | "route-aids" | "services" | "sell",
     serviceId?: string
   ): void {
     setFocusedOfferId(null);
@@ -2029,6 +2031,7 @@ function PhoneShopPanel({
               const serviceId = category.view === "equipment" ? "buy-gear"
                 : category.view === "supplies" ? "buy-supplies"
                   : category.view === "artifacts" ? "trade-missions-for-artifact"
+                    : category.view === "route-aids" ? "buy-route-aids"
                     : undefined;
               return (
                 <GameButton
@@ -2872,7 +2875,8 @@ function PhoneMovePanel({
   operativeId,
   resultDeltas,
   diceCount,
-  hostView
+  hostView,
+  transitionRouteAid
 }: {
   movementPlanner: PublicMovementPlannerState | null | undefined;
   currentTile: CurrentTileViewModel;
@@ -2894,8 +2898,11 @@ function PhoneMovePanel({
   resultDeltas: ResultDelta[];
   diceCount?: number;
   hostView?: PublicHostViewState;
+  transitionRouteAid?: PhonePatchPayload["transitionRouteAid"];
 }): ReactElement {
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(() => movementPlanner?.selectedDestinationId ?? null);
+  const [routeAidSourceId, setRouteAidSourceId] = useState<string | null>(null);
+  const [routeAidDestinationId, setRouteAidDestinationId] = useState<string | null>(null);
 
   usePhoneBackDismissal(selectedSectorId !== null, () => {
     setSelectedSectorId(null);
@@ -2955,24 +2962,82 @@ function PhoneMovePanel({
   }
 
   return (
-    <PhoneMovementView
-      planner={movementPlanner}
-      seatId={seatId}
-      activeContract={activeContract}
-      currentSectorId={currentTile.sectorId}
-      currentSectorName={currentTile.name}
-      canRoll={canRollMovement}
-      movementResolving={movementResolving}
-      travel={movementTravel ? { fromSectorName: movementTravel.fromSectorName, toSectorName: movementTravel.toSectorName } : null}
-      selectedSectorId={selectedSectorId}
-      onSelectedSectorId={setSelectedSectorId}
-      onIntent={onIntent}
-      showContextNavigation={showContextNavigation}
-      onContextNavigation={onContextNavigation}
-      actorName={actorName}
-      diceCount={diceCount}
-      hostView={hostView}
-    />
+    <>
+      {canRollMovement && transitionRouteAid && transitionRouteAid.destinations.length > 0 ? (
+        <details className="phone-route-aid" data-testid="transition-route-aid">
+          <summary>
+            <span>Route aid</span>
+            <strong>Move to a transition sector</strong>
+          </summary>
+          <p>Spend one of two charges before rolling. The route stays within this reach and stops at the transition sector.</p>
+          <label>
+            Choose aid
+            <select value={routeAidSourceId ?? ""} onChange={(event) => setRouteAidSourceId(event.target.value || null)}>
+              <option value="">Select an item or follower</option>
+              {transitionRouteAid.sources.map((source) => (
+                <option key={`${source.sourceKind}:${source.instanceId}`} value={`${source.sourceKind}:${source.instanceId}`}>
+                  {source.name} · {source.currentCharges}/{source.maxCharges}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Transition sector
+            <select value={routeAidDestinationId ?? ""} onChange={(event) => setRouteAidDestinationId(event.target.value || null)}>
+              <option value="">Choose a sector</option>
+              {transitionRouteAid.destinations.map((destination) => (
+                <option key={destination.sectorId} value={destination.sectorId}>
+                  {destination.name} · {destination.distance} stops
+                </option>
+              ))}
+            </select>
+          </label>
+          {routeAidDestinationId ? (
+            <p className="phone-route-aid__route">
+              {transitionRouteAid.destinations.find((destination) => destination.sectorId === routeAidDestinationId)?.routeNames.join(" → ")}
+            </p>
+          ) : null}
+          <GameButton
+            type="button"
+            tone="move"
+            disabled={!routeAidSourceId || !routeAidDestinationId}
+            disabledReason={!routeAidSourceId ? "Choose a route aid." : !routeAidDestinationId ? "Choose a transition sector." : undefined}
+            onClick={() => {
+              const [sourceKind, instanceId] = (routeAidSourceId ?? "").split(":");
+              if (!instanceId || !routeAidDestinationId || (sourceKind !== "gear" && sourceKind !== "follower")) return;
+              onIntent({
+                type: "USE_TRANSITION_ROUTE_AID",
+                seatId,
+                sourceKind,
+                instanceId,
+                destinationSectorId: routeAidDestinationId,
+                movementRevision: transitionRouteAid.revision
+              });
+            }}
+          >
+            Spend 1 charge and travel
+          </GameButton>
+        </details>
+      ) : null}
+      <PhoneMovementView
+        planner={movementPlanner}
+        seatId={seatId}
+        activeContract={activeContract}
+        currentSectorId={currentTile.sectorId}
+        currentSectorName={currentTile.name}
+        canRoll={canRollMovement}
+        movementResolving={movementResolving}
+        travel={movementTravel ? { fromSectorName: movementTravel.fromSectorName, toSectorName: movementTravel.toSectorName } : null}
+        selectedSectorId={selectedSectorId}
+        onSelectedSectorId={setSelectedSectorId}
+        onIntent={onIntent}
+        showContextNavigation={showContextNavigation}
+        onContextNavigation={onContextNavigation}
+        actorName={actorName}
+        diceCount={diceCount}
+        hostView={hostView}
+      />
+    </>
   );
 }
 
@@ -3125,6 +3190,7 @@ export function PhoneActionPanel({
   characters,
   onIntent,
   patch,
+  requiredActionSubmissionPending = false,
   selectedTurnTab: controlledSelectedTurnTab,
   onSelectedTurnTab,
   hideTurnTabs = false,
@@ -3356,11 +3422,36 @@ export function PhoneActionPanel({
           </article>
         ) : null}
         <div className="phone-match-result__actions">
+          {result?.outcome === "defeat" && patch.selfIsSetupHost ? (
+            <GameButton
+              type="button"
+              tone="primary"
+              onClick={() => onIntent({ type: "RETURN_TO_LOBBY_REQUESTED", seatId: self.seatId })}
+            >
+              Start New Game
+            </GameButton>
+          ) : null}
           {onLeaveRoom && patch.matchProgress?.allowedCommands.includes("leave_room") ? (
             <GameButton type="button" tone="primary" onClick={onLeaveRoom}>Leave Room</GameButton>
           ) : null}
-          <p>Return to Lobby is controlled by the Host Phone.</p>
+          {!patch.selfIsSetupHost ? <p>The host is preparing the next game.</p> : null}
         </div>
+      </section>
+    );
+  }
+
+  if (patch.movementPresentationGate) {
+    const isMovingPlayer = patch.movementPresentationGate.ownerSeatId === self.seatId;
+    return (
+      <section className="phone-movement-tv-wait" role="status" aria-live="polite" data-testid="movement-tv-presentation-gate">
+        <span>Host movement</span>
+        <h2>{isMovingPlayer ? "Movement playing on TV" : `${patch.movementPresentationGate.ownerDisplayName} is moving`}</h2>
+        <p>
+          {isMovingPlayer
+            ? `Your operative is travelling to ${patch.movementPresentationGate.destinationSectorName}. Arrival actions unlock after the piece lands.`
+            : `The host display is following the route to ${patch.movementPresentationGate.destinationSectorName}.`}
+        </p>
+        <div className="phone-movement-tv-wait__pulse" aria-hidden="true"><i /><i /><i /></div>
       </section>
     );
   }
@@ -3383,6 +3474,7 @@ export function PhoneActionPanel({
         patch={patch}
         self={self}
         onIntent={onIntent}
+        submissionPending={requiredActionSubmissionPending}
       />
     );
   }
@@ -3446,6 +3538,7 @@ export function PhoneActionPanel({
         patch={patch}
         self={self}
         onIntent={onIntent}
+        submissionPending={requiredActionSubmissionPending}
       />
     );
   }
@@ -4323,6 +4416,7 @@ export function PhoneActionPanel({
         onIntent={onIntent}
         choiceActions={requiredChoiceActions}
         optionalActions={optionalBattleActions}
+        submissionPending={requiredActionSubmissionPending}
       />
     );
   }
@@ -4585,6 +4679,7 @@ export function PhoneActionPanel({
         resultDeltas={currentDeltas}
         diceCount={self.character.id === "char_ker_von_ker" ? 2 : 1}
         hostView={patch.hostView}
+        transitionRouteAid={patch.transitionRouteAid}
       />
     ) : activeTurnTab === "battle" ? (
       <PhoneBattlePanel

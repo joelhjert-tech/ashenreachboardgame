@@ -6,13 +6,13 @@ This rulebook describes the game the software currently enforces. Text marked **
 
 ## 1. Welcome to Ashen Reach
 
-Ashen Reach is a shared-screen adventure board game. Operatives cross a hostile ringed board, resolve recurring dangers and Threats, complete contracts, gain equipment and Artifacts, and attempt the active scenario before Loss Pressure collapses the expedition.
+Ashen Reach is a shared-screen adventure board game. Operatives cross a hostile ringed board, resolve recurring dangers and Threats, complete contracts, gain equipment and Artifacts, and attempt the active scenario. Most scenarios use Loss Pressure; an authored scenario may explicitly disable it.
 
 The physical board and shared pieces support table play. The host display presents public state and major resolutions. Each phone is a private controller for one seat.
 
 ## 2. Objective
 
-Win by satisfying the active scenario's requirements and completing its final confrontation. Lose when the active scenario or the global Loss Pressure rule ends the session in defeat. Operative recall is serious but is not automatically session defeat.
+Win by satisfying the active scenario's requirements and completing its final confrontation. Lose when the active scenario or the global Loss Pressure rule ends the session in defeat. If the active scenario explicitly disables Loss Pressure, positive escalation gains, difficulty modifiers, and pressure defeat are suppressed for that session. Operative recall is serious but is not automatically session defeat.
 
 In Rivalry, the session still uses the public scenario. Private agenda scoring and public reveal/completion summaries may distinguish an individual result when the server declares it.
 
@@ -51,7 +51,9 @@ An invalid, stale, or unauthorized start request changes nothing.
 
 The chosen scenario defines setup, special pressure, confrontation steps, victory conditions, and defeat conditions. Each operative begins at the authored starting sector with server-created resources, gear, private state, and contract options.
 
-The game supports the six authored scenarios currently listed by the host, including The Broken Seal, The Throne of Ash, The Mirror of False Heroes, The Devourer Beneath, The Labyrinth Engine, and The Dying Star. Read the active scenario panel; do not transfer special rules between scenarios.
+The game supports eight authored scenarios currently listed by the host: The Broken Seal, The Throne of Ash, The Mirror of False Heroes, The Devourer Beneath, The Labyrinth Engine, The Dying Star, The Broken Concordance, and The Grinning Tithe. Read the active scenario panel; do not transfer special rules between scenarios.
+
+The Grinning Tithe is a solo/co-op boss hunt with no Loss Pressure. Its Red Threat lane is a shared shuffled three-card Pallid Retinue bag. The bag draws without replacement, reshuffles only after exhaustion, and remains private until a card is revealed. Boss wounds persist across operatives and visits; six wounds defeat the Pallid Curator.
 
 ## 7. Attributes and resources
 
@@ -344,7 +346,7 @@ Rivalry does not currently grant a general right to attack, steal from, trade wi
 Read three tracks distinctly:
 
 - **Win Progress:** complete the scenario objective.
-- **Loss Pressure:** if this reaches its limit, the scenario fails.
+- **Loss Pressure:** if enabled and this reaches its limit, the scenario fails. A scenario that disables it shows no pressure track or threshold warning.
 - **Global Escalation:** round pressure that makes later checks harder and currently backs the common collapse track.
 
 Scenario-specific telemetry may add seals, doom, countdowns, modes, crowns, nemesis health, or other authored state. The active scenario panel explains its meaning.

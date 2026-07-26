@@ -574,12 +574,24 @@ describe("canonical sector graph", () => {
     const threats = loadThreatCards();
     const referencedThreatIds = new Set([
       ...sectors.flatMap((sector) => sector.encounterDecks.threat),
+      ...SCENARIOS.flatMap((scenario) =>
+        Object.values(scenario.threatLaneOverrides ?? {}).flatMap((cardIds) => cardIds ?? [])
+      ),
       ...[...loadTileChallenges().values()].map((challenge) => challenge.artCardId)
+    ]);
+    const globallyDrawableThreatIds = new Set(
+      [...threats.values()]
+        .filter((threat) => threat.region === "global")
+        .map((threat) => threat.id)
+    );
+    const reachableThreatIds = new Set([
+      ...referencedThreatIds,
+      ...globallyDrawableThreatIds
     ]);
     const severities = new Set([...threats.values()].map((threat) => threat.severity));
 
     expect(threats.size).toBeGreaterThanOrEqual(40);
-    expect(referencedThreatIds.size).toBe(threats.size);
+    expect(reachableThreatIds.size).toBe(threats.size);
     expect([...referencedThreatIds].filter((threatId) => !threats.has(threatId))).toEqual([]);
     expect([...severities].sort()).toEqual([1, 2, 3, 4, 5]);
   });
@@ -1425,7 +1437,7 @@ describe("canonical sector graph", () => {
     });
   });
 
-  it("builds scenario telemetry for all seven authored scenarios with live, scenario-specific readouts", () => {
+  it("builds scenario telemetry for all eight authored scenarios with live, scenario-specific readouts", () => {
     const expectations: Record<string, string[]> = {
       scenario_broken_seal: ["Seal Integrity", "Turn Pressure", "Collapses", "Final Restoration"],
       scenario_throne_of_ash: ["Crown Claims", "Crown Holders", "Active Crowns"],
@@ -1433,6 +1445,7 @@ describe("canonical sector graph", () => {
       scenario_devourer_beneath: ["Doom Tokens", "Devourer", "Collapse Pulse"],
       scenario_labyrinth_engine: ["Engine Mode", "Rotation", "Shutdown"],
       scenario_dying_star: ["Starfire", "Wound Burn", "Ignition"],
+      scenario_grinning_tithe: ["Pallid Curator", "Loss Pressure", "Red Encounters"],
       scenario_broken_concordance: ["Concordance Nodes", "Core Stages", "Assistance"]
     };
 

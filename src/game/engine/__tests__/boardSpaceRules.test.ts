@@ -69,8 +69,9 @@ describe("board space data", () => {
   });
 
   it("keeps core scenarios as data, not hardcoded UI text", () => {
-    expect(SCENARIOS).toHaveLength(7);
+    expect(SCENARIOS).toHaveLength(8);
     expect(SCENARIOS.map((entry) => entry.id)).toContain("scenario_broken_seal");
+    expect(SCENARIOS.map((entry) => entry.id)).toContain("scenario_grinning_tithe");
     expect(SCENARIOS.every((entry) => entry.setup.length > 0)).toBe(true);
     expect(SCENARIOS.every((entry) => entry.specialRules.length > 0)).toBe(true);
   });

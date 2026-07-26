@@ -224,7 +224,7 @@ export interface Follower {
   ultimateCompanion?: boolean;
   timingWindows?: FollowerTimingWindow[];
   exhausted?: boolean;
-  effectModel?: "exhaust";
+  effectModel?: "exhaust" | "charged";
   activationTiming?: FollowerTimingWindow[];
   resetWindow?: "round";
   exhaustEffect?: "recordEmberPupNote" | "recordOmenNote" | "recordRouteMemoryNote" | "fandiablosSupport";
@@ -234,7 +234,14 @@ export interface Follower {
   flavor?: string;
   imagePrompt?: string;
   abilityId?: "prevent_equipment_loss" | "prevent_salvage_loss" | "signal_anomaly_support" | "ignore_middle_route_failure" | "ignore_route_failure" | "battle_support";
-  useLimit?: "oncePerTurn" | "oncePerRound" | "discard";
+  useLimit?: "oncePerTurn" | "oncePerRound" | "discard" | "charge";
+  cost?: number;
+  currentCharges?: number;
+  maxCharges?: number;
+  startingCharges?: number;
+  chargeCost?: number;
+  rechargeRule?: "none";
+  chargedEffect?: "selectTransitionSector";
   loyalty?: number;
   lossCondition?: "wound" | "combatLoss" | "choice";
 }
@@ -758,10 +765,10 @@ export interface CooperativeAssistanceEligibilityProjection {
 
 export type PublicShopStatus = "open" | "locked" | "exhausted" | "dangerous";
 
-export type PublicShopView = "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell";
+export type PublicShopView = "categories" | "equipment" | "supplies" | "artifacts" | "route-aids" | "services" | "sell";
 
 export interface PublicShopCategoryPresentation {
-  id: "items" | "equipment" | "artifacts" | "services" | "sell";
+  id: "items" | "equipment" | "artifacts" | "route-aids" | "services" | "sell";
   view: PublicShopView;
   label: string;
   description: string;
@@ -851,7 +858,8 @@ export interface PublicShopEncounterState {
   revealedStock?: Array<{
     cardId: string;
     name: string;
-    type: "gear" | "tactic" | "ability" | "boon" | "implant" | "artifact";
+    type: "gear" | "tactic" | "ability" | "boon" | "implant" | "artifact" | "follower";
+    artCardId?: string;
     shopCategories?: ShopCategory[];
     cost: {
       salvage?: number;
@@ -1369,6 +1377,31 @@ export interface PublicPatchPayload {
   battlePresentation?: BattlePresentation | null;
   shopEncounter?: PublicShopEncounterState | null;
   movementPlanner?: PublicMovementPlannerState | null;
+  movementPresentationGate?: {
+    eventId: string;
+    ownerSeatId: string;
+    ownerDisplayName: string;
+    destinationSectorId: string;
+    destinationSectorName: string;
+    deadlineAt: string;
+  } | null;
+  transitionRouteAid?: {
+    revision: number;
+    sources: Array<{
+      sourceKind: "gear" | "follower";
+      instanceId: string;
+      name: string;
+      currentCharges: number;
+      maxCharges: number;
+    }>;
+    destinations: Array<{
+      sectorId: string;
+      name: string;
+      route: string[];
+      routeNames: string[];
+      distance: number;
+    }>;
+  } | null;
   sectorExplorationSummary?: PublicSectorExplorationSummary | null;
   tileArrival?: PublicTileArrivalState | null;
   requiredAction?: RequiredActionProjection | null;
@@ -1717,6 +1750,10 @@ export type ClientIntent =
       mode: "signal" | "map";
     }
   | {
+      type: "RETURN_TO_LOBBY_REQUESTED";
+      seatId: string;
+    }
+  | {
       type: "MOVEMENT_DESTINATION_PREVIEWED";
       seatId: string;
       toSectorId: string | null;
@@ -1730,6 +1767,14 @@ export type ClientIntent =
       voidKeyInstanceId?: string;
       routeId?: string;
       movementRevision?: number;
+    }
+  | {
+      type: "USE_TRANSITION_ROUTE_AID";
+      seatId: string;
+      sourceKind: "gear" | "follower";
+      instanceId: string;
+      destinationSectorId: string;
+      movementRevision: number;
     }
   | { type: "SELECT_ROUTE_STAR_VARIANT"; seatId: string; instanceId: string; destinationId: string; routeId: string; movementRevision: number }
   | {
@@ -1868,7 +1913,7 @@ export type ClientIntent =
   | {
       type: "SHOP_BROWSE_SELECTED";
       seatId: string;
-      view: "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell";
+      view: "categories" | "equipment" | "supplies" | "artifacts" | "route-aids" | "services" | "sell";
       selectedId?: string | null;
     }
   | {
@@ -1945,6 +1990,10 @@ export type HostCommand =
     }
   | {
       type: "RETURN_TO_LOBBY";
+    }
+  | {
+      type: "MOVEMENT_PRESENTATION_COMPLETED";
+      eventId: string;
     };
 
 export interface PhoneSessionAuth {

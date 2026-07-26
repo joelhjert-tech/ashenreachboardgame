@@ -18,8 +18,8 @@ import type {
 import { isHostShopActive } from "./hostShopState.js";
 import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
 
-type ShopView = "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell";
-type CategoryId = "items" | "equipment" | "artifacts" | "services" | "sell";
+type ShopView = "categories" | "equipment" | "supplies" | "artifacts" | "route-aids" | "services" | "sell";
+type CategoryId = "items" | "equipment" | "artifacts" | "route-aids" | "services" | "sell";
 
 interface ShopCategoryModel {
   id: CategoryId;
@@ -100,18 +100,20 @@ function getCategories(shop: PublicShopEncounterState): ShopCategoryModel[] {
   const supplies = find("buy-supplies");
   const equipment = find("buy-gear");
   const artifacts = find("trade-missions-for-artifact");
-  const localServices = shop.services.filter((service) => !["buy-gear", "buy-supplies", "trade-missions-for-artifact", "sell-gear"].includes(service.id));
+  const routeAids = find("buy-route-aids");
+  const localServices = shop.services.filter((service) => !["buy-gear", "buy-supplies", "buy-route-aids", "trade-missions-for-artifact", "sell-gear"].includes(service.id));
   return [
     supplies ? { id: "items", view: "supplies", label: "Items", description: "Field supplies and expendable necessities", count: shop.browseSelection?.view === "supplies" ? shop.revealedStock?.length ?? null : null, available: supplies.enabled, blockedReason: supplies.disabledReason ?? null } : null,
     equipment ? { id: "equipment", view: "equipment", label: "Equipment", description: "Tools, armour and battle hardware", count: shop.browseSelection?.view === "equipment" ? shop.revealedStock?.length ?? null : null, available: equipment.enabled, blockedReason: equipment.disabledReason ?? null } : null,
     artifacts ? { id: "artifacts", view: "artifacts", label: "Artifacts", description: "Sealed relics exchanged for completed Contracts", count: null, available: artifacts.enabled, blockedReason: artifacts.disabledReason ?? null } : null,
+    routeAids ? { id: "route-aids", view: "route-aids", label: "Route Aids", description: "Charged guides and instruments", count: shop.browseSelection?.view === "route-aids" ? shop.revealedStock?.length ?? null : null, available: routeAids.enabled, blockedReason: routeAids.disabledReason ?? null } : null,
     localServices.length ? { id: "services", view: "services", label: "Services", description: "Repair, treatment and local work", count: localServices.length, available: localServices.some((service) => service.enabled), blockedReason: localServices.find((service) => !service.enabled)?.disabledReason ?? null } : null,
     (shop.sellableCount ?? 0) > 0 ? { id: "sell", view: "sell", label: "Sell", description: "Offer carried Equipment for Salvage", count: shop.sellableCount ?? 0, available: true, blockedReason: null } : null
   ].filter((entry): entry is ShopCategoryModel => Boolean(entry));
 }
 
 function getOffers(shop: PublicShopEncounterState, view: ShopView): ShopOfferModel[] {
-  if (view === "equipment" || view === "supplies" || view === "artifacts") {
+  if (view === "equipment" || view === "supplies" || view === "artifacts" || view === "route-aids") {
     return (shop.revealedStock ?? []).map((stock) => ({
       id: stock.cardId,
       name: stock.name,
@@ -124,8 +126,16 @@ function getOffers(shop: PublicShopEncounterState, view: ShopView): ShopOfferMod
       stock: stock.stock ?? 1,
       available: stock.affordable && !stock.disabledReason,
       disabledReason: stock.disabledReason ?? (!stock.affordable ? "Insufficient resources" : null),
-      artCardId: stock.type === "artifact" ? getGearCardArtId(stock.cardId, "artifact") : getGearCardArtId(stock.cardId),
-      artCardType: stock.type === "artifact" ? "artifact" : getGearCardArtType(stock.cardId)
+      artCardId: stock.type === "follower"
+        ? stock.artCardId ?? null
+        : stock.type === "artifact"
+          ? getGearCardArtId(stock.cardId, "artifact")
+          : getGearCardArtId(stock.cardId),
+      artCardType: stock.type === "follower"
+        ? stock.artCardId ? "artifact" : null
+        : stock.type === "artifact"
+          ? "artifact"
+          : getGearCardArtType(stock.cardId)
     }));
   }
   if (view === "services") {
@@ -187,7 +197,7 @@ export function buildShopModel(
 }
 
 function ShopCategoryIcon({ category }: { category: CategoryId }): ReactElement {
-  return <HostImage src={getHostShopCategoryIconPath(category)} alt="" fit="contain" aspectRatio="square" fallback="icon" draggable={false} />;
+  return <HostImage src={getHostShopCategoryIconPath(category === "route-aids" ? "equipment" : category)} alt="" fit="contain" aspectRatio="square" fallback="icon" draggable={false} />;
 }
 
 function ShopEntrance({ model }: { model: HostShopDisplayModel }): ReactElement {

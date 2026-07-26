@@ -76,7 +76,7 @@ describe("Heat Compatibility C6D follower and Threat metadata migration", () => 
     const followers = loadFollowers();
     const threats = loadThreatCards();
     expect(followers).toHaveLength(24);
-    expect(threats).toHaveLength(109);
+    expect(threats).toHaveLength(112);
 
     for (const follower of followers.values()) {
       expect(follower).not.toHaveProperty("lossCondition");
@@ -103,7 +103,7 @@ describe("Heat Compatibility C6D follower and Threat metadata migration", () => 
       if (threat.threatLane) counts[threat.threatLane] = (counts[threat.threatLane] ?? 0) + 1;
       return counts;
     }, {});
-    expect(laneCounts).toEqual({ red: 26, blue: 35, yellow: 48 });
+    expect(laneCounts).toEqual({ red: 29, blue: 35, yellow: 48 });
 
     expect(followers.get("crownless-advocate")?.activeEffect).toEqual({
       type: "gain_note",

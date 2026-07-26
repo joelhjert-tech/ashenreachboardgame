@@ -4,6 +4,7 @@ import { loadAnomalyCards } from "../src/game/content/anomalies.js";
 import { loadArtifactCards } from "../src/game/content/artifacts.js";
 import { loadContracts } from "../src/game/content/contracts.js";
 import { loadEscalationCards } from "../src/game/content/escalations.js";
+import { loadFollowers } from "../src/game/content/followers.js";
 import { loadGear } from "../src/game/content/gear.js";
 import { loadScarCards } from "../src/game/content/scars.js";
 import { loadThreatCards } from "../src/game/content/threats.js";
@@ -110,6 +111,9 @@ function buildCardImagePrompts(): PromptEntryMap {
   const equipment = [...loadGear().values()]
     .filter((item) => item.tier !== "artifact" && hasActiveEquipmentArt(item.id))
     .sort(compareById);
+  const followerArt = [...loadFollowers().values()]
+    .filter((follower) => follower.artCardId && hasActiveFollowerArt(follower.artCardId))
+    .sort(compareById);
   const scars = [...loadScarCards().values()].sort(compareById);
   const escalations = [...loadEscalationCards().values()].sort(compareById);
 
@@ -134,6 +138,15 @@ function buildCardImagePrompts(): PromptEntryMap {
           item.name,
           buildArtifactGearPrompt(item),
           `${item.name} artifact-tier gear card art.`
+        )
+      ),
+      ...followerArt.map((follower) =>
+        buildPromptEntry(
+          "artifact",
+          follower.artCardId!,
+          follower.name,
+          buildFollowerArtPrompt(follower),
+          `${follower.name} follower card art.`
         )
       )
     ],
@@ -322,6 +335,23 @@ function buildArtifactGearPrompt(item: GearItem): string {
   ].join(", ");
 }
 
+function buildFollowerArtPrompt(follower: {
+  name: string;
+  role: string;
+  text: string;
+  flavor?: string;
+  imagePrompt?: string;
+}): string {
+  return [
+    promptPrefix,
+    "single original Ashen Reach follower portrait, expedition companion rather than an operative or enemy",
+    `follower role ${follower.role}`,
+    sanitizeSentence(follower.imagePrompt ?? follower.text),
+    sanitizeSentence(follower.flavor ?? `${follower.name} travels the Ashen Reach`),
+    "practical travel gear or harness, strong readable silhouette, no readable text"
+  ].join(", ");
+}
+
 function buildScarPrompt(card: PromptLike & { penalty: string }): string {
   return [
     promptPrefix,
@@ -374,6 +404,12 @@ function hasActiveEquipmentArt(cardId: string): boolean {
 
 function hasActiveArtifactGearArt(itemId: string): boolean {
   const outputPath = getCardArtOutputPath("artifact", `artifact-${itemId}`);
+  const publicPath = join(process.cwd(), "public", outputPath.replace(/^\//, ""));
+  return existsSync(publicPath);
+}
+
+function hasActiveFollowerArt(artCardId: string): boolean {
+  const outputPath = getCardArtOutputPath("artifact", artCardId);
   const publicPath = join(process.cwd(), "public", outputPath.replace(/^\//, ""));
   return existsSync(publicPath);
 }

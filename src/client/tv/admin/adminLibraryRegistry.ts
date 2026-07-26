@@ -138,6 +138,7 @@ function inferCardType(sourcePath: string): string {
 
 function inferArtType(cardType: string, record: AuthoredCardRecord): RuntimeCardArtCatalogEntry["cardType"] | null {
   if (cardType === "gear") return record.tier === "artifact" ? "artifact" : "equipment";
+  if (cardType === "follower" && typeof record.artCardId === "string") return "artifact";
   if (["threat", "contract", "anomaly", "artifact", "scar", "escalation"].includes(cardType)) {
     return cardType as RuntimeCardArtCatalogEntry["cardType"];
   }

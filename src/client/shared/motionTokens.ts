@@ -24,20 +24,20 @@ export const hostPresentationTimings = {
   modifierRevealMs: 340,
   totalSettleMs: 520,
   resultEmphasisMs: 900,
-  movementStartMs: 300,
-  movementSegmentMs: 520,
-  movementCrossRingMs: 680,
-  movementArrivalMs: 600
+  movementStartMs: 380,
+  movementSegmentMs: 640,
+  movementCrossRingMs: 840,
+  movementArrivalMs: 720
 } as const;
 
 export type SignalJourneyTimingPhase = "stable" | "departure" | "travel" | "arrival";
 
 export const signalJourneyVisualTimings = {
   stable: { holdMs: 0, transitionMs: 0 },
-  departure: { holdMs: hostPresentationTimings.movementStartMs, transitionMs: 240 },
-  segment: { holdMs: hostPresentationTimings.movementSegmentMs, transitionMs: 460 },
-  crossRing: { holdMs: hostPresentationTimings.movementCrossRingMs, transitionMs: 610 },
-  arrival: { holdMs: hostPresentationTimings.movementArrivalMs, transitionMs: 500 }
+  departure: { holdMs: hostPresentationTimings.movementStartMs, transitionMs: 300 },
+  segment: { holdMs: hostPresentationTimings.movementSegmentMs, transitionMs: 560 },
+  crossRing: { holdMs: hostPresentationTimings.movementCrossRingMs, transitionMs: 740 },
+  arrival: { holdMs: hostPresentationTimings.movementArrivalMs, transitionMs: 620 }
 } as const;
 
 export function getSignalJourneyTiming(

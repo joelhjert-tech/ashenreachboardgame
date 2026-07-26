@@ -21,6 +21,7 @@ interface UseSignalTheatreJourneyInput {
   patch: StatePatch<PublicPatchPayload> | null;
   previousPatch: StatePatch<PublicPatchPayload> | null;
   synchronized: boolean;
+  onCompleted?: (eventId: string) => void;
 }
 
 const MAX_COMPLETED_JOURNEYS = 64;
@@ -44,7 +45,8 @@ function crossesReachBoundary(route: readonly string[], step: number): boolean {
 export function useSignalTheatreJourney({
   patch,
   previousPatch,
-  synchronized
+  synchronized,
+  onCompleted
 }: UseSignalTheatreJourneyInput): SignalTheatreJourneyState | null {
   const reducedMotion = useReducedMotion();
   const arrival = useMemo(
@@ -55,6 +57,8 @@ export function useSignalTheatreJourney({
   );
   const [journey, setJourney] = useState<SignalTheatreJourneyState | null>(null);
   const completedEventIdsRef = useRef(new Set<string>());
+  const onCompletedRef = useRef(onCompleted);
+  onCompletedRef.current = onCompleted;
 
   useEffect(() => {
     if (synchronized) return;
@@ -94,13 +98,15 @@ export function useSignalTheatreJourney({
     const timing = getSignalJourneyTiming(journey.phase, journey.crossingRings);
 
     const timeout = window.setTimeout(() => {
+      if (journey.phase === "arrival") {
+        rememberCompletedJourney(completedEventIdsRef.current, journey.eventId);
+        setJourney(null);
+        onCompletedRef.current?.(journey.eventId);
+        return;
+      }
+
       setJourney((current) => {
         if (!current || current.eventId !== journey.eventId) return current;
-
-        if (current.phase === "arrival") {
-          rememberCompletedJourney(completedEventIdsRef.current, current.eventId);
-          return null;
-        }
 
         if (current.phase === "departure") {
           if (lastStep === 0) {

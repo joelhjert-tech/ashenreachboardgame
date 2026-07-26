@@ -35,6 +35,7 @@ interface PhoneBattleViewProps {
   onIntent: (intent: ClientIntent) => void;
   choiceActions?: PhoneBattleChoiceAction[];
   optionalActions?: PhoneBattleChoiceAction[];
+  submissionPending?: boolean;
 }
 
 type BattleContext = "battle" | "operative" | "gear" | "log";
@@ -267,7 +268,8 @@ export function PhoneBattleView({
   self,
   onIntent,
   choiceActions = [],
-  optionalActions = []
+  optionalActions = [],
+  submissionPending = false
 }: PhoneBattleViewProps): ReactElement {
   const identity = getPhoneBattleIdentity(patch);
   const [context, setContext] = useState<BattleContext>("battle");
@@ -347,6 +349,10 @@ export function PhoneBattleView({
   useEffect(() => {
     if (roll || pendingRoll || resolution?.stage === "dice_roll") setRollSubmitting(false);
   }, [pendingRoll, resolution?.stage, roll]);
+
+  useEffect(() => {
+    if (!submissionPending) setRollSubmitting(false);
+  }, [submissionPending]);
 
   usePhoneBackDismissal(context !== "battle" || detailsOpen, () => {
     if (context !== "battle") {
