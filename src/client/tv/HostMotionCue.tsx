@@ -30,6 +30,7 @@ export interface HostMotionCueModel {
   location: string | null;
   progress: readonly [string, string, string, string];
   activeProgressIndex: number;
+  summaryEntries?: string[];
   delta: {
     label: string;
     value: string | null;
@@ -124,6 +125,7 @@ export function buildHostMotionCueModel({
       location,
       progress: ["Result", "Complete", "Handoff", "Next action"],
       activeProgressIndex: 2,
+      summaryEntries: handoff.summaryEntries?.slice(0, 4),
       delta: null
     };
   }
@@ -317,6 +319,11 @@ export function HostMotionCue(props: BuildHostMotionCueModelInput): ReactElement
       </header>
       <div className="host-motion-cue__copy">
         <p>{model.detail}</p>
+        {model.summaryEntries?.length ? (
+          <ul className="host-motion-cue__ledger" aria-label="Previous turn summary">
+            {model.summaryEntries.map((entry) => <li key={entry}>{entry}</li>)}
+          </ul>
+        ) : null}
         <b>{model.next}</b>
       </div>
       {model.delta ? (

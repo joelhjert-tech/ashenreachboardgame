@@ -256,6 +256,8 @@ export function PhoneApp(): ReactElement {
   }));
   const [configuredPlayerCount, setConfiguredPlayerCount] = useState(6);
   const [pendingCharacterId, setPendingCharacterId] = useState<string | null>(null);
+  const [awaitingCharacterResynchronization, setAwaitingCharacterResynchronization] = useState(false);
+  const [characterDisconnectObserved, setCharacterDisconnectObserved] = useState(false);
   const [selectedSignalPieceId, setSelectedSignalPieceId] = useState<SignalPieceId>("beacon");
   const [setupSelectionStep, setSetupSelectionStep] = useState<SetupSelectionStep>("piece");
   const [signalPieceAnnouncement, setSignalPieceAnnouncement] = useState("");
@@ -272,7 +274,7 @@ export function PhoneApp(): ReactElement {
   const previousCharacterSelectedRef = useRef<boolean | null>(null);
   const joinUnavailable = joinError === "No open seats remain";
   const isLandscape = useLandscapeMode();
-  const { patch, error, sendIntent, status, debugEvents, clearDebugEvents } = useRoomSubscription({
+  const { patch, error, sendIntent, resynchronize, status, synchronized, debugEvents, clearDebugEvents } = useRoomSubscription({
     view: "phone",
     auth
   });
@@ -415,13 +417,21 @@ export function PhoneApp(): ReactElement {
     }
     setJoinError(null);
     setPendingCharacterId(characterId);
+    setAwaitingCharacterResynchronization(false);
+    setCharacterDisconnectObserved(false);
     setFormState((current) => ({ ...current, characterId }));
-    sendIntent({
+    const sent = sendIntent({
       type: "SELECT_CHARACTER",
       seatId: auth?.seatId ?? "",
       characterId,
       signalPieceId: selectedSignalPieceId
     });
+    if (sent === false) {
+      setPendingCharacterId(null);
+      setAwaitingCharacterResynchronization(false);
+      setJoinError("Restoring the latest room state. Review your selection before trying again.");
+      resynchronize?.();
+    }
   };
 
   const handleConfigureLobby = async () => {
@@ -636,6 +646,32 @@ export function PhoneApp(): ReactElement {
   }, [activeSeatId, auth, phonePatch?.payload.status]);
 
   useEffect(() => {
+    if (!pendingCharacterId || awaitingCharacterResynchronization) return;
+    const timeout = window.setTimeout(() => {
+      setJoinError("Restoring the latest room state. Your operative selection will not be sent again automatically.");
+      setAwaitingCharacterResynchronization(true);
+      if (!synchronized) setCharacterDisconnectObserved(true);
+      resynchronize?.();
+    }, 6000);
+    return () => window.clearTimeout(timeout);
+  }, [awaitingCharacterResynchronization, pendingCharacterId, resynchronize, synchronized]);
+
+  useEffect(() => {
+    if (!awaitingCharacterResynchronization) return;
+    if (!synchronized) {
+      setCharacterDisconnectObserved(true);
+      return;
+    }
+    if (!characterDisconnectObserved) return;
+    setPendingCharacterId(null);
+    setAwaitingCharacterResynchronization(false);
+    setCharacterDisconnectObserved(false);
+    setCharacterSelectionRetryRequired(true);
+    setFormState((current) => ({ ...current, characterId: "" }));
+    setJoinError("Latest authoritative setup state restored. Review your operative before selecting again.");
+  }, [awaitingCharacterResynchronization, characterDisconnectObserved, synchronized]);
+
+  useEffect(() => {
     if (!ownSeat) {
       return;
     }
@@ -650,6 +686,8 @@ export function PhoneApp(): ReactElement {
 
     if (pendingCharacterId && ownSeat.characterId !== pendingCharacterId) {
       setPendingCharacterId(null);
+      setAwaitingCharacterResynchronization(false);
+      setCharacterDisconnectObserved(false);
       setCharacterSelectionRetryRequired(true);
       setFormState((current) => ({ ...current, characterId: "" }));
       setJoinError("The room confirmed a different operative. Choose again.");
@@ -671,6 +709,8 @@ export function PhoneApp(): ReactElement {
       setSelectedSignalPieceId(ownSeat.signalPieceId);
     }
     setPendingCharacterId(null);
+    setAwaitingCharacterResynchronization(false);
+    setCharacterDisconnectObserved(false);
     setCharacterSelectionRetryRequired(false);
   }, [
     characterSelectionRetryRequired,
@@ -688,6 +728,8 @@ export function PhoneApp(): ReactElement {
     }
 
     setPendingCharacterId(null);
+    setAwaitingCharacterResynchronization(false);
+    setCharacterDisconnectObserved(false);
     setFormState((current) => ({ ...current, characterId: "" }));
     setJoinError(error);
   }, [error, pendingCharacterId]);
@@ -962,7 +1004,19 @@ export function PhoneApp(): ReactElement {
                     <span>{auth.displayName}</span>
                     <h1>{setupSelectionStep === "piece" ? "Choose Piece" : "Choose Operative"}</h1>
                   </div>
-                  <small>{setupSelectionStep === "piece" ? "Step 1 of 3" : "Step 2 of 3"}</small>
+                  <div className="phone-setup-step__header-actions">
+                    <small>{setupSelectionStep === "piece" ? "Step 1 of 3" : "Step 2 of 3"}</small>
+                    {setupSelectionStep === "operative" ? (
+                      <button
+                        type="button"
+                        className="phone-setup-step__back"
+                        disabled={pendingCharacterId !== null}
+                        onClick={() => setSetupSelectionStep("piece")}
+                      >
+                        Back to Pieces
+                      </button>
+                    ) : null}
+                  </div>
                 </header>
                 {phonePatch.payload.lateJoinPending ? <p className="phone-panel-kicker">Join Game In Progress</p> : null}
                 {setupSelectionStep === "piece" ? (
@@ -1110,16 +1164,6 @@ export function PhoneApp(): ReactElement {
                       })}
                     </div>
                     {(joinError || error) && <p className="error" role="alert">{joinError ?? error}</p>}
-                    <div className="phone-setup-step__actions">
-                      <button
-                        type="button"
-                        className="phone-button phone-button-secondary"
-                        disabled={pendingCharacterId !== null}
-                        onClick={() => setSetupSelectionStep("piece")}
-                      >
-                        Back to Pieces
-                      </button>
-                    </div>
                   </>
                 )}
               </section>
@@ -1152,10 +1196,12 @@ export function PhoneApp(): ReactElement {
             patch={phonePatch?.payload ?? null}
             patchSequence={phonePatch?.sequence}
             serverError={error}
+            connectionSynchronized={synchronized}
             characters={projectedCharacterOptions
               ? projectedCharacterOptions.filter((option) => option.eligible).map((option) => option.character)
               : characters}
             onIntent={canSendLobbyIntent ? sendIntent : null}
+            onRequestResynchronize={resynchronize}
             onLeave={roomBackGuard.requestLeave}
             onLobbyBack={() => void backToCharacterSelect()}
             onStartSession={isSetupHost ? handleStartFromPhone : undefined}

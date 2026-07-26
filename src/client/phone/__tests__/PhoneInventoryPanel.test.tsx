@@ -1882,6 +1882,53 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("button", { name: /roll movement/i })).toBeEnabled();
   });
 
+  it("restores a stalled required action after six seconds without resending it", async () => {
+    const onIntent = vi.fn(() => true);
+    const onRequestResynchronize = vi.fn();
+    const patch = createPatch({
+      phase: "navigation",
+      encounter: null,
+      requiredAction: {
+        id: "movement-roll:seat-1:turn-watchdog",
+        kind: "movement",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Lane",
+        requiredTab: "move",
+        label: "Roll for movement",
+        detail: "Roll once to reveal legal destinations.",
+        canAct: true,
+        waiting: false,
+        privacy: "owner"
+      },
+      movementPlanner: null
+    });
+    const renderView = (connectionSynchronized: boolean) => (
+      <PortraitControllerView self={patch.self} roomCode="RT7P4" displayName="Lane" connectionStatus={connectionSynchronized ? "open" : "closed"}
+        activeSeatId="seat-1" activeContractCard={null} patch={patch} patchSequence={31}
+        connectionSynchronized={connectionSynchronized} characters={characters} onIntent={onIntent}
+        onRequestResynchronize={onRequestResynchronize} onLeave={vi.fn()} />
+    );
+    const view = render(renderView(true));
+    const roll = await screen.findByRole("button", { name: /roll movement/i });
+
+    vi.useFakeTimers();
+    fireEvent.click(roll);
+    act(() => vi.advanceTimersByTime(6000));
+
+    expect(onIntent).toHaveBeenCalledTimes(1);
+    expect(onRequestResynchronize).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("alert")).toHaveTextContent(/will not be sent again automatically/i);
+    expect(roll).toBeDisabled();
+
+    view.rerender(renderView(false));
+    view.rerender(renderView(true));
+    act(() => vi.runOnlyPendingTimers());
+
+    expect(onIntent).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: /roll movement/i })).toBeEnabled();
+    expect(screen.getByRole("alert")).toHaveTextContent(/latest authoritative action restored/i);
+  });
+
   it("shows private rivalry agenda details on the Quest tab", () => {
     const patch = createPatch({
       interactionMode: "rivalry",
@@ -2620,6 +2667,53 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("button", { name: `Inspect ${secondMission.name}` })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /^select mission$/i })).toHaveLength(1);
     expect(screen.getByRole("button", { name: /^selecting/i })).toBeDisabled();
+  });
+
+  it("recovers a stalled setup mission selection without duplicating it", () => {
+    const onIntent = vi.fn(() => true);
+    const onRequestResynchronize = vi.fn();
+    const mission = {
+      id: "choir-quietus",
+      name: "Quietus Ledger",
+      factionGiver: "Glass Choir",
+      text: "Silence one hunter on the listening road.",
+      objective: { type: "defeatCount" as const, target: 1 },
+      reward: { type: "gain_note" as const, text: "The Choir owes you a clean favor." }
+    };
+    const lobbyPatch = createPatch({
+      phase: "start",
+      status: "lobby",
+      seats: [{ seatId: "seat-1", characterId: "void-marshal", characterSelected: true, displayName: "Lane", connected: true, ready: false, kicked: false }],
+      startingContractOptions: [mission],
+      selectedStartingContract: null,
+      canReady: false
+    });
+    const renderView = (connectionSynchronized: boolean) => (
+      <PortraitControllerView self={lobbyPatch.self} roomCode="RT7P4" displayName="Lane"
+        connectionStatus={connectionSynchronized ? "open" : "closed"} activeSeatId={null} activeContractCard={null}
+        patch={lobbyPatch} patchSequence={8} connectionSynchronized={connectionSynchronized}
+        characters={characters} onIntent={onIntent} onRequestResynchronize={onRequestResynchronize}
+        onLeave={vi.fn()} onLobbyBack={vi.fn()} />
+    );
+    const view = render(renderView(true));
+    const select = screen.getByRole("button", { name: /^select mission$/i });
+
+    vi.useFakeTimers();
+    fireEvent.click(select);
+    act(() => vi.advanceTimersByTime(6000));
+
+    expect(onIntent).toHaveBeenCalledTimes(1);
+    expect(onRequestResynchronize).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("status")).toHaveTextContent(/will not be sent again automatically/i);
+    expect(select).toBeDisabled();
+
+    view.rerender(renderView(false));
+    view.rerender(renderView(true));
+    act(() => vi.runOnlyPendingTimers());
+
+    expect(onIntent).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: /^select mission$/i })).toBeEnabled();
+    expect(screen.getByRole("status")).toHaveTextContent(/authoritative setup state restored/i);
   });
 
   it("keeps the combat-card drawer filtered to usable timing-window cards", () => {

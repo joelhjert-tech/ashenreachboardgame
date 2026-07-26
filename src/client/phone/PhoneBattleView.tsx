@@ -20,6 +20,7 @@ import { getBattleAssistViewModel } from "./inventoryPresentation.js";
 import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
 import { useAuthoritativeResultCollapse } from "../shared/useAuthoritativeResultCollapse.js";
 import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
+import { PhoneResultReadyGate } from "./PhoneResultReadyGate.js";
 
 export interface PhoneBattleChoiceAction {
   key: string;
@@ -419,6 +420,46 @@ export function PhoneBattleView({
     stat,
     statLabel
   ]);
+
+  const settledResult =
+    Boolean(result && outcome)
+    && primaryAction.label === "Continue"
+    && !primaryAction.disabled
+    && choiceActions.length === 0
+    && optionalActions.length === 0;
+
+  if (settledResult) {
+    return (
+      <section
+        className={`phone-battle-shell phone-battle-shell--result-gate phone-battle-shell--${result ?? "active"}`}
+        data-testid="phone-battle-shell"
+        data-battle-identity={identity ?? undefined}
+        data-battle-ui="unified-verdict"
+        data-battle-restored={restored ? "true" : "false"}
+        data-battle-result="true"
+      >
+        <PhoneResultReadyGate
+          actorName={playerName}
+          operativeName={self.character.name}
+          operativeId={self.character.id}
+          sourceLabel="Battle"
+          challengeTitle={enemyName}
+          challengeArtType={enemyArtType(patch)}
+          challengeArtId={enemyId}
+          challengeFlavor={resolution?.card?.flavor ?? encounter?.flavor ?? null}
+          success={result === "success" ? true : result === "defeat" ? false : null}
+          playerTotal={finalTotal}
+          targetTotal={opponentTotal}
+          outcomeTitle={outcome?.title ?? resultLabel}
+          outcomeText={outcome?.text ?? outcomeFlavor ?? "The authoritative battle result is complete."}
+          outcomeEffects={outcome?.effects ?? []}
+          resultDeltas={patch.playerResultDeltas ?? patch.publicResultDeltas ?? []}
+          canContinue
+          onContinue={() => primaryAction.action?.()}
+        />
+      </section>
+    );
+  }
 
   const combatantArena = (
     <section

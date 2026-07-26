@@ -60,8 +60,10 @@ interface PortraitControllerViewProps {
   patch: PhonePatchPayload | null;
   patchSequence?: number;
   serverError?: string | null;
+  connectionSynchronized?: boolean;
   characters: CharacterCatalogEntry[];
-  onIntent: ((intent: ClientIntent) => void) | null;
+  onIntent: ((intent: ClientIntent) => boolean | void) | null;
+  onRequestResynchronize?: () => void;
   onLeave: () => void;
   onLobbyBack?: () => void;
   onStartSession?: () => void;
@@ -139,7 +141,7 @@ function getPhoneActionGuidance(patch: PhonePatchPayload | null, self: PhoneSelf
             : category === "hazard"
               ? "Hazard"
               : "Encounter";
-    return { requiredTab: "battle", title, detail: "Review the test, result, and authored consequence.", canAct: true };
+    return { requiredTab: "action", title, detail: "Review the test, result, and authored consequence.", canAct: true };
   }
 
   if (!isActiveSeat) {
@@ -528,6 +530,7 @@ function PhoneMissionReplacementView({
   operativeName,
   options,
   pendingContractId,
+  recoveryMessage,
   stageRef,
   onSelect
 }: {
@@ -535,6 +538,7 @@ function PhoneMissionReplacementView({
   operativeName: string;
   options: ContractCard[];
   pendingContractId: string | null;
+  recoveryMessage?: string | null;
   stageRef: RefObject<HTMLElement | null>;
   onSelect: (contractId: string) => void;
 }): ReactElement {
@@ -627,6 +631,7 @@ function PhoneMissionReplacementView({
           ))}
         </section>
 
+        {recoveryMessage ? <p className="phone-submission-recovery" role="status">{recoveryMessage}</p> : null}
         <p className="phone-mission-replacement__privacy">
           Mission details remain private until the rules reveal a public result.
         </p>
@@ -887,8 +892,10 @@ export function PortraitControllerView({
   patch,
   patchSequence,
   serverError = null,
+  connectionSynchronized = true,
   characters,
   onIntent,
+  onRequestResynchronize,
   onLeave,
   onLobbyBack,
   onStartSession,
@@ -906,12 +913,21 @@ export function PortraitControllerView({
   const [choosingStartingMission, setChoosingStartingMission] = useState(false);
   const [pendingStartingContract, setPendingStartingContract] = useState<{ id: string; sequence: number } | null>(null);
   const [pendingActiveContract, setPendingActiveContract] = useState<{ id: string; sequence: number } | null>(null);
+  const [pendingSetupSubmission, setPendingSetupSubmission] = useState<{
+    kind: "starting-contract" | "replacement-contract" | "ready";
+    sequence: number;
+  } | null>(null);
+  const [setupSubmissionRecovery, setSetupSubmissionRecovery] = useState<string | null>(null);
+  const [awaitingSetupResynchronization, setAwaitingSetupResynchronization] = useState(false);
+  const [setupDisconnectObserved, setSetupDisconnectObserved] = useState(false);
   const [pendingRequiredIntent, setPendingRequiredIntent] = useState<{
     projectionId: string;
     sequence: number;
     label: string;
   } | null>(null);
   const [actionRecovery, setActionRecovery] = useState<{ message: string; sequence: number } | null>(null);
+  const [awaitingRequiredActionResynchronization, setAwaitingRequiredActionResynchronization] = useState(false);
+  const [requiredActionDisconnectObserved, setRequiredActionDisconnectObserved] = useState(false);
   const [qaRequiredActionState, setQaRequiredActionState] = useState<{ status: RequiredActionStatus; label: string } | null>(null);
   const startingMissionSectionRef = useRef<HTMLElement | null>(null);
   const replacementMissionStageRef = useRef<HTMLElement | null>(null);
@@ -1108,25 +1124,80 @@ export function PortraitControllerView({
     const projectionChanged = patch?.requiredAction?.id !== pendingRequiredIntent.projectionId;
     if (projectionChanged) {
       setPendingRequiredIntent(null);
+      setAwaitingRequiredActionResynchronization(false);
+      setRequiredActionDisconnectObserved(false);
     }
   }, [patch?.requiredAction?.id, pendingRequiredIntent]);
 
   useEffect(() => {
     if (!serverError || !patch?.requiredAction) return;
     const stale = /stale|changed|mismatch|no longer|already resolved|unavailable/i.test(serverError);
-    if (pendingRequiredIntent) setPendingRequiredIntent(null);
+    const transportFailure = /not sent|connection|socket|restoring/i.test(serverError);
+    if (pendingRequiredIntent && !transportFailure) setPendingRequiredIntent(null);
+    if (transportFailure) {
+      setAwaitingRequiredActionResynchronization(true);
+      if (!connectionSynchronized) setRequiredActionDisconnectObserved(true);
+    }
     setActionRecovery({
-      message: stale
+      message: transportFailure
+        ? "Restoring latest state. The action will not be sent again automatically."
+        : stale
         ? "The turn has advanced. The current required action has been restored."
         : "The action was not accepted. Restoring the current action.",
       sequence: patchSequence ?? 0
     });
-  }, [patch?.requiredAction, patchSequence, pendingRequiredIntent, serverError]);
+  }, [connectionSynchronized, patch?.requiredAction, patchSequence, pendingRequiredIntent, serverError]);
 
   useEffect(() => {
-    if (!actionRecovery || typeof patchSequence !== "number" || patchSequence <= actionRecovery.sequence) return;
+    if (
+      awaitingRequiredActionResynchronization ||
+      !actionRecovery ||
+      typeof patchSequence !== "number" ||
+      patchSequence <= actionRecovery.sequence
+    ) return;
     setActionRecovery(null);
-  }, [actionRecovery, patchSequence]);
+  }, [actionRecovery, awaitingRequiredActionResynchronization, patchSequence]);
+
+  useEffect(() => {
+    if (!pendingRequiredIntent || awaitingRequiredActionResynchronization) return;
+    const timer = window.setTimeout(() => {
+      setActionRecovery({
+        message: "Restoring latest state. The action will not be sent again automatically.",
+        sequence: patchSequence ?? pendingRequiredIntent.sequence
+      });
+      setAwaitingRequiredActionResynchronization(true);
+      if (!connectionSynchronized) setRequiredActionDisconnectObserved(true);
+      onRequestResynchronize?.();
+    }, 6000);
+    return () => window.clearTimeout(timer);
+  }, [
+    awaitingRequiredActionResynchronization,
+    connectionSynchronized,
+    onRequestResynchronize,
+    patchSequence,
+    pendingRequiredIntent
+  ]);
+
+  useEffect(() => {
+    if (!awaitingRequiredActionResynchronization) return;
+    if (!connectionSynchronized) {
+      setRequiredActionDisconnectObserved(true);
+      return;
+    }
+    if (!requiredActionDisconnectObserved) return;
+    setPendingRequiredIntent(null);
+    setAwaitingRequiredActionResynchronization(false);
+    setRequiredActionDisconnectObserved(false);
+    setActionRecovery({
+      message: "Latest authoritative action restored.",
+      sequence: patchSequence ?? 0
+    });
+  }, [
+    awaitingRequiredActionResynchronization,
+    connectionSynchronized,
+    patchSequence,
+    requiredActionDisconnectObserved
+  ]);
 
   useEffect(() => {
     if (!import.meta.env.DEV || typeof window === "undefined" || !new URLSearchParams(window.location.search).has("qaNetworkControls")) return;
@@ -1149,34 +1220,71 @@ export function PortraitControllerView({
 
     if (patch?.selectedStartingContract?.id === pendingStartingContract.id) {
       setPendingStartingContract(null);
+      setPendingSetupSubmission(null);
+      setSetupSubmissionRecovery(null);
       setChoosingStartingMission(false);
       return;
     }
 
     if (typeof patchSequence === "number" && patchSequence > pendingStartingContract.sequence) {
       setPendingStartingContract(null);
+      setPendingSetupSubmission(null);
     }
   }, [patch?.selectedStartingContract?.id, patchSequence, pendingStartingContract]);
 
   useEffect(() => {
-    if (!pendingStartingContract) return;
-    const pendingId = pendingStartingContract.id;
+    if (!pendingSetupSubmission || awaitingSetupResynchronization) return;
     const timeout = window.setTimeout(() => {
-      setPendingStartingContract((current) => current?.id === pendingId ? null : current);
-    }, 3000);
+      setSetupSubmissionRecovery("Restoring latest state. The selection will not be sent again automatically.");
+      setAwaitingSetupResynchronization(true);
+      if (!connectionSynchronized) setSetupDisconnectObserved(true);
+      onRequestResynchronize?.();
+    }, 6000);
     return () => window.clearTimeout(timeout);
-  }, [pendingStartingContract]);
+  }, [
+    awaitingSetupResynchronization,
+    connectionSynchronized,
+    onRequestResynchronize,
+    pendingSetupSubmission
+  ]);
+
+  useEffect(() => {
+    if (!awaitingSetupResynchronization) return;
+    if (!connectionSynchronized) {
+      setSetupDisconnectObserved(true);
+      return;
+    }
+    if (!setupDisconnectObserved) return;
+    setPendingStartingContract(null);
+    setPendingActiveContract(null);
+    setPendingSetupSubmission(null);
+    setAwaitingSetupResynchronization(false);
+    setSetupDisconnectObserved(false);
+    setSetupSubmissionRecovery("Latest authoritative setup state restored.");
+  }, [awaitingSetupResynchronization, connectionSynchronized, setupDisconnectObserved]);
 
   useEffect(() => {
     if (!pendingActiveContract) return;
     if (self?.character.activeContract?.contractId === pendingActiveContract.id) {
       setPendingActiveContract(null);
+      setPendingSetupSubmission(null);
+      setSetupSubmissionRecovery(null);
       return;
     }
     if (typeof patchSequence === "number" && patchSequence > pendingActiveContract.sequence) {
       setPendingActiveContract(null);
+      setPendingSetupSubmission(null);
     }
   }, [patchSequence, pendingActiveContract, self?.character.activeContract?.contractId]);
+
+  useEffect(() => {
+    if (!pendingSetupSubmission || pendingSetupSubmission.kind !== "ready") return;
+    const setupSeatReady = patch?.seats.find((seat) => seat.seatId === self?.seatId)?.ready;
+    if (setupSeatReady || (typeof patchSequence === "number" && patchSequence > pendingSetupSubmission.sequence)) {
+      setPendingSetupSubmission(null);
+      setSetupSubmissionRecovery(null);
+    }
+  }, [patch?.seats, patchSequence, pendingSetupSubmission, self?.seatId]);
 
   const setupFocusSelector = patch?.setup?.stage === "mission-selection"
     ? ".phone-starting-mission-select:not([disabled])"
@@ -1241,6 +1349,7 @@ export function PortraitControllerView({
       patch?.cooperativeAssistanceEligibility ||
       (patch?.activeResolution?.assistance && patch.activeResolution.assistance.activeSeatId === self.seatId)
   );
+  const focusedResolutionTab: TurnActionTab = opposedBattleActive ? "battle" : "action";
   const matchEnded = patch?.status === "ended";
   const focusedResolutionActive = matchEnded || opposedBattleActive || challengeTrialActive || cooperativeAssistanceActive;
   const suppressedEquipmentInstanceIds = new Set(
@@ -1248,12 +1357,26 @@ export function PortraitControllerView({
       .filter((suppression) => suppression.active)
       .map((suppression) => suppression.itemInstanceId)
   );
+  const sendControllerIntent = (intent: ClientIntent): boolean => {
+    if (!onIntent) return false;
+    const result = onIntent(intent);
+    if (result === false) onRequestResynchronize?.();
+    return result !== false;
+  };
 
   if (isLobbyWaiting) {
     const isReady = ownSeat?.ready ?? false;
     const startingContractOptions = patch?.startingContractOptions ?? [];
     const selectedStartingContract = patch?.selectedStartingContract ?? null;
-    const canReady = Boolean(patch?.canReady && selectedStartingContract && onIntent && !isReady && !choosingStartingMission && !pendingStartingContract);
+    const canReady = Boolean(
+      patch?.canReady
+      && selectedStartingContract
+      && onIntent
+      && !isReady
+      && !choosingStartingMission
+      && !pendingStartingContract
+      && pendingSetupSubmission?.kind !== "ready"
+    );
     const setup = patch?.setup ?? null;
     const canHostStart = Boolean(
       !isLateJoinPending &&
@@ -1303,11 +1426,18 @@ export function PortraitControllerView({
                         pending={contract.id === pendingStartingContract?.id}
                         onSelect={() => {
                           setPendingStartingContract({ id: contract.id, sequence: patchSequence ?? 0 });
-                          onIntent?.({
+                          setPendingSetupSubmission({ kind: "starting-contract", sequence: patchSequence ?? 0 });
+                          setSetupSubmissionRecovery(null);
+                          const sent = sendControllerIntent({
                             type: "SELECT_STARTING_CONTRACT",
                             seatId: self.seatId,
                             contractId: contract.id
                           });
+                          if (sent === false) {
+                            setPendingStartingContract(null);
+                            setPendingSetupSubmission(null);
+                            setSetupSubmissionRecovery("Restoring latest state. Review the mission before trying again.");
+                          }
                         }}
                       />
                     ))}
@@ -1325,13 +1455,21 @@ export function PortraitControllerView({
                     : setup?.actorSeatId === self.seatId ? setup.activeInstruction : readyDisabledReason}
               </p>
 
-              <div className="phone-character-waiting-actions">
+              <div className={`phone-character-waiting-actions${selectedStartingContract ? "" : " is-mission-unselected"}`}>
                 <button
                   type="button"
                   className="phone-button phone-button-primary phone-lobby-ready-button"
                   data-testid="phone-setup-ready-action"
                   disabled={!canReady}
-                  onClick={() => onIntent?.({ type: "SET_READY", seatId: self.seatId, ready: true })}
+                  onClick={() => {
+                    setPendingSetupSubmission({ kind: "ready", sequence: patchSequence ?? 0 });
+                    setSetupSubmissionRecovery(null);
+                    const sent = sendControllerIntent({ type: "SET_READY", seatId: self.seatId, ready: true });
+                    if (!sent) {
+                      setPendingSetupSubmission(null);
+                      setSetupSubmissionRecovery("Restoring latest state. Review Ready before trying again.");
+                    }
+                  }}
                 >
                   {isLateJoinPending ? "Join Game" : "Ready"}
                 </button>
@@ -1366,6 +1504,7 @@ export function PortraitControllerView({
                   </button>
                 ) : null}
               </div>
+              {setupSubmissionRecovery ? <p className="phone-submission-recovery" role="status">{setupSubmissionRecovery}</p> : null}
               {patch?.selfIsSetupHost ? (
                 <section className="phone-setup-blockers" aria-live="polite">
                   <strong>{setup?.canStart ? "Ready to begin" : "Start requirements"}</strong>
@@ -1404,15 +1543,23 @@ export function PortraitControllerView({
         operativeName={self.character.name}
         options={patch.pendingMissionSelection.options}
         pendingContractId={pendingActiveContract?.id ?? null}
+        recoveryMessage={setupSubmissionRecovery}
         stageRef={replacementMissionStageRef}
         onSelect={(contractId) => {
           setPendingActiveContract({ id: contractId, sequence: patchSequence ?? 0 });
-          onIntent?.({
+          setPendingSetupSubmission({ kind: "replacement-contract", sequence: patchSequence ?? 0 });
+          setSetupSubmissionRecovery(null);
+          const sent = sendControllerIntent({
             type: "SELECT_REPLACEMENT_CONTRACT",
             seatId: self.seatId,
             selectionId: patch.pendingMissionSelection!.id,
             contractId
           });
+          if (sent === false) {
+            setPendingActiveContract(null);
+            setPendingSetupSubmission(null);
+            setSetupSubmissionRecovery("Restoring latest state. Review the mission before trying again.");
+          }
         }}
       />
     );
@@ -1486,14 +1633,23 @@ export function PortraitControllerView({
         : "blocked");
   const sendRequiredIntent = (intent: ClientIntent): void => {
     if (!onIntent || pendingRequiredIntent) return;
-    if (requiredAction?.canAct && isCommittingRequiredActionIntent(intent)) {
+    const commitsRequiredAction = Boolean(requiredAction?.canAct && isCommittingRequiredActionIntent(intent));
+    if (commitsRequiredAction) {
       setPendingRequiredIntent({
-        projectionId: requiredAction.id,
+        projectionId: requiredAction!.id,
         sequence: patchSequence ?? 0,
         label: submittingLabel(intent)
       });
     }
-    onIntent(intent);
+    const sent = sendControllerIntent(intent);
+    if (sent === false && commitsRequiredAction) {
+      setActionRecovery({
+        message: "Restoring latest state. The action will not be sent again automatically.",
+        sequence: patchSequence ?? 0
+      });
+      setAwaitingRequiredActionResynchronization(true);
+      if (!connectionSynchronized) setRequiredActionDisconnectObserved(true);
+    }
   };
   const renderRequiredAction = (content?: ReactElement, compact = false): ReactElement | null => {
     if (!requiredAction) return content ?? null;
@@ -1552,7 +1708,7 @@ export function PortraitControllerView({
                   characters={characters}
                   onIntent={sendRequiredIntent}
                   patch={patch}
-                  selectedTurnTab="battle"
+                  selectedTurnTab={focusedResolutionTab}
                   hideTurnTabs
                   onLeaveRoom={handleLeave}
                 />
@@ -1562,7 +1718,7 @@ export function PortraitControllerView({
                   characters={characters}
                   onIntent={sendRequiredIntent}
                   patch={patch}
-                  selectedTurnTab="battle"
+                  selectedTurnTab={focusedResolutionTab}
                   hideTurnTabs
                   onLeaveRoom={handleLeave}
                 />
@@ -1720,7 +1876,7 @@ export function PortraitControllerView({
                     self={self}
                     crownKeyFragments={patch.crownKeyFragments ?? 0}
                     assistSeatIds={patch.eligibleNemesisAssistSeatIds ?? []}
-                    onIntent={onIntent}
+                    onIntent={sendControllerIntent}
                   />
                   {localUnboundNemeses.map((nemesis) => (
                     <BoundNemesisPanel
@@ -1730,7 +1886,7 @@ export function PortraitControllerView({
                       self={self}
                       crownKeyFragments={patch.crownKeyFragments ?? 0}
                       assistSeatIds={patch.eligibleNemesisAssistSeatIds ?? []}
-                      onIntent={onIntent}
+                      onIntent={sendControllerIntent}
                     />
                   ))}
                 </>
@@ -1746,7 +1902,7 @@ export function PortraitControllerView({
                 {patch && onIntent ? (
                   <PhoneInventoryPanel
                     patch={patch}
-                    onIntent={onIntent}
+                    onIntent={sendControllerIntent}
                   />
                 ) : (
                   <p className="phone-muted-copy">Inventory appears when the room syncs.</p>
@@ -1832,7 +1988,7 @@ export function PortraitControllerView({
                     icon="rivalry"
                     initiallyOpen
                 >
-                  <RivalryQuestPanel rivalry={patch.privateRivalry} seatId={self.seatId} onIntent={onIntent} />
+                  <RivalryQuestPanel rivalry={patch.privateRivalry} seatId={self.seatId} onIntent={sendControllerIntent} />
                 </ObjectiveDisclosure>
               ) : null}
               <ObjectiveDisclosure

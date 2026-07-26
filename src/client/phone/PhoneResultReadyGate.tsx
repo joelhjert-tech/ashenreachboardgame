@@ -3,6 +3,7 @@ import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { getCharacterPortraitPath, getResultReadyGatePath } from "../shared/assetPaths.js";
+import type { ResultDelta } from "../shared/types.js";
 
 export interface PhoneResultReadyGateProps {
   actorName: string;
@@ -12,13 +13,17 @@ export interface PhoneResultReadyGateProps {
   challengeTitle: string;
   challengeArtType: CardImageType | null;
   challengeArtId: string | null;
+  challengeImagePath?: string | null;
   challengeFlavor?: string | null;
   success: boolean | null;
   playerTotal: number | null;
   targetTotal: number | null;
+  playerTotalLabel?: string;
+  targetTotalLabel?: string;
   outcomeTitle: string;
   outcomeText: string;
   outcomeEffects: string[];
+  resultDeltas?: ResultDelta[];
   canContinue: boolean;
   onContinue: () => void;
 }
@@ -37,18 +42,32 @@ export function PhoneResultReadyGate({
   challengeTitle,
   challengeArtType,
   challengeArtId,
+  challengeImagePath = null,
   challengeFlavor,
   success,
   playerTotal,
   targetTotal,
+  playerTotalLabel = "Your total",
+  targetTotalLabel = "Challenge",
   outcomeTitle,
   outcomeText,
   outcomeEffects,
+  resultDeltas = [],
   canContinue,
   onContinue
 }: PhoneResultReadyGateProps): ReactElement {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const outcomeTone = success === true ? "success" : success === false ? "defeat" : "neutral";
+  const visibleChanges = [
+    ...outcomeEffects,
+    ...resultDeltas
+      .filter((delta) => delta.visibility !== "hidden")
+      .map((delta) => delta.privateText ?? delta.publicText)
+  ]
+    .map((entry) => entry.trim())
+    .filter((entry, index, entries) => entry.length > 0 && entries.indexOf(entry) === index)
+    .filter((entry) => entry.toLocaleLowerCase() !== outcomeText.trim().toLocaleLowerCase())
+    .slice(0, 4);
 
   return (
     <section
@@ -89,7 +108,14 @@ export function PhoneResultReadyGate({
             <figcaption><span>Operative</span><strong>{operativeName}</strong></figcaption>
           </figure>
           <figure className="is-challenge">
-            {challengeArtType ? (
+            {challengeImagePath ? (
+              <img
+                className="phone-result-gate__challenge-art"
+                src={challengeImagePath}
+                alt={`${challengeTitle} location artwork`}
+                decoding="async"
+              />
+            ) : challengeArtType ? (
               <CardArtImage
                 cardType={challengeArtType}
                 cardId={challengeArtId}
@@ -105,7 +131,7 @@ export function PhoneResultReadyGate({
         </div>
 
         <div className="phone-result-gate__rift" aria-hidden="true" />
-        <div className="phone-result-gate__seal" aria-label={playerTotal === null ? "Authoritative result" : `Your total ${playerTotal}`}>
+        <div className="phone-result-gate__seal" aria-label={playerTotal === null ? "Authoritative result" : `${playerTotalLabel} ${playerTotal}`}>
           <span>Total</span>
           <strong>{playerTotal ?? "—"}</strong>
         </div>
@@ -113,29 +139,31 @@ export function PhoneResultReadyGate({
           <div
             className="phone-result-gate__totals"
             data-testid="phone-roll-result"
-            aria-label={`Your total ${playerTotal ?? "unavailable"}, challenge ${targetTotal ?? "unavailable"}`}
+            aria-label={`${playerTotalLabel} ${playerTotal ?? "unavailable"}, ${targetTotalLabel} ${targetTotal ?? "unavailable"}`}
           >
-            <div><span>Your total</span><strong>{playerTotal ?? "—"}</strong></div>
+            <div><span>{playerTotalLabel}</span><strong>{playerTotal ?? "—"}</strong></div>
             <i aria-hidden="true">vs</i>
-            <div><span>Challenge</span><strong>{targetTotal ?? "—"}</strong></div>
+            <div><span>{targetTotalLabel}</span><strong>{targetTotal ?? "—"}</strong></div>
           </div>
         ) : null}
       </div>
 
       <section className="phone-result-gate__consequence" aria-label="Authoritative consequence">
-        <span>Authoritative consequence</span>
-        <strong>{outcomeTitle}</strong>
-        <p>{outcomeText}</p>
-        {outcomeEffects.length > 0 ? (
-          <ul className="phone-result-gate__effects">
-            {outcomeEffects.map((effect) => <li key={effect}>{effect}</li>)}
-          </ul>
-        ) : null}
-        {detailsOpen ? (
-          <div className="phone-result-gate__details" data-testid="phone-result-ready-details">
-            {challengeFlavor ? <p>{challengeFlavor}</p> : null}
-          </div>
-        ) : null}
+        <div className="phone-result-gate__consequence-copy">
+          <span>Authoritative consequence</span>
+          <strong>{outcomeTitle}</strong>
+          <p>{outcomeText}</p>
+          {visibleChanges.length > 0 ? (
+            <ul className="phone-result-gate__effects" aria-label="Applied changes">
+              {visibleChanges.map((effect) => <li key={effect}>{effect}</li>)}
+            </ul>
+          ) : null}
+          {detailsOpen ? (
+            <div className="phone-result-gate__details" data-testid="phone-result-ready-details">
+              {challengeFlavor ? <p>{challengeFlavor}</p> : null}
+            </div>
+          ) : null}
+        </div>
         <div className={`phone-result-gate__actions${challengeFlavor ? "" : " is-single"}`}>
           {challengeFlavor ? (
             <button
@@ -155,7 +183,7 @@ export function PhoneResultReadyGate({
             disabled={!canContinue}
             onClick={onContinue}
           >
-            {canContinue ? "Continue" : "Resolving…"}
+            {canContinue ? "Continue" : "Applying consequence…"}
           </GameButton>
         </div>
         <small>{actorName} · no countdown · reconnect-safe</small>

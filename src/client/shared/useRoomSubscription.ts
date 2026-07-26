@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { getConnectionDiagnostics, getWebSocketOrigin } from "./network.js";
 import type {
   ClientIntent,
@@ -48,7 +48,8 @@ export function useRoomSubscription(
 ): {
   patch: StatePatch<PublicPatchPayload | PhonePatchPayload> | null;
   error: string | null;
-  sendIntent: (intent: ClientIntent | HostCommand) => void;
+  sendIntent: (intent: ClientIntent | HostCommand) => boolean;
+  resynchronize?: () => void;
   status: ConnectionStatus;
   synchronized?: boolean;
   debugEvents: DebugEvent[];
@@ -58,12 +59,41 @@ export function useRoomSubscription(
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [synchronized, setSynchronized] = useState(false);
+  const [resynchronizationRevision, setResynchronizationRevision] = useState(0);
   const [debugEvents, setDebugEvents] = useState<DebugEvent[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
   const manualCloseRef = useRef(false);
   const connectionGenerationRef = useRef(0);
   const qaReconnectSynchronizationPendingRef = useRef(false);
+  const resynchronize = useCallback(() => {
+    setResynchronizationRevision((current) => current + 1);
+  }, []);
+  const clearDebugEvents = useCallback(() => {
+    setDebugEvents([]);
+  }, []);
+  const sendIntent = useCallback((intent: ClientIntent | HostCommand): boolean => {
+    setError(null);
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify(intent));
+      appendDebugEvent(setDebugEvents, {
+        label: `Sent ${intent.type}`,
+        payload: intent
+      });
+      return true;
+    }
+
+    setError("The action was not sent because the connection is restoring.");
+    appendDebugEvent(setDebugEvents, {
+      label: `Dropped ${intent.type}`,
+      detail: "Socket was not open when the client tried to send this intent.",
+      payload: {
+        intent,
+        readyState: socketRef.current?.readyState ?? null
+      }
+    });
+    return false;
+  }, []);
 
   useEffect(() => {
     if ((config.view === "tv" && !config.enabled) || (config.view === "phone" && !config.auth)) {
@@ -270,7 +300,8 @@ export function useRoomSubscription(
   }, [
     config.view,
     config.view === "tv" ? config.enabled : config.auth?.roomCode,
-    config.view === "tv" ? config.hostToken ?? "tv" : config.auth?.seatToken
+    config.view === "tv" ? config.hostToken ?? "tv" : config.auth?.seatToken,
+    resynchronizationRevision
   ]);
 
   return {
@@ -279,28 +310,8 @@ export function useRoomSubscription(
     status,
     synchronized,
     debugEvents,
-    clearDebugEvents() {
-      setDebugEvents([]);
-    },
-    sendIntent(intent) {
-      setError(null);
-      if (socketRef.current?.readyState === WebSocket.OPEN) {
-        socketRef.current.send(JSON.stringify(intent));
-        appendDebugEvent(setDebugEvents, {
-          label: `Sent ${intent.type}`,
-          payload: intent
-        });
-        return;
-      }
-
-      appendDebugEvent(setDebugEvents, {
-        label: `Dropped ${intent.type}`,
-        detail: "Socket was not open when the client tried to send this intent.",
-        payload: {
-          intent,
-          readyState: socketRef.current?.readyState ?? null
-        }
-      });
-    }
+    clearDebugEvents,
+    resynchronize,
+    sendIntent
   };
 }

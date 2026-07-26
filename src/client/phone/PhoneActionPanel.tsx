@@ -1,4 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
+import { ArrowClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
+import { CardsThreeIcon } from "@phosphor-icons/react/dist/csr/CardsThree";
+import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { CircleIcon } from "@phosphor-icons/react/dist/csr/Circle";
+import { FlagIcon } from "@phosphor-icons/react/dist/csr/Flag";
+import { LockKeyIcon } from "@phosphor-icons/react/dist/csr/LockKey";
+import { MapPinLineIcon } from "@phosphor-icons/react/dist/csr/MapPinLine";
+import { StorefrontIcon } from "@phosphor-icons/react/dist/csr/Storefront";
 import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
 import type {
   ActiveResolution,
@@ -57,6 +65,10 @@ import {
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
 import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
 import { getTileAssetPath } from "../tv/tileAssetManifest.js";
+import {
+  getSignalTheatreEnvironment,
+  signalTheatreEnvironments
+} from "../tv/signalTheatreEnvironmentManifest.js";
 import { formatTimingWindow, getBattleAssistViewModel, statLabelById as inventoryStatLabelById } from "./inventoryPresentation.js";
 import { buildUsefulNowViewModel, type UsefulNowViewModel } from "./usefulNowPresentation.js";
 import { getMissionRelevanceForSector, type MissionRelevance } from "../shared/missionRelevance.js";
@@ -137,13 +149,29 @@ export function PhoneTileArrivalSummary({ arrival, compact = false }: { arrival:
   const remainingRules = arrival.rules.filter((rule) => rule.id !== currentRule?.id && rule.status !== "completed");
   const remainingMandatory = remainingRules.filter((rule) => rule.mandatory).length;
   const remainingOptional = remainingRules.filter((rule) => !rule.mandatory).length;
-  const renderRule = (rule: PublicTileArrivalState["rules"][number]) => (
-    <li key={rule.id} className={`is-${rule.status}`}>
-      <span>{rule.order}</span>
+  const renderRule = (rule: PublicTileArrivalState["rules"][number]) => {
+    const RuleIcon =
+      rule.kind === "tile-challenge" ? ArrowClockwiseIcon
+        : rule.kind === "threat-draw" ? CardsThreeIcon
+          : rule.kind === "scenario" ? FlagIcon
+            : rule.kind === "service" ? StorefrontIcon
+              : rule.kind === "gate" ? LockKeyIcon
+                : MapPinLineIcon;
+    const StatusIcon = rule.status === "completed" ? CheckCircleIcon : rule.status === "locked" ? LockKeyIcon : CircleIcon;
+    const recurs = rule.repeatPolicy === "EVERY_ARRIVAL" && rule.kind === "tile-challenge";
+    const statusLabel =
+      rule.status === "current" ? "NEXT"
+        : rule.status === "completed" ? recurs ? "DONE · RECURS" : "DONE"
+          : rule.status === "optional" ? "OPTIONAL"
+            : rule.status.toUpperCase();
+    return (
+      <li key={rule.id} className={`is-${rule.status}`} data-rule-kind={rule.kind} data-repeat-policy={rule.repeatPolicy}>
+        <span className="phone-tile-arrival__rule-icon" aria-hidden="true"><RuleIcon weight="duotone" /></span>
       <div><strong>{rule.label}</strong><small>{rule.detail}</small></div>
-      <b>{rule.status === "current" ? "NEXT" : rule.status.toUpperCase()}</b>
-    </li>
-  );
+        <b><StatusIcon weight="fill" aria-hidden="true" />{statusLabel}</b>
+      </li>
+    );
+  };
   if (compact) {
     return (
       <section className="phone-tile-arrival phone-tile-arrival--compact" aria-label={`${arrival.tileName} arrival resolution`}>
@@ -151,11 +179,12 @@ export function PhoneTileArrivalSummary({ arrival, compact = false }: { arrival:
           <div><span>Tile arrival</span><h2>{arrival.tileName}</h2></div>
           <strong>{arrival.mandatoryRemaining > 0 ? `${arrival.mandatoryRemaining} mandatory` : "Optional actions"}</strong>
         </header>
+        <ol className="phone-tile-arrival__queue" aria-label="Arrival queue">
+          {arrival.rules.map(renderRule)}
+        </ol>
         <details className="phone-tile-arrival__context-details">
-          <summary>{currentRule?.label ?? "Arrival details"}</summary>
+          <summary>Sector context</summary>
           <p>{arrival.lore}</p>
-          {currentRule ? <ol>{renderRule(currentRule)}</ol> : null}
-          {remainingRules.length > 0 ? <ol>{remainingRules.map(renderRule)}</ol> : null}
           {!arrival.canEndTurn && arrival.blockedReason ? <div className="phone-tile-arrival__blocked">MANDATORY · {arrival.blockedReason}</div> : null}
         </details>
       </section>
@@ -174,7 +203,9 @@ export function PhoneTileArrivalSummary({ arrival, compact = false }: { arrival:
         <div><span>Tile arrival</span><h2>{arrival.tileName}</h2></div>
         <strong>{arrival.mandatoryRemaining > 0 ? `${arrival.mandatoryRemaining} mandatory` : "Optional actions"}</strong>
       </header>
-      {currentRule ? <ol>{renderRule(currentRule)}</ol> : null}
+      <ol className="phone-tile-arrival__queue" aria-label="Arrival queue">
+        {arrival.rules.map(renderRule)}
+      </ol>
       {!arrival.canEndTurn && arrival.blockedReason ? <div className="phone-tile-arrival__blocked">MANDATORY · {arrival.blockedReason}</div> : null}
       {getTileAssetPath(arrival.tileId) ? (
         <div className="phone-tile-arrival__art" aria-hidden="true">
@@ -186,13 +217,9 @@ export function PhoneTileArrivalSummary({ arrival, compact = false }: { arrival:
         <p>{arrival.lore}</p>
       </details>
       {remainingRules.length > 0 ? (
-        <details className="phone-tile-arrival__remaining">
-          <summary>
-            View {remainingRules.length} remaining effect{remainingRules.length === 1 ? "" : "s"}
-            <span>{remainingMandatory} mandatory · {remainingOptional} optional</span>
-          </summary>
-          <ol>{remainingRules.map(renderRule)}</ol>
-        </details>
+        <p className="phone-tile-arrival__remaining-count">
+          {remainingMandatory} mandatory · {remainingOptional} optional remain
+        </p>
       ) : null}
     </section>
   );
@@ -853,6 +880,8 @@ function ActiveResolutionCard({
   actorName,
   operativeName,
   operativeId,
+  challengeImagePath,
+  resultDeltas,
   canContinue,
   onContinue
 }: {
@@ -861,6 +890,8 @@ function ActiveResolutionCard({
   actorName: string;
   operativeName: string;
   operativeId: string;
+  challengeImagePath?: string;
+  resultDeltas: ResultDelta[];
   canContinue: boolean;
   onContinue: () => void;
 }): ReactElement | null {
@@ -874,29 +905,51 @@ function ActiveResolutionCard({
   const challengeStat = battle?.stat ?? "grit";
   const isOpposedBattle = resolution.card?.type === "enemy";
   const visibleOutcomeEffects = outcome ? dedupeOutcomeEffects(outcome.text, outcome.effects) : [];
-  const resultReady =
-    outcome &&
-    canContinue &&
-    (resolution.stage === "outcome_summary" || resolution.stage === "awaiting_continue");
+  const resultVisible =
+    Boolean(resolution.roll || outcome)
+    && ["roll_result", "outcome_summary", "awaiting_continue"].includes(resolution.stage);
 
-  if (resultReady) {
+  if (resultVisible && outcome && /no threat drawn/i.test(outcome.title)) {
+    return (
+      <section className="phone-resolution-inline-status" data-testid="phone-resolution-card" aria-label="Threat draw complete">
+        <CheckCircleIcon weight="fill" aria-hidden="true" />
+        <div><span>Threat queue</span><strong>{outcome.title}</strong><p>{outcome.text}</p></div>
+        <GameButton
+          tone="primary"
+          className="phone-button phone-button-primary phone-resolution-continue"
+          data-testid="phone-resolution-continue"
+          type="button"
+          disabled={!canContinue}
+          onClick={onContinue}
+        >
+          {canContinue ? "Continue" : "Applying consequence…"}
+        </GameButton>
+      </section>
+    );
+  }
+
+  if (resultVisible) {
     const cardType = resolution.card?.type ?? encounter?.presentationType ?? encounter?.cardType ?? null;
     return (
       <PhoneResultReadyGate
         actorName={actorName}
         operativeName={operativeName}
         operativeId={operativeId}
-        sourceLabel={formatEncounterSourceLabel(resolution.source, cardType)}
-        challengeTitle={resolution.card?.title ?? encounter?.enemyName ?? encounter?.title ?? outcome.title}
+        sourceLabel={resolution.source === "movement" ? "Approach Result" : formatEncounterSourceLabel(resolution.source, cardType)}
+        challengeTitle={resolution.card?.title ?? encounter?.enemyName ?? encounter?.title ?? outcome?.title ?? "Resolution"}
         challengeArtType={getResolutionCardImageType(resolution, encounter)}
         challengeArtId={resolution.card?.id ?? encounter?.id ?? null}
+        challengeImagePath={challengeImagePath}
         challengeFlavor={resolution.card?.flavor ?? encounter?.flavor ?? null}
         success={resolution.roll?.success ?? null}
         playerTotal={resolution.roll?.finalTotal ?? null}
         targetTotal={resolution.roll?.target ?? resolution.battle?.difficulty ?? null}
-        outcomeTitle={outcome.title}
-        outcomeText={outcome.text}
+        playerTotalLabel={resolution.source === "movement" ? "Player total" : undefined}
+        targetTotalLabel={resolution.source === "movement" ? "Difficulty total" : undefined}
+        outcomeTitle={outcome?.title ?? "Applying consequence"}
+        outcomeText={outcome?.text ?? "The server is applying the authoritative result."}
         outcomeEffects={visibleOutcomeEffects}
+        resultDeltas={resultDeltas}
         canContinue={canContinue}
         onContinue={onContinue}
       />
@@ -1292,7 +1345,7 @@ function usefulNowForTurnTab(model: UsefulNowViewModel | null, tab: TurnActionTa
     case "shop":
       return phaseLabel.includes("shop") ? model : null;
     case "action":
-      return phaseLabel.includes("movement") || phaseLabel.includes("battle") || phaseLabel.includes("challenge") || phaseLabel.includes("shop") ? null : model;
+      return phaseLabel.includes("movement") || phaseLabel.includes("battle") || phaseLabel.includes("shop") ? null : model;
   }
 }
 
@@ -2814,6 +2867,9 @@ function PhoneMovePanel({
   showContextNavigation,
   onContextNavigation,
   actorName,
+  operativeName,
+  operativeId,
+  resultDeltas,
   diceCount
 }: {
   movementPlanner: PublicMovementPlannerState | null | undefined;
@@ -2831,6 +2887,9 @@ function PhoneMovePanel({
   showContextNavigation: boolean;
   onContextNavigation?: (target: MovementNavigationTarget) => void;
   actorName?: string;
+  operativeName: string;
+  operativeId: string;
+  resultDeltas: ResultDelta[];
   diceCount?: number;
 }): ReactElement {
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(() => movementPlanner?.selectedDestinationId ?? null);
@@ -2854,43 +2913,41 @@ function PhoneMovePanel({
   const approachSuccess = approachResolution?.roll?.success ?? approachOutcome?.success ?? null;
   if ((approachResolution?.roll || approachOutcome) && approachTotal !== null && approachTarget !== null) {
     const destination = approachResolution?.card?.title ?? approachOutcome?.encounterTitle ?? currentTile.name;
+    const destinationSectorId =
+      approachOutcome?.movedToSectorId
+      ?? (approachResolution?.card?.id && getSignalTheatreEnvironment(approachResolution.card.id)
+        ? approachResolution.card.id
+        : currentTile.sectorId);
+    const destinationArtPath =
+      getSignalTheatreEnvironment(destinationSectorId)?.path
+      ?? signalTheatreEnvironments.find((environment) => environment.sectorName === destination)?.path
+      ?? currentTile.artPath
+      ?? getTileAssetPath(destinationSectorId);
     const outcomeText = approachResolution?.outcome?.text ?? approachOutcome?.summary;
     return (
-      <section
-        className={`phone-approach-result${approachSuccess ? " is-success" : " is-setback"}`}
-        aria-label="Approach result"
-        aria-live="polite"
-        data-testid="phone-approach-result"
-      >
-        <header>
-          <span>Approach Result</span>
-          <strong>{destination}</strong>
-        </header>
-        <div className="phone-approach-result__totals" aria-label={`Player total ${approachTotal}, difficulty ${approachTarget}`}>
-          <div>
-            <span>Player total</span>
-            <strong>{approachTotal}</strong>
-          </div>
-          <i aria-hidden="true">/</i>
-          <div>
-            <span>Difficulty</span>
-            <strong>{approachTarget}</strong>
-          </div>
-        </div>
-        <div className="phone-approach-result__outcome">
-          <strong>{approachSuccess ? "Approach held" : "Approach setback"}</strong>
-          <p>{outcomeText ?? (approachSuccess ? `Moved into ${destination}.` : `Failed to enter ${destination}.`)}</p>
-        </div>
-        <button
-          type="button"
-          className="phone-button phone-button-primary phone-approach-result__continue"
-          data-testid="phone-resolution-continue"
-          disabled={!canContinueApproach}
-          onClick={onContinueApproach}
-        >
-          {canContinueApproach ? "Continue" : "Resolving…"}
-        </button>
-      </section>
+      <div className="phone-approach-result" data-testid="phone-approach-result">
+        <PhoneResultReadyGate
+          actorName={actorName ?? operativeName}
+          operativeName={operativeName}
+          operativeId={operativeId}
+          sourceLabel="Approach Result"
+          challengeTitle={destination}
+          challengeArtType={null}
+          challengeArtId={null}
+          challengeImagePath={destinationArtPath}
+          success={approachSuccess}
+          playerTotal={approachTotal}
+          targetTotal={approachTarget}
+          playerTotalLabel="Player total"
+          targetTotalLabel="Difficulty total"
+          outcomeTitle={approachSuccess ? "Approach held" : "Approach setback"}
+          outcomeText={outcomeText ?? (approachSuccess ? `Moved into ${destination}.` : `Failed to enter ${destination}.`)}
+          outcomeEffects={[]}
+          resultDeltas={resultDeltas}
+          canContinue={canContinueApproach}
+          onContinue={onContinueApproach}
+        />
+      </div>
     );
   }
 
@@ -3129,6 +3186,7 @@ export function PhoneActionPanel({
   const resolutionActorName =
     patch.seats.find((seat) => seat.seatId === self.seatId)?.displayName ??
     self.character.name;
+  const currentDeltas = patch.playerResultDeltas ?? patch.publicResultDeltas ?? [];
   const resolutionPanel = orphanResolutionOutcome ? (
     <OrphanResolutionRecoveryCard
       outcome={orphanResolutionOutcome}
@@ -3142,6 +3200,15 @@ export function PhoneActionPanel({
       actorName={resolutionActorName}
       operativeName={self.character.name}
       operativeId={self.character.id}
+      challengeImagePath={
+        activeResolution?.source === "movement"
+          ? signalTheatreEnvironments.find((environment) => environment.sectorName === activeResolution.card?.title)?.path
+            ?? getSignalTheatreEnvironment(self.sectorId)?.path
+            ?? getTileAssetPath(self.sectorId)
+            ?? undefined
+          : undefined
+      }
+      resultDeltas={currentDeltas}
       canContinue={canContinueResolution}
       onContinue={continueResolution}
     />
@@ -4260,15 +4327,17 @@ export function PhoneActionPanel({
     || Boolean(movementApproachResolution)
     || Boolean(movementApproachOutcome)
     || moveActions.length > 0;
-  const hasBattleContent =
+  const hasEncounterContent =
     Boolean(activeResolution && activeResolution.source !== "movement")
     || Boolean(orphanResolutionOutcome && !orphanResolutionOutcome.movedToSectorId)
     || Boolean(battleAssist)
     || threatActions.length > 0;
+  const hasBattleContent = false;
   const hasShopContent = Boolean(shopEncounter);
   const shopLocked = Boolean(shopEncounter && (shopEncounter.status === "locked" || shopEncounter.blockingThreats.length > 0));
   const shopLockReasonText = shopEncounter?.blockedReasonText ?? formatShopDisabledReason(shopEncounter?.blockedReason);
   const hasActionContent =
+    hasEncounterContent ||
     resolveActions.length +
       gearActions.length +
       objectActions.length +
@@ -4283,7 +4352,7 @@ export function PhoneActionPanel({
     || (orphanResolutionOutcome && !orphanResolutionOutcome.movedToSectorId)
     || battleAssist
   );
-  const battleBlocksNonBattleTabs = battleRequiresResolution && hasBattleContent;
+  const battleBlocksNonBattleTabs = battleRequiresResolution;
   const moveBlockedReason = hasMoveContent
     ? undefined
     : movementPlanner?.active && movementPlanner.destinations.length === 0
@@ -4303,7 +4372,7 @@ export function PhoneActionPanel({
       : battleBlocksNonBattleTabs
         ? "Shop locked: resolve the current encounter first."
         : "Shop locked: no shop here.";
-  const actionBlockedReason = hasActionContent || hasBattleContent || !hasMoveContent
+  const actionBlockedReason = hasActionContent || !hasMoveContent
       ? undefined
       : "Action locked: no sector action here.";
   const tabDefinitions: TurnActionTabDefinition[] = [
@@ -4321,8 +4390,8 @@ export function PhoneActionPanel({
     },
     {
       id: "battle",
-      label: opposedBattleActive ? "Battle" : hasBattleContent ? "Encounter" : "Battle",
-      detail: patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat",
+      label: "Battle",
+      detail: "No opposed enemy",
       tone: "battle",
       enabled: hasBattleContent,
       blockedReason: battleBlockedReason
@@ -4339,18 +4408,18 @@ export function PhoneActionPanel({
     {
       id: "action",
       label: "Action",
-      detail: boardSpace?.textBox.title ?? "Gear / quest",
+      detail: activeResolution?.card?.title ?? boardSpace?.textBox.title ?? "Gear / quest",
       tone: "action",
       enabled: hasActionContent || hasBattleContent || !hasMoveContent,
       blockedReason: actionBlockedReason
     }
   ];
   const canShowSelectedTab = (tab: TurnActionTabDefinition) =>
-    !hasBattleContent || tab.id === "battle" || tab.enabled || tab.locked === true;
+    !hasEncounterContent || tab.id === "action" || tab.enabled || tab.locked === true;
   const fallbackTab = movementPlanner?.active || movementApproachResolution || movementApproachOutcome
     ? "move"
-    : hasBattleContent
-      ? "battle"
+    : hasEncounterContent
+      ? "action"
       : hasShopContent
         ? "shop"
         : tabDefinitions.find((tab) => tab.id === "action" && (tab.enabled || tab.locked))?.id ??
@@ -4358,8 +4427,23 @@ export function PhoneActionPanel({
           "action";
   const selectedTabDefinition = tabDefinitions.find((tab) => tab.id === selectedTurnTab && canShowSelectedTab(tab));
   const activeTurnTab: TurnActionTab = selectedTabDefinition?.id ?? fallbackTab;
+  const ownerChoiceOverridesChallenge = Boolean(
+    patch.pendingEncounterDecisionPrivate ||
+    patch.pendingMemoryTaxChoicePrivate ||
+    patch.pendingAfflictionChoicePrivate ||
+    patch.pendingAfflictionReactionPrivate ||
+    patch.pendingForcedDestinationChoicePrivate ||
+    patch.pendingDisplacementPrivate ||
+    patch.pendingScarChoice ||
+    patch.pendingScarConsequence ||
+    patch.pendingTileChallengePrivate?.pendingFailureEffects?.length
+  );
   const trialPresentationActive =
-    activeTurnTab === "battle"
+    activeTurnTab === "action"
+    && activeResolution?.source !== "movement"
+    && !orphanResolutionOutcome
+    && !ownerChoiceOverridesChallenge
+    && !/no threat drawn/i.test(activeResolution?.outcome?.title ?? "")
     && isPhoneChallengeRelevantToSeat(patch, self.seatId);
   const currentPrompt: CurrentPromptViewModel = currentPromptFromSharedPrompt(sharedPrompt, activeTurnTab);
   const showCurrentPrompt = !activeResolution && (!currentPrompt.targetTab || currentPrompt.targetTab === activeTurnTab);
@@ -4374,7 +4458,6 @@ export function PhoneActionPanel({
         : activeTurnTab === "shop"
           ? (shopBlockedReason ?? "Buy and sell only when a shop is available here.")
           : (actionBlockedReason ?? "Resolve this sector action only.");
-  const currentDeltas = patch.playerResultDeltas ?? patch.publicResultDeltas ?? [];
   const visibleBattleDeltas = battleResultDeltas(currentDeltas);
   const visibleActionDeltas = actionResultDeltas(currentDeltas);
   const movementTravelPresentation = movementTravel ?? (
@@ -4444,7 +4527,22 @@ export function PhoneActionPanel({
   };
   const actionViewModel = buildPhoneActionViewModel(patch, actionViewModelSources);
   const activeTabContent =
-    activeTurnTab === "move" ? (
+    trialPresentationActive ? (
+      <PhoneHazardChallengeView
+        patch={patch}
+        resolution={activeResolution}
+        actions={[...resolveActions, ...threatActions]}
+        canContinue={canContinueResolution}
+        onContinue={continueResolution}
+        resultDeltas={visibleActionDeltas}
+        supplemental={(
+          <>
+            <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
+            <UsefulNowPanel model={activeUsefulNow} variant="secondary" />
+          </>
+        )}
+      />
+    ) : activeTurnTab === "move" ? (
       <PhoneMovePanel
         movementPlanner={movementPlanner}
         currentTile={currentTile}
@@ -4461,25 +4559,13 @@ export function PhoneActionPanel({
         showContextNavigation={movementFlowActive && showMovementContextNavigation}
         onContextNavigation={onMovementNavigation}
         actorName={patch.seats.find((seat) => seat.seatId === self.seatId)?.displayName ?? self.character.name}
+        operativeName={self.character.name}
+        operativeId={self.character.id}
+        resultDeltas={currentDeltas}
         diceCount={self.character.id === "char_ker_von_ker" ? 2 : 1}
       />
     ) : activeTurnTab === "battle" ? (
-      trialPresentationActive ? (
-        <PhoneHazardChallengeView
-          patch={patch}
-          resolution={activeResolution}
-          actions={[...resolveActions, ...threatActions]}
-          canContinue={canContinueResolution}
-          onContinue={continueResolution}
-          resultDeltas={visibleBattleDeltas}
-          supplemental={(
-            <>
-              <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
-              <UsefulNowPanel model={activeUsefulNow} variant="secondary" />
-            </>
-          )}
-        />
-      ) : <PhoneBattlePanel
+      <PhoneBattlePanel
         title={battleTitle}
         activeResolution={activeResolution}
         encounter={patch.encounter}
@@ -4508,6 +4594,7 @@ export function PhoneActionPanel({
       />
     ) : activeTurnTab === "action" ? (
       <>
+        {activeResolution || orphanResolutionOutcome ? resolutionPanel : null}
         <PhoneActionPriorityStack model={actionViewModel} onIntent={onIntent} />
         <ResultDeltaRow deltas={visibleActionDeltas} className="phone-action-deltas phone-priority-stack__results" />
       </>

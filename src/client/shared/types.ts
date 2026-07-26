@@ -1411,6 +1411,8 @@ export interface TurnHandoffProjection {
   toSeatId: string | null;
   toDisplayName: string | null;
   roundWrapped: boolean;
+  /** Public, allowlisted recap of the turn that just ended. */
+  summaryEntries?: string[];
 }
 
 export interface RequiredActionProjection {

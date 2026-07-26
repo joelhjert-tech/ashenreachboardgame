@@ -29,6 +29,13 @@ export interface HostMapSectorBriefPresentation {
   specialConnection: string | null;
   routeContext: string | null;
   immediateRule: string | null;
+  arrivalQueue: Array<{
+    id: string;
+    kind: "tile-challenge" | "threat-draw" | "board-action" | "service" | "gate" | "scenario";
+    label: string;
+    status: "current" | "pending" | "completed" | "optional" | "locked";
+    recurring: boolean;
+  }>;
   placement: "left" | "right";
 }
 
@@ -148,7 +155,16 @@ export function buildHostMapSectorBrief(
       ? "arrival"
       : activePlayer?.sectorId === sectorId
         ? "current-sector"
-        : "overview";
+      : "overview";
+  const arrivalQueue = patch.tileArrival?.tileId === sectorId
+    ? patch.tileArrival.rules.map((rule) => ({
+        id: rule.id,
+        kind: rule.kind,
+        label: rule.label,
+        status: rule.status,
+        recurring: rule.kind === "tile-challenge" && rule.repeatPolicy === "EVERY_ARRIVAL"
+      }))
+    : [];
 
   return {
     focus,
@@ -168,6 +184,7 @@ export function buildHostMapSectorBrief(
     specialConnection: getSpecialConnection(destination, tagKeys),
     routeContext: getRouteContext(destination),
     immediateRule: cleanText(destination?.ruleText ?? canonical?.ruleText),
+    arrivalQueue,
     placement: selectedNodeX < 0.5 ? "right" : "left"
   };
 }

@@ -89,6 +89,70 @@ describe("HostMotionCue", () => {
     });
   });
 
+  it("renders the public turn ledger during handoff without delaying the next action", () => {
+    const model = build({
+      requiredAction: {
+        id: "movement-next",
+        kind: "movement",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Mara",
+        requiredTab: null,
+        label: "Waiting for Mara",
+        detail: "Waiting for Mara to roll movement.",
+        canAct: false,
+        waiting: true,
+        privacy: "public",
+        hostInstruction: "Mara rolls movement next.",
+        handoff: {
+          id: "handoff-1",
+          fromSeatId: "seat-2",
+          fromDisplayName: "Ivo",
+          toSeatId: "seat-1",
+          toDisplayName: "Mara",
+          roundWrapped: false,
+          summaryEntries: ["Moved to Ashwake Crossing", "Challenge cleared · 8/6"]
+        }
+      }
+    });
+    expect(model?.summaryEntries).toEqual(["Moved to Ashwake Crossing", "Challenge cleared · 8/6"]);
+
+    render(
+      <HostMotionCue
+        patch={makePatch({
+          requiredAction: {
+            id: "movement-next",
+            kind: "movement",
+            actorSeatId: "seat-1",
+            actorDisplayName: "Mara",
+            requiredTab: null,
+            label: "Waiting for Mara",
+            detail: "Waiting for Mara to roll movement.",
+            canAct: false,
+            waiting: true,
+            privacy: "public",
+            hostInstruction: "Mara rolls movement next.",
+            handoff: {
+              id: "handoff-1",
+              fromSeatId: "seat-2",
+              fromDisplayName: "Ivo",
+              toSeatId: "seat-1",
+              toDisplayName: "Mara",
+              roundWrapped: false,
+              summaryEntries: ["Moved to Ashwake Crossing", "Challenge cleared · 8/6"]
+            }
+          }
+        })}
+        activeSeat={activeSeat}
+        activePlayer={activePlayer}
+        currentStepCopy="Mara rolls movement next."
+        movementPresenting={false}
+        synchronized
+      />
+    );
+
+    expect(screen.getByLabelText("Previous turn summary").textContent).toMatch(/challenge cleared/i);
+  });
+
   it("presents server-authored movement without creating a route", () => {
     const model = build({
       movementPlanner: {

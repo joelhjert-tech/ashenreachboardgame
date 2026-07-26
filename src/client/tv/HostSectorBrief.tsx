@@ -1,4 +1,11 @@
 import type { ReactElement } from "react";
+import { ArrowClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
+import { CardsThreeIcon } from "@phosphor-icons/react/dist/csr/CardsThree";
+import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { CircleIcon } from "@phosphor-icons/react/dist/csr/Circle";
+import { FlagIcon } from "@phosphor-icons/react/dist/csr/Flag";
+import { MapPinLineIcon } from "@phosphor-icons/react/dist/csr/MapPinLine";
+import { StorefrontIcon } from "@phosphor-icons/react/dist/csr/Storefront";
 import type { HostMapSectorBriefPresentation } from "./hostMapPresentation.js";
 
 interface HostSectorBriefProps {
@@ -20,6 +27,12 @@ export function HostSectorBrief({ brief }: HostSectorBriefProps): ReactElement {
     brief.scenario ? { label: "Scenario", value: brief.scenario, tone: "scenario" } : null,
     brief.specialConnection ? { label: "Connection", value: brief.specialConnection, tone: "route" } : null
   ].filter((entry): entry is { label: string; value: string; tone: string } => Boolean(entry));
+  const queueIcon = (kind: HostMapSectorBriefPresentation["arrivalQueue"][number]["kind"]) =>
+    kind === "tile-challenge" ? ArrowClockwiseIcon
+      : kind === "threat-draw" ? CardsThreeIcon
+        : kind === "scenario" ? FlagIcon
+          : kind === "service" ? StorefrontIcon
+            : MapPinLineIcon;
 
   return (
     <aside
@@ -35,6 +48,22 @@ export function HostSectorBrief({ brief }: HostSectorBriefProps): ReactElement {
       </header>
 
       {brief.routeContext ? <p className="host-sector-brief__route" aria-label={`Route: ${brief.routeContext}`}>{brief.routeContext}</p> : null}
+
+      {brief.arrivalQueue.length > 0 ? (
+        <ol className="host-sector-brief__arrival-queue" aria-label="Public arrival queue">
+          {brief.arrivalQueue.slice(0, 4).map((rule) => {
+            const RuleIcon = queueIcon(rule.kind);
+            const StatusIcon = rule.status === "completed" ? CheckCircleIcon : CircleIcon;
+            return (
+              <li key={rule.id} className={`is-${rule.status}`}>
+                <RuleIcon weight="duotone" aria-hidden="true" />
+                <strong>{rule.label}</strong>
+                <span><StatusIcon weight="fill" aria-hidden="true" />{rule.status === "completed" && rule.recurring ? "Done · recurs" : rule.status}</span>
+              </li>
+            );
+          })}
+        </ol>
+      ) : null}
 
       {immediateRows.length > 0 ? (
         <div className="host-sector-brief__signals" aria-label="Public sector conditions">

@@ -72,6 +72,14 @@ export function PhoneRequiredActionShell({
         </button>
       ) : null}
 
+      {projection.handoff?.summaryEntries?.length ? (
+        <section className="phone-required-action-shell__handoff" aria-label={`${projection.handoff.fromDisplayName} turn summary`}>
+          <span>Previous turn</span>
+          <ul>
+            {projection.handoff.summaryEntries.slice(0, 4).map((entry) => <li key={entry}>{entry}</li>)}
+          </ul>
+        </section>
+      ) : null}
 
       {recoveryMessage ? (
         <p className="phone-required-action-shell__recovery" role="alert">

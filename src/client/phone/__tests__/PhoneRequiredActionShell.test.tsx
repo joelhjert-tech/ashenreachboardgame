@@ -109,4 +109,31 @@ describe("PhoneRequiredActionShell", () => {
     fireEvent.click(screen.getByRole("button", { name: /return to move/i }));
     expect(onReturn).toHaveBeenCalledTimes(1);
   });
+
+  it("shows only the server-authored public handoff ledger beside the next action", () => {
+    render(
+      <PhoneRequiredActionShell
+        projection={{
+          ...activeProjection,
+          handoff: {
+            id: "handoff-1",
+            fromSeatId: "seat-2",
+            fromDisplayName: "Mira",
+            toSeatId: "seat-1",
+            toDisplayName: "Lane",
+            roundWrapped: false,
+            summaryEntries: ["Moved to Ashwake Crossing", "Challenge cleared · 8/6", "1 Salvage gained"]
+          }
+        }}
+        status="available"
+        atRequiredTab
+      >
+        <button type="button">Roll movement</button>
+      </PhoneRequiredActionShell>
+    );
+
+    expect(screen.getByLabelText("Mira turn summary")).toHaveTextContent(/moved to ashwake crossing/i);
+    expect(screen.getByLabelText("Mira turn summary")).toHaveTextContent(/1 salvage gained/i);
+    expect(screen.getByRole("button", { name: /roll movement/i })).toBeEnabled();
+  });
 });

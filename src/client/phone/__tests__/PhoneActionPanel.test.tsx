@@ -655,7 +655,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
   });
 
-  it("shows check and not combat when an active seat faces a hazard", () => {
+  it("routes a non-opposed hazard check to Action instead of Battle", () => {
     render(
       <PhoneActionPanel
         characters={characters}
@@ -673,9 +673,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/resolve event/i);
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/glass chime swarm/i);
-    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--battle");
+    expect(screen.queryByTestId("phone-current-prompt")).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--action");
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-trial-shell");
     expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/glass chime swarm/i);
     expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/hazard/i);
@@ -694,7 +693,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByRole("tablist", { name: /turn actions/i })).toBeInTheDocument();
   });
 
-  it("shows active affliction effects in battle Useful Now context", () => {
+  it("shows active affliction effects in Action challenge context", () => {
     render(
       <PhoneActionPanel
         characters={characters}
@@ -1083,7 +1082,11 @@ describe("PhoneActionPanel", () => {
     expect(result).toHaveTextContent(/Approach Result/i);
     expect(result).toHaveTextContent(/Glassmere Spindle/i);
     expect(result).toHaveTextContent(/Player total\s*7/i);
-    expect(result).toHaveTextContent(/Difficulty\s*7/i);
+    expect(result).toHaveTextContent(/Difficulty total\s*7/i);
+    expect(within(result).getByAltText(/glassmere spindle location artwork/i)).toHaveAttribute(
+      "src",
+      "/assets/riftfall/environments/signal-theatre/sectors/glassmere-spindle.png"
+    );
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
     expect(screen.queryByText(/Enemy Movement/i)).not.toBeInTheDocument();
 
@@ -2806,15 +2809,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 2 \+ 5 - 1 = 6/i);
-    expect(within(screen.getByTestId("phone-roll-result")).getByLabelText("Signal check result")).toHaveTextContent(/die2die5/i);
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/failure/i);
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/total \/ target6 \/ 7/i);
-    expect(screen.getByTestId("phone-roll-result")).not.toHaveTextContent(/attack|defense|A 6 \/ D 7/i);
-    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/affliction: hollow belly [−-]2/i);
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-test-result", "true");
-    expect(screen.getByRole("button", { name: /view details/i })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/your total\s*6/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/challenge\s*7/i);
+    expect(screen.getByTestId("phone-roll-result")).not.toHaveTextContent(/roll:|die|modifier|attack|defense/i);
     expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();
     expect(screen.getAllByRole("button", { name: /continue/i })).toHaveLength(1);
     expect(
@@ -2828,6 +2825,65 @@ describe("PhoneActionPanel", () => {
       type: "CONTINUE_RESOLUTION",
       seatId: "seat-1"
     });
+  });
+
+  it("keeps one verdict mounted while the server advances from roll result to consequence", () => {
+    const resolution = {
+      id: "seat-1:threat:signal-static:stable-verdict",
+      playerId: "seat-1",
+      source: "threat" as const,
+      stage: "roll_result" as const,
+      card: { id: "signal-static", title: "Signal Static", type: "hazard" as const, artType: "threat" as const },
+      battle: { stat: "signal" as const, difficulty: 7, modifiers: [] },
+      roll: { dice: [5], baseTotal: 5, modifierTotal: 2, finalTotal: 7, target: 7, success: true },
+      outcome: { title: "Check cleared", text: "The signal stabilizes.", effects: ["Gain 1 Salvage."] }
+    };
+    const view = render(
+      <PhoneActionPanel characters={characters} onIntent={vi.fn()} patch={createPatch({ activeResolution: resolution })} />
+    );
+    const firstVerdict = screen.getByTestId("phone-resolution-card");
+
+    view.rerender(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          activeResolution: {
+            ...resolution,
+            stage: "outcome_summary",
+            outcome: { title: "Reward applied", text: "The signal stabilizes.", effects: ["Gain 1 Salvage."] }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-resolution-card")).toBe(firstVerdict);
+    expect(screen.getByText("Reward applied")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /continue/i })).toHaveLength(1);
+  });
+
+  it("renders a zero-Threat draw as an inline completed queue entry, not a verdict", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          activeResolution: {
+            id: "seat-1:threat:none",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "outcome_summary",
+            card: { id: "threat-none", title: "Threat queue", type: "hazard" },
+            outcome: { title: "No threat drawn", text: "This arrival lane is clear.", effects: [] }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByLabelText("Threat draw complete")).toHaveTextContent(/no threat drawn/i);
+    expect(screen.queryByTestId("phone-roll-result")).not.toBeInTheDocument();
+    expect(screen.queryByText(/the verdict holds/i)).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /continue/i })).toHaveLength(1);
   });
 
   it("keeps completed movement context out of the battle command screen", () => {
@@ -2911,7 +2967,7 @@ describe("PhoneActionPanel", () => {
 
     const result = screen.getByTestId("phone-approach-result");
     expect(result).toHaveTextContent(/player total\s*6/i);
-    expect(result).toHaveTextContent(/difficulty\s*7/i);
+    expect(result).toHaveTextContent(/difficulty total\s*7/i);
     expect(result).toHaveTextContent(/approach setback/i);
     expect(screen.getAllByText(/failed to enter red march outpost/i).length).toBeGreaterThan(0);
     expect(within(result).getByTestId("phone-resolution-continue")).toBeInTheDocument();
@@ -3114,20 +3170,18 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByLabelText(/lane versus lantern-ash ghoul/i)).toBeInTheDocument();
-    expect(screen.getByTestId("phone-battle-total-comparison")).toHaveTextContent(/12.*12/i);
-    expect(screen.getByText(/tie succeeds against this threat/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/^threat defeated$/i)).toHaveLength(1);
-    expect(screen.getByTestId("phone-battle-consequence-trophy")).toBeInTheDocument();
+    expect(screen.getByTestId("phone-resolution-card")).toBeInTheDocument();
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/12.*12/i);
+    expect(screen.getByText(/the gate yields/i)).toBeInTheDocument();
+    expect(screen.getByText(/^threat defeated$/i)).toBeInTheDocument();
+    expect(screen.getByText(/added to the trophy pile/i)).toBeInTheDocument();
     expect(screen.queryByText(/BattleThreatGrit/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-current-prompt")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
-    const actionDock = screen.getByTestId("phone-battle-action-dock");
-    expect(within(actionDock).getAllByRole("button")).toHaveLength(1);
-    expect(within(actionDock).getByRole("button", { name: /continue/i })).toBeEnabled();
-    expect(screen.queryByLabelText(/battle details/i)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /view details/i }));
-    expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/equipped \+2/i);
+    expect(screen.getAllByRole("button", { name: /continue/i })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: /continue/i })).toBeEnabled();
+    expect(screen.queryByTestId("phone-battle-action-dock")).not.toBeInTheDocument();
+    expect(screen.queryByText(/equipped \+2/i)).not.toBeInTheDocument();
   });
 
   it("presents defeat and penalties without duplicating the old battle panels", () => {
@@ -3188,14 +3242,15 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByText(/^test failed$/i)).toBeInTheDocument();
-    expect(screen.getByTestId("phone-battle-consequence-wound")).toBeInTheDocument();
-    expect(screen.getByTestId("phone-battle-shell")).toHaveClass("phone-battle-shell--defeat");
-    expect(screen.queryByTestId("phone-resolution-card")).not.toBeInTheDocument();
+    expect(screen.getByText(/the signal breaks/i)).toBeInTheDocument();
+    expect(screen.getByText(/^operative defeated$/i)).toBeInTheDocument();
+    expect(screen.getByText(/you suffered 1 wound/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-resolution-card")).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toHaveClass("phone-battle-shell--result-gate", "phone-battle-shell--defeat");
     expect(screen.queryByText(/no quick actions available/i)).not.toBeInTheDocument();
   });
 
-  it("renders active anomaly test cards with fallback art and battle controls", () => {
+  it("renders active anomaly test cards with fallback art on Action", () => {
     render(
       <PhoneActionPanel
         characters={characters}
@@ -3227,16 +3282,15 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
-    expect(screen.getByRole("article", { name: /null choir interference test card/i })).toBeInTheDocument();
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--action");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-trial-shell");
     expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/null choir interference/i);
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/test/i);
     expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/anomaly/i);
     expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/dead signal braids/i);
     expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/command/i);
     expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/target 7/i);
     expect(screen.getByTestId("phone-battle-subject-art")).toHaveAttribute("src", "/assets/cards/fallbacks/anomaly.svg");
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/command vs 7/i);
+    expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
   });

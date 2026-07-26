@@ -125,6 +125,37 @@ describe("server required-action projection", () => {
     });
   });
 
+  it("routes non-opposed tests to Action and reserves Battle for opposed enemies", () => {
+    const state = activateMultiplayer();
+    const activeSeatId = state.turnOrder[state.activeSeatIndex]!;
+    state.phase = "resolution";
+    state.activeResolution = {
+      id: "hazard-action-route",
+      playerId: activeSeatId,
+      source: "anomaly",
+      stage: "battle_setup",
+      card: { id: "signal-shear", title: "Signal Shear", type: "hazard" },
+      battle: { stat: "signal", difficulty: 6, modifiers: [] }
+    };
+    expect(requiredAction(createPhoneProjection(state, activeSeatId))).toMatchObject({
+      kind: "test",
+      requiredTab: "action"
+    });
+
+    state.activeResolution = {
+      id: "enemy-battle-route",
+      playerId: activeSeatId,
+      source: "threat",
+      stage: "battle_setup",
+      card: { id: "ash-hunter", title: "Ash Hunter", type: "enemy" },
+      battle: { enemyName: "Ash Hunter", stat: "grit", difficulty: 7, modifiers: [] }
+    };
+    expect(requiredAction(createPhoneProjection(state, activeSeatId))).toMatchObject({
+      kind: "battle",
+      requiredTab: "battle"
+    });
+  });
+
   it("routes a help response only to the selected helper and survives projection reconnect", () => {
     const state = activateMultiplayer();
     const activeSeatId = state.turnOrder[0]!;
@@ -150,7 +181,7 @@ describe("server required-action projection", () => {
     const unrequested = requiredAction(createPhoneProjection(state, unrequestedSeatId));
     const restored = requiredAction(createPhoneProjection(JSON.parse(JSON.stringify(state)), helperSeatId));
 
-    expect(helper).toMatchObject({ kind: "assistance", actorSeatId: helperSeatId, requiredTab: "battle", canAct: true });
+    expect(helper).toMatchObject({ kind: "assistance", actorSeatId: helperSeatId, requiredTab: "action", canAct: true });
     expect(helper.label).toBe("Answer help request");
     expect(unrequested).toMatchObject({ id: helper.id, requiredTab: null, canAct: false, privacy: "public" });
     expect(restored).toEqual(helper);
@@ -284,6 +315,70 @@ describe("server required-action projection", () => {
       roundWrapped: false
     });
     expect(JSON.stringify(tv.handoff)).not.toContain("mission");
+  });
+
+  it("builds a four-entry public handoff ledger from allowlisted turn events", () => {
+    const state = activateMultiplayer();
+    const fromSeatId = state.turnOrder[0]!;
+    const toSeatId = state.turnOrder[1]!;
+    state.activeSeatIndex = 1;
+    state.phase = "navigation";
+    state.eventLog.push(
+      {
+        type: "MOVEMENT_RESOLVED",
+        seatId: fromSeatId,
+        fromSectorId: "ashen-chapel",
+        toSectorId: "ashwake-crossing",
+        stat: "guile",
+        difficulty: 4,
+        roll: { dice: [4], baseTotal: 4, modifierTotal: 2, finalTotal: 6, target: 4, success: true },
+        statBonus: 2,
+        total: 6,
+        success: true,
+        effect: null,
+        createdAt: "2026-07-21T11:58:00.000Z"
+      },
+      {
+        type: "CHECK_ROLLED",
+        seatId: fromSeatId,
+        stat: "signal",
+        difficulty: 6,
+        roll: { dice: [5], baseTotal: 5, modifierTotal: 3, finalTotal: 8, target: 6, success: true },
+        statBonus: 3,
+        total: 8,
+        success: true,
+        effect: { type: "gain_salvage", amount: 1 },
+        cardId: "public-hazard",
+        createdAt: "2026-07-21T11:59:00.000Z"
+      },
+      {
+        type: "RESOLUTION_APPLIED",
+        seatId: fromSeatId,
+        effect: { type: "gain_salvage", amount: 1 },
+        sourceCardId: "public-hazard",
+        success: true,
+        createdAt: "2026-07-21T11:59:10.000Z"
+      },
+      {
+        type: "ESCALATION_ADVANCED",
+        seatId: fromSeatId,
+        amount: 1,
+        newLevel: 2,
+        modifier: 0,
+        createdAt: "2026-07-21T11:59:20.000Z"
+      },
+      { type: "TURN_COMPLETED", seatId: fromSeatId, createdAt: "2026-07-21T12:00:00.000Z" }
+    );
+
+    const handoff = requiredAction(createTvProjection(state)).handoff;
+    expect(handoff?.toSeatId).toBe(toSeatId);
+    expect(handoff?.summaryEntries).toEqual([
+      "Moved to Ashwalk Bridge",
+      "Challenge cleared · 8/6",
+      "1 Salvage gained",
+      "Global Escalation +1"
+    ]);
+    expect(JSON.stringify(handoff)).not.toMatch(/contract|agenda|cardId|public-hazard/i);
   });
 
   it("projects one authoritative and auditable battle calculation to TV and phones", () => {

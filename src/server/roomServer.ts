@@ -12852,6 +12852,103 @@ interface RequiredActionDescriptor {
   sourceId?: string;
 }
 
+function summarizePublicHandoffEffect(effect: unknown): string | null {
+  if (!effect || typeof effect !== "object") return null;
+  const candidate = effect as { type?: string; amount?: number; effects?: unknown[] };
+  if (candidate.type === "sequence") {
+    const summaries = (candidate.effects ?? [])
+      .map((entry) => summarizePublicHandoffEffect(entry))
+      .filter((entry): entry is string => Boolean(entry));
+    return summaries.slice(0, 2).join(" · ") || null;
+  }
+  const amount = typeof candidate.amount === "number" ? Math.abs(candidate.amount) : null;
+  switch (candidate.type) {
+    case "take_wound": return `${amount ?? 1} Wound suffered`;
+    case "heal_wound": return `${amount ?? 1} Wound healed`;
+    case "gain_salvage": return `${amount ?? 1} Salvage gained`;
+    case "lose_salvage": return `${amount ?? 1} Salvage lost`;
+    case "gain_trophy": return `${amount ?? 1} Trophy gained`;
+    case "gain_scar":
+    case "gain_scar_choice": return "Scar gained";
+    case "gain_gear": return "Gear acquired";
+    case "gain_follower": return "Follower joined";
+    case "draw_artifact": return "Artifact recovered";
+    case "draw_affliction": return "Affliction drawn";
+    case "advance_scenario": return "Mission progress advanced";
+    default: return null;
+  }
+}
+
+function buildPublicTurnHandoffSummary(
+  state: GameState,
+  latestTurnCompleted: { seatId?: string } | undefined
+): string[] {
+  if (!latestTurnCompleted?.seatId) return [];
+  const latestIndex = state.eventLog.lastIndexOf(latestTurnCompleted as never);
+  if (latestIndex < 0) return [];
+  let previousBoundary = -1;
+  for (let index = latestIndex - 1; index >= 0; index -= 1) {
+    const entry = state.eventLog[index] as { type?: string } | undefined;
+    if (entry?.type === "TURN_COMPLETED") {
+      previousBoundary = index;
+      break;
+    }
+  }
+
+  const turnEvents = state.eventLog
+    .slice(previousBoundary + 1, latestIndex)
+    .map((entry) => entry as Record<string, unknown>);
+  const ownEvents = turnEvents.filter((entry) => entry.seatId === latestTurnCompleted.seatId);
+  const movement = [...ownEvents].reverse().find((entry) =>
+    entry.type === "MOVEMENT_RESOLVED" || entry.type === "MOVED"
+  );
+  const result = [...ownEvents].reverse().find((entry) =>
+    entry.type === "COMBAT_RESOLVED" ||
+    entry.type === "CHECK_ROLLED" ||
+    entry.type === "NEMESIS_COMBAT_RESOLVED" ||
+    (entry.type === "SPACE_TEXT_RESOLVED" && typeof entry.success === "boolean") ||
+    entry.type === "MOVEMENT_RESOLVED"
+  );
+  const applied = [...ownEvents].reverse().find((entry) => entry.type === "RESOLUTION_APPLIED");
+  const pressure = [...turnEvents].reverse().find((entry) => entry.type === "ESCALATION_ADVANCED");
+  const entries: string[] = [];
+
+  if (movement && typeof movement.toSectorId === "string") {
+    entries.push(`Moved to ${getBoardSpace(movement.toSectorId)?.name ?? "the selected sector"}`);
+  }
+
+  if (result) {
+    const success = result.success === true;
+    const total = typeof result.total === "number"
+      ? result.total
+      : typeof result.attackerTotal === "number"
+        ? result.attackerTotal
+        : null;
+    const opposition = typeof result.enemyTotal === "number"
+      ? result.enemyTotal
+      : typeof result.nemesisTotal === "number"
+        ? result.nemesisTotal
+        : typeof result.difficulty === "number"
+          ? result.difficulty
+          : null;
+    const resultKind = result.type === "COMBAT_RESOLVED" || result.type === "NEMESIS_COMBAT_RESOLVED"
+      ? "Battle"
+      : result.type === "MOVEMENT_RESOLVED"
+        ? "Approach"
+        : "Challenge";
+    entries.push(`${resultKind} ${success ? "cleared" : "failed"}${total !== null && opposition !== null ? ` · ${total}/${opposition}` : ""}`);
+  }
+
+  const consequence = summarizePublicHandoffEffect(applied?.effect);
+  if (consequence) entries.push(consequence);
+
+  if (pressure && typeof pressure.amount === "number" && pressure.amount !== 0) {
+    entries.push(`Global Escalation ${pressure.amount > 0 ? "+" : ""}${pressure.amount}`);
+  }
+
+  return entries.slice(0, 4);
+}
+
 /**
  * Builds the single server-owned answer to "who acts, what must they do, and where?".
  * Private clients receive owner wording only when they own the action. Everyone else,
@@ -12863,6 +12960,10 @@ export function buildRequiredActionProjection(
   context: RequiredActionProjectionContext
 ) {
   const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
+  const opposedResolutionActive =
+    state.activeResolution?.card?.type === "enemy"
+    || state.currentEncounter?.cardType === "enemy"
+    || Boolean(state.pendingEnemyRoll);
   const seatName = (seatId: string | null): string | null =>
     seatId ? state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? "Operative" : null;
 
@@ -12876,6 +12977,7 @@ export function buildRequiredActionProjection(
     && Boolean(currentActiveSeatId)
     && state.movementRolls?.[currentActiveSeatId ?? ""] === undefined
     && state.eventLog.slice(-8).some((entry) => entry === latestTurnCompleted);
+  const handoffSummaryEntries = buildPublicTurnHandoffSummary(state, latestTurnCompleted);
   const handoff = handoffEligible && latestTurnCompleted?.seatId && latestTurnCompleted.createdAt
     ? {
         id: `turn-handoff:${latestTurnCompleted.createdAt}:${latestTurnCompleted.seatId}:${currentActiveSeatId ?? "none"}`,
@@ -12883,7 +12985,8 @@ export function buildRequiredActionProjection(
         fromDisplayName: seatName(latestTurnCompleted.seatId) ?? "Operative",
         toSeatId: currentActiveSeatId,
         toDisplayName: seatName(currentActiveSeatId),
-        roundWrapped: completedSeatIndex >= 0 && currentSeatIndex >= 0 && currentSeatIndex <= completedSeatIndex
+        roundWrapped: completedSeatIndex >= 0 && currentSeatIndex >= 0 && currentSeatIndex <= completedSeatIndex,
+        ...(handoffSummaryEntries.length > 0 ? { summaryEntries: handoffSummaryEntries } : {})
       }
     : undefined;
 
@@ -12966,7 +13069,7 @@ export function buildRequiredActionProjection(
       id: `affliction-reaction:${state.pendingAfflictionReaction.id}:${state.sequence}`,
       kind: "consequence",
       actorSeatId: state.pendingAfflictionReaction.ownerSeatId,
-      requiredTab: state.pendingAfflictionReaction.kind === "arrivalWound" ? "action" : "battle",
+      requiredTab: state.pendingAfflictionReaction.kind === "arrivalWound" || !opposedResolutionActive ? "action" : "battle",
       label: state.pendingAfflictionReaction.kind === "arrivalWound" ? "Bile Spit reaction" : "Affliction reroll",
       ownerDetail: state.pendingAfflictionReaction.kind === "arrivalWound"
         ? "Choose whether to make the arriving operative suffer 1 wound."
@@ -13034,7 +13137,7 @@ export function buildRequiredActionProjection(
       id: `equipment-suppression:${state.pendingEquipmentSuppressionChoice.ownerSeatId}:${state.sequence}`,
       kind: "equipment",
       actorSeatId: state.pendingEquipmentSuppressionChoice.ownerSeatId,
-      requiredTab: "battle",
+      requiredTab: opposedResolutionActive ? "battle" : "action",
       label: "Choose affected Equipment",
       ownerDetail: "Select an eligible equipped item to continue.",
       publicAction: "resolve a private Equipment effect",
@@ -13135,7 +13238,7 @@ export function buildRequiredActionProjection(
       id: `assistance:${state.cooperativeAssistance.activeSeatId}:${outstandingSeatId ?? "ready"}:${state.sequence}`,
       kind: "assistance",
       actorSeatId,
-      requiredTab: helperOwnsResponse ? "battle" : "battle",
+      requiredTab: opposedResolutionActive ? "battle" : "action",
       label: helperOwnsResponse ? "Answer help request" : "Resolve assistance",
       ownerDetail: helperOwnsResponse
         ? `Accept or decline the ${state.cooperativeAssistance.testedStat} assistance request.`
@@ -13150,7 +13253,7 @@ export function buildRequiredActionProjection(
       id: `cooperative-test:${state.pendingCooperativeTest.activeSeatId}:${state.sequence}`,
       kind: "assistance",
       actorSeatId: state.pendingCooperativeTest.activeSeatId,
-      requiredTab: "battle",
+      requiredTab: opposedResolutionActive ? "battle" : "action",
       label: "Choose whether to ask for help",
       ownerDetail: `Ask up to two operatives for ${state.pendingCooperativeTest.stat}, or continue alone.`,
       publicAction: "choose helpers or continue the test",
@@ -13163,7 +13266,7 @@ export function buildRequiredActionProjection(
       id: `failure-reaction:${state.pendingFailureReaction.seatId}:${state.sequence}`,
       kind: "consequence",
       actorSeatId: state.pendingFailureReaction.seatId,
-      requiredTab: "battle",
+      requiredTab: opposedResolutionActive ? "battle" : "action",
       label: "Resolve reaction",
       ownerDetail: "Use an eligible reaction or accept the result.",
       publicAction: "resolve a reaction",
@@ -13176,7 +13279,7 @@ export function buildRequiredActionProjection(
       id: `intercession:${state.pendingStaticIntercessionReaction.seatId}:${state.sequence}`,
       kind: "consequence",
       actorSeatId: state.pendingStaticIntercessionReaction.seatId,
-      requiredTab: "battle",
+      requiredTab: "action",
       label: "Resolve reaction",
       ownerDetail: "Choose an eligible effect to suppress or continue.",
       publicAction: "resolve a reaction"
@@ -13192,7 +13295,10 @@ export function buildRequiredActionProjection(
     const isMovementResolution =
       state.activeResolution?.source === "movement"
       || state.activeResolution?.card?.type === "movement";
-    const isBattle = state.currentEncounter?.cardType === "enemy" || Boolean(state.pendingEnemyRoll);
+    const isBattle =
+      state.activeResolution?.card?.type === "enemy"
+      || state.currentEncounter?.cardType === "enemy"
+      || Boolean(state.pendingEnemyRoll);
     const title = state.activeResolution?.card?.title ?? state.currentEncounter?.title ?? "current test";
     const resultVisible = state.activeResolution?.stage === "roll_result" || state.activeResolution?.stage === "outcome_summary" || state.activeResolution?.stage === "awaiting_continue";
     const outcomeTitle = state.activeResolution?.outcome?.title ?? (state.lastOutcomeSummary?.success === false ? "Test failed" : "Test resolved");
@@ -13202,7 +13308,7 @@ export function buildRequiredActionProjection(
       id: `${isBattle ? "battle" : "test"}:${sourceId}:${state.activeResolution?.stage ?? "pending"}`,
       kind: isBattle ? "battle" : "test",
       actorSeatId,
-      requiredTab: isMovementResolution ? "move" : "battle",
+      requiredTab: isMovementResolution ? "move" : isBattle ? "battle" : "action",
       label: isMovementResolution
         ? resultVisible ? outcomeTitle : "Resolve approach"
         : resultVisible ? outcomeTitle : isBattle ? "Resolve battle" : "Resolve test",

@@ -36,7 +36,7 @@ export function isHazardChallengePresentation(patch: PhonePatchPayload): boolean
   if (patch.battlePresentation?.test.opposed) return false;
   const type =
     patch.battlePresentation?.encounter.category.toLowerCase()
-    ?? patch.activeResolution?.card?.type
+    ?? (patch.activeResolution?.source === "anomaly" ? "anomaly" : patch.activeResolution?.card?.type)
     ?? patch.encounter?.presentationType
     ?? patch.encounter?.cardType
     ?? null;
@@ -90,7 +90,11 @@ function effectSummary(effects: string[]): string {
 function trialKind(patch: PhonePatchPayload, resolution: ActiveResolution | null): TrialKind {
   const category = patch.battlePresentation?.encounter.category.toLowerCase();
   const pendingType = patch.pendingTileChallengePrivate?.challengeType ?? patch.pendingTileChallenge?.challengeType;
-  const type = category ?? pendingType ?? resolution?.card?.type ?? patch.encounter?.presentationType ?? patch.encounter?.cardType;
+  const type = category
+    ?? pendingType
+    ?? (resolution?.source === "anomaly" ? "anomaly" : resolution?.card?.type)
+    ?? patch.encounter?.presentationType
+    ?? patch.encounter?.cardType;
   if (type === "hazard") return "hazard";
   if (type === "anomaly") return "anomaly";
   return "challenge";
@@ -277,7 +281,7 @@ export function PhoneHazardChallengeView({
   const resultReady =
     Boolean(outcome)
     && canContinue
-    && (resolution?.stage === "outcome_summary" || resolution?.stage === "awaiting_continue");
+    && secondaryActions.length === 0;
   const fullFormula = finalTotal === null
     ? "Test not yet rolled"
     : `${operativeBase} + ${rollTotal ?? 0} ${modifierTotal >= 0 ? "+" : "−"} ${Math.abs(modifierTotal)} = ${finalTotal}`;
@@ -310,6 +314,7 @@ export function PhoneHazardChallengeView({
             outcomeTitle={outcome?.title ?? resultLabel}
             outcomeText={outcome?.text ?? consequenceCopy(patch, resolution, result === "success")}
             outcomeEffects={visibleOutcomeEffects}
+            resultDeltas={resultDeltas}
             canContinue={canContinue}
             onContinue={onContinue}
           />
