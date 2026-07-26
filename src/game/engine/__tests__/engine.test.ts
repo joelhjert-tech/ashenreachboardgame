@@ -1004,7 +1004,8 @@ describe("encounter state effects", () => {
     if (!result.ok) {
       return;
     }
-    expect(result.state.sectors.find((sector) => sector.id === "sector-a")?.encounterDecks.threat).toEqual(["grave-lattice-reclaimer"]);
+    expect(result.state.sectors.find((sector) => sector.id === "sector-a")?.persistentThreatIds).toEqual(["grave-lattice-reclaimer"]);
+    expect(result.state.sectors.find((sector) => sector.id === "sector-a")?.encounterDecks.threat).toEqual([]);
   });
 });
 
@@ -1850,7 +1851,8 @@ describe("active resolution visibility state", () => {
 
     expect(server.getState().currentEncounter?.id).toBe("signal-static");
     expect(server.getState().sectors.find((sector) => sector.id === "ashwake-crossing")?.encounterDecks.threat).toEqual([
-      "relay-whisper"
+      "relay-whisper",
+      "signal-static"
     ]);
   });
 
@@ -1905,7 +1907,8 @@ describe("active resolution visibility state", () => {
 
     expect(server.getState().currentEncounter?.id).toBe("relay-whisper");
     expect(server.getState().sectors.find((sector) => sector.id === "glassmere-spindle")?.encounterDecks.threat).toEqual([
-      "signal-static"
+      "signal-static",
+      "relay-whisper"
     ]);
   });
 
@@ -1986,7 +1989,7 @@ describe("active resolution visibility state", () => {
     (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
 
     expect(server.getState().currentEncounter?.id).toBe("relay-whisper");
-    expect(server.getState().sectors.find((sector) => sector.id === "mirecoil-beacon")?.encounterDecks.threat).toEqual([]);
+    expect(server.getState().sectors.find((sector) => sector.id === "mirecoil-beacon")?.encounterDecks.threat).toEqual(["relay-whisper"]);
   });
 
   it("resolves an open shop service as a real transaction", () => {

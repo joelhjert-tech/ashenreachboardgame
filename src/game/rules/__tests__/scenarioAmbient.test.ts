@@ -181,11 +181,12 @@ describe("scenario ambient rules", () => {
         outerRingSectorIds: ["glassmere-spindle", "ashwake-crossing"]
       })
     );
-    expect(consumeResolution?.summary).toContain("consumes local threats");
+    expect(consumeResolution?.summary).toContain("consumes that sector's Threat access");
     const consumedState = consumeResolution?.updater(base) ?? base;
     expect(consumedState.scenarioProgress.devourerIndex).toBe(1);
     expect(consumedState.scenarioProgress.doomTokens).toBe(1);
-    expect(consumedState.sectors.find((sector) => sector.id === "ashwake-crossing")?.encounterDecks.threat).toEqual([]);
+    expect(consumedState.devouredThreatSectorIds).toContain("ashwake-crossing");
+    expect(consumedState.sectors.find((sector) => sector.id === "ashwake-crossing")?.encounterDecks.threat.length).toBeGreaterThan(0);
 
     const eruptionState = createScenarioState({
       activeScenarioId: "scenario_devourer_beneath",

@@ -32,11 +32,13 @@ const sectorNodeBaseSchema = z.object({
 });
 
 export const sectorNodeSchema = sectorNodeBaseSchema.extend({
-  tileChallenges: z.array(tileChallengeSchema).optional()
+  tileChallenges: z.array(tileChallengeSchema).optional(),
+  persistentThreatIds: z.array(z.string().min(1)).optional()
 });
 
 export const legacyCompatibleSectorNodeSchema = sectorNodeBaseSchema.extend({
-  tileChallenges: z.array(legacyCompatibleTileChallengeSchema).optional()
+  tileChallenges: z.array(legacyCompatibleTileChallengeSchema).optional(),
+  persistentThreatIds: z.array(z.string().min(1)).optional()
 });
 
 export const sectorGraphSchema = z.object({

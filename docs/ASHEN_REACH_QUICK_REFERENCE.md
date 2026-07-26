@@ -19,7 +19,7 @@
 4. Review the ordered route and block reasons.
 5. Confirm once.
 6. Wait for authoritative acceptance.
-7. Resolve arrival in this order: sector brief -> recurring challenges -> Threats -> other sector action.
+7. Resolve arrival in this order: sector brief -> recurring challenges -> every printed lane draw from its shared global bag -> other sector action.
 
 Only authored transitions cross regions. Gates and scenario locks still apply. Preview is not movement.
 
@@ -56,11 +56,13 @@ The displayed result is authoritative. Do not import a tie rule from another gam
 
 ## Shop sequence
 
-1. Be at a shop-capable, unblocked sector.
+1. Be at a service-capable sector and clear every drawn Threat successfully during this arrival.
 2. Open available services/stock.
 3. Choose buy, sell, service, or skip.
 4. Server revalidates location, stock, ownership, cost, and timing.
 5. Accepted transaction changes Salvage and inventory atomically.
+
+A failed drawn Threat locks services for this visit only. It does not lock otherwise legal non-service tile actions. Recurring tile challenges and scenario tests do not count toward this gate.
 
 Automatic Salvage loss is not payment: lose up to the stated amount, minimum 0, and continue resolving the outcome.
 

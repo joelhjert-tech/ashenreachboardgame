@@ -65,16 +65,15 @@ describe("canonical tile arrival lifecycle", () => {
     expect(server.getPhaseAfterResolution("seat-1")).toBe("action");
   });
 
-  it("exhausts an empty printed deck safely and unlocks the optional action window", () => {
+  it("draws from the shared lane bag even when the legacy local deck is empty", () => {
     const server = placeAtGuardianSpan(true);
     server.runAutomaticPhases("seat-1");
-    for (let expectedIndex = 1; expectedIndex <= 3; expectedIndex += 1) {
-      expect(server.getState().activeResolution?.outcome?.title).toBe("No threat drawn");
-      expect(server.getState().tileArrivalThreatProgress?.nextThreatIconIndex).toBe(expectedIndex);
-      server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
-    }
-    expect(server.getState().phase).toBe("action");
-    expect(server.getState().currentEncounter).toBeNull();
-    expect(server.getState().tileArrivalThreatProgress?.nextThreatIconIndex).toBe(3);
+
+    expect(server.getState().activeResolution?.outcome?.title).toBe("Card revealed");
+    expect(server.getState().currentEncounter).not.toBeNull();
+    expect(server.getState().currentEncounter?.threatLane).toBe("red");
+    expect(server.getState().tileArrivalThreatProgress?.nextThreatIconIndex).toBe(1);
+    expect(server.getState().threatDrawBags?.red?.remainingCardIds).toHaveLength(25);
+    expect(server.getState().sectors.find((sector) => sector.id === "middle_guardian_span")?.encounterDecks.threat).toEqual([]);
   });
 });

@@ -736,7 +736,8 @@ describe("scenario confrontation flow", () => {
 
     expect(roomServer.getState().scenarioProgress.devourerIndex).toBe(1);
     expect(roomServer.getState().scenarioProgress.doomTokens).toBe(1);
-    expect(roomServer.getState().sectors.find((sector) => sector.id === "ashwake-crossing")?.encounterDecks.threat).toEqual([]);
+    expect(roomServer.getState().devouredThreatSectorIds).toContain("ashwake-crossing");
+    expect(roomServer.getState().sectors.find((sector) => sector.id === "ashwake-crossing")?.encounterDecks.threat.length).toBeGreaterThan(0);
   });
 
   it("ticks the Dying Star down at end of turn and erupts back to five tokens", () => {

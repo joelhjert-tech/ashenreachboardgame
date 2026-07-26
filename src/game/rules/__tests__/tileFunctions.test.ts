@@ -4,7 +4,14 @@ import { loadTileChallenges } from "../../content/tileChallenges.js";
 import { createInitialSessionState } from "../../../server/sessionState.js";
 import { createPhoneProjection, createTvProjection } from "../../../server/roomServer.js";
 import type { PhonePatchPayload, PublicPatchPayload } from "../../../client/shared/types.js";
-import { buildTileArrivalProjection, buildTileFunctionDefinition, canEndTurn, simulateTileArrival } from "../tileFunctions.js";
+import {
+  buildTileArrivalProjection,
+  buildTileFunctionDefinition,
+  canEndTurn,
+  getServiceThreatGate,
+  SERVICE_THREAT_CLEAR_LOCK_REASON,
+  simulateTileArrival
+} from "../tileFunctions.js";
 
 describe("canonical map tile functions", () => {
   const challenges = [...loadTileChallenges().values()];
@@ -88,5 +95,116 @@ describe("canonical map tile functions", () => {
       if ((projection?.mandatoryRemaining ?? 0) > 0) expect(projection?.currentRuleId).not.toBeNull();
       expect(projection?.rules.length).toBeGreaterThan(0);
     }
+  });
+
+  it("unlocks services only after every Threat in the current arrival succeeds", () => {
+    const state = createInitialSessionState("tile-service-success-gate", "single-player");
+    state.status = "active";
+    state.phase = "action";
+    state.players[0]!.sectorId = "ashen-chapel";
+    state.players[0]!.character.currentSpaceId = "ashen-chapel";
+    state.tileArrivalThreatProgress = {
+      arrivalId: "arrival:chapel:1",
+      seatId: "seat-1",
+      sectorId: "ashen-chapel",
+      threatLanes: ["blue"],
+      threatRuleIds: ["threat:0:blue"],
+      nextThreatIconIndex: 1,
+      resolvedThreatOutcomes: [],
+      allThreatsSuccessful: null
+    };
+
+    expect(getServiceThreatGate(state, "seat-1", "ashen-chapel")).toMatchObject({
+      allowed: false,
+      pending: true,
+      failed: false,
+      reason: SERVICE_THREAT_CLEAR_LOCK_REASON
+    });
+
+    state.tileArrivalThreatProgress.resolvedThreatOutcomes = [
+      { ruleId: "threat:0:blue", lane: "blue", cardId: "blue-card", success: true }
+    ];
+    state.tileArrivalThreatProgress.allThreatsSuccessful = true;
+    expect(getServiceThreatGate(state, "seat-1", "ashen-chapel").allowed).toBe(true);
+
+    state.tileArrivalThreatProgress.resolvedThreatOutcomes[0]!.success = false;
+    state.tileArrivalThreatProgress.allThreatsSuccessful = false;
+    const failedProjection = buildTileArrivalProjection(state, "seat-1");
+    expect(getServiceThreatGate(state, "seat-1", "ashen-chapel")).toMatchObject({
+      allowed: false,
+      pending: false,
+      failed: true
+    });
+    expect(failedProjection?.rules.find((rule) => rule.id === "threat:0:blue")?.status).toBe("failed");
+    expect(failedProjection?.rules.find((rule) => rule.kind === "service")).toMatchObject({
+      status: "locked",
+      detail: SERVICE_THREAT_CLEAR_LOCK_REASON
+    });
+    expect(failedProjection?.rules.find((rule) => rule.kind === "board-action")?.status).toBe("optional");
+
+    state.tileArrivalThreatProgress = {
+      ...state.tileArrivalThreatProgress,
+      arrivalId: "arrival:chapel:2",
+      resolvedThreatOutcomes: [
+        { ruleId: "threat:0:blue", lane: "blue", cardId: "different-blue-card", success: true }
+      ],
+      allThreatsSuccessful: true
+    };
+    expect(getServiceThreatGate(state, "seat-1", "ashen-chapel").allowed).toBe(true);
+  });
+
+  it("ignores recurring challenge failure and automatically satisfies no-Threat service sectors", () => {
+    const state = createInitialSessionState("tile-service-nonthreat-gate", "single-player");
+    state.status = "active";
+    state.phase = "action";
+    state.players[0]!.sectorId = "ashen-chapel";
+    state.players[0]!.character.currentSpaceId = "ashen-chapel";
+    state.lastOutcomeSummary = {
+      seatId: "seat-1",
+      movedToSectorId: "ashen-chapel",
+      encounterCardId: null,
+      encounterTitle: "Rift Whispers",
+      encounterCardType: null,
+      checkStat: "signal",
+      die1: 1,
+      die2: 1,
+      statBonus: 0,
+      checkTotal: 2,
+      difficulty: 7,
+      success: false,
+      summary: "The recurring challenge failed."
+    };
+    state.tileArrivalThreatProgress = {
+      arrivalId: "arrival:chapel:challenge-failed",
+      seatId: "seat-1",
+      sectorId: "ashen-chapel",
+      threatLanes: ["blue"],
+      threatRuleIds: ["threat:0:blue"],
+      nextThreatIconIndex: 1,
+      resolvedThreatOutcomes: [
+        { ruleId: "threat:0:blue", lane: "blue", cardId: "blue-card", success: true }
+      ],
+      allThreatsSuccessful: true
+    };
+    expect(getServiceThreatGate(state, "seat-1", "ashen-chapel").allowed).toBe(true);
+
+    const noThreatService = BOARD_SPACES.find((space) =>
+      space.threatIcons.length === 0 &&
+      buildTileFunctionDefinition(space, challenges).optionalActions.some((rule) => rule.kind === "service")
+    );
+    expect(noThreatService).toBeDefined();
+    state.players[0]!.sectorId = noThreatService!.id;
+    state.players[0]!.character.currentSpaceId = noThreatService!.id;
+    state.tileArrivalThreatProgress = {
+      arrivalId: `arrival:${noThreatService!.id}`,
+      seatId: "seat-1",
+      sectorId: noThreatService!.id,
+      threatLanes: [],
+      threatRuleIds: [],
+      nextThreatIconIndex: 0,
+      resolvedThreatOutcomes: [],
+      allThreatsSuccessful: true
+    };
+    expect(getServiceThreatGate(state, "seat-1", noThreatService!.id).allowed).toBe(true);
   });
 });

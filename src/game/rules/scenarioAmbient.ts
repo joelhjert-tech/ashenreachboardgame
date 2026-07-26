@@ -339,8 +339,12 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
       const nextIndex = (getCounter("devourerIndex", 0) + movement) % outerRing.length;
       const nextSectorId = outerRing[nextIndex]!;
       const sector = state.sectors.find((entry) => entry.id === nextSectorId);
-      const consumedThreats = sector?.encounterDecks.threat.length ?? 0;
-      const nextDoom = currentDoom + (consumedThreats > 0 ? 1 : 0);
+      const alreadyConsumed = (state.devouredThreatSectorIds ?? []).includes(nextSectorId);
+      const consumesThreats = !alreadyConsumed && (
+        (sector?.threatIcons?.length ?? 0) > 0 ||
+        (sector?.persistentThreatIds?.length ?? 0) > 0
+      );
+      const nextDoom = currentDoom + (consumesThreats ? 1 : 0);
       const erupted = nextDoom >= 8;
 
       return {
@@ -351,14 +355,14 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
             devourerIndex: nextIndex,
             doomTokens: erupted ? Math.max(0, nextDoom - 4) : nextDoom
           },
+          devouredThreatSectorIds: consumesThreats
+            ? [...new Set([...(currentState.devouredThreatSectorIds ?? []), nextSectorId])]
+            : currentState.devouredThreatSectorIds,
           sectors: currentState.sectors.map((entry) =>
             entry.id === nextSectorId
               ? {
                   ...entry,
-                  encounterDecks: {
-                    ...entry.encounterDecks,
-                    threat: []
-                  }
+                  persistentThreatIds: []
                 }
               : entry
           ),
@@ -374,7 +378,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         }),
         summary: erupted
           ? `The Devourer reached ${nextDoom} doom. Every operative takes 1 wound and doom falls back to ${Math.max(0, nextDoom - 4)}.`
-          : `The Devourer moves ${movement} sector${movement === 1 ? "" : "s"} to ${nextSectorId}${consumedThreats > 0 ? " and consumes local threats, raising doom." : "."}`
+          : `The Devourer moves ${movement} sector${movement === 1 ? "" : "s"} to ${nextSectorId}${consumesThreats ? " and consumes that sector's Threat access, raising doom." : "."}`
       };
     },
     onSectorEntered: ({ state, seatId, sectorId, getCounter, getOuterRingSectorIds, rollDie }) => {

@@ -62,7 +62,7 @@ describe("live encounter lifecycle regression", () => {
     }
 
     const resolved = server.getState();
-    expect(resolved.phase).toBe("broadcast");
+    expect(resolved.phase).toBe("action");
     expect(resolved.currentEncounter).toBeNull();
     expect(resolved.activeResolution).toBeNull();
     expect(resolved.players[0]!.character.salvage).toBe(3);

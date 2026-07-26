@@ -33,7 +33,7 @@ export interface HostMapSectorBriefPresentation {
     id: string;
     kind: "tile-challenge" | "threat-draw" | "board-action" | "service" | "gate" | "scenario";
     label: string;
-    status: "current" | "pending" | "completed" | "optional" | "locked";
+    status: "current" | "pending" | "completed" | "failed" | "optional" | "locked";
     recurring: boolean;
   }>;
   placement: "left" | "right";

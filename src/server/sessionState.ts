@@ -196,6 +196,8 @@ export function createInitialSessionState(
     soloRerollCharges: createInitialSoloRerollCharges(sessionMode, configuredSeats.map(({ seatId }) => seatId)),
     eventLog: [],
     recentEncounterCardIds: [],
+    threatDrawBags: {},
+    devouredThreatSectorIds: [],
     currentEncounter: null,
     pendingEnemyRoll: null,
     cooperativeAssistance: null,

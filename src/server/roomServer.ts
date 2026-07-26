@@ -123,7 +123,7 @@ import {
 import { createInitialSessionState } from "./sessionState.js";
 import { stripLegacyHeatProjection } from "./legacyHeatProjection.js";
 import { resolveBoardSpaceEvent } from "../game/tileResolver.js";
-import { buildTileArrivalProjection, canEndTurn } from "../game/rules/tileFunctions.js";
+import { buildTileArrivalProjection, canEndTurn, getServiceThreatGate } from "../game/rules/tileFunctions.js";
 import {
   calculateExplorationDraws,
   type BoardThreatCard,
@@ -306,6 +306,7 @@ const CONFRONTATION_BASE_DIFFICULTY = 6;
 const SCAR_CARDS = loadScarCards();
 const AFFLICTION_CARDS = loadAfflictionCards();
 const PROJECTION_GEAR_CATALOG = loadGear();
+const PROJECTION_THREAT_CATALOG = loadThreatCards();
 
 const nemesisByScenarioId = new Map<string, NemesisDefinition>(
   nemeses.filter((nemesis) => nemesis.scenarioId).map((nemesis) => [nemesis.scenarioId!, nemesis])
@@ -2570,16 +2571,23 @@ export class GameRoomServer {
   private createFandiablosWarningEffect(seatId: string): EncounterEffect {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const sector = player ? this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId) : null;
-    const topThreatId = sector?.encounterDecks.threat[0] ?? null;
+    const lane = this.getNextCurrentSectorThreatLane(seatId);
+    const persistentThreatId = lane
+      ? (sector?.persistentThreatIds ?? []).find((cardId) => this.threats.get(cardId)?.threatLane === lane) ?? null
+      : null;
+    const topThreatId = persistentThreatId
+      ?? (lane ? this.peekGlobalThreatId(lane, seatId) : sector?.encounterDecks.threat[0] ?? null);
     const topThreat = topThreatId ? this.threats.get(topThreatId) : null;
 
     if (!topThreatId) {
-      return { type: "gain_note", text: "Fandiablos Warning Barks found no local threat to sniff out." };
+      return { type: "gain_note", text: "Fandiablos Warning Barks found no upcoming Threat to sniff out." };
     }
 
     return {
       type: "gain_note",
-      text: `Fandiablos Warning Barks revealed one local threat: ${topThreat?.title ?? topThreatId}. The rest of the deck order remains hidden.`
+      text: `Fandiablos Warning Barks revealed the upcoming ${lane ?? "legacy"} Threat: ${topThreat?.title ?? topThreatId}. ${
+        persistentThreatId ? "It is fixed on this sector." : lane ? "The remaining bag order stays hidden." : "The remaining legacy test deck stays hidden."
+      }`
     };
   }
 
@@ -3013,7 +3021,13 @@ export class GameRoomServer {
     if (!boardSpace || !isBoardSpaceShopCapable(boardSpace)) {
       throw new IntentRejectedError(intent.type, SHOP_FAILURE_REASONS.notAtShop);
     }
-    if (this.state.currentEncounter || this.state.pendingEnemyRoll || this.state.pendingEffect || buildPublicBlockingThreats(this.state).length > 0) {
+    if (
+      this.state.currentEncounter ||
+      this.state.pendingEnemyRoll ||
+      this.state.pendingEffect ||
+      buildPublicBlockingThreats(this.state).length > 0 ||
+      !getServiceThreatGate(this.state, intent.seatId, player.character.currentSpaceId).allowed
+    ) {
       throw new IntentRejectedError(intent.type, SHOP_FAILURE_REASONS.shopBlockedByThreat);
     }
 
@@ -3075,7 +3089,13 @@ export class GameRoomServer {
 
     const blockingThreats = buildPublicBlockingThreats(this.state);
 
-    if (blockingThreats.length > 0 || this.state.currentEncounter || this.state.pendingEnemyRoll || this.state.pendingEffect) {
+    if (
+      blockingThreats.length > 0 ||
+      this.state.currentEncounter ||
+      this.state.pendingEnemyRoll ||
+      this.state.pendingEffect ||
+      !getServiceThreatGate(this.state, intent.seatId, player.character.currentSpaceId).allowed
+    ) {
       throw new Error(SHOP_FAILURE_REASONS.shopBlockedByThreat);
     }
 
@@ -3342,7 +3362,13 @@ export class GameRoomServer {
 
     const blockingThreats = buildPublicBlockingThreats(this.state);
 
-    if (blockingThreats.length > 0 || this.state.currentEncounter || this.state.pendingEnemyRoll || this.state.pendingEffect) {
+    if (
+      blockingThreats.length > 0 ||
+      this.state.currentEncounter ||
+      this.state.pendingEnemyRoll ||
+      this.state.pendingEffect ||
+      !getServiceThreatGate(this.state, intent.seatId, player.character.currentSpaceId).allowed
+    ) {
       throw new Error(SHOP_FAILURE_REASONS.shopBlockedByThreat);
     }
 
@@ -3434,7 +3460,13 @@ export class GameRoomServer {
 
     const blockingThreats = buildPublicBlockingThreats(this.state);
 
-    if (blockingThreats.length > 0 || this.state.currentEncounter || this.state.pendingEnemyRoll || this.state.pendingEffect) {
+    if (
+      blockingThreats.length > 0 ||
+      this.state.currentEncounter ||
+      this.state.pendingEnemyRoll ||
+      this.state.pendingEffect ||
+      !getServiceThreatGate(this.state, intent.seatId, player.character.currentSpaceId).allowed
+    ) {
       throw new Error(SHOP_FAILURE_REASONS.shopBlockedByThreat);
     }
 
@@ -3734,10 +3766,9 @@ export class GameRoomServer {
       if (!choice || !intent.targetId) throw new IntentRejectedError(intent.type, "No displacement choice is pending");
       this.applyAction({ type: "FORCED_DESTINATION_SELECTED", seatId: intent.seatId, choiceId: choice.choiceId, destinationSectorId: intent.targetId, createdAt });
     } else if (control.ruleKey === "relay-blue-peek") {
-      const sector = this.state.sectors.find((entry) => entry.id === player.sectorId);
-      const nextId = sector?.encounterDecks.threat.find((cardId) => this.threats.get(cardId)?.threatLane === "blue");
+      const nextId = this.peekGlobalThreatId("blue", intent.seatId);
       const card = nextId ? this.threats.get(nextId) : null;
-      summary = card ? `Next Blue Threat: ${card.title}. The deck order was not changed.` : "The Blue Threat deck is empty.";
+      summary = card ? `Next Blue Threat: ${card.title}. The bag order was not changed.` : "The Blue Threat bag is empty.";
       activationEvent.summary = summary;
     } else if (control.ruleKey === "inspect-hidden-consequence") {
       const decision = this.state.pendingEncounterDecision;
@@ -4351,6 +4382,46 @@ export class GameRoomServer {
     return this.drawThreatIdWithSoftExile(
       deck.filter((cardId) => this.threats.get(cardId)?.threatLane === lane)
     );
+  }
+
+  private shuffleThreatIds(cardIds: string[]): string[] {
+    const shuffled = [...cardIds];
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const swapIndex = this.randomSource.nextInt(index + 1);
+      [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!];
+    }
+    return shuffled;
+  }
+
+  private prepareThreatBag(lane: ThreatIcon, seatId: string): void {
+    const existing = this.state.threatDrawBags?.[lane];
+    if (existing && existing.remainingCardIds.length > 0) return;
+
+    const laneCardIds = [...this.threats.values()]
+      .filter((card) => card.threatLane === lane)
+      .map((card) => card.id);
+    const shuffled = this.shuffleThreatIds(laneCardIds);
+    const recent = new Set(this.state.recentEncounterCardIds ?? []);
+    const orderedCardIds = existing
+      ? shuffled
+      : [
+          ...shuffled.filter((cardId) => !recent.has(cardId)),
+          ...shuffled.filter((cardId) => recent.has(cardId))
+        ];
+
+    this.applyAction({
+      type: "THREAT_BAG_SHUFFLED",
+      seatId,
+      lane,
+      cycle: (existing?.cycle ?? 0) + 1,
+      orderedCardIds,
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  private peekGlobalThreatId(lane: ThreatIcon, seatId: string): string | null {
+    this.prepareThreatBag(lane, seatId);
+    return this.state.threatDrawBags?.[lane]?.remainingCardIds[0] ?? null;
   }
 
   private getRecentEncounterCardIdsAfterDraw(cardId: string | null | undefined): string[] | undefined {
@@ -5857,9 +5928,18 @@ export class GameRoomServer {
       return;
     }
 
-    const threatDeck = sector.encounterDecks.threat;
-    const drawnThreatId = this.drawThreatIdWithSoftExile(threatDeck);
+    const lane = getBoardSpace(sector.id)?.threatIcons[0] ?? null;
+    const drawnThreatId = lane ? this.peekGlobalThreatId(lane, seatId) : null;
     const drawnThreat = drawnThreatId ? this.threats.get(drawnThreatId) ?? null : null;
+    const threatDrawBags = lane && drawnThreat
+      ? {
+          ...(this.state.threatDrawBags ?? {}),
+          [lane]: {
+            ...(this.state.threatDrawBags?.[lane] ?? { cycle: 1, remainingCardIds: [] }),
+            remainingCardIds: (this.state.threatDrawBags?.[lane]?.remainingCardIds ?? []).slice(1)
+          }
+        }
+      : this.state.threatDrawBags;
 
     this.state = {
       ...this.state,
@@ -5867,6 +5947,7 @@ export class GameRoomServer {
       phase: "action",
       resolutionSource: null,
       currentEncounter: drawnThreat,
+      threatDrawBags,
       recentEncounterCardIds: this.getRecentEncounterCardIdsAfterDraw(drawnThreat?.id),
       pendingEnemyRoll: null,
       pendingEffect: null,
@@ -5903,17 +5984,7 @@ export class GameRoomServer {
             }
           }
         : this.state.activeResolution ?? null,
-      sectors: this.state.sectors.map((entry) =>
-        entry.id === sector.id && drawnThreat
-          ? {
-              ...entry,
-              encounterDecks: {
-                ...entry.encounterDecks,
-                threat: entry.encounterDecks.threat.filter((cardId) => cardId !== drawnThreat.id)
-              }
-            }
-          : entry
-      ),
+      sectors: this.state.sectors,
       lastOutcomeSummary: {
         seatId,
         movedToSectorId: sector.id,
@@ -5943,7 +6014,7 @@ export class GameRoomServer {
           seatId,
           summary: drawnThreat
             ? `Ambient threat draw: ${drawnThreat.title} rises in ${sector.name}.`
-            : `Ambient threat draw: ${sector.name} had no local threat to reveal.`,
+            : `Ambient threat draw: ${sector.name} had no printed Threat lane to reveal.`,
           createdAt: new Date().toISOString()
         }
       ]
@@ -6302,6 +6373,11 @@ export class GameRoomServer {
       escalationLevel: 0,
       currentEncounter: null,
       recentEncounterCardIds: [],
+      threatDrawBags: {},
+      devouredThreatSectorIds: [],
+      sectors: this.state.sectors.map((sector) => ({ ...sector, persistentThreatIds: [] })),
+      tileArrivalThreatProgress: null,
+      tileChallengeProgress: null,
       pendingEnemyRoll: null,
       pendingEffect: null,
       lastOutcomeSummary: null,
@@ -6780,6 +6856,7 @@ export class GameRoomServer {
             success
           }, `Resolved ${pending.challengeId} at ${pending.sectorId} (${pending.challengeType}, ${pending.testStat}, ${success ? "success" : "failure"}).`);
         }
+        this.recordCurrentThreatArrivalOutcome(seatId);
         const nextPhase = this.getPhaseAfterResolution(seatId);
 
         this.applyAction({
@@ -6791,6 +6868,29 @@ export class GameRoomServer {
         progressMade = true;
       }
     }
+  }
+
+  private recordCurrentThreatArrivalOutcome(seatId: string): void {
+    if (this.state.resolutionSource !== "encounter" || !this.state.currentEncounter) return;
+    const progress = this.getTileArrivalThreatProgress(seatId);
+    if (!progress || progress.nextThreatIconIndex <= 0) return;
+    const resolvedIndex = progress.nextThreatIconIndex - 1;
+    const ruleId = progress.threatRuleIds[resolvedIndex];
+    const lane = progress.threatLanes[resolvedIndex];
+    if (!ruleId || !lane) return;
+    if ((progress.resolvedThreatOutcomes ?? []).some((entry) => entry.ruleId === ruleId)) return;
+
+    this.applyAction({
+      type: "THREAT_ARRIVAL_OUTCOME_RECORDED",
+      seatId,
+      arrivalId: progress.arrivalId,
+      ruleId,
+      lane,
+      cardId: this.state.currentEncounter.id,
+      success: this.state.activeResolution?.roll?.success ?? this.state.lastOutcomeSummary?.success === true,
+      queueComplete: progress.nextThreatIconIndex >= progress.threatLanes.length,
+      createdAt: new Date().toISOString()
+    });
   }
 
   private getPhaseAfterResolution(seatId: string): GameState["phase"] {
@@ -6820,7 +6920,6 @@ export class GameRoomServer {
 
     if (
       this.state.resolutionSource === "encounter" &&
-      this.state.lastOutcomeSummary?.success === true &&
       player?.character.status === "active" &&
       boardSpace !== null &&
       boardSpace.textBox.intent !== "scenario-confrontation"
@@ -7100,11 +7199,19 @@ export class GameRoomServer {
       throw new Error(`Unknown sector ${player.character.currentSpaceId}`);
     }
 
-    const deck = sector.encounterDecks.threat;
     const lane = this.getNextCurrentSectorThreatLane(seatId);
-    const drawnThreatId = lane
-      ? this.drawThreatIdWithSoftExileForLane(deck, lane)
-      : this.drawThreatIdWithSoftExile(deck);
+    const persistentThreatId = lane
+      ? (sector.persistentThreatIds ?? []).find((cardId) => this.threats.get(cardId)?.threatLane === lane) ?? null
+      : null;
+    const drawnThreatId = persistentThreatId
+      ?? (lane
+        ? this.peekGlobalThreatId(lane, seatId)
+        : this.drawThreatIdWithSoftExile(sector.encounterDecks.threat));
+    const drawSource: EncounterDrawnAction["drawSource"] = persistentThreatId
+      ? "persistent"
+      : lane
+        ? "global-bag"
+        : "legacy-local";
     const card = drawnThreatId ? this.threats.get(drawnThreatId) ?? null : null;
     const revealEffectKey = card?.revealEffectKey ?? card?.effectKey;
     const revealEffect = card ? this.resolveThreatEffectKey(seatId, card, revealEffectKey, "onReveal")?.effect ?? null : null;
@@ -7123,6 +7230,7 @@ export class GameRoomServer {
         ? "sector"
         : "action",
       tileArrivalThreatProgress: nextProgress,
+      drawSource,
       createdAt: new Date().toISOString()
     };
   }
@@ -7134,6 +7242,13 @@ export class GameRoomServer {
     threatLanes: ThreatIcon[];
     threatRuleIds: string[];
     nextThreatIconIndex: number;
+    resolvedThreatOutcomes?: Array<{
+      ruleId: string;
+      lane: ThreatIcon;
+      cardId: string;
+      success: boolean;
+    }>;
+    allThreatsSuccessful?: boolean | null;
   } | null {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     if (!player) return null;
@@ -7148,23 +7263,36 @@ export class GameRoomServer {
     ) {
       return { ...existing, threatLanes: existing.threatLanes, threatRuleIds: existing.threatRuleIds };
     }
-    const due = calculateExplorationDraws(boardSpace, this.getCurrentSectorThreatCards(player));
-    const remaining = { ...due };
     const threatLanes: ThreatIcon[] = [];
     const threatRuleIds: string[] = [];
-    boardSpace.threatIcons.forEach((lane, index) => {
-      if (remaining[lane] <= 0) return;
-      remaining[lane] -= 1;
-      threatLanes.push(lane);
-      threatRuleIds.push(`threat:${index}:${lane}`);
-    });
+    const threatAccessConsumed =
+      this.state.activeScenarioId === "scenario_devourer_beneath" &&
+      (this.state.devouredThreatSectorIds ?? []).includes(boardSpace.id);
+    if (!threatAccessConsumed) {
+      const sector = this.state.sectors.find((entry) => entry.id === boardSpace.id);
+      for (const persistentId of sector?.persistentThreatIds ?? []) {
+        const persistentLane = this.threats.get(persistentId)?.threatLane;
+        if (!persistentLane) continue;
+        threatLanes.push(persistentLane);
+        threatRuleIds.push(`persistent:${persistentId}:${persistentLane}`);
+      }
+      const remaining = calculateExplorationDraws(boardSpace, this.getCurrentSectorThreatCards(player));
+      boardSpace.threatIcons.forEach((lane, index) => {
+        if (remaining[lane] <= 0) return;
+        remaining[lane] -= 1;
+        threatLanes.push(lane);
+        threatRuleIds.push(`threat:${index}:${lane}`);
+      });
+    }
     return {
       arrivalId: existing?.arrivalId ?? `arrival:${seatId}:${player.character.currentSpaceId}:${this.state.sequence}`,
       seatId,
       sectorId: player.character.currentSpaceId,
       threatLanes,
       threatRuleIds,
-      nextThreatIconIndex: existing?.nextThreatIconIndex ?? 0
+      nextThreatIconIndex: existing?.nextThreatIconIndex ?? 0,
+      resolvedThreatOutcomes: existing?.resolvedThreatOutcomes ?? [],
+      allThreatsSuccessful: threatLanes.length === 0 ? true : existing?.allThreatsSuccessful ?? null
     };
   }
 
@@ -10500,7 +10628,10 @@ function getCompletedContractCountForProjection(state: GameState, seatId: string
 }
 
 function getPublicShopStatus(state: GameState, player: PlayerState): "open" | "locked" | "exhausted" | "dangerous" {
-  if (state.currentEncounter) {
+  if (
+    state.currentEncounter ||
+    !getServiceThreatGate(state, player.seatId, player.character.currentSpaceId).allowed
+  ) {
     return "locked";
   }
 
@@ -10513,8 +10644,16 @@ function getPublicShopStatus(state: GameState, player: PlayerState): "open" | "l
   return "open";
 }
 
-function getPublicShopBlockedReason(state: GameState, blockingThreatCount: number): ShopFailureReason | undefined {
-  return blockingThreatCount > 0 || state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect
+function getPublicShopBlockedReason(
+  state: GameState,
+  blockingThreatCount: number,
+  player: PlayerState
+): ShopFailureReason | undefined {
+  return blockingThreatCount > 0 ||
+    state.currentEncounter ||
+    state.pendingEnemyRoll ||
+    state.pendingEffect ||
+    !getServiceThreatGate(state, player.seatId, player.character.currentSpaceId).allowed
     ? SHOP_FAILURE_REASONS.shopBlockedByThreat
     : undefined;
 }
@@ -10540,11 +10679,28 @@ function getFaceUpThreatsForSector(state: GameState, sectorId: string): PublicMo
   const encounter = state.currentEncounter;
   const encounterSectorId = state.lastOutcomeSummary?.movedToSectorId ?? activePlayer?.character.currentSpaceId;
 
+  const persistent = (state.sectors.find((sector) => sector.id === sectorId)?.persistentThreatIds ?? [])
+    .map((cardId) => PROJECTION_THREAT_CATALOG.get(cardId))
+    .filter((card): card is ThreatCard => Boolean(card))
+    .map((card) => ({
+      instanceId: `${sectorId}:persistent:${card.id}`,
+      cardId: card.id,
+      name: card.cardType === "enemy" ? card.enemyName : card.title,
+      type: getThreatPresentationCategory(card),
+      deck: card.threatLane,
+      challenge: {
+        stat: card.stat,
+        value: card.difficulty
+      },
+      blocksShop: true,
+      blocksSectorText: true
+    }));
   if (!encounter || encounterSectorId !== sectorId) {
-    return [];
+    return persistent;
   }
 
   return [
+    ...persistent.filter((entry) => entry.cardId !== encounter.id),
     {
       instanceId: `${sectorId}:${encounter.id}`,
       cardId: encounter.id,
@@ -10865,10 +11021,13 @@ function buildPublicSectorExplorationSummary(state: GameState, seatId: string | 
   const unresolvedThreats = getFaceUpThreatsForSector(state, sectorId);
   const event = resolveBoardSpaceEvent(player, boardSpace, buildSectorThreatCardsFromPublicThreats(unresolvedThreats));
   const isShopCapable = isBoardSpaceShopCapable(boardSpace);
-  const shopLocked = isShopCapable && unresolvedThreats.some((threat) => threat.blocksShop);
+  const serviceGate = getServiceThreatGate(state, seatId, sectorId);
+  const shopLocked = isShopCapable && !serviceGate.allowed;
   const sectorTextLocked = !event.engagement.shouldResolveTextBox;
   const blocker = unresolvedThreats[0] ?? null;
-  const lockedReason = blocker
+  const lockedReason = serviceGate.reason && shopLocked
+    ? serviceGate.reason
+    : blocker
     ? `Clear ${blocker.name} before ${shopLocked ? "shopping or using sector text" : "using sector text"}.`
     : null;
   const lanesWithBlockers = new Set(unresolvedThreats.flatMap((threat) => (
@@ -10956,14 +11115,28 @@ function buildPublicBlockingThreats(state: GameState): Array<{
     value: number;
   };
 }> {
+  const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
+  const activePlayer = activeSeatId ? state.players.find((player) => player.seatId === activeSeatId) : null;
+  const sectorId = activePlayer?.character.currentSpaceId;
+  const persistent: Array<{
+    cardId: string;
+    name: string;
+    type: "enemy" | "nemesis" | "event" | "encounter" | "asset" | "anomaly" | "hazard";
+    deck?: "red" | "blue" | "yellow";
+    challenge?: { stat: Stat; value: number };
+  }> = sectorId ? getFaceUpThreatsForSector(state, sectorId)
+    .filter((entry) => entry.instanceId.includes(":persistent:"))
+    .map((entry) => ({
+      cardId: entry.cardId,
+      name: entry.name,
+      type: (
+        ["enemy", "nemesis", "event", "encounter", "asset", "anomaly", "hazard"] as const
+      ).find((type) => type === entry.type) ?? "encounter",
+      deck: entry.deck === "red" || entry.deck === "blue" || entry.deck === "yellow" ? entry.deck : undefined,
+      challenge: entry.challenge
+    })) : [];
   const encounter = state.currentEncounter;
-
-  if (!encounter) {
-    return [];
-  }
-
-  return [
-    {
+  const current: typeof persistent = encounter ? [{
       cardId: encounter.id,
       name: encounter.cardType === "enemy" ? encounter.enemyName : encounter.title,
       type: getThreatPresentationCategory(encounter),
@@ -10972,8 +11145,10 @@ function buildPublicBlockingThreats(state: GameState): Array<{
         stat: encounter.stat,
         value: encounter.difficulty
       }
-    }
-  ];
+    }] : [];
+  return [...persistent, ...current].filter((entry, index, entries) =>
+    entries.findIndex((candidate) => candidate.cardId === entry.cardId) === index
+  );
 }
 
 function canPayShopCost(
@@ -11284,7 +11459,7 @@ function buildPublicShopEncounter(
     latestAction?.type === "SHOP_SELL_RESOLVED" && latestAction.seatId === activePlayer.seatId
       ? (latestAction as ShopSellResolvedAction)
       : null;
-  const blockedReason = getPublicShopBlockedReason(state, blockingThreats.length);
+  const blockedReason = getPublicShopBlockedReason(state, blockingThreats.length, activePlayer);
   const shopCategory = getBoardSpaceShopCategory(boardSpace);
   const stockCategory =
     services.find((service) => service.id === "buy-gear")?.shopCategory ??

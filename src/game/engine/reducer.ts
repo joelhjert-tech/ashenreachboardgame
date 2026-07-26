@@ -63,6 +63,8 @@ import type {
   StabilizeResolvedAction,
   StatRaisedAction,
   TableInteractionAction,
+  ThreatArrivalOutcomeRecordedAction,
+  ThreatBagShuffledAction,
   WoundThresholdReachedAction,
   ChooseScarAction,
   ScarThresholdResolvedAction,
@@ -132,7 +134,7 @@ import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { canRiftAnchorSpikeSuppress } from "../rules/forcedDisplacement.js";
 import { resolveFloorZeroSalvageLoss, THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS } from "../rules/salvageLoss.js";
 import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
-import { canEndTurn } from "../rules/tileFunctions.js";
+import { canEndTurn, getServiceThreatGate } from "../rules/tileFunctions.js";
 import {
   getStatUpgradeCost,
   getStatUpgradeDisabledReason,
@@ -1033,13 +1035,10 @@ export function applyEffectToState(state: GameState, seatId: string, effect: Enc
     return {
       ...state,
       sectors: state.sectors.map((sector) =>
-        sector.id === sourceSectorId && !sector.encounterDecks.threat.includes(threatId)
+        sector.id === sourceSectorId && !(sector.persistentThreatIds ?? []).includes(threatId)
           ? {
               ...sector,
-              encounterDecks: {
-                ...sector.encounterDecks,
-                threat: [threatId, ...sector.encounterDecks.threat]
-              }
+              persistentThreatIds: [threatId, ...(sector.persistentThreatIds ?? [])]
             }
           : sector
       )
@@ -2001,8 +2000,23 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
                 effects: []
               }
             },
+        threatDrawBags:
+          drawnAction.drawSource === "global-bag" && drawnAction.card?.threatLane
+            ? {
+                ...(suppressionReadyState.threatDrawBags ?? {}),
+                [drawnAction.card.threatLane]: {
+                  ...(suppressionReadyState.threatDrawBags?.[drawnAction.card.threatLane] ?? {
+                    cycle: 1,
+                    remainingCardIds: []
+                  }),
+                  remainingCardIds: (
+                    suppressionReadyState.threatDrawBags?.[drawnAction.card.threatLane]?.remainingCardIds ?? []
+                  ).filter((cardId, index) => index !== 0 || cardId !== drawnAction.card?.id)
+                }
+              }
+            : suppressionReadyState.threatDrawBags,
         sectors: suppressionReadyState.sectors.map((sector) =>
-          sector.id === drawnAction.sectorId && drawnAction.card
+          sector.id === drawnAction.sectorId && drawnAction.card && drawnAction.drawSource === "legacy-local"
             ? {
                 ...sector,
                 encounterDecks: {
@@ -2010,7 +2024,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
                   threat: sector.encounterDecks.threat.filter((cardId) => cardId !== drawnAction.card?.id)
                 }
               }
-            : sector
+            : sector.id === drawnAction.sectorId && drawnAction.card && drawnAction.drawSource === "persistent"
+              ? {
+                  ...sector,
+                  persistentThreatIds: (sector.persistentThreatIds ?? []).filter((cardId) => cardId !== drawnAction.card?.id)
+                }
+              : sector
         ),
         lastOutcomeSummary: state.lastOutcomeSummary
           ? {
@@ -2026,6 +2045,53 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             }
           : state.lastOutcomeSummary,
         eventLog: [...suppressionReadyState.eventLog, action]
+      });
+    }
+    case "THREAT_BAG_SHUFFLED": {
+      const bagAction = action as ThreatBagShuffledAction;
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        threatDrawBags: {
+          ...(state.threatDrawBags ?? {}),
+          [bagAction.lane]: {
+            cycle: bagAction.cycle,
+            remainingCardIds: [...bagAction.orderedCardIds]
+          }
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "THREAT_ARRIVAL_OUTCOME_RECORDED": {
+      const outcomeAction = action as ThreatArrivalOutcomeRecordedAction;
+      const progress = state.tileArrivalThreatProgress;
+      if (!progress || progress.arrivalId !== outcomeAction.arrivalId) {
+        return reject(state, action, "Threat outcome does not match the active arrival");
+      }
+      const existing = progress.resolvedThreatOutcomes ?? [];
+      if (existing.some((entry) => entry.ruleId === outcomeAction.ruleId)) {
+        return succeed(state);
+      }
+      const resolvedThreatOutcomes = [
+        ...existing,
+        {
+          ruleId: outcomeAction.ruleId,
+          lane: outcomeAction.lane,
+          cardId: outcomeAction.cardId,
+          success: outcomeAction.success
+        }
+      ];
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        tileArrivalThreatProgress: {
+          ...progress,
+          resolvedThreatOutcomes,
+          allThreatsSuccessful: outcomeAction.queueComplete
+            ? resolvedThreatOutcomes.every((entry) => entry.success)
+            : null
+        },
+        eventLog: [...state.eventLog, action]
       });
     }
     case "CHECK_REQUESTED": {
@@ -4527,6 +4593,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (player.character.currentSpaceId !== shopAction.sectorId) {
         return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
       }
+      if (!getServiceThreatGate(state, shopAction.seatId, shopAction.sectorId).allowed) {
+        return reject(state, action, SHOP_FAILURE_REASONS.shopBlockedByThreat);
+      }
 
       const costError = canPayShopActionCost(player, shopAction.cost);
 
@@ -4597,6 +4666,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (player.character.currentSpaceId !== browseAction.sectorId) {
         return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
       }
+      if (!getServiceThreatGate(state, browseAction.seatId, browseAction.sectorId).allowed) {
+        return reject(state, action, SHOP_FAILURE_REASONS.shopBlockedByThreat);
+      }
 
       return succeed({
         ...state,
@@ -4628,6 +4700,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (player.character.currentSpaceId !== revealAction.sectorId) {
         return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
+      }
+      if (!getServiceThreatGate(state, revealAction.seatId, revealAction.sectorId).allowed) {
+        return reject(state, action, SHOP_FAILURE_REASONS.shopBlockedByThreat);
       }
 
       const costError = canPayShopActionCost(player, revealAction.cost);
@@ -4699,6 +4774,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (player.character.currentSpaceId !== purchaseAction.sectorId) {
         return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
+      }
+      if (!getServiceThreatGate(state, purchaseAction.seatId, purchaseAction.sectorId).allowed) {
+        return reject(state, action, SHOP_FAILURE_REASONS.shopBlockedByThreat);
       }
 
       const reveal = (state.shopStockReveals ?? []).find(
@@ -4787,6 +4865,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (player.character.currentSpaceId !== sellAction.sectorId || !boardSpace || !isBoardSpaceShopCapable(boardSpace)) {
         return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
+      }
+      if (!getServiceThreatGate(state, sellAction.seatId, sellAction.sectorId).allowed) {
+        return reject(state, action, SHOP_FAILURE_REASONS.shopBlockedByThreat);
       }
 
       if (!player.character.heldGear.some((item) => item.id === sellAction.gearId && (!sellAction.instanceId || item.instanceId === sellAction.instanceId))) {

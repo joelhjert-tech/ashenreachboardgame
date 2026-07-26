@@ -992,7 +992,7 @@ export interface PublicSectorExplorationSummary {
 }
 
 export type TileArrivalRuleKind = "tile-challenge" | "threat-draw" | "board-action" | "service" | "gate" | "scenario";
-export type TileArrivalRuleStatus = "current" | "pending" | "completed" | "optional" | "locked";
+export type TileArrivalRuleStatus = "current" | "pending" | "completed" | "failed" | "optional" | "locked";
 export type TileArrivalRepeatPolicy = "EVERY_ARRIVAL" | "ONCE_PER_TURN" | "ONCE_PER_ROUND" | "ONCE_PER_PLAYER" | "ONCE_PER_GAME" | "WHILE_PRESENT" | "SCENARIO_CONTROLLED";
 
 export interface PublicTileArrivalRule {

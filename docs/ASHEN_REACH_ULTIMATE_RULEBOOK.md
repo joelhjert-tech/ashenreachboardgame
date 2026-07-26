@@ -153,7 +153,9 @@ If a sector action offers choices, use the phone options. An option omitted or d
 
 ## 17. Exploration and Threat draws
 
-The software compares the sector's printed red, blue, and yellow pressure icons with unresolved face-up cards and draws only the missing pressure. Players do not manually count or draw cards.
+Every printed red, blue, or yellow Threat icon draws one card from the matching server-owned global lane bag. Each bag is shared by all operatives, contains every active card in that lane, and draws without replacement until the complete lane is exhausted. The server then reshuffles that lane for its next cycle. Bag order and remaining cards are private server state.
+
+An enemy explicitly returned to a sector is fixed there. It resolves before the next global draw of its lane. Players do not manually count, shuffle, or draw cards.
 
 Public Threat roles resolve in deterministic engagement order:
 
@@ -163,7 +165,7 @@ Public Threat roles resolve in deterministic engagement order:
 4. Encounter
 5. Asset
 
-An earlier failure or blocker may end the remaining engagement flow.
+Every drawn Threat in the arrival queue reaches a final result. Rerolls and reactions finish before success or failure is recorded.
 
 ## 18. Threats versus recurring challenges
 
@@ -240,7 +242,7 @@ No general follower limit is currently verified.
 
 ## 25. Salvage and shops
 
-Salvage is currency. A shop is available only at a shop-capable sector and only when the authoritative state permits it.
+Salvage is currency. A shop or other service is available only at a service-capable sector after every drawn Threat in the current arrival has resolved successfully. A failed Threat locks services for that visit; leave and complete a later arrival successfully to unlock them. Failed recurring tile challenges and scenario tests do not affect this gate. Sectors without printed Threats satisfy the Threat-success requirement automatically after their other mandatory arrival stages finish. Non-service sector actions remain available whenever their own rules permit them.
 
 When an automatic consequence says to lose Salvage, lose up to the stated amount; Salvage cannot fall below 0. This is not a payment, so the consequence still resolves when you have less Salvage than the stated loss.
 
@@ -248,7 +250,7 @@ When an encounter says to pay Salvage, the full amount is a prerequisite for the
 
 Shop sequence:
 
-1. Resolve blockers first.
+1. Resolve the complete Threat queue successfully.
 2. Open the shop from the phone.
 3. Review public/owner-safe services and revealed stock.
 4. Choose buy, sell, service, or skip.

@@ -834,7 +834,7 @@ function BattleSubjectCard({
 
 const shopFailureLabels: Record<ShopFailureReason, string> = {
   notAtShop: "No shop here",
-  shopBlockedByThreat: "Shop blocked by threat",
+  shopBlockedByThreat: "Service locked — clear every Threat successfully during this arrival.",
   insufficientSalvage: "Not enough Salvage",
   itemUnavailable: "Item unavailable",
   inventoryFull: "Inventory full",

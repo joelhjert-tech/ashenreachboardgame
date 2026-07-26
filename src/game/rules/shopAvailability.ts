@@ -18,7 +18,7 @@ export type ShopFailureReason = (typeof SHOP_FAILURE_REASONS)[keyof typeof SHOP_
 
 export const SHOP_FAILURE_LABELS: Record<ShopFailureReason, string> = {
   notAtShop: "No shop is available on this sector.",
-  shopBlockedByThreat: "Clear the local threat before shopping.",
+  shopBlockedByThreat: "Service locked — clear every Threat successfully during this arrival.",
   insufficientSalvage: "Not enough Salvage.",
   itemUnavailable: "That item is not available from this shop.",
   inventoryFull: "Inventory is full.",

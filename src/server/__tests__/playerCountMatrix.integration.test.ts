@@ -151,25 +151,33 @@ async function waitForServerTick(delayMs = 25): Promise<void> {
 }
 
 async function continueVisibleResolution(harness: Harness, phones: SocketProbe[]): Promise<void> {
-  for (let index = 0; index < 4; index += 1) {
+  for (let index = 0; index < 24; index += 1) {
     const state = harness.roomServer.getState();
     const activeResolution = state.activeResolution;
 
-    if (
-      !activeResolution ||
-      !["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage)
-    ) {
+    if (!activeResolution) {
       return;
     }
 
     const continuingSeatId = state.turnOrder[state.activeSeatIndex] ?? activeResolution.playerId;
     const phoneIndex = state.seats.findIndex((seat) => seat.seatId === continuingSeatId);
-    phones[phoneIndex]?.socket.send(
-      JSON.stringify({
-        type: "CONTINUE_RESOLUTION",
-        seatId: continuingSeatId
-      })
-    );
+    const encounter = state.currentEncounter;
+    const intent = activeResolution.stage === "card_reveal" && encounter
+      ? {
+          type: "START_TILE_ENCOUNTER",
+          seatId: continuingSeatId,
+          encounterId: encounter.id,
+          resolutionId: activeResolution.id
+        }
+      : activeResolution.stage === "battle_setup" && encounter
+      ? encounter.cardType === "enemy"
+        ? { type: "COMBAT_REQUESTED", seatId: continuingSeatId, stat: encounter.stat }
+        : { type: "CHECK_REQUESTED", seatId: continuingSeatId, stat: encounter.stat }
+      : ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage)
+        ? { type: "CONTINUE_RESOLUTION", seatId: continuingSeatId }
+        : null;
+    if (!intent) return;
+    phones[phoneIndex]?.socket.send(JSON.stringify(intent));
     await waitForServerTick();
   }
 }

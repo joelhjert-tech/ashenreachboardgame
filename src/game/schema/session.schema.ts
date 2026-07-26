@@ -485,6 +485,14 @@ export const gameStateSchema = z.object({
   soloRerollCharges: z.record(z.string(), z.number().int().min(0)).optional(),
   eventLog: z.array(z.unknown()),
   recentEncounterCardIds: z.array(z.string().min(1)).optional(),
+  threatDrawBags: z.record(
+    z.enum(["red", "blue", "yellow"]),
+    z.object({
+      cycle: z.number().int().min(1),
+      remainingCardIds: z.array(z.string().min(1))
+    })
+  ).optional(),
+  devouredThreatSectorIds: z.array(z.string().min(1)).optional(),
   escalationLevel: z.number().int().min(0),
   resolvedEscalationSourceEventIds: z.array(z.string().min(1)).optional(),
   currentEncounter: runtimeThreatCardSchema.nullable(),
@@ -558,7 +566,14 @@ export const gameStateSchema = z.object({
     sectorId: z.string().min(1),
     threatLanes: z.array(z.enum(["red", "blue", "yellow"])).optional(),
     threatRuleIds: z.array(z.string().min(1)).optional(),
-    nextThreatIconIndex: z.number().int().min(0)
+    nextThreatIconIndex: z.number().int().min(0),
+    resolvedThreatOutcomes: z.array(z.object({
+      ruleId: z.string().min(1),
+      lane: z.enum(["red", "blue", "yellow"]),
+      cardId: z.string().min(1),
+      success: z.boolean()
+    })).optional(),
+    allThreatsSuccessful: z.boolean().nullable().optional()
   }).nullable().optional(),
   activeResolution: activeResolutionSchema.nullable().optional(),
   lastOutcomeSummary: z

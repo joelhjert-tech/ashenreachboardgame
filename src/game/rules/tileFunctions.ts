@@ -6,7 +6,72 @@ import { getBoardSpaceShopTypeLabel, isBoardSpaceShopCapable } from "./shopAvail
 
 export type TileRuleKind = "tile-challenge" | "threat-draw" | "board-action" | "service" | "gate" | "scenario";
 export type TileRepeatPolicy = "EVERY_ARRIVAL" | "ONCE_PER_TURN" | "ONCE_PER_ROUND" | "ONCE_PER_PLAYER" | "ONCE_PER_GAME" | "WHILE_PRESENT" | "SCENARIO_CONTROLLED";
-export type TileRuleStatus = "current" | "pending" | "completed" | "optional" | "locked";
+export type TileRuleStatus = "current" | "pending" | "completed" | "failed" | "optional" | "locked";
+
+export const SERVICE_THREAT_CLEAR_LOCK_REASON =
+  "Service locked — clear every Threat successfully during this arrival.";
+
+export function getServiceThreatGate(
+  state: GameState,
+  seatId: string,
+  sectorId: string
+): { allowed: boolean; pending: boolean; failed: boolean; reason: string | null } {
+  const space = getBoardSpace(sectorId);
+  if (!space || !isBoardSpaceShopCapable(space)) {
+    return { allowed: false, pending: false, failed: false, reason: null };
+  }
+  const progress = state.tileArrivalThreatProgress?.seatId === seatId &&
+    state.tileArrivalThreatProgress.sectorId === sectorId
+    ? state.tileArrivalThreatProgress
+    : null;
+  const threatCount = state.activeScenarioId === "scenario_devourer_beneath" &&
+    (state.devouredThreatSectorIds ?? []).includes(sectorId)
+    ? 0
+    : progress?.threatLanes?.length ?? space.threatIcons.length;
+  const otherMandatoryPending = Boolean(
+    state.pendingTileChallenge ||
+    state.currentEncounter ||
+    state.pendingEnemyRoll ||
+    state.pendingEffect ||
+    state.activeResolution && state.phase === "resolution"
+  );
+  if (!progress && state.phase === "action" && !otherMandatoryPending) {
+    // Legacy v2 saves did not persist arrival outcomes. An already-open action
+    // window is the authoritative evidence that their mandatory arrival work
+    // finished before restoration.
+    return { allowed: true, pending: false, failed: false, reason: null };
+  }
+
+  if (threatCount === 0) {
+    const allowed = state.phase === "action" && !otherMandatoryPending;
+    return {
+      allowed,
+      pending: !allowed,
+      failed: false,
+      reason: allowed ? null : SERVICE_THREAT_CLEAR_LOCK_REASON
+    };
+  }
+
+  if (progress?.allThreatsSuccessful === true && !otherMandatoryPending) {
+    return { allowed: true, pending: false, failed: false, reason: null };
+  }
+  if (
+    progress &&
+    progress.allThreatsSuccessful === undefined &&
+    progress.nextThreatIconIndex >= threatCount &&
+    state.phase === "action" &&
+    !otherMandatoryPending
+  ) {
+    return { allowed: true, pending: false, failed: false, reason: null };
+  }
+  const failed = progress?.allThreatsSuccessful === false;
+  return {
+    allowed: false,
+    pending: !failed,
+    failed,
+    reason: SERVICE_THREAT_CLEAR_LOCK_REASON
+  };
+}
 
 export interface TileFunctionRule {
   id: string;
@@ -218,32 +283,63 @@ export function buildTileArrivalProjection(state: GameState, seatId: string): Ti
   const space = getBoardSpace(player.character.currentSpaceId);
   if (!space) return null;
   const definition = buildTileFunctionDefinition(space, sector.tileChallenges ?? []);
+  const arrivalProgress = state.tileArrivalThreatProgress?.seatId === seatId &&
+    state.tileArrivalThreatProgress.sectorId === space.id
+    ? state.tileArrivalThreatProgress
+    : null;
+  const knownRuleIds = new Set(definition.arrival.map((rule) => rule.id));
+  const persistentThreatRules: TileFunctionRule[] = (arrivalProgress?.threatRuleIds ?? [])
+    .map((ruleId, index): TileFunctionRule | null => {
+      if (knownRuleIds.has(ruleId) || !ruleId.startsWith("persistent:")) return null;
+      const lane = arrivalProgress?.threatLanes?.[index];
+      if (!lane) return null;
+      return {
+        id: ruleId,
+        order: 90 + index,
+        kind: "threat-draw",
+        label: "Persistent Threat",
+        detail: `Resolve the returned ${titleCase(lane)} Threat before drawing from the shared bag.`,
+        mandatory: true,
+        repeatPolicy: "WHILE_PRESENT",
+        marker: `RETURNED ${lane.toUpperCase()} THREAT`,
+        supported: true,
+        threatLane: lane
+      };
+    })
+    .filter((rule): rule is TileFunctionRule => rule !== null);
   const completedChallenges = new Set(
     state.tileChallengeProgress?.seatId === seatId && state.tileChallengeProgress.sectorId === space.id
       ? state.tileChallengeProgress.resolvedChallengeIds
       : []
   );
   let currentAssigned = false;
-  const rules: TileArrivalRuleProjection[] = [...definition.arrival, ...definition.optionalActions].map((rule) => {
+  const rules: TileArrivalRuleProjection[] = [
+    ...persistentThreatRules,
+    ...definition.arrival,
+    ...definition.optionalActions
+  ].sort((left, right) => left.order - right.order).map((rule) => {
     let status: TileRuleStatus;
-    if (!rule.mandatory) status = "optional";
+    if (rule.kind === "service") {
+      status = getServiceThreatGate(state, seatId, space.id).allowed ? "optional" : "locked";
+    }
+    else if (!rule.mandatory) status = "optional";
     else if (rule.kind === "tile-challenge" && rule.sourceId && completedChallenges.has(rule.sourceId)) status = "completed";
     else if (rule.kind === "tile-challenge" && state.pendingTileChallenge?.challengeId === rule.sourceId) {
       status = "current";
       currentAssigned = true;
     } else if (rule.kind === "threat-draw") {
-      const progress = state.tileArrivalThreatProgress?.seatId === seatId && state.tileArrivalThreatProgress.sectorId === space.id
-        ? state.tileArrivalThreatProgress
-        : null;
+      const progress = arrivalProgress;
       const plannedRuleIds = progress?.threatRuleIds ?? definition.arrival
         .filter((entry) => entry.kind === "threat-draw")
         .map((entry) => entry.id);
       const threatIndex = plannedRuleIds.indexOf(rule.id);
       const nextIndex = progress?.nextThreatIconIndex ?? 0;
+      const recordedOutcome = progress?.resolvedThreatOutcomes?.find((entry) => entry.ruleId === rule.id);
       if (state.currentEncounter && threatIndex === nextIndex - 1) {
         status = "current";
         currentAssigned = true;
-      } else if (threatIndex < 0 || threatIndex < nextIndex) status = "completed";
+      } else if (recordedOutcome) status = recordedOutcome.success ? "completed" : "failed";
+      else if (threatIndex < 0 || threatIndex < nextIndex) status = "completed";
       else if (!currentAssigned) {
         status = "current";
         currentAssigned = true;
@@ -253,7 +349,9 @@ export function buildTileArrivalProjection(state: GameState, seatId: string): Ti
       status = "current";
       currentAssigned = true;
     } else status = "pending";
-    return { ...rule, status };
+    return rule.kind === "service" && status === "locked"
+      ? { ...rule, detail: SERVICE_THREAT_CLEAR_LOCK_REASON, status }
+      : { ...rule, status };
   });
   const endTurn = canEndTurn(state, seatId);
   const currentRule = rules.find((rule) => rule.status === "current") ?? null;
@@ -267,7 +365,9 @@ export function buildTileArrivalProjection(state: GameState, seatId: string): Ti
     tileName: space.name,
     lore: space.loreText,
     currentRuleId: currentRule?.id ?? null,
-    mandatoryRemaining: rules.filter((rule) => rule.mandatory && rule.status !== "completed").length,
+    mandatoryRemaining: rules.filter((rule) =>
+      rule.mandatory && !["completed", "failed"].includes(rule.status)
+    ).length,
     canEndTurn: endTurn.allowed,
     blockedReason: endTurn.reason,
     rules

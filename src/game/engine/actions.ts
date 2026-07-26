@@ -95,7 +95,32 @@ export interface EncounterDrawnAction extends BaseAction {
     threatLanes: Array<"red" | "blue" | "yellow">;
     threatRuleIds: string[];
     nextThreatIconIndex: number;
+    resolvedThreatOutcomes?: Array<{
+      ruleId: string;
+      lane: "red" | "blue" | "yellow";
+      cardId: string;
+      success: boolean;
+    }>;
+    allThreatsSuccessful?: boolean | null;
   };
+  drawSource?: "global-bag" | "persistent" | "legacy-local";
+}
+
+export interface ThreatBagShuffledAction extends BaseAction {
+  type: "THREAT_BAG_SHUFFLED";
+  lane: "red" | "blue" | "yellow";
+  cycle: number;
+  orderedCardIds: string[];
+}
+
+export interface ThreatArrivalOutcomeRecordedAction extends BaseAction {
+  type: "THREAT_ARRIVAL_OUTCOME_RECORDED";
+  arrivalId: string;
+  ruleId: string;
+  lane: "red" | "blue" | "yellow";
+  cardId: string;
+  success: boolean;
+  queueComplete: boolean;
 }
 
 export interface CheckRequestedAction extends BaseAction {
@@ -769,6 +794,8 @@ export type GameAction =
   | MovedAction
   | MovementResolvedAction
   | EncounterDrawnAction
+  | ThreatBagShuffledAction
+  | ThreatArrivalOutcomeRecordedAction
   | CheckRequestedAction
   | CombatRequestedAction
   | EnemyRollAssignedAction
