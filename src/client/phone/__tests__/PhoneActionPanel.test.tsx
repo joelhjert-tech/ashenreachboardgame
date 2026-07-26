@@ -346,9 +346,31 @@ describe("PhoneActionPanel", () => {
         destinationSectorName: "Static Chapel",
         prompt: "Accept the authoritative forced displacement.",
         riftAnchorSpike: null
+      },
+      outcomeSummary: {
+        seatId: "seat-1",
+        movedToSectorId: "middle_red_march_outpost",
+        encounterCardId: "route-splice",
+        encounterTitle: "Route Splice",
+        encounterCardType: "hazard",
+        checkStat: "grit",
+        die1: 2,
+        die2: 1,
+        statBonus: 2,
+        checkTotal: 5,
+        difficulty: 8,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: false,
+        summary: "The failed test still counts. Forced displacement is pending."
       }
     });
     render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    expect(screen.queryByTestId("phone-resolution-continue")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Accept displacement/ })).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: /^Accept displacement/ }));
     expect(screen.getByText(/Choir Bastion → Static Chapel/)).toBeInTheDocument();
     expect(screen.queryByText(/Rift Anchor Spike/i)).not.toBeInTheDocument();
@@ -586,8 +608,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /use red march warbell/i })).toBeDisabled();
-    expect(screen.getAllByText(/red march warbell has already been used this turn/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /use red march warbell/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId("priority-passive")).toHaveTextContent(/red march warbell/i);
+    expect(screen.getByTestId("priority-passive")).toHaveTextContent(/already applied/i);
     expect(screen.getByRole("button", { name: /use choir defector/i })).toBeDisabled();
     expect(screen.getAllByText(/choir defector has already been used this round/i).length).toBeGreaterThan(0);
   });
@@ -773,8 +796,9 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/sable vey/i);
     expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/cinder-veil stalker/i);
-    expect(screen.getByLabelText(/battle totals/i)).toHaveTextContent(/grit/i);
-    expect(screen.getByLabelText(/battle totals/i)).toHaveTextContent(/opponent\s*6/i);
+    expect(screen.getByTestId("phone-battle-cinematic-stage")).toHaveTextContent(/grit ready/i);
+    expect(screen.getByTestId("phone-battle-cinematic-stage")).toHaveTextContent(/difficulty\s*6/i);
+    expect(screen.queryByLabelText(/^battle totals$/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /enter combat/i })).toBeInTheDocument();
     expect(screen.queryByTestId("phone-current-prompt")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-subject-card")).not.toBeInTheDocument();
@@ -1081,8 +1105,11 @@ describe("PhoneActionPanel", () => {
     const result = screen.getByTestId("phone-approach-result");
     expect(result).toHaveTextContent(/Approach Result/i);
     expect(result).toHaveTextContent(/Glassmere Spindle/i);
-    expect(result).toHaveTextContent(/Player total\s*7/i);
-    expect(result).toHaveTextContent(/Difficulty total\s*7/i);
+    expect(result).not.toHaveTextContent(/Player total|Difficulty total|vs/i);
+    expect(within(result).getByTestId("phone-roll-result")).toHaveTextContent(/^Total7$/i);
+    expect(within(result).getByTestId("phone-roll-result")).toHaveAccessibleName(
+      "Player total 7, Difficulty total 7"
+    );
     expect(within(result).getByAltText(/glassmere spindle location artwork/i)).toHaveAttribute(
       "src",
       "/assets/riftfall/environments/signal-theatre/sectors/glassmere-spindle.png"
@@ -2762,7 +2789,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByRole("button", { name: /roll for enemy/i })).not.toBeInTheDocument();
   });
 
-  it("renders active roll result and sends continue intent", () => {
+  it("renders a failed roll result with a named consequence action instead of a generic Continue", () => {
     const onIntent = vi.fn();
 
     render(
@@ -2804,22 +2831,28 @@ describe("PhoneActionPanel", () => {
               text: "Failure: the signal collapses.",
               effects: ["Failure: lasting harm is handled by Scars."]
             }
+          },
+          requiredAction: {
+            id: "accept-signal-static-failure",
+            kind: "consequence",
+            actorSeatId: "seat-1",
+            actorDisplayName: "Lane",
+            requiredTab: "action",
+            label: "Accept consequence",
+            detail: "Resolve the authoritative failure consequence.",
+            canAct: true,
+            waiting: false,
+            privacy: "owner"
           }
         })}
       />
     );
 
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/your total\s*6/i);
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/challenge\s*7/i);
-    expect(screen.getByTestId("phone-roll-result")).not.toHaveTextContent(/roll:|die|modifier|attack|defense/i);
-    expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();
-    expect(screen.getAllByRole("button", { name: /continue/i })).toHaveLength(1);
-    expect(
-      screen.getByTestId("phone-resolution-continue").compareDocumentPosition(screen.getByTestId("phone-roll-result")) &
-        Node.DOCUMENT_POSITION_PRECEDING
-    ).toBeTruthy();
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/failure/i);
+    expect(screen.queryByRole("button", { name: /^continue$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /accept consequence/i })).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /accept consequence/i }));
 
     expect(onIntent).toHaveBeenCalledWith({
       type: "CONTINUE_RESOLUTION",
@@ -2827,7 +2860,7 @@ describe("PhoneActionPanel", () => {
     });
   });
 
-  it("keeps one verdict mounted while the server advances from roll result to consequence", () => {
+  it("shows one final verdict after the server has applied the consequence", () => {
     const resolution = {
       id: "seat-1:threat:signal-static:stable-verdict",
       playerId: "seat-1",
@@ -2841,7 +2874,7 @@ describe("PhoneActionPanel", () => {
     const view = render(
       <PhoneActionPanel characters={characters} onIntent={vi.fn()} patch={createPatch({ activeResolution: resolution })} />
     );
-    const firstVerdict = screen.getByTestId("phone-resolution-card");
+    expect(screen.queryByRole("button", { name: /^continue$/i })).not.toBeInTheDocument();
 
     view.rerender(
       <PhoneActionPanel
@@ -2857,7 +2890,7 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-resolution-card")).toBe(firstVerdict);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveAttribute("data-result-ready-gate", "true");
     expect(screen.getByText("Reward applied")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /continue/i })).toHaveLength(1);
   });
@@ -2966,8 +2999,11 @@ describe("PhoneActionPanel", () => {
     );
 
     const result = screen.getByTestId("phone-approach-result");
-    expect(result).toHaveTextContent(/player total\s*6/i);
-    expect(result).toHaveTextContent(/difficulty total\s*7/i);
+    expect(result).not.toHaveTextContent(/player total|difficulty total|vs/i);
+    expect(within(result).getByTestId("phone-roll-result")).toHaveTextContent(/^Total6$/i);
+    expect(within(result).getByTestId("phone-roll-result")).toHaveAccessibleName(
+      "Player total 6, Difficulty total 7"
+    );
     expect(result).toHaveTextContent(/approach setback/i);
     expect(screen.getAllByText(/failed to enter red march outpost/i).length).toBeGreaterThan(0);
     expect(within(result).getByTestId("phone-resolution-continue")).toBeInTheDocument();
@@ -3016,13 +3052,14 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/roll required/i);
     expect(screen.getByLabelText(/lane versus cinder-veil stalker/i)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /cinder-veil stalker/i })).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//));
-    expect(screen.getByLabelText(/battle totals/i)).toHaveTextContent(/opponent\s*8/i);
+    expect(screen.getByTestId("phone-battle-cinematic-stage")).toHaveTextContent(/difficulty\s*8/i);
+    expect(screen.queryByLabelText(/^battle totals$/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /view details/i }));
     expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/base grit \+2/i);
     expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/black route fuse \+3/i);
   });
 
-  it("renders the cinematic split battle layout from canonical state and intents", () => {
+  it("renders the production Duel Aperture battle layout from canonical state and intents", () => {
     const onIntent = vi.fn();
     render(
       <PhoneActionPanel
@@ -3053,17 +3090,72 @@ describe("PhoneActionPanel", () => {
 
     const shell = screen.getByTestId("phone-battle-shell");
     const arena = screen.getByTestId("phone-battle-cinematic-stage");
-    expect(shell).toHaveAttribute("data-battle-ui", "cinematic-split");
+    expect(shell).toHaveAttribute("data-battle-ui", "duel-aperture");
+    expect(arena).toHaveAttribute("data-battle-presentation", "duel-aperture");
+    expect(arena).toHaveAttribute("data-battle-phase", "ready");
     expect(within(arena).getByText(/operative/i)).toBeInTheDocument();
     expect(within(arena).getByText(/threat/i)).toBeInTheDocument();
-    expect(arena).not.toHaveTextContent(/grit\s*2|opponent\s*8/i);
-    expect(screen.getByLabelText(/battle totals/i)).toHaveTextContent(/grit\s*2.*opponent\s*8.*total\s*pending/i);
+    expect(within(arena).getByText(/grit ready/i)).toBeInTheDocument();
+    expect(within(arena).getByText(/difficulty/i)).toBeInTheDocument();
+    expect(within(arena).getAllByRole("img")).toHaveLength(2);
+    expect(screen.queryByLabelText(/^battle totals$/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-dice-disclosure")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-total-comparison")).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/battle details/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /roll grit/i })).toBeInTheDocument();
     expect(shell).not.toHaveTextContent(/attack|defense|a\/d/i);
 
     fireEvent.click(screen.getByRole("button", { name: /roll grit/i }));
     expect(onIntent).toHaveBeenCalledWith({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: "grit" });
+  });
+
+  it("renders resolved Duel Aperture totals once without repeating battle arithmetic", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          activeResolution: {
+            id: "seat-1:threat:cinder-veil-stalker:duel-aperture-result",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "roll_result",
+            card: {
+              id: "cinder-veil-stalker",
+              title: "Cinder-Veil Stalker",
+              type: "enemy",
+              artType: "threat"
+            },
+            battle: {
+              enemyName: "Cinder-Veil Stalker",
+              stat: "grit",
+              difficulty: 8,
+              modifiers: []
+            },
+            roll: {
+              dice: [4, 3],
+              baseTotal: 7,
+              modifierTotal: 2,
+              finalTotal: 9,
+              target: 8,
+              success: true
+            }
+          }
+        })}
+      />
+    );
+
+    const shell = screen.getByTestId("phone-battle-shell");
+    const stage = screen.getByTestId("phone-battle-cinematic-stage");
+    expect(shell).toHaveAttribute("data-battle-ui", "duel-aperture");
+    expect(stage).toHaveAttribute("data-battle-presentation", "duel-aperture");
+    expect(stage).toHaveAttribute("data-battle-phase", "result");
+    expect(stage).toHaveTextContent(/operative total\s*9/i);
+    expect(stage).toHaveTextContent(/difficulty\s*8/i);
+    expect(screen.queryByLabelText(/^battle totals$/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-dice-disclosure")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-total-comparison")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /view details/i })).toBeInTheDocument();
   });
 
   it("uses the focused battle shell when live battle data has a generic projected card type", () => {
@@ -3171,7 +3263,8 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByTestId("phone-resolution-card")).toBeInTheDocument();
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/12.*12/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/^Total12$/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveAccessibleName("Your total 12, Challenge 12");
     expect(screen.getByText(/the gate yields/i)).toBeInTheDocument();
     expect(screen.getByText(/^threat defeated$/i)).toBeInTheDocument();
     expect(screen.getByText(/added to the trophy pile/i)).toBeInTheDocument();

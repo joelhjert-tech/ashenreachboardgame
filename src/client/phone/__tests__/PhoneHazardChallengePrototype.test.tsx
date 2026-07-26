@@ -157,6 +157,68 @@ describe("PhoneHazardChallengeView", () => {
     expect(action).toHaveBeenCalledTimes(1);
   });
 
+  it("ignores totals and outcomes from a stale presentation before the authoritative roll", () => {
+    const stale = patch();
+    stale.battlePresentation = {
+      id: "resolution-from-previous-encounter",
+      revision: 91,
+      stage: "result",
+      actorSeatId: "seat-1",
+      actorDisplayName: "Lane",
+      encounter: {
+        name: "Previous Threat",
+        category: "Hazard",
+        imageKey: "previous-threat",
+        publicSummary: "This summary belongs to the previous encounter."
+      },
+      test: { stat: "signal", label: "Signal", opposed: false },
+      operative: {
+        name: "Lane",
+        secondaryName: "Sable Vey",
+        imageKey: "void-marshal",
+        baseValue: 4,
+        modifiers: [],
+        rawDice: [6, 6],
+        diceCount: 2,
+        diceTotal: 12,
+        finalTotal: 13
+      },
+      opponent: {
+        name: "Previous Threat",
+        secondaryName: "Difficulty",
+        imageKey: "previous-threat",
+        baseValue: 6,
+        modifiers: [],
+        rawDice: [],
+        diceCount: 0,
+        diceTotal: null,
+        finalTotal: 6
+      },
+      outcome: "success",
+      publicConsequence: "Gain 9 Salvage.",
+      publicRewardSummary: "Gain 9 Salvage.",
+      waiting: null,
+      restored: false
+    };
+
+    render(
+      <PhoneHazardChallengeView
+        patch={stale}
+        resolution={stale.activeResolution ?? null}
+        actions={[{ key: "attempt", label: "Attempt Challenge", onClick: vi.fn() }]}
+        canContinue={false}
+        onContinue={vi.fn()}
+        resultDeltas={[]}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Attempt Challenge" })).toBeVisible();
+    expect(screen.queryByText("Previous Threat")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Gain 9 Salvage/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("13")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Success$/i)).not.toBeInTheDocument();
+  });
+
   it("keeps details collapsed by default", () => {
     renderView();
     expect(screen.queryByRole("region", { name: "Encounter details" })).not.toBeInTheDocument();
@@ -200,7 +262,9 @@ describe("PhoneHazardChallengeView", () => {
     expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-hazard-challenge-layout", "result-gate");
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/Route broken/i);
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/Processional loses your trail/i);
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/8.*4/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/^Total8$/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveAccessibleName("Your total 8, Challenge 4");
+    expect(screen.getByTestId("phone-resolution-card")).not.toHaveTextContent(/your total|anomaly\s*4|vs/i);
     expect(screen.getByAltText(/operative portrait/i)).toHaveClass("phone-result-gate__portrait-art");
     expect(screen.getByTestId("phone-resolution-card").querySelector(".phone-result-gate__environment")).toHaveAttribute(
       "src",

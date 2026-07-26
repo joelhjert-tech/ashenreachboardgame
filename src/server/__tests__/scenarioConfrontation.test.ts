@@ -573,7 +573,7 @@ describe("scenario confrontation flow", () => {
     });
 
     expect(roomServer.getState().phase).toBe("resolution");
-    expect(roomServer.getState().activeResolution?.stage).toBe("outcome_summary");
+    expect(roomServer.getState().activeResolution?.stage).toBe("awaiting_continue");
     expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("cannot face the mirror");
     continueVisibleResolution(roomServer);
     endBroadcastTurn(roomServer);

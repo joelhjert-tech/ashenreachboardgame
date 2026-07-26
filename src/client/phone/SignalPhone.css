@@ -875,6 +875,57 @@
   padding: 0.62rem 0.7rem 0.8rem;
 }
 
+.signal-phone-shell .phone-move-prototype__map-request {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: .42rem .58rem;
+  border: 1px solid rgba(83, 176, 222, .48);
+  border-radius: .35rem;
+  color: #e8dfca;
+  background: linear-gradient(90deg, rgba(64, 150, 194, .18), rgba(10, 16, 19, .92) 58%);
+  box-shadow: inset 0 0 0 1px rgba(232, 223, 202, .035);
+  text-align: left;
+}
+
+.signal-phone-shell .phone-move-prototype__map-request[aria-pressed="true"] {
+  border-color: #d3a85e;
+  background: linear-gradient(90deg, rgba(195, 132, 55, .24), rgba(10, 16, 19, .94) 62%);
+}
+
+.signal-phone-shell .phone-move-prototype__map-request:disabled {
+  cursor: not-allowed;
+  opacity: .58;
+}
+
+.signal-phone-shell .phone-move-prototype__map-request > svg {
+  justify-self: center;
+  color: #5eb5e1;
+}
+
+.signal-phone-shell .phone-move-prototype__map-request[aria-pressed="true"] > svg {
+  color: #e1b664;
+}
+
+.signal-phone-shell .phone-move-prototype__map-request > span {
+  display: grid;
+  gap: .08rem;
+  min-width: 0;
+}
+
+.signal-phone-shell .phone-move-prototype__map-request strong {
+  font: 700 .82rem/1.15 var(--font-display, Georgia, serif);
+}
+
+.signal-phone-shell .phone-move-prototype__map-request small {
+  color: #9cabb2;
+  font: 600 .58rem/1.1 var(--font-body, sans-serif);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
 .signal-phone-shell .phone-move-option-a__list {
   gap: 0.48rem;
   padding-left: 1.48rem;

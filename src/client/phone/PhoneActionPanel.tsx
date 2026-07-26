@@ -17,6 +17,7 @@ import type {
   OutcomeSummary,
   PhoneObjectUseState,
   PhonePatchPayload,
+  PublicHostViewState,
   PublicMoveDestination,
   PublicMovementPlannerState,
   PublicMoveStrategicTag,
@@ -2870,7 +2871,8 @@ function PhoneMovePanel({
   operativeName,
   operativeId,
   resultDeltas,
-  diceCount
+  diceCount,
+  hostView
 }: {
   movementPlanner: PublicMovementPlannerState | null | undefined;
   currentTile: CurrentTileViewModel;
@@ -2891,6 +2893,7 @@ function PhoneMovePanel({
   operativeId: string;
   resultDeltas: ResultDelta[];
   diceCount?: number;
+  hostView?: PublicHostViewState;
 }): ReactElement {
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(() => movementPlanner?.selectedDestinationId ?? null);
 
@@ -2968,6 +2971,7 @@ function PhoneMovePanel({
       onContextNavigation={onContextNavigation}
       actorName={actorName}
       diceCount={diceCount}
+      hostView={hostView}
     />
   );
 }
@@ -3160,9 +3164,24 @@ export function PhoneActionPanel({
   const usefulNow = buildUsefulNowViewModel(patch);
   const isActiveSeat = getActiveSeatId(patch) === self.seatId;
   const activeResolution = patch.activeResolution ?? null;
+  const pendingOwnerResolutionChoice = Boolean(
+    patch.pendingEquipmentSuppressionChoice ||
+    patch.pendingGearEquipChoice ||
+    patch.pendingEncounterDecisionPrivate ||
+    patch.pendingMemoryTaxChoicePrivate ||
+    patch.pendingAfflictionChoicePrivate ||
+    patch.pendingAfflictionReactionPrivate ||
+    patch.pendingForcedDestinationChoicePrivate ||
+    patch.pendingDisplacementPrivate ||
+    patch.pendingScarChoice ||
+    patch.pendingScarRemovalChoice ||
+    patch.pendingScarConsequence ||
+    patch.pendingTileChallengePrivate?.pendingFailureEffects?.length
+  );
   const orphanResolutionOutcome =
     isActiveSeat &&
     !activeResolution &&
+    !pendingOwnerResolutionChoice &&
     patch.phase === "resolution" &&
     patch.outcomeSummary?.seatId === self.seatId
       ? patch.outcomeSummary
@@ -3177,7 +3196,7 @@ export function PhoneActionPanel({
     !patch.pendingAfflictionReactionPrivate &&
     !patch.pendingForcedDestinationChoicePrivate &&
     !patch.pendingDisplacementPrivate &&
-    ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
+    ["outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
   const continueResolution = () =>
     onIntent({
       type: "CONTINUE_RESOLUTION",
@@ -3321,7 +3340,7 @@ export function PhoneActionPanel({
         </div>
         <div className="phone-match-result__summary" aria-label="Final match summary">
           <article><span>Victory Progress</span><strong>{result?.finalWinProgress ? `${result.finalWinProgress.current} / ${result.finalWinProgress.required}` : "Not tracked"}</strong></article>
-          <article><span>Loss Pressure</span><strong>{result?.finalLossPressure ? `${result.finalLossPressure.current} / ${result.finalLossPressure.required}` : "Not tracked"}</strong></article>
+          <article><span>Loss Pressure</span><strong>{result?.finalLossPressure ? `${result.finalLossPressure.current} / ${result.finalLossPressure.required}` : "Disabled"}</strong></article>
           <article><span>Mode</span><strong>{result?.modeLabel ?? "Session"}</strong></article>
           <article><span>Final Stage</span><strong>{result?.finalStageReached ? "Reached" : "Not reached"}</strong></article>
         </div>
@@ -3975,6 +3994,21 @@ export function PhoneActionPanel({
     });
   }
 
+  if (
+    activeResolution?.stage === "roll_result" &&
+    activeResolution.roll?.success === false &&
+    patch.requiredAction?.kind === "consequence" &&
+    !pendingOwnerResolutionChoice
+  ) {
+    resolveActions.push({
+      key: "accept-failed-result",
+      label: "Accept consequence",
+      detail: "Apply the authoritative failure effect, then review the final result.",
+      tone: "secondary",
+      onClick: continueResolution
+    });
+  }
+
   if (patch.phase === "action" && patch.encounter?.cardType === "enemy") {
     const combatIsStaged =
       activeResolution?.stage === "battle_setup" &&
@@ -4053,10 +4087,11 @@ export function PhoneActionPanel({
       const useState = patch.objectUseStates?.find((state) => state.source === "gear" && state.id === item.id && (!item.instanceId || state.instanceId === item.instanceId)) ?? null;
       const useDisabledReason =
         useState?.disabledReason ?? (item.useLimit === "charge" && (item.charges ?? 0) <= 0 ? `${item.name} has no charges remaining.` : null);
+      const canUseNow = useState?.relevanceKind === "usable" && !useDisabledReason;
       const equippedInstanceIds = new Set(Object.values(self.character.equippedGearInstances ?? {}).filter((value): value is string => Boolean(value)));
       const isEquipped = item.instanceId ? equippedInstanceIds.has(item.instanceId) : equippedIds.has(item.id);
       if (isEquipped) {
-        if (item.activeText || item.useLimit) {
+        if (canUseNow) {
           objectActions.push({
             key: `use-${item.instanceId ?? item.id}`,
             label: `Use ${item.name}`,
@@ -4093,7 +4128,7 @@ export function PhoneActionPanel({
           })
       });
 
-      if (item.activeText || item.useLimit) {
+      if (canUseNow) {
         objectActions.push({
           key: `use-${item.instanceId ?? item.id}`,
           label: `Use ${item.name}`,
@@ -4276,22 +4311,8 @@ export function PhoneActionPanel({
   }
 
   if (opposedBattleActive) {
-    const hasRequiredChoice = Boolean(
-      patch.pendingEquipmentSuppressionChoice ||
-      patch.pendingGearEquipChoice ||
-      patch.pendingEncounterDecisionPrivate ||
-      patch.pendingMemoryTaxChoicePrivate ||
-      patch.pendingAfflictionChoicePrivate ||
-      patch.pendingAfflictionReactionPrivate ||
-      patch.pendingForcedDestinationChoicePrivate ||
-      patch.pendingDisplacementPrivate ||
-      patch.pendingScarChoice ||
-      patch.pendingScarRemovalChoice ||
-      patch.pendingScarConsequence ||
-      patch.pendingTileChallengePrivate?.pendingFailureEffects?.length
-    );
-    const requiredChoiceActions: PhoneBattleChoiceAction[] = hasRequiredChoice ? resolveActions : [];
-    const optionalBattleActions: PhoneBattleChoiceAction[] = hasRequiredChoice
+    const requiredChoiceActions: PhoneBattleChoiceAction[] = pendingOwnerResolutionChoice ? resolveActions : [];
+    const optionalBattleActions: PhoneBattleChoiceAction[] = pendingOwnerResolutionChoice
       ? []
       : resolveActions.filter((action) => action.key === "solo-emergency-reroll" || action.key.startsWith("scar-adaptation-"));
 
@@ -4563,6 +4584,7 @@ export function PhoneActionPanel({
         operativeId={self.character.id}
         resultDeltas={currentDeltas}
         diceCount={self.character.id === "char_ker_von_ker" ? 2 : 1}
+        hostView={patch.hostView}
       />
     ) : activeTurnTab === "battle" ? (
       <PhoneBattlePanel

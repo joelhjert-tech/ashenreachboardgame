@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "reviewDate": "2026-07-26",
+  "device": {
+    "model": "SM-G996B",
+    "serial": "RFCNC0XMY5B",
+    "viewportCss": {
+      "width": 384,
+      "height": 722,
+      "devicePixelRatio": 2.8125
+    }
+  },
+  "naturalGame": {
+    "scenarioId": "scenario_broken_seal",
+    "scenarioName": "The Broken Seal",
+    "playerCount": 1,
+    "outcome": "defeat",
+    "durationMs": 42454,
+    "legalActionCount": 64,
+    "terminalStatus": "ended",
+    "terminalPhase": "broadcast",
+    "reconnectChecks": [
+      "result-ready-restored"
+    ],
+    "phoneConsoleErrors": 0,
+    "tvConsoleErrors": 0,
+    "requestFailures": 0,
+    "horizontalOverflowCount": 0,
+    "canvasCountMaximum": 0
+  },
+  "confirmedDefects": [
+    {
+      "id": "direct-sector-check-stall",
+      "status": "fixed",
+      "regression": "encounterLifecycleRegression: settles a successful direct sector check before exposing its single final Continue"
+    },
+    {
+      "id": "redundant-generic-continue",
+      "status": "fixed",
+      "regression": "encounterLifecycleRegression and roomServer integration stable result-ready coverage"
+    },
+    {
+      "id": "pre-roll-or-stale-result-presentation",
+      "status": "fixed",
+      "regression": "PhoneHazardChallengePrototype stale identity and result-stage coverage"
+    },
+    {
+      "id": "passive-item-use-control",
+      "status": "fixed",
+      "regression": "PhoneActionPanel passive already-equipped coverage"
+    }
+  ],
+  "cartographyPrototype": {
+    "status": "approved-and-production-enabled",
+    "productionProtocolAdded": true,
+    "savedGameplayStateChanged": false,
+    "automaticCriticalStateReturn": true,
+    "hostViewProductionTests": 6,
+    "newArtworkGenerated": 0,
+    "canonicalSectorCount": 49,
+    "phoneWidthsTested": [
+      320,
+      384,
+      430
+    ],
+    "tvResolutionsTested": [
+      "1366x768",
+      "1600x900",
+      "1920x1080"
+    ],
+    "overflowFailures": 0
+  },
+  "verification": {
+    "contentValidation": "passed",
+    "typecheck": "passed",
+    "focusedTests": {
+      "status": "passed",
+      "count": 103
+    },
+    "websocketIntegration": {
+      "status": "passed",
+      "count": 44
+    },
+    "selectedServerLifecycleTests": {
+      "status": "passed",
+      "count": 120
+    },
+    "productionBuild": "passed",
+    "assetAudit": {
+      "status": "passed",
+      "present": 516,
+      "missing": 0,
+      "invalid": 0,
+      "placeholders": 0,
+      "releaseBlocking": 0
+    },
+    "fullClientSuite": "timed-out-after-180-seconds",
+    "fullEngineRulesSuite": {
+      "status": "failed",
+      "failureCount": 48,
+      "note": "Includes stale intermediate-stage expectations and pre-existing modified Heat Retirement/Threat revision suites."
+    }
+  },
+  "evidenceRoot": ".tmp-playtest/s21-gameplay-map-review",
+  "commitCreated": true,
+  "pushPerformed": false
+}

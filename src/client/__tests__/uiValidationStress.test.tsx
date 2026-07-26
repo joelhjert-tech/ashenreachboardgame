@@ -344,7 +344,9 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(screen.queryByRole("tablist", { name: /turn actions/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
     expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(longEnemyName);
-    expect(screen.getByTestId("phone-battle-total-comparison")).toHaveTextContent(/31.*18/i);
+    expect(screen.getByTestId("phone-battle-cinematic-stage")).toHaveTextContent(/operative total\s*31/i);
+    expect(screen.getByTestId("phone-battle-cinematic-stage")).toHaveTextContent(/difficulty\s*18/i);
+    expect(screen.queryByTestId("phone-battle-total-comparison")).not.toBeInTheDocument();
   });
 
   it("renders authoritative battle arithmetic and discloses reroll cost before activation", () => {
@@ -390,10 +392,13 @@ describe("Ashen Reach UI validation stress states", () => {
 
     render(<PhoneActionPanel characters={catalogFromMasterAlpha()} patch={patch} onIntent={vi.fn()} />);
 
-    expect(screen.getByText(/base grit/i).parentElement).toHaveTextContent("15");
+    expect(screen.getByTestId("phone-battle-cinematic-stage")).toHaveTextContent(/operative total\s*31/i);
+    expect(screen.getByTestId("phone-battle-cinematic-stage")).toHaveTextContent(/difficulty\s*18/i);
+    expect(screen.queryByText(/base grit/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /view details/i }));
+    expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/15 \+ 11 \+ 5 = 31/i);
     expect(screen.getByText(/modifier sources/i).parentElement).toHaveTextContent(/Void-Cleaver \+3.*Command protocol \+2/i);
-    expect(screen.getByTestId("phone-battle-total-comparison")).toHaveTextContent(/31.*18/i);
+    expect(screen.queryByTestId("phone-battle-total-comparison")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /reroll.*spend 1 charge/i })).toHaveTextContent(/1 charge remaining/i);
     expect(screen.getAllByRole("button", { name: /^continue$/i })).toHaveLength(1);
   });

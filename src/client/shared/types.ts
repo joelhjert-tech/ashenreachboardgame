@@ -1374,6 +1374,28 @@ export interface PublicPatchPayload {
   requiredAction?: RequiredActionProjection | null;
   recentAbilityTriggers: AbilityTriggerSummary[];
   nemesis: ActiveNemesisSummary | null;
+  hostView?: PublicHostViewState;
+}
+
+export type HostViewAutomaticReturnReason =
+  | "encounter"
+  | "resolution"
+  | "service"
+  | "handoff"
+  | "endgame"
+  | "action-critical"
+  | null;
+
+export interface PublicHostViewState {
+  mode: "signal" | "map";
+  revision: number;
+  requester: {
+    seatId: string;
+    displayName: string;
+  } | null;
+  automaticReturnReason: HostViewAutomaticReturnReason;
+  canRequestMap: boolean;
+  unavailableReason: string | null;
 }
 
 export type RequiredActionKind =
@@ -1689,6 +1711,11 @@ export type ServerEnvelope =
   | RejoinRejectedEnvelope;
 
 export type ClientIntent =
+  | {
+      type: "HOST_VIEW_REQUESTED";
+      seatId: string;
+      mode: "signal" | "map";
+    }
   | {
       type: "MOVEMENT_DESTINATION_PREVIEWED";
       seatId: string;

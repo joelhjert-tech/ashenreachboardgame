@@ -50,16 +50,11 @@ describe("live encounter lifecycle regression", () => {
     const server = new GameRoomServer(state, [], createSequenceRandomSource([5, 5, 0, 0]));
     server.resolveCombatIntent({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: raider.stat });
 
-    expect(server.getState().players[0]!.character.salvage).toBe(2);
-    expect(server.getState().activeResolution?.stage).toBe("roll_result");
-    server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
     expect(server.getState().players[0]!.character.salvage).toBe(3);
     expect(server.getState().pendingEffect).toBeNull();
-    expect(server.getState().activeResolution?.stage).toBe("outcome_summary");
+    expect(server.getState().activeResolution?.stage).toBe("awaiting_continue");
 
-    for (let step = 0; step < 4 && server.getState().activeResolution; step += 1) {
-      server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
-    }
+    server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
 
     const resolved = server.getState();
     expect(resolved.phase).toBe("action");
@@ -96,5 +91,42 @@ describe("live encounter lifecycle regression", () => {
     expect(state.activeResolution).toBeNull();
     expect(state.pendingEffect).toBeNull();
     expect(state.eventLog.some((event) => (event as { type?: string }).type === "ENCOUNTER_DRAWN")).toBe(false);
+  });
+
+  it("settles a successful direct sector check before exposing its single final Continue", () => {
+    const state = createInitialSessionState("space-text-single-continue", "single-player");
+    state.status = "active";
+    state.phase = "action";
+    state.seats[0] = {
+      ...state.seats[0]!,
+      connected: true,
+      characterSelected: true,
+      displayName: "Player"
+    };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "cinder-fields",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "cinder-fields",
+        stats: { ...state.players[0]!.character.stats, grit: 20 }
+      }
+    };
+    state.sectors = state.sectors.map((sector) =>
+      sector.id === "cinder-fields"
+        ? { ...sector, encounterDecks: { ...sector.encounterDecks, threat: [] } }
+        : sector
+    );
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([5, 5]));
+
+    server.resolveSpaceTextIntent({ type: "RESOLVE_SPACE_TEXT", seatId: "seat-1" });
+
+    expect(server.getState().activeResolution?.stage).toBe("awaiting_continue");
+    expect(server.getState().eventLog.filter((event) => (event as { type?: string }).type === "SPACE_TEXT_RESOLVED")).toHaveLength(1);
+
+    server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
+
+    expect(server.getState().activeResolution).toBeNull();
+    expect(server.getState().eventLog.filter((event) => (event as { type?: string }).type === "SPACE_TEXT_RESOLVED")).toHaveLength(1);
   });
 });

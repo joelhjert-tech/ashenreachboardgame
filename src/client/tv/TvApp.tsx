@@ -54,6 +54,10 @@ import { HostMovementJourney } from "./HostMovementJourney.js";
 import { HostMotionCue } from "./HostMotionCue.js";
 import { SignalTheatreHost } from "./SignalTheatreHost.js";
 import {
+  SignalCartographyPrototype,
+  type SignalCartographyFixture
+} from "./SignalCartographyPrototype.js";
+import {
   getMovementArrivalModel,
   type MovementArrivalModel
 } from "./hostMovementPresentation.js";
@@ -3221,7 +3225,26 @@ export function TvApp(): ReactElement {
   const devAdminSurface = import.meta.env.DEV
     ? new URLSearchParams(window.location.search).get("admin")
     : null;
+  const cartographyFixture = import.meta.env.DEV
+    ? new URLSearchParams(window.location.search).get("cartographyFixture")
+    : null;
   const signalTheatreMode = new URLSearchParams(window.location.search).get("hostDesign") !== "legacy";
+  if (cartographyFixture && ["route", "challenge", "dense"].includes(cartographyFixture)) {
+    return (
+      <SignalCartographyPrototype
+        patch={publicPatch}
+        fixture={cartographyFixture as SignalCartographyFixture}
+      />
+    );
+  }
+  if (publicPatch?.payload.hostView?.mode === "map") {
+    return (
+      <SignalCartographyPrototype
+        patch={publicPatch}
+        fixture="live"
+      />
+    );
+  }
   if (devAdminSurface === "library") {
     return <Suspense fallback={<div className="admin-library-loading">Opening archive…</div>}><AdminLibrary roomCode={effectiveRoomCode} hostToken={hostToken} initialCardId={adminLibraryCardId} onOpenMapTile={(tileId) => { setAdminMapTileId(tileId); setAdminSurface("map"); }} onClose={() => setAdminSurface(null)} /></Suspense>;
   }

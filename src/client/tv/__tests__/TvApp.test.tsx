@@ -366,6 +366,34 @@ describe("TvApp", () => {
     expect(screen.queryByText("Ashen Reach TV")).not.toBeInTheDocument();
   });
 
+  it("switches the live host to approved Signal Cartography from public server state", async () => {
+    const patch = createPatch();
+    patch.phase = "navigation";
+    patch.payload.hostView = {
+      mode: "map",
+      revision: 3,
+      requester: { seatId: "seat-1", displayName: "Joel" },
+      automaticReturnReason: null,
+      canRequestMap: true,
+      unavailableReason: null
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      synchronized: true,
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByLabelText("Signal Cartography public map")).toBeVisible();
+    expect(screen.getByText("Requested by Joel")).toBeVisible();
+    expect(screen.queryByTestId("signal-theatre-host")).not.toBeInTheDocument();
+  });
+
   it("enables the restored dashboard when host token and room code are stored", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");

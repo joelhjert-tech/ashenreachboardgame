@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
-import { CardArtImage } from "../shared/CardArtImage.js";
 import { OperativePortraitImage } from "../shared/OperativePortraitImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { formatResultDelta } from "../shared/resultDeltas.js";
@@ -18,9 +17,9 @@ import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { CinderWattleAbilityPanel } from "./CinderWattleAbilityPanel.js";
 import { getBattleAssistViewModel } from "./inventoryPresentation.js";
 import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
-import { useAuthoritativeResultCollapse } from "../shared/useAuthoritativeResultCollapse.js";
 import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 import { PhoneResultReadyGate } from "./PhoneResultReadyGate.js";
+import { PhoneBattleDuelStage } from "./PhoneBattleDuelStage.js";
 
 export interface PhoneBattleChoiceAction {
   key: string;
@@ -276,12 +275,20 @@ export function PhoneBattleView({
   const [restored, setRestored] = useState(() => wasPhoneBattleSeen(identity));
   const [rollSubmitting, setRollSubmitting] = useState(false);
   const resolution = patch.activeResolution ?? null;
-  const presentation = patch.battlePresentation ?? null;
+  const projectedPresentation = patch.battlePresentation ?? null;
+  const presentation =
+    !resolution || projectedPresentation?.id === resolution.id
+      ? projectedPresentation
+      : null;
   const encounter = patch.encounter;
   const pendingRoll = patch.pendingEnemyRoll;
   const battle = resolution?.battle;
-  const roll = resolution?.roll;
-  const outcome = resolution?.outcome;
+  const resultStage = Boolean(
+    resolution &&
+    ["roll_result", "outcome_summary", "awaiting_continue"].includes(resolution.stage)
+  );
+  const roll = resultStage ? resolution?.roll : undefined;
+  const outcome = resultStage ? resolution?.outcome : undefined;
   const assist = getBattleAssistViewModel(patch);
   const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
   const isActiveSeat = activeSeatId === self.seatId;
@@ -303,17 +310,27 @@ export function PhoneBattleView({
   const enemyId = resolution?.card?.id ?? pendingRoll?.encounterCardId ?? encounter?.id ?? "";
   const opponentTotal = presentation?.opponent.finalTotal ?? roll?.target ?? battle?.difficulty ?? encounter?.difficulty ?? assist?.enemyBattleValue ?? 0;
   const operativeValue = presentation?.operative.baseValue ?? assist?.playerBattleValue ?? self.character.stats[stat] ?? 0;
-  const rollValue = presentation?.operative.diceTotal ?? (roll ? roll.dice.reduce((sum, value) => sum + value, 0) : null);
+  const rollValue = resultStage
+    ? presentation?.operative.diceTotal ?? (roll ? roll.dice.reduce((sum, value) => sum + value, 0) : null)
+    : null;
   const modifierTotal = presentation?.operative.modifiers.reduce((sum, modifier) => sum + modifier.value, 0) ?? roll?.modifierTotal ?? 0;
-  const finalTotal = presentation?.operative.finalTotal ?? roll?.finalTotal ?? null;
-  const result = presentation?.outcome === "success" ? "success" : presentation?.outcome === "failure" ? "defeat" : presentation?.outcome === "draw" ? "draw" : roll ? (roll.success ? "success" : "defeat") : null;
+  const finalTotal = resultStage ? presentation?.operative.finalTotal ?? roll?.finalTotal ?? null : null;
+  const result = !resultStage
+    ? null
+    : presentation?.outcome === "success"
+      ? "success"
+      : presentation?.outcome === "failure"
+        ? "defeat"
+        : presentation?.outcome === "draw"
+          ? "draw"
+          : roll
+            ? (roll.success ? "success" : "defeat")
+            : null;
   const resultLabel = result === "success" ? "Success" : result === "defeat" ? "Failure" : result === "draw" ? "Draw" : pendingRoll ? "Enemy roll" : resolution?.stage === "battle_setup" ? "Roll required" : "Battle";
-  const stateLabel = presentation?.encounter.category ?? (result ? "Battle resolution" : pendingRoll ? "Battle" : resolution?.stage === "battle_setup" ? "Battle" : "Engagement");
-  const tieSucceeded = Boolean(roll?.success && roll.finalTotal === roll.target);
   const detailsFormula = finalTotal !== null
     ? `${operativeValue} + ${rollValue ?? 0} ${modifierTotal >= 0 ? "+" : "−"} ${Math.abs(modifierTotal)} = ${finalTotal}`
     : null;
-  const outcomeFlavor = presentation?.publicConsequence ?? outcome?.text ?? null;
+  const outcomeFlavor = resultStage ? presentation?.publicConsequence ?? outcome?.text ?? null : null;
   const usableGearCount = assist?.usableCards.length ?? 0;
 
   useEffect(() => {
@@ -361,15 +378,6 @@ export function PhoneBattleView({
     target: opponentTotal,
     outcome: result ? resultLabel : null
   };
-  const diceResultKey = roll && operativeDiceModel.stage !== "reaction"
-    ? `${operativeDiceModel.id}:${operativeDiceModel.revision}:${roll.dice.join(",")}:${roll.finalTotal}`
-    : null;
-  const diceDisclosure = useAuthoritativeResultCollapse(
-    diceResultKey,
-    100,
-    `battle:${self.seatId}:${operativeDiceModel.id}`
-  );
-
   const primaryAction = useMemo(() => {
     if (choiceActions.length > 0) {
       return { label: "Complete choice above", disabled: true, action: null as (() => void) | null };
@@ -461,41 +469,12 @@ export function PhoneBattleView({
     );
   }
 
-  const combatantArena = (
-    <section
-      className="phone-battle-arena phone-battle-arena--cinematic"
-      aria-label={`${playerName} versus ${enemyName}`}
-      data-testid="phone-battle-cinematic-stage"
-    >
-      <article className="phone-battle-combatant phone-battle-combatant--operative">
-        <div className="phone-battle-combatant__art">
-          <OperativePortraitImage characterId={self.character.id} alt={self.character.name} priority />
-        </div>
-        <div className="phone-battle-combatant__identity">
-          <span>Operative</span>
-          <strong>{self.character.name}</strong>
-          <small>{playerName}</small>
-        </div>
-      </article>
-      <span className="phone-battle-arena__versus" aria-hidden="true">VS</span>
-      <article className="phone-battle-combatant phone-battle-combatant--enemy">
-        <div className="phone-battle-combatant__art">
-          <CardArtImage cardType={enemyArtType(patch)} cardId={enemyId} alt={enemyName} />
-        </div>
-        <div className="phone-battle-combatant__identity">
-          <span>Threat</span>
-          <strong>{enemyName}</strong>
-        </div>
-      </article>
-    </section>
-  );
-
   return (
     <section
       className={`phone-battle-shell phone-battle-shell--cinematic phone-battle-shell--${result ?? "active"}`}
       data-testid="phone-battle-shell"
       data-battle-identity={identity ?? undefined}
-      data-battle-ui="cinematic-split"
+      data-battle-ui="duel-aperture"
       data-battle-restored={restored ? "true" : "false"}
       data-battle-result={result ? "true" : "false"}
     >
@@ -503,23 +482,19 @@ export function PhoneBattleView({
       <div className="phone-battle-shell__scroll" data-testid="phone-battle-scroll-region">
         {context === "battle" ? (
           <>
-            <header className="phone-battle-state" aria-live="polite">
-              <span>{stateLabel}</span>
-              <strong>{resultLabel}</strong>
-            </header>
-            {combatantArena}
-            <div className={`phone-auto-collapse-dice${diceDisclosure.collapsed ? " is-collapsed" : ""}`} data-testid="phone-battle-dice-disclosure">
-              <button
-                type="button"
-                className="phone-auto-collapse-dice__summary"
-                aria-expanded={!diceDisclosure.collapsed}
-                onClick={diceDisclosure.collapsed ? diceDisclosure.expand : diceDisclosure.collapse}
-              >
-                <span>{diceDisclosure.collapsed ? "Dice result" : "Dice details"}</span>
-                <strong>{finalTotal === null ? "Pending" : `${finalTotal} vs ${opponentTotal}`}</strong>
-              </button>
-              <AuthoritativeDicePresentation model={operativeDiceModel} compact />
-            </div>
+            <PhoneBattleDuelStage
+              operativeId={self.character.id}
+              operativeName={self.character.name}
+              playerName={playerName}
+              enemyArtType={enemyArtType(patch)}
+              enemyId={enemyId}
+              enemyName={enemyName}
+              statLabel={statLabel}
+              operativeValue={operativeValue}
+              opponentTotal={opponentTotal}
+              finalTotal={finalTotal}
+              resultLabel={resultLabel}
+            />
             {usableGearCount > 0 && !roll ? (
               <button
                 type="button"
@@ -531,29 +506,6 @@ export function PhoneBattleView({
               </button>
             ) : null}
             <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
-            <section className="phone-battle-equation" aria-label="Battle totals">
-              <div>
-                <span>Base {statLabel}</span>
-                <strong>{operativeValue}</strong>
-              </div>
-              <div>
-                <span>{rollValue === null ? "Roll" : "Roll total"}</span>
-                <strong>{rollValue === null ? "—" : rollValue}</strong>
-              </div>
-              <div>
-                <span>Modifier</span>
-                <strong>{rollValue !== null ? signed(modifierTotal) : "—"}</strong>
-              </div>
-              <div>
-                <span>Opponent</span>
-                <strong>{opponentTotal}</strong>
-              </div>
-              <div className="phone-battle-equation__total" data-testid="phone-battle-total-comparison">
-                <span>Total</span>
-                <strong>{finalTotal === null ? "Pending" : `${finalTotal} : ${opponentTotal}`}</strong>
-              </div>
-              {tieSucceeded ? <small>Tie succeeds against this threat.</small> : null}
-            </section>
             {result ? (
               <section className={`phone-battle-outcome phone-battle-outcome--${result}`} data-testid="phone-battle-outcome">
                 <span>{result === "success" ? "Threat defeated" : result === "draw" ? "Totals tied" : "Test failed"}</span>
@@ -590,6 +542,9 @@ export function PhoneBattleView({
             </button>
             {detailsOpen ? (
               <section className="phone-battle-details" aria-label="Battle details">
+                {roll ? (
+                  <AuthoritativeDicePresentation model={operativeDiceModel} compact />
+                ) : null}
                 <div>
                   <span>Full roll</span>
                   <strong>{detailsFormula ?? "Roll not yet made"}</strong>

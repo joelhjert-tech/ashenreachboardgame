@@ -551,7 +551,13 @@ class SocketProbe {
           .slice(-5)
           .map((message) =>
             isStatePatch(message)
-              ? `${message.type}:${message.phase}:${String(message.payload.activeSeatIndex ?? "?")}`
+              ? `${message.type}:${message.phase}:${String(message.payload.activeSeatIndex ?? "?")}:${String(
+                  (message.payload.activeResolution as { stage?: string } | undefined)?.stage ?? "none"
+                )}:opposed=${String(
+                  (message.payload.battlePresentation as { test?: { opposed?: boolean } } | undefined)?.test?.opposed ?? false
+                )}:enemyDice=${String(
+                  (message.payload.battlePresentation as { opponent?: { rawDice?: unknown[] } } | undefined)?.opponent?.rawDice?.length ?? 0
+                )}`
               : message.type
           )
           .join(", ");
@@ -747,6 +753,12 @@ function statePatchWithResolutionStage(stage: string): (message: ServerEnvelope)
   };
 }
 
+function statePatchWithStableVisibleResult(message: ServerEnvelope): boolean {
+  if (!isStatePatch(message)) return false;
+  const stage = (message.payload.activeResolution as { stage?: string } | undefined)?.stage;
+  return stage === "roll_result" || stage === "awaiting_continue";
+}
+
 function statePatchWithPendingMissionSelection(
   ownerSeatId: string,
   status: "queued" | "awaitingSelection"
@@ -784,11 +796,16 @@ async function sendVisibleCheck(probe: SocketProbe, seatId: string, stat: "comma
     seatId,
     stat
   });
-  await probe.waitForSince(resultMarker, statePatchWithResolutionStage("roll_result"));
+  await probe.waitForSince(resultMarker, statePatchWithStableVisibleResult);
   await acknowledgeVisibleResult(probe, seatId);
 }
 
-async function sendVisibleCombat(probe: SocketProbe, seatId: string, stat: "command" | "grit" | "signal" | "guile" | "forge"): Promise<void> {
+async function sendVisibleCombat(
+  probe: SocketProbe,
+  seatId: string,
+  stat: "command" | "grit" | "signal" | "guile" | "forge",
+  acknowledge = true
+): Promise<void> {
   const setupMarker = probe.mark();
   probe.send({
     type: "COMBAT_REQUESTED",
@@ -803,32 +820,47 @@ async function sendVisibleCombat(probe: SocketProbe, seatId: string, stat: "comm
     seatId,
     stat
   });
-  await probe.waitForSince(resultMarker, statePatchWithResolutionStage("roll_result"));
-  await acknowledgeVisibleResult(probe, seatId);
+  await probe.waitForSince(resultMarker, statePatchWithStableVisibleResult);
+  if (acknowledge) {
+    await acknowledgeVisibleResult(probe, seatId);
+  }
 }
 
 async function acknowledgeVisibleResult(probe: SocketProbe, seatId: string): Promise<void> {
-  let marker = probe.mark();
-  probe.send({ type: "CONTINUE_RESOLUTION", seatId });
-  const firstContinuation = await probe.waitForSince(
-    marker,
-    (message) =>
-      isStatePatch(message) &&
-      ((message.payload.activeResolution as { stage?: string } | undefined)?.stage === "outcome_summary" ||
-        (message.payload.activeResolution as { stage?: string } | undefined)?.stage === "card_reveal" ||
-        !message.payload.activeResolution ||
-        message.payload.pendingMissionSelectionStatus != null)
-  );
+  const latestResult = [...probe.messages].reverse().find(statePatchWithStableVisibleResult);
+  const latestStage = latestResult && isStatePatch(latestResult)
+    ? (latestResult.payload.activeResolution as { stage?: string } | undefined)?.stage
+    : null;
   if (
-    !isStatePatch(firstContinuation) ||
-    (firstContinuation.payload.activeResolution as { stage?: string } | undefined)?.stage !== "outcome_summary"
+    latestResult &&
+    isStatePatch(latestResult) &&
+    latestResult.payload.pendingMissionSelectionStatus != null
   ) {
     return;
   }
 
-  marker = probe.mark();
+  if (latestStage === "roll_result") {
+    const reactionMarker = probe.mark();
+    probe.send({ type: "CONTINUE_RESOLUTION", seatId });
+    await probe.waitForSince(reactionMarker, statePatchWithResolutionStage("awaiting_continue"));
+  }
+
+  const marker = probe.mark();
   probe.send({ type: "CONTINUE_RESOLUTION", seatId });
-  await probe.waitForSince(marker, isStatePatch);
+  const continuation = await probe.waitForSince(
+    marker,
+    (message) =>
+      isIntentRejected(message) ||
+      (
+        isStatePatch(message) &&
+        ((message.payload.activeResolution as { stage?: string } | undefined)?.stage === "card_reveal" ||
+          !message.payload.activeResolution ||
+          message.payload.pendingMissionSelectionStatus != null)
+      )
+  );
+  if (isIntentRejected(continuation)) {
+    throw new Error(`Visible result acknowledgement was rejected: ${continuation.reason}`);
+  }
 }
 
 async function requestMovementRoll(
@@ -929,18 +961,26 @@ function statePatchWithPendingEnemyRoll(
 }
 
 function statePatchWithOpposedOutcome(seatId: string): (message: ServerEnvelope) => boolean {
-  return (message) =>
-    isStatePatch(message) &&
-    typeof message.payload.outcomeSummary === "object" &&
-    message.payload.outcomeSummary !== null &&
-    "seatId" in message.payload.outcomeSummary &&
-    "enemyDie1" in message.payload.outcomeSummary &&
-    "enemyDie2" in message.payload.outcomeSummary &&
-    "enemyTotal" in message.payload.outcomeSummary &&
-    message.payload.outcomeSummary.seatId === seatId &&
-    message.payload.outcomeSummary.enemyDie1 !== null &&
-    message.payload.outcomeSummary.enemyDie2 !== null &&
-    message.payload.outcomeSummary.enemyTotal !== null;
+  return (message) => {
+    if (!isStatePatch(message)) return false;
+    const battle = message.payload.battlePresentation as {
+      stage?: string;
+      actorSeatId?: string;
+      test?: { opposed?: boolean };
+      operative?: { finalTotal?: number | null };
+      opponent?: { finalTotal?: number | null };
+      outcome?: string | null;
+    } | undefined;
+    return Boolean(
+      battle &&
+      battle.stage === "result" &&
+      battle.actorSeatId === seatId &&
+      battle.test?.opposed === true &&
+      typeof battle.operative?.finalTotal === "number" &&
+      typeof battle.opponent?.finalTotal === "number" &&
+      battle.outcome
+    );
+  };
 }
 
 function getSeatConnectionFromPatch(message: Extract<ServerEnvelope, { type: "STATE_PATCH" }>, seatId: string): boolean | null {
@@ -2045,7 +2085,7 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-1",
       toSectorId: "hazard-east"
     });
-    await phone.waitForSince(movementMarker, statePatchWithResolutionStage("roll_result"));
+    await phone.waitForSince(movementMarker, statePatchWithStableVisibleResult);
     await acknowledgeVisibleResult(phone, "seat-1");
 
     await phone.waitFor(
@@ -2082,13 +2122,9 @@ describe("roomServer websocket integration", () => {
       stat: "signal"
     });
 
-    const rollPatch = await phone.waitForSince(
-      rollMarker,
-      statePatchWithResolutionStage("roll_result")
-    );
+    const rollPatch = await phone.waitForSince(rollMarker, statePatchWithStableVisibleResult);
 
     expect(isStatePatch(rollPatch) && rollPatch.payload.activeResolution).toMatchObject({
-      stage: "roll_result",
       roll: expect.objectContaining({
         dice: expect.any(Array),
         finalTotal: expect.any(Number),
@@ -2168,7 +2204,7 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-1",
       toSectorId: "hazard-east"
     });
-    await phone1.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
+    await phone1.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
     await acknowledgeVisibleResult(phone1, "seat-1");
     await tv.waitForSince(marker, statePatchForPhase("action", 0));
 
@@ -2214,7 +2250,7 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-2",
       toSectorId: "enemy-yard"
     });
-    await phone2.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
+    await phone2.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
     await acknowledgeVisibleResult(phone2, "seat-2");
     await tv.waitForSince(marker, statePatchForPhase("action", 1));
 
@@ -2267,7 +2303,7 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-3",
       toSectorId: "seat-1-start"
     });
-    await phone3.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
+    await phone3.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
     await acknowledgeVisibleResult(phone3, "seat-3");
     await tv.waitForSince(marker, statePatchForPhase("action", 2));
 
@@ -2292,7 +2328,7 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-1",
       toSectorId: "hazard-west"
     });
-    await phone1.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
+    await phone1.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
     await acknowledgeVisibleResult(phone1, "seat-1");
     await tv.waitForSince(marker, statePatchForPhase("action", 0));
 
@@ -2313,7 +2349,7 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-2",
       toSectorId: "seat-2-start"
     });
-    await phone2.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
+    await phone2.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
     await acknowledgeVisibleResult(phone2, "seat-2");
     await tv.waitForSince(marker, statePatchForPhase("action", 1));
     phone2.send({
@@ -2339,7 +2375,7 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-3",
       toSectorId: "contract-hunt"
     });
-    await phone3.waitForSince(phone3ContractMoveMarker, statePatchWithResolutionStage("roll_result"));
+    await phone3.waitForSince(phone3ContractMoveMarker, statePatchWithStableVisibleResult);
     await acknowledgeVisibleResult(phone3, "seat-3");
     await waitForServerTick();
     const phone3ContractMoveRejection = phone3.messages
@@ -2399,7 +2435,7 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-2",
       toSectorId: "seat-3-start"
     });
-    await phone2.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
+    await phone2.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
     await acknowledgeVisibleResult(phone2, "seat-2");
     await tv.waitForSince(marker, statePatchForPhase("action", 1));
     marker = tv.mark();
@@ -2419,8 +2455,13 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-3",
       toSectorId: "seat-2-start"
     });
-    await phone3.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
-    await acknowledgeVisibleResult(phone3, "seat-3");
+    await phone3.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
+    phone3.send({ type: "CONTINUE_RESOLUTION", seatId: "seat-3" });
+    await waitForServerState(
+      harness.roomServer,
+      (state) => state.pendingMissionSelection?.ownerSeatId === "seat-3",
+      "one-press replacement mission selection"
+    );
     await tv.waitForSince(marker, statePatchWithPendingMissionSelection("seat-3", "awaitingSelection"));
     const replacementSelection = harness.roomServer.getState().pendingMissionSelection;
     expect(replacementSelection?.ownerSeatId).toBe("seat-3");
@@ -2452,7 +2493,7 @@ describe("roomServer websocket integration", () => {
     expect(tv.messages.every((message) => !isStatePatch(message) || !Object.hasOwn(message.payload, "self"))).toBe(true);
   }, 15000);
 
-  it("rolls for enemies automatically and broadcasts dual-dice combat data to the table", async () => {
+  it("rolls for enemies automatically and broadcasts authoritative opposed totals to the table", async () => {
     harness = await startHarness(
       [0, 5, 5, 0, 0],
       createState({
@@ -2502,7 +2543,7 @@ describe("roomServer websocket integration", () => {
     const phone1Marker = phone1.mark();
     const phone2Marker = phone2.mark();
     const phone3Marker = phone3.mark();
-    await sendVisibleCombat(phone1, "seat-1", "grit");
+    await sendVisibleCombat(phone1, "seat-1", "grit", false);
 
     const tvOutcome = (await tv.waitForSince(marker, statePatchWithOpposedOutcome("seat-1"))) as Extract<
       ServerEnvelope,
@@ -2516,23 +2557,27 @@ describe("roomServer websocket integration", () => {
       phone2Marker,
       statePatchWithOpposedOutcome("seat-1")
     )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
-    const tvOutcomeSummary = tvOutcome.payload.outcomeSummary as
-      | { enemyDie1: number | null; enemyDie2: number | null; enemyTotal: number | null }
-      | undefined;
-    const phone1OutcomeSummary = phone1Outcome.payload.outcomeSummary as
-      | { enemyRollerSeatId: string | null }
-      | undefined;
-    const phone2OutcomeSummary = phone2Outcome.payload.outcomeSummary as
-      | { enemyTotal: number | null }
-      | undefined;
+    const tvBattle = tvOutcome.payload.battlePresentation as {
+      operative?: { finalTotal?: number | null };
+      opponent?: { finalTotal?: number | null };
+      outcome?: string | null;
+    } | undefined;
+    const phone1Battle = phone1Outcome.payload.battlePresentation as {
+      operative?: { finalTotal?: number | null };
+      opponent?: { finalTotal?: number | null };
+    } | undefined;
+    const phone2Battle = phone2Outcome.payload.battlePresentation as {
+      opponent?: { finalTotal?: number | null };
+    } | undefined;
 
     expect(Object.hasOwn(tvOutcome.payload, "self")).toBe(false);
     expect(Object.hasOwn(phone1Outcome.payload, "self")).toBe(true);
-    expect(tvOutcomeSummary?.enemyDie1).not.toBeNull();
-    expect(tvOutcomeSummary?.enemyDie2).not.toBeNull();
-    expect(tvOutcomeSummary?.enemyTotal).not.toBeNull();
-    expect(phone1OutcomeSummary?.enemyRollerSeatId).toBeNull();
-    expect(phone2OutcomeSummary?.enemyTotal).not.toBeNull();
+    expect(tvBattle?.operative?.finalTotal).not.toBeNull();
+    expect(tvBattle?.opponent?.finalTotal).not.toBeNull();
+    expect(tvBattle?.outcome).toMatch(/success|failure|draw/);
+    expect(phone1Battle?.operative?.finalTotal).not.toBeNull();
+    expect(phone1Battle?.opponent?.finalTotal).not.toBeNull();
+    expect(phone2Battle?.opponent?.finalTotal).not.toBeNull();
     expect(harness.roomServer.getState().pendingEnemyRoll).toBeNull();
     expect(
       phone2.messages
@@ -2603,17 +2648,17 @@ describe("roomServer websocket integration", () => {
     await waitForServerTick();
 
     const outcomeMarker = tv.mark();
-    await sendVisibleCombat(phone1, "seat-1", "grit");
+    await sendVisibleCombat(phone1, "seat-1", "grit", false);
     const outcome = (await tv.waitForSince(
       outcomeMarker,
       statePatchWithOpposedOutcome("seat-1")
     )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
-    const summary = outcome.payload.outcomeSummary as
-      | { enemyRollerSeatId?: string | null; enemyTotal?: number | null }
+    const battle = outcome.payload.battlePresentation as
+      | { opponent?: { finalTotal?: number | null }; waiting?: { privateDecision?: boolean } }
       | undefined;
 
-    expect(summary?.enemyRollerSeatId).toBeNull();
-    expect(summary?.enemyTotal).not.toBeNull();
+    expect(battle?.opponent?.finalTotal).not.toBeNull();
+    expect(battle?.waiting?.privateDecision).toBe(false);
     expect(harness.roomServer.getState().pendingEnemyRoll).toBeNull();
   }, 15000);
 
@@ -2652,7 +2697,7 @@ describe("roomServer websocket integration", () => {
         seatId: "seat-1",
         toSectorId: "hazard-east"
       });
-      await phone1.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
+      await phone1.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
       await acknowledgeVisibleResult(phone1, "seat-1");
       step = "seat1 move";
       await tv.waitForSince(marker, statePatchForPhase("action", 0));
@@ -2671,7 +2716,7 @@ describe("roomServer websocket integration", () => {
         seatId: "seat-2",
         toSectorId: "enemy-yard"
       });
-      await phone2.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
+      await phone2.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
       await acknowledgeVisibleResult(phone2, "seat-2");
       step = "seat2 move to enemy";
       await tv.waitForSince(marker, statePatchForPhase("action", 1));
@@ -2698,7 +2743,7 @@ describe("roomServer websocket integration", () => {
         seatId: "seat-3",
         toSectorId: "seat-1-start"
       });
-      await phone3.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
+      await phone3.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
       await acknowledgeVisibleResult(phone3, "seat-3");
       step = "seat3 move to contract accept setup";
       await tv.waitForSince(marker, statePatchForPhase("action", 2));
@@ -2725,7 +2770,7 @@ describe("roomServer websocket integration", () => {
         seatId: "seat-1",
         toSectorId: "seat-1-start"
       });
-      await phone1.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
+      await phone1.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
       await acknowledgeVisibleResult(phone1, "seat-1");
       step = "seat1 empty move";
       await tv.waitForSince(marker, statePatchForPhase("action", 0));
@@ -2747,7 +2792,7 @@ describe("roomServer websocket integration", () => {
         seatId: "seat-2",
         toSectorId: "seat-2-start"
       });
-      await phone2.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
+      await phone2.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
       await acknowledgeVisibleResult(phone2, "seat-2");
       step = "seat2 move to equip";
       await tv.waitForSince(marker, statePatchForPhase("action", 1));
@@ -2851,7 +2896,7 @@ describe("roomServer websocket integration", () => {
         seatId: "seat-3",
         toSectorId: "contract-hunt"
       });
-      await phone3.waitForSince(ownerMarker, statePatchWithResolutionStage("roll_result"));
+      await phone3.waitForSince(ownerMarker, statePatchWithStableVisibleResult);
       await acknowledgeVisibleResult(phone3, "seat-3");
       step = "seat3 move to active disconnect";
       await tv.waitForSince(marker, statePatchForPhase("action", 2));
@@ -2895,7 +2940,7 @@ describe("roomServer websocket integration", () => {
 
       marker = tv.mark();
       const seat3PostRejoinCombatMarker = seat3Rejoin.mark();
-      await sendVisibleCombat(seat3Rejoin, "seat-3", "grit");
+      await sendVisibleCombat(seat3Rejoin, "seat-3", "grit", false);
       const postRejoinCombat = await seat3Rejoin.waitForSince(
         seat3PostRejoinCombatMarker,
         (message) =>
@@ -2906,6 +2951,7 @@ describe("roomServer websocket integration", () => {
         throw new Error(`Seat 3 combat was rejected after rejoin: ${postRejoinCombat.reason}`);
       }
       await tv.waitForSince(marker, statePatchWithOpposedOutcome("seat-3"));
+      await acknowledgeVisibleResult(seat3Rejoin, "seat-3");
       await waitForServerState(
         harness.roomServer,
         (state) => state.pendingEnemyRoll === null && state.activeSeatIndex === 2 && state.phase === "broadcast",

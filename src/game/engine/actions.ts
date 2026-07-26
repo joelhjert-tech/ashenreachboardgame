@@ -931,6 +931,11 @@ export type LegacyCompatibleGameAction =
 
 export type ClientIntent =
   | {
+      type: "HOST_VIEW_REQUESTED";
+      seatId: string;
+      mode: "signal" | "map";
+    }
+  | {
       type: "MOVEMENT_DESTINATION_PREVIEWED";
       seatId: string;
       toSectorId: string | null;

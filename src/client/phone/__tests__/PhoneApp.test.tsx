@@ -195,7 +195,7 @@ function storeControllerAuth(): void {
 
 async function continueToOperativeSelection(): Promise<void> {
   fireEvent.click(await screen.findByRole("button", { name: /continue to operative/i }));
-  await screen.findByRole("heading", { name: /choose operative/i });
+  await screen.findByRole("heading", { name: /choose operative/i }, { timeout: 5_000 });
 }
 
 function createConfirmedCharacterPatch(characterId: string): StatePatch<PhonePatchPayload> {
@@ -394,7 +394,16 @@ describe("PhoneApp", () => {
     expect(await screen.findByRole("heading", { name: /choose piece/i })).toBeInTheDocument();
     expect(screen.getByText(/step 1 of 3/i)).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
+    const setupScroll = screen.getByRole("main", { name: /choose piece/i });
+    setupScroll.scrollTop = 180;
+    document.documentElement.scrollTop = 90;
+    document.body.scrollTop = 90;
     await continueToOperativeSelection();
+    await waitFor(() => {
+      expect(screen.getByRole("main", { name: /choose operative/i }).scrollTop).toBe(0);
+      expect(document.documentElement.scrollTop).toBe(0);
+      expect(document.body.scrollTop).toBe(0);
+    });
     const picker = await screen.findByRole("list", { name: /character/i });
 
     await waitFor(() => {

@@ -8,7 +8,10 @@ import { PhoneMovementView } from "../PhoneMovementView.js";
 
 const longDestinationName = "The Reliquary Transit Exchange Beyond Glassmere";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  window.history.replaceState({}, "", "/");
+});
 
 const planner: PublicMovementPlannerState = {
   active: true,
@@ -67,11 +70,33 @@ function Harness({ onIntent }: { onIntent: (intent: ClientIntent) => void }) {
       onSelectedSectorId={setSelected}
       onIntent={onIntent}
       showContextNavigation
+      hostView={{
+        mode: "signal",
+        revision: 1,
+        requester: null,
+        automaticReturnReason: null,
+        canRequestMap: true,
+        unavailableReason: null
+      }}
     />
   );
 }
 
 describe("PhoneMovementView", () => {
+  it("requests the server-authoritative TV map without changing movement authority", () => {
+    const onIntent = vi.fn();
+    render(<Harness onIntent={onIntent} />);
+
+    const mapButton = screen.getByRole("button", { name: /show map on tv/i });
+    expect(mapButton).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(mapButton);
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "HOST_VIEW_REQUESTED",
+      seatId: "seat-1",
+      mode: "map"
+    });
+  });
+
   it("uses the Signal Theatre command seal and environment system", () => {
     render(<Harness onIntent={vi.fn()} />);
 

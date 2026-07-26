@@ -408,6 +408,7 @@ type HostCommandMessage = KickSeatMessage | RestartSessionMessage | ReturnToLobb
 type ClientMessage = ClientIntent | RejoinMessage | HostCommandMessage;
 
 const CLIENT_INTENT_TYPES = new Set<string>([
+  "HOST_VIEW_REQUESTED",
   "MOVEMENT_DESTINATION_PREVIEWED",
   "MOVE_REQUESTED",
   "ADJUST_MOVEMENT_REQUESTED",
@@ -611,6 +612,17 @@ export class GameRoomServer {
   private enemyRollTimeout: ReturnType<typeof setTimeout> | null = null;
   private resolutionAutoContinueTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly movementPreviewBySeatId = new Map<string, { destinationId: string; routeId: string }>();
+  private hostView: {
+    mode: "signal" | "map";
+    revision: number;
+    requesterSeatId: string | null;
+    automaticReturnReason: "encounter" | "resolution" | "service" | "handoff" | "endgame" | "action-critical" | null;
+  } = {
+    mode: "signal",
+    revision: 0,
+    requesterSeatId: null,
+    automaticReturnReason: null
+  };
 
   public constructor(
     private state: GameState,
@@ -859,6 +871,21 @@ export class GameRoomServer {
 
       if (intent.seatId !== client.seatId) {
         throw new IntentRejectedError(intent.type, "Seat mismatch between token and submitted intent");
+      }
+
+      if (intent.type === "HOST_VIEW_REQUESTED") {
+        const availability = this.getHostMapAvailability();
+        if (intent.mode === "map" && !availability.allowed) {
+          throw new IntentRejectedError(intent.type, availability.reason ?? "The map is unavailable during this presentation");
+        }
+        this.hostView = {
+          mode: intent.mode,
+          revision: this.hostView.revision + 1,
+          requesterSeatId: intent.seatId,
+          automaticReturnReason: null
+        };
+        this.broadcastPatch();
+        return;
       }
 
       if (intent.type === "MOVEMENT_DESTINATION_PREVIEWED") {
@@ -1853,6 +1880,9 @@ export class GameRoomServer {
     requireStringField(message, "seatId", type);
 
     switch (type) {
+      case "HOST_VIEW_REQUESTED":
+        requireEnumField(message, "mode", new Set(["signal", "map"]), type);
+        break;
       case "MOVEMENT_DESTINATION_PREVIEWED":
         if (message.toSectorId !== null) {
           requireStringField(message, "toSectorId", type);
@@ -6856,9 +6886,36 @@ export class GameRoomServer {
     } satisfies AfflictionDrawnAction);
   }
 
+  private hasPendingResolutionDecision(): boolean {
+    return Boolean(
+      this.state.pendingEncounterDecision ||
+      this.state.pendingGearEquipChoice ||
+      this.state.pendingScarChoice ||
+      this.state.pendingScarRemovalChoice ||
+      this.state.pendingScarConsequence ||
+      this.state.pendingMemoryTaxChoice ||
+      this.state.pendingEquipmentSuppressionChoice ||
+      this.state.pendingForcedDestinationChoice ||
+      this.state.pendingDisplacement ||
+      this.state.pendingAfflictionReaction ||
+      this.state.pendingFailureReaction ||
+      this.state.pendingStaticIntercessionReaction ||
+      this.state.cooperativeAssistance
+    );
+  }
+
+  private hasAutomaticResolutionWork(seatId: string): boolean {
+    return Boolean(
+      this.state.pendingEffect ||
+      this.state.pendingAfflictionResolution ||
+      this.state.pendingSutureStormConsequence ||
+      this.shouldTriggerWoundThreshold(seatId)
+    );
+  }
+
   private runAutomaticPhases(
     seatId: string,
-    options: { applyVisibleOutcomeEffect?: boolean } = {}
+    _options: { applyVisibleOutcomeEffect?: boolean } = {}
   ): void {
     let progressMade = true;
 
@@ -6878,19 +6935,33 @@ export class GameRoomServer {
         continue;
       }
 
-      if (
-        this.state.activeResolution &&
-        ["card_reveal", "battle_setup", "dice_roll", "roll_result", "outcome_summary", "awaiting_continue"].includes(
-          this.state.activeResolution.stage
-        ) &&
-        !(
-          (this.executionServices.mode === "simulation" || options.applyVisibleOutcomeEffect === true) &&
-          this.state.activeResolution.stage === "outcome_summary" &&
-          this.state.phase === "resolution" &&
-          this.state.pendingEffect
-        )
-      ) {
-        return;
+      if (this.state.activeResolution) {
+        const stage = this.state.activeResolution.stage;
+
+        if (stage === "roll_result") {
+          if (this.hasPendingResolutionDecision()) return;
+          this.applyAction({
+            type: "CONTINUE_RESOLUTION",
+            seatId,
+            createdAt: new Date().toISOString()
+          });
+          progressMade = true;
+          continue;
+        }
+
+        if (stage === "outcome_summary") {
+          if (this.hasPendingResolutionDecision()) return;
+          if (!this.hasAutomaticResolutionWork(seatId)) {
+            this.applyAction({
+              type: "CONTINUE_RESOLUTION",
+              seatId,
+              createdAt: new Date().toISOString()
+            });
+            return;
+          }
+        } else if (["card_reveal", "battle_setup", "dice_roll", "awaiting_continue"].includes(stage)) {
+          return;
+        }
       }
 
       if (this.state.pendingEncounterDecision) {
@@ -8541,6 +8612,21 @@ export class GameRoomServer {
     }
     this.clearResolutionAutoContinueTimeout();
     const previousStage = this.state.activeResolution?.stage ?? null;
+    const acceptingFailure =
+      previousStage === "roll_result" &&
+      (
+        this.state.pendingFailureReaction?.seatId === intent.seatId ||
+        this.state.pendingStaticIntercessionReaction?.seatId === intent.seatId
+      );
+
+    if (
+      this.state.activeResolution &&
+      !acceptingFailure &&
+      previousStage !== "outcome_summary" &&
+      previousStage !== "awaiting_continue"
+    ) {
+      throw new IntentRejectedError(intent.type, "The result is not ready to continue");
+    }
 
     if (!this.state.activeResolution && this.state.status === "active" && this.state.phase === "resolution") {
       this.runAutomaticPhases(intent.seatId);
@@ -8557,15 +8643,10 @@ export class GameRoomServer {
 
     this.applyAction(this.intentToAction(intent));
 
-    if (
-      previousStage === "roll_result" ||
-      previousStage === "outcome_summary" ||
-      (previousStage === "awaiting_continue" && this.state.phase === "resolution" && !this.state.activeResolution)
-    ) {
-      this.runAutomaticPhases(intent.seatId, {
-        applyVisibleOutcomeEffect: previousStage === "roll_result"
-      });
+    if (previousStage === "outcome_summary" && this.state.activeResolution?.stage === "awaiting_continue") {
+      this.applyAction(this.intentToAction(intent));
     }
+    this.runAutomaticPhases(intent.seatId);
 
     if (this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution) {
       this.broadcastPatch();
@@ -9006,6 +9087,7 @@ export class GameRoomServer {
       });
     }
     this.maybeTriggerAbilityOnSpaceTextResolved(intent.seatId, resolution.effectKey);
+    this.runAutomaticPhases(intent.seatId);
   }
 
   private resolveCharacterAbilityIntent(intent: Extract<ClientIntent, { type: "USE_CHARACTER_ABILITY" }>): void {
@@ -10272,6 +10354,7 @@ export class GameRoomServer {
       this.executionServices.onBroadcastAttempt?.();
       return;
     }
+    this.reconcileHostView();
     for (const client of this.clients) {
       const envelope = this.createPatchEnvelope(client);
       client.socket.send(JSON.stringify(envelope));
@@ -10382,15 +10465,113 @@ export class GameRoomServer {
   }
 
   private createPatchEnvelope(client: ConnectedClient, forcePrivate = false): StatePatchEnvelope {
+    const payload =
+      client.view === "tv"
+        ? createTvProjection(this.state, this.movementPreviewBySeatId)
+        : createPhoneProjection(this.state, client.seatId ?? "", forcePrivate, this.characters);
     return {
       type: "STATE_PATCH",
       sessionId: this.state.sessionId,
       sequence: this.state.sequence,
       phase: this.state.phase,
-      payload:
-        client.view === "tv"
-          ? createTvProjection(this.state, this.movementPreviewBySeatId)
-          : createPhoneProjection(this.state, client.seatId ?? "", forcePrivate, this.characters)
+      payload: {
+        ...payload,
+        hostView: this.createHostViewProjection()
+      }
+    };
+  }
+
+  private getHostMapAvailability(): { allowed: boolean; reason: string | null; automaticReturnReason: "encounter" | "resolution" | "service" | "handoff" | "endgame" | "action-critical" | null } {
+    if (this.state.status !== "active") {
+      return {
+        allowed: false,
+        reason: this.state.status === "ended"
+          ? "The result presentation controls the shared display."
+          : "The map becomes available after the game starts.",
+        automaticReturnReason: this.state.status === "ended" ? "endgame" : "action-critical"
+      };
+    }
+    if (this.state.phase === "broadcast") {
+      return {
+        allowed: false,
+        reason: "Turn handoff controls the shared display.",
+        automaticReturnReason: "handoff"
+      };
+    }
+    if (this.state.activeResolution) {
+      return {
+        allowed: false,
+        reason: "The current result controls the shared display.",
+        automaticReturnReason: "resolution"
+      };
+    }
+    if (
+      this.state.currentEncounter ||
+      this.state.pendingEnemyRoll ||
+      this.state.pendingTileChallenge ||
+      this.state.pendingEncounterDecision ||
+      this.state.cooperativeAssistance ||
+      this.state.pendingCooperativeTest
+    ) {
+      return {
+        allowed: false,
+        reason: "The current encounter controls the shared display.",
+        automaticReturnReason: "encounter"
+      };
+    }
+    if (this.state.phase === "action") {
+      return {
+        allowed: false,
+        reason: "The current sector action controls the shared display.",
+        automaticReturnReason: "service"
+      };
+    }
+    if (this.state.phase !== "navigation") {
+      return {
+        allowed: false,
+        reason: "The map is available during movement and route planning.",
+        automaticReturnReason: "action-critical"
+      };
+    }
+    return { allowed: true, reason: null, automaticReturnReason: null };
+  }
+
+  private reconcileHostView(): void {
+    if (this.hostView.mode !== "map") return;
+    const availability = this.getHostMapAvailability();
+    if (availability.allowed) return;
+    this.hostView = {
+      mode: "signal",
+      revision: this.hostView.revision + 1,
+      requesterSeatId: this.hostView.requesterSeatId,
+      automaticReturnReason: availability.automaticReturnReason
+    };
+  }
+
+  private createHostViewProjection(): {
+    mode: "signal" | "map";
+    revision: number;
+    requester: { seatId: string; displayName: string } | null;
+    automaticReturnReason: "encounter" | "resolution" | "service" | "handoff" | "endgame" | "action-critical" | null;
+    canRequestMap: boolean;
+    unavailableReason: string | null;
+  } {
+    const availability = this.getHostMapAvailability();
+    const requester = this.hostView.requesterSeatId
+      ? this.state.seats.find((seat) => seat.seatId === this.hostView.requesterSeatId) ?? null
+      : null;
+    return {
+      mode: this.hostView.mode,
+      revision: this.hostView.revision,
+      requester: requester
+        ? {
+            seatId: requester.seatId,
+            displayName: requester.displayName ?? "Player"
+          }
+        : null,
+      automaticReturnReason: this.hostView.automaticReturnReason,
+      canRequestMap: availability.allowed,
+      unavailableReason: availability.reason
     };
   }
 }
@@ -13029,10 +13210,25 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
     ...publicSources.map((source) => ({ label: source.label, value: source.value, kind: classifyBattleModifier(source.label) })),
     ...(reconciliation !== 0 ? [{ label: "Other authoritative modifiers", value: reconciliation, kind: "other" as const }] : [])
   ];
-  const outcomeSummary = state.lastOutcomeSummary?.seatId === actorSeatId ? state.lastOutcomeSummary : null;
-  const operativeDice = resolution?.roll?.dice ?? [outcomeSummary?.die1, outcomeSummary?.die2].filter((die): die is number => typeof die === "number");
+  const resultStage = Boolean(
+    resolution &&
+    ["roll_result", "outcome_summary", "awaiting_continue"].includes(resolution.stage)
+  );
+  const latestSummary = state.lastOutcomeSummary?.seatId === actorSeatId ? state.lastOutcomeSummary : null;
+  const summaryMatchesResolution = Boolean(
+    latestSummary &&
+    resolution?.card &&
+    (
+      latestSummary.encounterCardId === resolution.card.id ||
+      (resolution.source === "movement" && latestSummary.movedToSectorId === resolution.card.id)
+    )
+  );
+  const outcomeSummary = resultStage && summaryMatchesResolution ? latestSummary : null;
+  const operativeDice = resultStage
+    ? resolution?.roll?.dice ?? [outcomeSummary?.die1, outcomeSummary?.die2].filter((die): die is number => typeof die === "number")
+    : [];
   let previousOperativeDice: number[] | undefined;
-  if (resolution?.card?.id && resolution?.playerId) {
+  if (resultStage && resolution?.card?.id && resolution?.playerId) {
     let rerollIndex = -1;
     for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
       const event = state.eventLog[index] as { type?: string; seatId?: string; cardId?: string; roll?: { faces?: number[] } };
@@ -13051,19 +13247,24 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
       }
     }
   }
-  const opponentDice = [outcomeSummary?.enemyDie1, outcomeSummary?.enemyDie2].filter((die): die is number => typeof die === "number");
+  const opponentDice = resultStage
+    ? [outcomeSummary?.enemyDie1, outcomeSummary?.enemyDie2].filter((die): die is number => typeof die === "number")
+    : [];
   const operativeDiceTotal = operativeDice.length ? operativeDice.reduce((sum, die) => sum + die, 0) : null;
   const opponentDiceTotal = opponentDice.length ? opponentDice.reduce((sum, die) => sum + die, 0) : null;
-  const operativeTotal = resolution?.roll?.finalTotal ?? outcomeSummary?.checkTotal ?? null;
-  const opponentTotal = outcomeSummary?.enemyTotal ?? resolution?.roll?.target ?? battle?.difficulty ?? encounter?.difficulty ?? null;
+  const operativeTotal = resultStage ? resolution?.roll?.finalTotal ?? outcomeSummary?.checkTotal ?? null : null;
+  const authoredOpponentValue = battle?.difficulty ?? encounter?.difficulty ?? null;
+  const opponentTotal = resultStage
+    ? outcomeSummary?.enemyTotal ?? resolution?.roll?.target ?? authoredOpponentValue
+    : null;
   const oppositionModifierTotal = oppositionSources.reduce((sum, source) => sum + source.value, 0);
   const opponentBaseValue = enemyBaseSource?.value
     ?? (isBattle
       ? (outcomeSummary?.enemyBonus ?? battle?.difficulty ?? encounter?.difficulty ?? null) !== null
         ? (outcomeSummary?.enemyBonus ?? battle?.difficulty ?? encounter?.difficulty ?? 0) - oppositionModifierTotal
         : null
-      : opponentTotal !== null ? opponentTotal - oppositionModifierTotal : null);
-  const success = resolution?.roll?.success ?? outcomeSummary?.success ?? null;
+      : authoredOpponentValue !== null ? authoredOpponentValue - oppositionModifierTotal : null);
+  const success = resultStage ? resolution?.roll?.success ?? outcomeSummary?.success ?? null : null;
   const outcome = success === null
     ? operativeTotal !== null && opponentTotal !== null && operativeTotal === opponentTotal ? "draw" : null
     : success ? "success" : "failure";
@@ -13101,7 +13302,7 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
     : stage === "battle_ready" ? `roll ${CHALLENGE_LABELS[stat]}`
       : stage === "rolling" || stage === "resolving" ? "resolve the current roll"
         : "review the result and continue";
-  const effects = resolution?.outcome?.effects ?? [];
+  const effects = resultStage ? resolution?.outcome?.effects ?? [] : [];
   const rewardSummary = effects.find((effect) => /\bgain\b|\btroph|\breward|\bsalvage|\bequipment|\bfollower/i.test(effect)) ?? null;
 
   return {
@@ -13144,7 +13345,7 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
       finalTotal: opponentTotal
     },
     outcome,
-    publicConsequence: resolution?.outcome?.text ?? outcomeSummary?.summary ?? null,
+    publicConsequence: resultStage ? resolution?.outcome?.text ?? outcomeSummary?.summary ?? null : null,
     publicRewardSummary: rewardSummary,
     waiting: {
       actorDisplayName: getProjectedPlayerName(state, actorSeatId),

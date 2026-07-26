@@ -786,19 +786,7 @@ describe("server API scenario flow", () => {
 
       await waitForStatePatch(
         phone,
-        (message) => message.payload.activeResolution?.stage === "roll_result"
-      );
-
-      phone.socket.send(
-        JSON.stringify({
-          type: "CONTINUE_RESOLUTION",
-          seatId: joined.payload.seatId
-        })
-      );
-
-      await waitForStatePatch(
-        phone,
-        (message) => message.payload.activeResolution?.stage === "outcome_summary"
+        (message) => message.payload.activeResolution?.stage === "awaiting_continue"
       );
 
       phone.socket.send(

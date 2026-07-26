@@ -131,21 +131,18 @@ export function PhoneResultReadyGate({
         </div>
 
         <div className="phone-result-gate__rift" aria-hidden="true" />
-        <div className="phone-result-gate__seal" aria-label={playerTotal === null ? "Authoritative result" : `${playerTotalLabel} ${playerTotal}`}>
+        <div
+          className="phone-result-gate__seal"
+          data-testid="phone-roll-result"
+          aria-label={
+            playerTotal === null && targetTotal === null
+              ? "Authoritative result"
+              : `${playerTotalLabel} ${playerTotal ?? "unavailable"}, ${targetTotalLabel} ${targetTotal ?? "unavailable"}`
+          }
+        >
           <span>Total</span>
           <strong>{playerTotal ?? "—"}</strong>
         </div>
-        {(playerTotal !== null || targetTotal !== null) ? (
-          <div
-            className="phone-result-gate__totals"
-            data-testid="phone-roll-result"
-            aria-label={`${playerTotalLabel} ${playerTotal ?? "unavailable"}, ${targetTotalLabel} ${targetTotal ?? "unavailable"}`}
-          >
-            <div><span>{playerTotalLabel}</span><strong>{playerTotal ?? "—"}</strong></div>
-            <i aria-hidden="true">vs</i>
-            <div><span>{targetTotalLabel}</span><strong>{targetTotal ?? "—"}</strong></div>
-          </div>
-        ) : null}
       </div>
 
       <section className="phone-result-gate__consequence" aria-label="Authoritative consequence">

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactElement } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactElement } from "react";
 import {
   configureSessionFromPhone,
   fetchCharacters,
@@ -18,6 +18,7 @@ import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
 import { PortraitControllerView } from "./PortraitControllerView.js";
 import { useActiveRoomBackGuard } from "./useActiveRoomBackGuard.js";
 import { getSubmittedDisplayNameError, MAX_PLAYER_DISPLAY_NAME_LENGTH } from "../../game/rules/playerIdentity.js";
+import { PhoneCartographyPrototypeFixture } from "./PhoneCartographyPrototypeFixture.js";
 import {
   SIGNAL_PIECES,
   getSignalPieceAssetPath,
@@ -269,6 +270,7 @@ export function PhoneApp(): ReactElement {
   const joinSubmittingRef = useRef(false);
   const hostScenarioPickerRef = useRef<HTMLElement | null>(null);
   const operativeSelectionRef = useRef<HTMLElement | null>(null);
+  const characterSelectionScrollRef = useRef<HTMLElement | null>(null);
   const signalPiecePickerRef = useRef<HTMLDivElement | null>(null);
   const initializedSignalPieceSeatRef = useRef<string | null>(null);
   const previousCharacterSelectedRef = useRef<boolean | null>(null);
@@ -577,6 +579,15 @@ export function PhoneApp(): ReactElement {
     '[role="radio"][aria-checked="true"]:not([disabled])'
   );
 
+  useLayoutEffect(() => {
+    const scrollRoot = characterSelectionScrollRef.current;
+    if (!scrollRoot) return;
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    scrollRoot.scrollTop = 0;
+    scrollRoot.scrollLeft = 0;
+  }, [ownSeat?.seatId, phonePatch?.payload.setup?.id, setupSelectionStep]);
+
   useEffect(() => {
     if (!ownSeat) return;
 
@@ -733,6 +744,15 @@ export function PhoneApp(): ReactElement {
     setFormState((current) => ({ ...current, characterId: "" }));
     setJoinError(error);
   }, [error, pendingCharacterId]);
+
+  const cartographyFixture =
+    import.meta.env.DEV &&
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("phoneFixture") === "cartography";
+
+  if (cartographyFixture) {
+    return <PhoneCartographyPrototypeFixture />;
+  }
 
   if (!auth) {
     return (
@@ -994,7 +1014,11 @@ export function PhoneApp(): ReactElement {
       <main className="phone-page phone-page-controller">
         <section className="phone-portrait-controller phone-portrait-controller-empty">
           <div className="phone-portrait-panel phone-portrait-lobby-panel">
-            <main className="phone-portrait-scroll phone-lobby-waiting-scroll phone-character-select-scroll" aria-label={setupSelectionStep === "piece" ? "Choose piece" : "Choose operative"}>
+            <main
+              ref={characterSelectionScrollRef}
+              className="phone-portrait-scroll phone-lobby-waiting-scroll phone-character-select-scroll"
+              aria-label={setupSelectionStep === "piece" ? "Choose piece" : "Choose operative"}
+            >
               <section
                 ref={operativeSelectionRef}
                 className={`phone-lobby-ready-panel phone-character-waiting-panel phone-character-select-surface phone-setup-step phone-setup-step--${setupSelectionStep}`}

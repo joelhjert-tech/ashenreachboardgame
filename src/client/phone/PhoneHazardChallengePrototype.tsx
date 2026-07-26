@@ -172,7 +172,11 @@ export function PhoneHazardChallengeView({
   supplemental
 }: PhoneHazardChallengePrototypeProps): ReactElement {
   const self = patch.self!;
-  const presentation = patch.battlePresentation ?? null;
+  const projectedPresentation = patch.battlePresentation ?? null;
+  const presentation =
+    !resolution || projectedPresentation?.id === resolution.id
+      ? projectedPresentation
+      : null;
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const kind = trialKind(patch, resolution);
@@ -181,8 +185,12 @@ export function PhoneHazardChallengeView({
   const flavor = presentation?.encounter.publicSummary ?? resolution?.card?.flavor ?? patch.encounter?.flavor ?? "The Reach offers no safe passage.";
   const stat = presentation?.test.stat ?? resolution?.battle?.stat ?? patch.encounter?.stat ?? patch.pendingTileChallenge?.testStat ?? "grit";
   const statLabel = statLabelById[stat];
+  const resultStage = Boolean(
+    resolution &&
+    ["roll_result", "outcome_summary", "awaiting_continue"].includes(resolution.stage)
+  );
   const difficulty =
-    presentation?.opponent.finalTotal
+    (resultStage ? presentation?.opponent.finalTotal : null)
     ?? presentation?.opponent.baseValue
     ?? resolution?.roll?.target
     ?? resolution?.battle?.difficulty
@@ -194,21 +202,27 @@ export function PhoneHazardChallengeView({
     ?? patch.seats.find((seat) => seat.seatId === self.seatId)?.displayName
     ?? self.character.name;
   const operativeBase = presentation?.operative.baseValue ?? self.character.stats[stat] ?? 0;
-  const roll = resolution?.roll ?? null;
-  const rollDice = presentation?.operative.rawDice ?? roll?.dice ?? [];
-  const rollTotal = presentation?.operative.diceTotal ?? (roll ? roll.dice.reduce((sum, die) => sum + die, 0) : null);
-  const modifiers = presentation?.operative.modifiers ?? resolution?.battle?.modifiers ?? [];
+  const roll = resultStage ? resolution?.roll ?? null : null;
+  const rollDice = resultStage ? presentation?.operative.rawDice ?? roll?.dice ?? [] : [];
+  const rollTotal = resultStage
+    ? presentation?.operative.diceTotal ?? (roll ? roll.dice.reduce((sum, die) => sum + die, 0) : null)
+    : null;
+  const modifiers = resultStage
+    ? presentation?.operative.modifiers ?? resolution?.battle?.modifiers ?? []
+    : [];
   const modifierTotal = modifiers.reduce((sum, modifier) => sum + modifier.value, 0);
-  const finalTotal = presentation?.operative.finalTotal ?? roll?.finalTotal ?? null;
+  const finalTotal = resultStage ? presentation?.operative.finalTotal ?? roll?.finalTotal ?? null : null;
   const result =
-    presentation?.outcome === "success"
+    !resultStage
+      ? null
+      : presentation?.outcome === "success"
       ? "success"
       : presentation?.outcome === "failure"
         ? "failure"
         : roll
           ? roll.success ? "success" : "failure"
           : null;
-  const outcome = resolution?.outcome ?? null;
+  const outcome = resultStage ? resolution?.outcome ?? null : null;
   const resultLabel =
     result === "success"
       ? "Success"

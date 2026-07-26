@@ -1341,7 +1341,14 @@ function advanceResolutionForContinue(state: GameState): ActiveResolution | null
     };
   }
 
-  if (activeResolution.stage === "outcome_summary" || activeResolution.stage === "awaiting_continue") {
+  if (activeResolution.stage === "outcome_summary") {
+    return {
+      ...activeResolution,
+      stage: "awaiting_continue"
+    };
+  }
+
+  if (activeResolution.stage === "awaiting_continue") {
     return null;
   }
 
@@ -6653,6 +6660,14 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       return succeed({
         ...state,
         activeResolution: advanceResolutionForContinue(state),
+        pendingFailureReaction:
+          state.activeResolution.stage === "roll_result" && state.pendingFailureReaction?.seatId === continueAction.seatId
+            ? null
+            : state.pendingFailureReaction,
+        pendingStaticIntercessionReaction:
+          state.activeResolution.stage === "roll_result" && state.pendingStaticIntercessionReaction?.seatId === continueAction.seatId
+            ? null
+            : state.pendingStaticIntercessionReaction,
         sequence: state.sequence + 1,
         eventLog: [...state.eventLog, action]
       });

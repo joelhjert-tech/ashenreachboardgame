@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { MapTrifoldIcon } from "@phosphor-icons/react/dist/csr/MapTrifold";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import { BOARD_RING_TRANSITIONS } from "../../game/data/boardTransitions.js";
 import type {
   ClientIntent,
   ContractCard,
+  PublicHostViewState,
   PublicMoveDestination,
   PublicMovementPlannerState
 } from "../shared/types.js";
@@ -47,6 +49,7 @@ interface PhoneMovementViewProps {
   onContextNavigation?: (target: MovementNavigationTarget) => void;
   actorName?: string;
   diceCount?: number;
+  hostView?: PublicHostViewState;
 }
 
 function destinationType(destination: PublicMoveDestination): string {
@@ -422,7 +425,8 @@ export function PhoneMovementView({
   showContextNavigation,
   onContextNavigation,
   actorName = "Your operative",
-  diceCount = 1
+  diceCount = 1,
+  hostView
 }: PhoneMovementViewProps): ReactElement {
   const models = useMemo(
     () => (planner?.destinations ?? []).map((destination) => buildDestinationPresentation(destination, activeContract)),
@@ -576,6 +580,25 @@ export function PhoneMovementView({
     >
       <MovementHeader planner={planner} canRoll={canRoll} currentSectorName={currentSectorName} travel={travel} movementResolving={movementResolving} />
       <div className="phone-move-prototype__content">
+        {hostView ? (
+          <button
+            type="button"
+            className="phone-move-prototype__map-request"
+            aria-pressed={hostView.mode === "map"}
+            disabled={hostView.mode !== "map" && !hostView.canRequestMap}
+            onClick={() => onIntent({
+              type: "HOST_VIEW_REQUESTED",
+              seatId,
+              mode: hostView.mode === "map" ? "signal" : "map"
+            })}
+          >
+            <MapTrifoldIcon size={24} weight={hostView.mode === "map" ? "fill" : "duotone"} aria-hidden="true" />
+            <span>
+              <strong>{hostView.mode === "map" ? "Return to Signal Theatre" : "Show map on TV"}</strong>
+              <small>{hostView.unavailableReason ?? "Shared public display"}</small>
+            </span>
+          </button>
+        ) : null}
         {!travel && !movementResolving ? (
           <div
             className={`phone-auto-collapse-dice${diceDisclosure.collapsed ? " is-collapsed" : ""}`}
