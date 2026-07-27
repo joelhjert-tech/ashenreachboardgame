@@ -5,6 +5,7 @@ import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel }
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { OperativePortraitImage } from "../shared/OperativePortraitImage.js";
+import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 import { getSignalTheatreResultCrestPath, getSignalTheatreStatSealPath } from "../shared/assetPaths.js";
 import { statLabelById } from "../shared/statLabels.js";
 import type { ActiveResolution, PhonePatchPayload, ResultDelta, Stat } from "../shared/types.js";
@@ -373,7 +374,7 @@ export function PhoneHazardChallengeView({
           </article>
 
           <div className="phone-trial-rift" aria-hidden="true">
-            <img src={getSignalTheatreStatSealPath(stat)} width={512} height={512} alt="" />
+            <PhoneOptimizedImage src={getSignalTheatreStatSealPath(stat)} width={512} height={512} alt="" />
             <span>{statLabel}</span>
           </div>
 
@@ -434,7 +435,7 @@ export function PhoneHazardChallengeView({
 
         {result || outcome ? (
           <section className={`phone-trial-outcome phone-trial-outcome--${result ?? "neutral"}`} data-testid="phone-resolution-card">
-            {resultCrest ? <img src={resultCrest} width={640} height={640} alt="" /> : null}
+            {resultCrest ? <PhoneOptimizedImage src={resultCrest} width={640} height={640} alt="" /> : null}
             <div>
               <span>Authoritative result</span>
               <strong>{outcome?.title ?? resultLabel}</strong>

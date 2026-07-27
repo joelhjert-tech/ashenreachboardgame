@@ -14,6 +14,7 @@ import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { useFocusOnRevision } from "../shared/useFocusOnRevision.js";
 import { usePhysicalVisualViewport } from "../shared/usePhysicalVisualViewport.js";
+import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
 import { PortraitControllerView } from "./PortraitControllerView.js";
 import { useActiveRoomBackGuard } from "./useActiveRoomBackGuard.js";
@@ -998,10 +999,11 @@ export function PhoneApp(): ReactElement {
                         >
                           <span
                             className={`phone-host-scenario-card-art${scenario.sheetArtPath ? "" : " phone-host-scenario-card-fallback"}`}
-                            style={scenario.sheetArtPath ? { backgroundImage: `url(${scenario.sheetArtPath})` } : undefined}
                             aria-hidden="true"
                           >
-                            {scenario.sheetArtPath ? null : "AR"}
+                            {scenario.sheetArtPath ? (
+                              <PhoneOptimizedImage src={scenario.sheetArtPath} alt="" width={1024} height={1536} />
+                            ) : "AR"}
                           </span>
                           <span className="phone-host-scenario-card-copy">
                             <small>{scenario.difficulty} · {scenario.expectedDuration}</small>
@@ -1088,7 +1090,7 @@ export function PhoneApp(): ReactElement {
                     <h1>{setupSelectionStep === "piece" ? "Choose Piece" : "Choose Operative"}</h1>
                   </div>
                   <div className="phone-setup-step__header-actions">
-                    <small>{setupSelectionStep === "piece" ? "Step 1 of 3" : "Step 2 of 3"}</small>
+                    <small>{setupSelectionStep === "piece" ? "Step 1 of 4" : "Step 2 of 4"}</small>
                     {setupSelectionStep === "operative" ? (
                       <button
                         type="button"
@@ -1152,7 +1154,7 @@ export function PhoneApp(): ReactElement {
                                   ?.focus();
                               }}
                             >
-                              <img src={getSignalPieceAssetPath(piece.id)} width={768} height={768} alt="" aria-hidden="true" />
+                              <PhoneOptimizedImage src={getSignalPieceAssetPath(piece.id)} width={768} height={768} alt="" aria-hidden="true" />
                               <span>
                                 <strong>{piece.name}</strong>
                                 <small>{unavailable ? "In use at this table" : piece.shortDescription}</small>
@@ -1223,7 +1225,7 @@ export function PhoneApp(): ReactElement {
                           aria-busy={pendingCharacterId === character.id ? "true" : undefined}
                           onClick={() => handleCharacterSelected(character.id)}
                         >
-                          <img src={getCharacterPortraitPath(character.id)} alt="" />
+                          <PhoneOptimizedImage src={getCharacterPortraitPath(character.id)} alt="" />
                           <span>
                             <strong>{character.name}</strong>
                             {projectedOption?.developerQa ? <em>Developer QA operative</em> : null}

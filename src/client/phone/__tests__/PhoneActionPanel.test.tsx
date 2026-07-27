@@ -1681,7 +1681,7 @@ describe("PhoneActionPanel", () => {
     expect(unaffordableCard).not.toBeNull();
     expect(unaffordableCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute(
       "src",
-      "/assets/cards/equipment/saintplate-harness.png"
+      "/assets/cards/equipment/saintplate-harness.phone.webp"
     );
     expect(within(unaffordableCard as HTMLElement).getByRole("button", { name: /buy/i })).toBeDisabled();
     expect(unaffordableCard).toHaveTextContent(/ignore until you can pay or free the slot/i);

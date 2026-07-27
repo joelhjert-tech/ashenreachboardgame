@@ -14,6 +14,7 @@ Assets are runtime data. Do not delete an asset just because TypeScript does not
 - Legacy/reference card art source: `public/assets/riftfall/cards/`
 - Runtime portraits, nemeses, tokens, UI frames: `public/assets/riftfall/`
 - Fallback card art: `public/assets/cards/fallbacks/`
+- Phone-optimized raster manifest: `public/assets/phone-image-manifest.json`
 
 ## Active Card Roots
 
@@ -28,6 +29,7 @@ Active card roots:
 - `public/assets/cards/anomalies/`
 - `public/assets/cards/artifacts/`
 - `public/assets/cards/equipment/`
+- `public/assets/cards/followers/`
 - `public/assets/cards/scars/`
 - `public/assets/cards/escalations/`
 - `public/assets/cards/fallbacks/`
@@ -67,6 +69,7 @@ Remaining legacy files:
 - Result-ready verdict gate prompt catalog: `src/game/assets/design/resultReadyVisualPrompts.ts`
 - Generated card image prompt catalog: `src/game/assets/design/generatedCardImagePrompts.ts`
 - Card fallback and output directories: `src/game/assets/design/cardImageCatalog.ts`
+- Phone derivative generator: `scripts/generate-phone-images.ts`
 
 ## Naming
 
@@ -77,8 +80,10 @@ Remaining legacy files:
 - Private phone inventory category emblems use `artifacts`, `equipment`, `followers`, `status`, and `progression` under `public/assets/riftfall/ui/inventory-categories/`.
 - Public Host TV shop-category emblems use `items`, `equipment`, `artifacts`, `route-aids`, `services`, and `sell` under `public/assets/riftfall/ui/shop/categories/`.
 - Card art generated from content uses the card ID as the PNG filename under `public/assets/cards/<type>/`.
+- Ordinary Followers use `public/assets/cards/followers/` and the dedicated Follower fallback. Artifact-deck Followers keep their existing Artifact presentation.
 - Active threat card art is organized by `threatLane` under `public/assets/cards/threats/red/`, `public/assets/cards/threats/blue/`, and `public/assets/cards/threats/yellow/`.
 - Do not add new Ashenreach card art under `public/assets/riftfall/cards/`. Treat that folder as legacy/source/reference material only.
+- Phone-visible raster assets use a sibling \`*.phone.webp\` derivative generated at a maximum 960px long edge with WebP quality 72, no upscaling, and stripped metadata. Normal phone views use the derivative; explicit art inspection may request the full source.
 - Promote legacy art only by creating real content, copying art to `public/assets/cards/<category>/`, updating the resolver/catalog, validating it, and archiving the promoted legacy source after the active copy is verified.
 - Runtime character portraits use character IDs where possible.
 - Avoid adding mockups, prompt sheets, or contact sheets to runtime asset folders.
@@ -88,8 +93,11 @@ Remaining legacy files:
 Run:
 
 ```bash
+npm run generate:phone-images
 npm run audit:assets
 ```
+
+The asset audit validates the generated phone manifest, source and derivative hashes, byte counts, dimensions, maximum edge, no-upscale rule, and no-growth rule. SVG, animation, TV-only Signal Theatre environments, shop interiors, and cartography assets are excluded.
 
 The asset audit is the source of truth for the current expected count. Signal Theatre adds 49 distinct sector environments and 6 selectable player-piece renders. The phone inventory adds 5 original category emblems.
 

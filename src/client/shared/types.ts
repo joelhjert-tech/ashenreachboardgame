@@ -14,6 +14,7 @@ export type GearTimingWindow =
   | "movementRouteConfirmation"
   | "beforeAnomalySignalTest"
   | "pendingScarConsequence"
+  | "pendingForcedDisplacement"
   | "shop"
   | "action"
   | "anyTime";
@@ -70,6 +71,8 @@ export interface PublicSeat {
   displayName: string | null;
   startingMissionSelected?: boolean;
   startingMissionTitle?: string | null;
+  startingBonusPickCount?: number;
+  startingBonusComplete?: boolean;
   connected: boolean;
   ready: boolean;
   kicked: boolean;
@@ -81,6 +84,7 @@ export type SetupStage =
   | "waiting-for-players"
   | "operative-selection"
   | "mission-selection"
+  | "provision-selection"
   | "ready-check"
   | "start-available";
 
@@ -93,7 +97,7 @@ export interface SetupProjection {
   publicInstruction: string;
   activeInstruction: string;
   waitingInstruction: string;
-  allowedCommand: "configure-lobby" | "select-operative" | "select-mission" | "ready" | "start" | null;
+  allowedCommand: "configure-lobby" | "select-operative" | "select-mission" | "select-provision" | "ready" | "start" | null;
   inputEnabled: boolean;
   canStart: boolean;
   startReason: string;
@@ -170,13 +174,14 @@ export interface PublicPlayer {
 
 export interface GearItem {
   id: string;
+  artCardId?: string;
   name: string;
   slot: GearSlot;
   statBonus: { stat: Stat; amount: number };
   eligibleSkills?: Stat[];
   eligibleTestScope?: "anySkill";
   category?: GearCategory;
-  subtype?: "weapon" | "armor" | "utility" | "consumable" | "supply" | "quest" | "artifact";
+  subtype?: "weapon" | "armour" | "tool" | "medical" | "supply" | "utility";
   shopCategories?: ShopCategory[];
   cost?: number;
   sellValue?: number;
@@ -193,9 +198,20 @@ export interface GearItem {
   startingCharges?: number;
   chargeCost?: number;
   rechargeRule?: "none";
-  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour" | "choirLightSignalBonus" | "staticIntercession" | "scarSinkPrayer" | "traceThePromise";
+  chargedEffect?:
+    | "personalGateOverride"
+    | "movementAdjustment"
+    | "saintSafeConduct"
+    | "bonewayDetour"
+    | "choirLightSignalBonus"
+    | "staticIntercession"
+    | "scarSinkPrayer"
+    | "traceThePromise"
+    | "selectAuthoritativeRouteVariant"
+    | "suppressForcedDisplacement"
+    | "selectTransitionSector";
   maxUses?: number;
-  linkedFollowerRole?: FollowerRole;
+  linkedFollowerRole?: string;
   effectModel?: "permanent" | "conditional" | "consumable" | "exhaust" | "charged";
   instanceId?: string;
   requiresEquipped?: boolean;
@@ -246,6 +262,10 @@ export interface Follower {
   loyalty?: number;
   lossCondition?: "wound" | "combatLoss" | "choice";
 }
+
+export type StartingBonusOption =
+  | { kind: "gear"; item: GearItem }
+  | { kind: "follower"; follower: Follower };
 
 export interface ScarSummary {
   id: string;
@@ -1592,6 +1612,13 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   objectUseStates?: PhoneObjectUseState[];
   startingContractOptions?: ContractCard[];
   selectedStartingContract?: ContractCard | null;
+  startingBonusSelection?: {
+    offerId: string;
+    pickNumber: 1 | 2;
+    totalPicks: 2;
+    options: StartingBonusOption[];
+  } | null;
+  startingBonusPickCount?: number;
   activeContractCard?: ContractCard | null;
   activeContractCards?: ContractCard[];
   pendingMissionSelection?: {
@@ -1921,6 +1948,13 @@ export type ClientIntent =
       type: "SELECT_STARTING_CONTRACT";
       seatId: string;
       contractId: string;
+    }
+  | {
+      type: "SELECT_STARTING_BONUS";
+      seatId: string;
+      offerId: string;
+      optionKind: "gear" | "follower";
+      optionId: string;
     }
   | {
       type: "SELECT_CHARACTER";

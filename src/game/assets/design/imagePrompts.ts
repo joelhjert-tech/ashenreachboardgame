@@ -27,6 +27,7 @@ export type ImagePromptSpec = {
     | "anomalyCardArt"
     | "artifactCardArt"
     | "equipmentCardArt"
+    | "followerCardArt"
     | "scarCardArt"
     | "escalationCardArt"
     | "powerCardArt"

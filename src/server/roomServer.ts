@@ -67,7 +67,7 @@ import {
   preventWoundInEffect,
   summarizeAfflictions
 } from "../game/rules/afflictions.js";
-import { getSessionStartReadiness } from "../game/rules/sessionStart.js";
+import { getSessionStartReadiness, hasCompletedStartingBonusSelection } from "../game/rules/sessionStart.js";
 import {
   getBrokenSealTokenLimit,
   getDevourerTrophyGate,
@@ -281,7 +281,7 @@ import type { ContractCard } from "../game/schema/contract.schema.js";
 import type { Follower } from "../game/schema/follower.schema.js";
 import type { GearItem, ShopCategory } from "../game/schema/gear.schema.js";
 import type { AfflictionCard } from "../game/schema/affliction.schema.js";
-import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
+import { createSeededRandomSource, rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
 import { applyEffectToState, reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
 import {
@@ -302,6 +302,7 @@ import {
   type NemesisChampion,
   type PlayerState,
   type PendingCooperativeTest,
+  type StartingBonusOptionRef,
   type SessionMode
 } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
@@ -324,6 +325,17 @@ const MASTER_ALPHA_ID = "char_master_alpha";
 const LEGACY_SCAR_SINK_PRAYER_ID = "heat-sink-prayer";
 const RECENT_ENCOUNTER_LIMIT = 12;
 const STARTING_CONTRACT_OPTION_COUNT = 3;
+const STARTING_BONUS_PICK_COUNT = 2;
+const STARTING_BONUS_OPTION_COUNT = 2;
+
+function createPrivateSetupSeed(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
 const SCENARIO_OWNED_THREAT_IDS = new Set(
   SCENARIOS.flatMap((scenario) =>
     Object.values(scenario.threatLaneOverrides ?? {}).flatMap((cardIds) => cardIds ?? [])
@@ -471,6 +483,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "SET_READY",
   "SELECT_CHARACTER",
   "SELECT_STARTING_CONTRACT",
+  "SELECT_STARTING_BONUS",
   "RECRUIT_REPLACEMENT",
   "EQUIP_GEAR",
   "RESOLVE_GEAR_EQUIP_CHOICE",
@@ -1107,6 +1120,17 @@ export class GameRoomServer {
         return;
       }
 
+      if (intent.type === "SELECT_STARTING_BONUS") {
+        this.selectStartingBonus(
+          intent.seatId,
+          intent.offerId,
+          intent.optionKind,
+          intent.optionId
+        );
+        this.broadcastPatch();
+        return;
+      }
+
       if (intent.type === "ACCEPT_CONTRACT" && this.state.pendingMissionSelection?.ownerSeatId === intent.seatId) {
         throw new IntentRejectedError(intent.type, "Use the authoritative replacement mission offer");
       }
@@ -1464,6 +1488,9 @@ export class GameRoomServer {
               startingContractOptions: [],
               selectedStartingContractId: null,
               missionSelectedAt: null,
+              startingBonusOfferId: null,
+              startingBonusOfferOptions: [],
+              startingBonusSelections: [],
               connected: true,
               ready: false
             }
@@ -1574,6 +1601,9 @@ export class GameRoomServer {
               startingContractOptions,
               selectedStartingContractId: null,
               missionSelectedAt: null,
+              startingBonusOfferId: null,
+              startingBonusOfferOptions: [],
+              startingBonusSelections: [],
               ready: false
             }
           : entry
@@ -1662,6 +1692,9 @@ export class GameRoomServer {
               startingContractOptions: [],
               selectedStartingContractId: null,
               missionSelectedAt: null,
+              startingBonusOfferId: null,
+              startingBonusOfferOptions: [],
+              startingBonusSelections: [],
               ready: false
             }
           : entry;
@@ -1688,6 +1721,143 @@ export class GameRoomServer {
       client.socket.close(4004, "Seat is not available in the reconfigured lobby");
     }
     this.broadcastPatch();
+  }
+
+  private getStartingBonusCandidates(
+    player: PlayerState,
+    excluded: readonly StartingBonusOptionRef[] = []
+  ): StartingBonusOptionRef[] {
+    const excludedKeys = new Set(excluded.map((option) => `${option.kind}:${option.id}`));
+    const ownedGearIds = new Set(player.character.heldGear.map((item) => item.id));
+    const ownedFollowerIds = new Set((player.character.followers ?? []).map((follower) => follower.id));
+    const globallyOwnedUniqueFollowerIds = new Set(
+      this.state.players.flatMap((entry) =>
+        (entry.character.followers ?? [])
+          .filter((follower) => follower.unique)
+          .map((follower) => follower.id)
+      )
+    );
+
+    return [
+      ...[...this.gear.values()]
+        .filter((item) =>
+          item.startingEligible === true &&
+          !item.qaOnly &&
+          item.tier !== "artifact" &&
+          !ownedGearIds.has(item.id) &&
+          !excludedKeys.has(`gear:${item.id}`)
+        )
+        .map((item) => ({ kind: "gear" as const, id: item.id })),
+      ...[...this.followers.values()]
+        .filter((follower) =>
+          !follower.qaOnly &&
+          !follower.artifactTier &&
+          !follower.ultimateCompanion &&
+          (follower.tier ?? "standard") === "standard" &&
+          !ownedFollowerIds.has(follower.id) &&
+          !(follower.unique && globallyOwnedUniqueFollowerIds.has(follower.id)) &&
+          !excludedKeys.has(`follower:${follower.id}`)
+        )
+        .map((follower) => ({ kind: "follower" as const, id: follower.id }))
+    ];
+  }
+
+  private drawStartingBonusOptions(
+    player: PlayerState,
+    privateOfferKey: string,
+    excluded: readonly StartingBonusOptionRef[] = []
+  ): StartingBonusOptionRef[] {
+    const candidates = this.getStartingBonusCandidates(player, excluded);
+    const offerRandom = createSeededRandomSource(createPrivateSetupSeed(privateOfferKey));
+
+    if (candidates.length < STARTING_BONUS_OPTION_COUNT) {
+      throw new Error("Not enough eligible starting bonuses are available");
+    }
+
+    for (let index = candidates.length - 1; index > 0; index -= 1) {
+      const swapIndex = offerRandom.nextInt(index + 1);
+      [candidates[index], candidates[swapIndex]] = [candidates[swapIndex]!, candidates[index]!];
+    }
+
+    return candidates.slice(0, STARTING_BONUS_OPTION_COUNT);
+  }
+
+  private grantStartingBonus(
+    player: PlayerState,
+    option: StartingBonusOptionRef,
+    pickNumber: number
+  ): PlayerState {
+    if (option.kind === "follower") {
+      const follower = this.followers.get(option.id);
+      if (!follower) throw new Error("Starting follower is no longer available");
+      if ((player.character.followers ?? []).some((owned) => owned.id === follower.id)) {
+        throw new Error("Starting follower is already owned");
+      }
+      if (
+        follower.unique &&
+        this.state.players.some((entry) =>
+          entry.seatId !== player.seatId &&
+          (entry.character.followers ?? []).some((owned) => owned.id === follower.id)
+        )
+      ) {
+        throw new Error("Starting follower is already committed to another operative");
+      }
+
+      return {
+        ...player,
+        character: {
+          ...player.character,
+          followers: [
+            ...(player.character.followers ?? []),
+            {
+              ...follower,
+              instanceId: `${follower.id}:${player.seatId}:starting-bonus:${pickNumber}`,
+              ...(follower.startingCharges !== undefined
+                ? { currentCharges: follower.startingCharges }
+                : {})
+            }
+          ]
+        }
+      };
+    }
+
+    const item = this.gear.get(option.id);
+    if (!item) throw new Error("Starting Equipment is no longer available");
+    if (player.character.heldGear.some((owned) => owned.id === item.id)) {
+      throw new Error("Starting Equipment is already owned");
+    }
+
+    const instanceId = `${item.id}:${player.seatId}:starting-bonus:${pickNumber}`;
+    const gainedItem = {
+      ...item,
+      instanceId,
+      ...(item.startingCharges !== undefined ? { currentCharges: item.startingCharges } : {})
+    };
+    const mayAutoEquip =
+      gainedItem.effectModel === "permanent" ||
+      (gainedItem.effectModel == null && gainedItem.tier !== "artifact");
+    const slotIsEmpty = !player.character.equippedGear[gainedItem.slot];
+
+    return {
+      ...player,
+      character: {
+        ...player.character,
+        heldGear: [...player.character.heldGear, gainedItem],
+        equippedGear: mayAutoEquip && slotIsEmpty
+          ? { ...player.character.equippedGear, [gainedItem.slot]: gainedItem.id }
+          : player.character.equippedGear,
+        equippedGearInstances: mayAutoEquip && slotIsEmpty
+          ? {
+              ...(player.character.equippedGearInstances ?? {
+                weapon: null,
+                armor: null,
+                utility: null
+              }),
+              [gainedItem.slot]: instanceId
+            }
+          : player.character.equippedGearInstances
+      }
+    };
   }
 
   selectStartingContract(seatId: string, contractId: string): void {
@@ -1729,15 +1899,95 @@ export class GameRoomServer {
       throw new Error("Starting mission was not offered to this player");
     }
 
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`Missing player for seat ${seatId}`);
+    const nextSequence = this.state.sequence + 1;
+    const startingBonusOfferOptions = this.drawStartingBonusOptions(
+      player,
+      `${seat.joinToken}:starting-bonus:1:${nextSequence}`
+    );
+
     this.state = {
       ...this.state,
-      sequence: this.state.sequence + 1,
+      sequence: nextSequence,
       seats: this.state.seats.map((entry) =>
         entry.seatId === seatId
           ? {
               ...entry,
               selectedStartingContractId: contractId,
               missionSelectedAt: new Date().toISOString(),
+              startingBonusOfferId: `starting-bonus:${seatId}:1:${nextSequence}`,
+              startingBonusOfferOptions,
+              startingBonusSelections: [],
+              ready: false
+            }
+          : entry
+      )
+    };
+  }
+
+  selectStartingBonus(
+    seatId: string,
+    offerId: string,
+    optionKind: StartingBonusOptionRef["kind"],
+    optionId: string
+  ): void {
+    const seat = this.state.seats.find((entry) => entry.seatId === seatId);
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const lobbySelection = this.state.status === "lobby" && this.state.phase === "start";
+    const lateJoinSelection =
+      this.state.status === "active" &&
+      this.state.sessionMode === "multiplayer" &&
+      this.state.gameMode !== "nemesis_relay" &&
+      Boolean(seat?.displayName) &&
+      !this.state.turnOrder.includes(seatId);
+
+    if (!lobbySelection && !lateJoinSelection) {
+      throw new Error("Starting bonuses can only be selected before joining the turn order");
+    }
+    if (!seat || seat.kicked || !player) throw new Error(`Unknown seat ${seatId}`);
+    if (!seat.selectedStartingContractId) throw new Error("Choose a starting mission before choosing bonuses");
+    if (!seat.startingBonusOfferId || seat.startingBonusOfferId !== offerId) {
+      throw new Error("Starting bonus offer is stale");
+    }
+
+    const offered = (seat.startingBonusOfferOptions ?? []).find(
+      (option) => option.kind === optionKind && option.id === optionId
+    );
+    if (!offered) throw new Error("Starting bonus was not offered to this player");
+
+    const selections = seat.startingBonusSelections ?? [];
+    if (selections.length >= STARTING_BONUS_PICK_COUNT) {
+      throw new Error("Both starting bonuses are already selected");
+    }
+
+    const pickNumber = selections.length + 1;
+    const updatedPlayer = this.grantStartingBonus(player, offered, pickNumber);
+    const nextSelections = [...selections, offered];
+    const nextSequence = this.state.sequence + 1;
+    const nextOptions = nextSelections.length < STARTING_BONUS_PICK_COUNT
+      ? this.drawStartingBonusOptions(
+          updatedPlayer,
+          `${seat.joinToken}:starting-bonus:${pickNumber + 1}:${nextSequence}`,
+          seat.startingBonusOfferOptions ?? []
+        )
+      : [];
+
+    this.state = {
+      ...this.state,
+      sequence: nextSequence,
+      players: this.state.players.map((entry) =>
+        entry.seatId === seatId ? updatedPlayer : entry
+      ),
+      seats: this.state.seats.map((entry) =>
+        entry.seatId === seatId
+          ? {
+              ...entry,
+              startingBonusOfferId: nextOptions.length > 0
+                ? `starting-bonus:${seatId}:${pickNumber + 1}:${nextSequence}`
+                : null,
+              startingBonusOfferOptions: nextOptions,
+              startingBonusSelections: nextSelections,
               ready: false
             }
           : entry
@@ -1781,6 +2031,10 @@ export class GameRoomServer {
 
     if (ready && !seat.selectedStartingContractId) {
       throw new Error("Choose a starting mission before Ready");
+    }
+
+    if (ready && !hasCompletedStartingBonusSelection(seat)) {
+      throw new Error("Choose two starting bonuses before Ready");
     }
 
     if (seat.ready === ready && !lateJoinReady) {
@@ -1867,6 +2121,9 @@ export class GameRoomServer {
               startingContractOptions: [],
               selectedStartingContractId: null,
               missionSelectedAt: null,
+              startingBonusOfferId: null,
+              startingBonusOfferOptions: [],
+              startingBonusSelections: [],
               characterSelected: false,
               connected: false,
               ready: false
@@ -2228,6 +2485,11 @@ export class GameRoomServer {
       case "SELECT_STARTING_CONTRACT":
       case "COMPLETE_CONTRACT":
         requireStringField(message, "contractId", type);
+        break;
+      case "SELECT_STARTING_BONUS":
+        requireStringField(message, "offerId", type);
+        requireStringField(message, "optionId", type);
+        requireEnumField(message, "optionKind", new Set(["gear", "follower"]), type);
         break;
       case "SELECT_REPLACEMENT_CONTRACT":
         requireStringField(message, "selectionId", type);
@@ -4258,6 +4520,8 @@ export class GameRoomServer {
         throw new Error("Ready state is handled directly");
       case "SELECT_STARTING_CONTRACT":
         throw new Error("Starting mission selection is handled directly");
+      case "SELECT_STARTING_BONUS":
+        throw new Error("Starting bonus selection is handled directly");
       case "RECRUIT_REPLACEMENT":
         {
           const replacement = this.characters.get(intent.replacementCharacterId);
@@ -6779,6 +7043,9 @@ export class GameRoomServer {
               ...entry,
               selectedStartingContractId: null,
               missionSelectedAt: null,
+              startingBonusOfferId: null,
+              startingBonusOfferOptions: [],
+              startingBonusSelections: [],
               connected: false,
               ready: false,
               kicked: true
@@ -6837,6 +7104,9 @@ export class GameRoomServer {
               startingContractOptions: [],
               selectedStartingContractId: null,
               missionSelectedAt: null,
+              startingBonusOfferId: null,
+              startingBonusOfferOptions: [],
+              startingBonusSelections: [],
               ready: false
             }
       ),
@@ -14670,8 +14940,20 @@ export function buildSetupProjection(state: GameState): import("../client/shared
   const missingMission = occupiedSeats.find(
     (seat) => Boolean(seat.characterId) && seat.characterSelected !== false && !seat.selectedStartingContractId
   ) ?? null;
+  const missingStartingBonus = occupiedSeats.find(
+    (seat) =>
+      Boolean(seat.characterId) &&
+      seat.characterSelected !== false &&
+      Boolean(seat.selectedStartingContractId) &&
+      !hasCompletedStartingBonusSelection(seat)
+  ) ?? null;
   const missingReady = occupiedSeats.find(
-    (seat) => Boolean(seat.characterId) && seat.characterSelected !== false && Boolean(seat.selectedStartingContractId) && !seat.ready
+    (seat) =>
+      Boolean(seat.characterId) &&
+      seat.characterSelected !== false &&
+      Boolean(seat.selectedStartingContractId) &&
+      hasCompletedStartingBonusSelection(seat) &&
+      !seat.ready
   ) ?? null;
 
   let stage: import("../client/shared/types.js").SetupStage = "waiting-for-host";
@@ -14705,6 +14987,14 @@ export function buildSetupProjection(state: GameState): import("../client/shared
     activeInstruction = "Choose and confirm your starting mission.";
     waitingInstruction = `Waiting for ${missingMission.displayName ?? "a player"} to choose a starting mission.`;
     allowedCommand = "select-mission";
+  } else if (missingStartingBonus) {
+    stage = "provision-selection";
+    actorSeatId = missingStartingBonus.seatId;
+    title = "Choose Starting Provisions";
+    publicInstruction = `${missingStartingBonus.displayName ?? "A player"} is choosing starting provisions.`;
+    activeInstruction = `Choose bonus ${(missingStartingBonus.startingBonusSelections?.length ?? 0) + 1} of ${STARTING_BONUS_PICK_COUNT}.`;
+    waitingInstruction = `Waiting for ${missingStartingBonus.displayName ?? "a player"} to choose starting provisions.`;
+    allowedCommand = "select-provision";
   } else if (missingReady) {
     stage = "ready-check";
     actorSeatId = missingReady.seatId;
@@ -15029,6 +15319,8 @@ export function createTvProjection(
         displayName: seat.displayName ?? null,
         startingMissionSelected: Boolean(seat.selectedStartingContractId),
         startingMissionTitle: null,
+        startingBonusPickCount: seat.startingBonusSelections?.length ?? 0,
+        startingBonusComplete: hasCompletedStartingBonusSelection(seat),
         connected: seat.connected,
         ready: seat.ready,
         kicked: seat.kicked
@@ -15245,6 +15537,25 @@ export function createPhoneProjection(
   const selectedStartingContract =
     seat?.selectedStartingContractId
       ? state.availableContracts.find((contract) => contract.id === seat.selectedStartingContractId) ?? null
+      : null;
+  const startingBonusOptions: import("../client/shared/types.js").StartingBonusOption[] = [];
+  for (const option of seat?.startingBonusOfferOptions ?? []) {
+    if (option.kind === "gear") {
+      const item = PROJECTION_GEAR_CATALOG.get(option.id);
+      if (item) startingBonusOptions.push({ kind: "gear", item });
+      continue;
+    }
+    const follower = PROJECTION_FOLLOWER_CATALOG.get(option.id);
+    if (follower) startingBonusOptions.push({ kind: "follower", follower });
+  }
+  const startingBonusSelection =
+    seat?.startingBonusOfferId && (seat.startingBonusOfferOptions?.length ?? 0) > 0
+      ? {
+          offerId: seat.startingBonusOfferId,
+          pickNumber: Math.min(2, (seat.startingBonusSelections?.length ?? 0) + 1) as 1 | 2,
+          totalPicks: 2 as const,
+          options: startingBonusOptions
+        }
       : null;
   const activeMissionStates = player ? getActiveMissions(player.character) : [];
   const activeContractCards = activeMissionStates
@@ -15764,6 +16075,8 @@ export function createPhoneProjection(
     ),
     startingContractOptions,
     selectedStartingContract,
+    startingBonusSelection,
+    startingBonusPickCount: seat?.startingBonusSelections?.length ?? 0,
     activeContractCard,
     activeContractCards,
     pendingMissionSelection,
@@ -15814,6 +16127,10 @@ function getReadyDisabledReasonForSeat(
 
   if (!seat.selectedStartingContractId) {
     return "Choose a starting mission before Ready";
+  }
+
+  if (!hasCompletedStartingBonusSelection(seat)) {
+    return "Choose two starting bonuses before Ready";
   }
 
   return null;

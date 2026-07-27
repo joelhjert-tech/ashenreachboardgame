@@ -19,6 +19,7 @@ export type InventoryTimingWindow =
   | "movementRouteConfirmation"
   | "beforeAnomalySignalTest"
   | "pendingScarConsequence"
+  | "pendingForcedDisplacement"
   | "shop"
   | "action"
   | "anyTime";
@@ -159,6 +160,8 @@ export function formatTimingWindow(window: InventoryTimingWindow): string {
       return "Before an anomaly Signal test";
     case "pendingScarConsequence":
       return "Pending Scar consequence";
+    case "pendingForcedDisplacement":
+      return "Pending forced displacement";
     case "shop":
       return "Shop";
     case "action":
@@ -628,7 +631,7 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
           resetText: "Refreshes next round"
         }
       : null,
-    artCardType: follower.artCardId ? "artifact" : null,
+    artCardType: follower.artCardId?.startsWith("artifact-") ? "artifact" : "follower",
     artCardId: follower.artCardId ?? null,
     fallbackLabel: getFallbackLabel(follower.name),
     activationCostText: follower.id === "fandiablos" ? "Cost: 1 Wound (or 2 Wounds for +2 all stats on next 2 battles/hazards)" : undefined,

@@ -9,6 +9,7 @@ import { loadGear } from "../src/game/content/gear.js";
 import { getAssetPath } from "../src/game/assets/design/assetManifest.js";
 import { CARD_IMAGE_TYPES, type CardImageType } from "../src/game/assets/design/cardImageCatalog.js";
 import { imagePrompts } from "../src/game/assets/design/imagePrompts.js";
+import { validatePhoneImageManifest } from "./lib/phone-image-assets.js";
 
 type AuditMode = "development" | "release";
 
@@ -51,6 +52,7 @@ type MissingAssetSummary = {
   placeholders: number;
   releaseBlocking: number;
   tierSeparationIssues: string[];
+  phoneImageIssues: string[];
   byType: Record<string, number>;
   cardImageSummary: Record<CardImageType, { total: number; present: number; missing: number }>;
   missingAssets: AssetIssue[];
@@ -102,7 +104,8 @@ function getDefaultPriority(assetType: string): number {
     assetType === "threatCardArt" ||
     assetType === "contractCardArt" ||
     assetType === "anomalyCardArt" ||
-    assetType === "artifactCardArt"
+    assetType === "artifactCardArt" ||
+    assetType === "followerCardArt"
   ) {
     return 75;
   }
@@ -223,6 +226,7 @@ function toIssue(entry: AssetAuditEntry, reason: string): AssetIssue {
 const mode = getMode();
 const gearCatalog = loadGear();
 const tierSeparationIssues: string[] = [];
+const phoneImageIssues = validatePhoneImageManifest();
 
 for (const item of gearCatalog.values()) {
   if (item.normalShopCommon === true || item.startingEligible === true) {
@@ -363,6 +367,7 @@ const cardImageSummary = CARD_IMAGE_TYPES.reduce<Record<CardImageType, { total: 
     anomaly: { total: 0, present: 0, missing: 0 },
     artifact: { total: 0, present: 0, missing: 0 },
     equipment: { total: 0, present: 0, missing: 0 },
+    follower: { total: 0, present: 0, missing: 0 },
     scar: { total: 0, present: 0, missing: 0 },
     escalation: { total: 0, present: 0, missing: 0 }
   }
@@ -386,6 +391,7 @@ const report: MissingAssetSummary = {
   placeholders: placeholderEntries.length,
   releaseBlocking: releaseBlockingEntries.length,
   tierSeparationIssues,
+  phoneImageIssues,
   byType,
   cardImageSummary,
   missingAssets,
@@ -416,6 +422,6 @@ writeFileSync(
 
 console.log(JSON.stringify(report, null, 2));
 
-if (tierSeparationIssues.length > 0 || invalidEntries.length > 0 || (mode === "release" && releaseBlockingEntries.length > 0)) {
+if (tierSeparationIssues.length > 0 || phoneImageIssues.length > 0 || invalidEntries.length > 0 || (mode === "release" && releaseBlockingEntries.length > 0)) {
   process.exitCode = 1;
 }

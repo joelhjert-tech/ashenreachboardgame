@@ -49,7 +49,7 @@ export function PhoneInspectableCardArt({ cardType, cardId, title, lore = null, 
               <button type="button" className="phone-card-inspect__close" onClick={() => setOpen(false)}>Close</button>
             </header>
             <div className="phone-card-inspect__art-frame">
-              <CardArtImage cardType={cardType} cardId={cardId} alt={`${title} full card artwork`} />
+              <CardArtImage cardType={cardType} cardId={cardId} quality="full" alt={`${title} full card artwork`} />
             </div>
             {(lore || rules) ? (
               <div className="phone-card-inspect__copy">

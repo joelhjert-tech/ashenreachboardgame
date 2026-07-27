@@ -111,8 +111,11 @@ function buildCardImagePrompts(): PromptEntryMap {
   const equipment = [...loadGear().values()]
     .filter((item) => item.tier !== "artifact" && hasActiveEquipmentArt(item.id))
     .sort(compareById);
+  const artifactFollowerArt = [...loadFollowers().values()]
+    .filter((follower) => follower.artCardId?.startsWith("artifact-") && hasActiveFollowerArt("artifact", follower.artCardId))
+    .sort(compareById);
   const followerArt = [...loadFollowers().values()]
-    .filter((follower) => follower.artCardId && hasActiveFollowerArt(follower.artCardId))
+    .filter((follower) => follower.artCardId && !follower.artCardId.startsWith("artifact-") && hasActiveFollowerArt("follower", follower.artCardId))
     .sort(compareById);
   const scars = [...loadScarCards().values()].sort(compareById);
   const escalations = [...loadEscalationCards().values()].sort(compareById);
@@ -140,7 +143,7 @@ function buildCardImagePrompts(): PromptEntryMap {
           `${item.name} artifact-tier gear card art.`
         )
       ),
-      ...followerArt.map((follower) =>
+      ...artifactFollowerArt.map((follower) =>
         buildPromptEntry(
           "artifact",
           follower.artCardId!,
@@ -152,6 +155,9 @@ function buildCardImagePrompts(): PromptEntryMap {
     ],
     equipment: equipment.map((item) =>
       buildPromptEntry("equipment", item.id, item.name, buildEquipmentPrompt(item), `${item.name} equipment card art.`)
+    ),
+    follower: followerArt.map((follower) =>
+      buildPromptEntry("follower", follower.artCardId!, follower.name, buildFollowerArtPrompt(follower), `${follower.name} follower card art.`)
     ),
     scar: scars.map((card) =>
       buildPromptEntry("scar", card.id, card.title, buildScarPrompt(card), `${card.title} scar card art.`)
@@ -408,8 +414,8 @@ function hasActiveArtifactGearArt(itemId: string): boolean {
   return existsSync(publicPath);
 }
 
-function hasActiveFollowerArt(artCardId: string): boolean {
-  const outputPath = getCardArtOutputPath("artifact", artCardId);
+function hasActiveFollowerArt(cardType: "artifact" | "follower", artCardId: string): boolean {
+  const outputPath = getCardArtOutputPath(cardType, artCardId);
   const publicPath = join(process.cwd(), "public", outputPath.replace(/^\//, ""));
   return existsSync(publicPath);
 }
@@ -453,6 +459,7 @@ function renderRuntimeTypeScript(entries: CardImagePromptCatalogEntry[]): string
     `    anomaly: {},\n` +
     `    artifact: {},\n` +
     `    equipment: {},\n` +
+    `    follower: {},\n` +
     `    scar: {},\n` +
     `    escalation: {}\n` +
     `  }\n` +

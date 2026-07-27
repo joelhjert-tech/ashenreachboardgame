@@ -2,6 +2,7 @@ import { useState, type ReactElement } from "react";
 import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
+import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 import { getCharacterPortraitPath, getResultReadyGatePath } from "../shared/assetPaths.js";
 import type { ResultDelta } from "../shared/types.js";
 
@@ -77,7 +78,7 @@ export function PhoneResultReadyGate({
       data-outcome={outcomeTone}
       aria-label="Authoritative result ready"
     >
-      <img
+      <PhoneOptimizedImage
         className="phone-result-gate__environment"
         src={getResultReadyGatePath()}
         alt=""
@@ -97,7 +98,7 @@ export function PhoneResultReadyGate({
       <div className="phone-result-gate__verdict">
         <div className="phone-result-gate__portraits">
           <figure>
-            <img
+            <PhoneOptimizedImage
               className="phone-result-gate__portrait-art"
               src={getCharacterPortraitPath(operativeId)}
               alt={`${operativeName} operative portrait`}
@@ -109,9 +110,10 @@ export function PhoneResultReadyGate({
           </figure>
           <figure className="is-challenge">
             {challengeImagePath ? (
-              <img
+              <PhoneOptimizedImage
                 className="phone-result-gate__challenge-art"
                 src={challengeImagePath}
+                fullResolution
                 alt={`${challengeTitle} location artwork`}
                 decoding="async"
               />

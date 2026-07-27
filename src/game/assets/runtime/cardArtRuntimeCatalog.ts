@@ -1138,6 +1138,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/equipment/voidsalt-poultice.png"
   },
   {
+    "cardId": "grave-scribe",
+    "cardType": "follower",
+    "outputPath": "/assets/cards/followers/grave-scribe.png"
+  },
+  {
     "cardId": "scar-ash-hunger",
     "cardType": "scar",
     "outputPath": "/assets/cards/scars/scar-ash-hunger.png"
@@ -1350,6 +1355,7 @@ const cardArtPathByType = cardArtRuntimeCatalog.reduce<Record<CardImageType, Rec
     anomaly: {},
     artifact: {},
     equipment: {},
+    follower: {},
     scar: {},
     escalation: {}
   }

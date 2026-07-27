@@ -219,6 +219,11 @@ export const activeResolutionSchema = z.object({
     .optional()
 });
 
+export const startingBonusOptionRefSchema = z.object({
+  kind: z.enum(["gear", "follower"]),
+  id: z.string().min(1)
+});
+
 export const seatSchema = z.object({
   seatId: z.string().min(1),
   characterId: z.string().min(1),
@@ -228,6 +233,9 @@ export const seatSchema = z.object({
   startingContractOptions: z.array(z.string().min(1)).default([]),
   selectedStartingContractId: z.string().min(1).nullable().default(null),
   missionSelectedAt: z.string().min(1).nullable().optional(),
+  startingBonusOfferId: z.string().min(1).nullable().optional(),
+  startingBonusOfferOptions: z.array(startingBonusOptionRefSchema).max(2).optional(),
+  startingBonusSelections: z.array(startingBonusOptionRefSchema).max(2).optional(),
   connected: z.boolean(),
   ready: z.boolean(),
   kicked: z.boolean(),
@@ -749,6 +757,7 @@ export type EquipmentSuppression = z.infer<typeof equipmentSuppressionSchema>;
 export type NormalMovementRollDetail = z.infer<typeof normalMovementRollDetailSchema>;
 export type ResolutionStage = z.infer<typeof resolutionStageSchema>;
 export type ActiveResolution = z.infer<typeof activeResolutionSchema>;
+export type StartingBonusOptionRef = z.infer<typeof startingBonusOptionRefSchema>;
 export type Seat = z.infer<typeof seatSchema>;
 export type NoteResource = z.infer<typeof noteResourceSchema>;
 export type PlayerPrivateState = z.infer<typeof playerPrivateStateSchema>;

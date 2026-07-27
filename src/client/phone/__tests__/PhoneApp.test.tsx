@@ -392,7 +392,7 @@ describe("PhoneApp", () => {
     fireEvent.click(screen.getByRole("button", { name: /join game/i }));
 
     expect(await screen.findByRole("heading", { name: /choose piece/i })).toBeInTheDocument();
-    expect(screen.getByText(/step 1 of 3/i)).toBeInTheDocument();
+    expect(screen.getByText(/step 1 of 4/i)).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
     const setupScroll = screen.getByRole("main", { name: /choose piece/i });
     setupScroll.scrollTop = 180;
@@ -418,7 +418,7 @@ describe("PhoneApp", () => {
     }
     expect(screen.getAllByRole("heading", { name: /choose operative/i })).toHaveLength(1);
     expect(screen.queryByRole("heading", { name: /choose character/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/step 2 of 3/i)).toBeInTheDocument();
+    expect(screen.getByText(/step 2 of 4/i)).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /recommended/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /all operatives/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /advanced/i })).toBeInTheDocument();
@@ -718,7 +718,7 @@ describe("PhoneApp", () => {
 
     const view = render(<PhoneApp />);
 
-    expect(await screen.findByText(/mission · step 3 of 3/i)).toBeInTheDocument();
+    expect(await screen.findByText(/mission · step 3 of 4/i)).toBeInTheDocument();
     expect(screen.getByText(/^deepdale$/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /join game/i })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: /select mission/i }));
@@ -1073,7 +1073,7 @@ describe("PhoneApp", () => {
     });
     expect(screen.queryByRole("button", { name: /join game/i })).not.toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: /choose piece/i })).toBeInTheDocument();
-    expect(screen.getByText(/step 1 of 3/i)).toBeInTheDocument();
+    expect(screen.getByText(/step 1 of 4/i)).toBeInTheDocument();
   });
 
   it("does not reuse a stored seat when a direct link asks for a different seat", async () => {

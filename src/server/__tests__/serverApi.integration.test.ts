@@ -145,6 +145,12 @@ function firstStartingContractId(harness: StartedAshenReachServer, seatId: strin
 function selectFirstStartingContract(harness: StartedAshenReachServer, seatId: string): string {
   const contractId = firstStartingContractId(harness, seatId);
   harness.roomServer.selectStartingContract(seatId, contractId);
+  for (let pick = 0; pick < 2; pick += 1) {
+    const seat = harness.roomServer.getState().seats.find((entry) => entry.seatId === seatId);
+    const option = seat?.startingBonusOfferOptions?.[0];
+    if (!seat?.startingBonusOfferId || !option) throw new Error(`Missing starting bonus offer for ${seatId}`);
+    harness.roomServer.selectStartingBonus(seatId, seat.startingBonusOfferId, option.kind, option.id);
+  }
   return contractId;
 }
 
@@ -172,6 +178,13 @@ async function selectFirstStartingMissionViaApi(
     seatId,
     selectedStartingContractId: contractId
   });
+
+  for (let pick = 0; pick < 2; pick += 1) {
+    const seat = harness.roomServer.getState().seats.find((entry) => entry.seatId === seatId);
+    const option = seat?.startingBonusOfferOptions?.[0];
+    if (!seat?.startingBonusOfferId || !option) throw new Error(`Missing starting bonus offer for ${seatId}`);
+    harness.roomServer.selectStartingBonus(seatId, seat.startingBonusOfferId, option.kind, option.id);
+  }
 
   return contractId;
 }

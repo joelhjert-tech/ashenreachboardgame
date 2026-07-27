@@ -4,6 +4,7 @@ import { describeContractObjective as describeObjective, formatContractProgress 
 import { getEquippedGearItem } from "../../game/engine/gear.js";
 import { getCharacterPortraitPath, getObjectiveCategoryIconPath, type ObjectiveCategoryIcon } from "../shared/assetPaths.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
+import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import {
   buildCompletedContractPresentations,
@@ -27,7 +28,8 @@ import type {
   PhonePatchPayload,
   PhoneSelfState,
   PrivateRivalryPayload,
-  ResultDelta
+  ResultDelta,
+  StartingBonusOption
 } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
@@ -80,7 +82,7 @@ function PhoneScenarioArt({ path, title }: { path?: string | null; title: string
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [path]);
   if (!path || failed) return null;
-  return <img className="phone-scenario-summary-art" src={path} alt={`${title} scenario artwork`} onError={() => setFailed(true)} />;
+  return <PhoneOptimizedImage className="phone-scenario-summary-art" src={path} alt={`${title} scenario artwork`} onError={() => setFailed(true)} />;
 }
 
 function isTurnActionTab(tab: PortraitTab): tab is TurnActionTab {
@@ -408,7 +410,7 @@ function ObjectiveDisclosure({
         aria-controls={contentId}
         onClick={() => setOpen((current) => !current)}
       >
-        <img
+        <PhoneOptimizedImage
           className="phone-objective-group-icon"
           src={getObjectiveCategoryIconPath(icon)}
           alt=""
@@ -521,6 +523,59 @@ function ContractMissionCard({
           <dd>{describeContractReward(contract)}</dd>
         </div>
       </dl>
+    </article>
+  );
+}
+
+function StartingBonusCard({
+  option,
+  pending,
+  disabled,
+  onSelect
+}: {
+  option: StartingBonusOption;
+  pending: boolean;
+  disabled: boolean;
+  onSelect: () => void;
+}): ReactElement {
+  const isGear = option.kind === "gear";
+  const id = isGear ? option.item.id : option.follower.id;
+  const name = isGear ? option.item.name : option.follower.name;
+  const typeLabel = isGear
+    ? `${gearSlotLabelById[option.item.slot]} Equipment`
+    : `${option.follower.role} Follower`;
+  const summary = isGear
+    ? option.item.activeText ?? `${statLabelById[option.item.statBonus.stat]} +${option.item.statBonus.amount}`
+    : option.follower.text;
+  const artCardId = isGear ? option.item.artCardId ?? option.item.id : option.follower.artCardId;
+  const cardType = !isGear
+    ? option.follower.artCardId?.startsWith("artifact-") ? "artifact" as const : "follower" as const
+    : "equipment" as const;
+
+  return (
+    <article className="phone-starting-bonus-card">
+      <div className="phone-starting-bonus-card__art">
+        <CardArtImage
+          cardType={cardType}
+          cardId={artCardId}
+          alt={`${name} artwork`}
+          decoding="async"
+        />
+      </div>
+      <div className="phone-starting-bonus-card__copy">
+        <span>{typeLabel}</span>
+        <h2>{name}</h2>
+        <p>{summary}</p>
+        <button
+          type="button"
+          className="phone-button phone-button-primary phone-starting-bonus-card__select"
+          disabled={disabled}
+          onClick={onSelect}
+        >
+          {pending ? "Claiming..." : `Choose ${isGear ? "Equipment" : "Follower"}`}
+        </button>
+      </div>
+      <span className="phone-starting-bonus-card__id" aria-hidden="true">{id.slice(0, 2).toUpperCase()}</span>
     </article>
   );
 }
@@ -912,9 +967,14 @@ export function PortraitControllerView({
   const [expandedStat, setExpandedStat] = useState<Stat | null>(null);
   const [choosingStartingMission, setChoosingStartingMission] = useState(false);
   const [pendingStartingContract, setPendingStartingContract] = useState<{ id: string; sequence: number } | null>(null);
+  const [pendingStartingBonus, setPendingStartingBonus] = useState<{
+    offerId: string;
+    optionKey: string;
+    sequence: number;
+  } | null>(null);
   const [pendingActiveContract, setPendingActiveContract] = useState<{ id: string; sequence: number } | null>(null);
   const [pendingSetupSubmission, setPendingSetupSubmission] = useState<{
-    kind: "starting-contract" | "replacement-contract" | "ready";
+    kind: "starting-contract" | "starting-bonus" | "replacement-contract" | "ready";
     sequence: number;
   } | null>(null);
   const [setupSubmissionRecovery, setSetupSubmissionRecovery] = useState<string | null>(null);
@@ -1233,6 +1293,18 @@ export function PortraitControllerView({
   }, [patch?.selectedStartingContract?.id, patchSequence, pendingStartingContract]);
 
   useEffect(() => {
+    if (!pendingStartingBonus) return;
+    if (
+      patch?.startingBonusSelection?.offerId !== pendingStartingBonus.offerId ||
+      (typeof patchSequence === "number" && patchSequence > pendingStartingBonus.sequence)
+    ) {
+      setPendingStartingBonus(null);
+      setPendingSetupSubmission(null);
+      setSetupSubmissionRecovery(null);
+    }
+  }, [patch?.startingBonusSelection?.offerId, patchSequence, pendingStartingBonus]);
+
+  useEffect(() => {
     if (!pendingSetupSubmission || awaitingSetupResynchronization) return;
     const timeout = window.setTimeout(() => {
       setSetupSubmissionRecovery("Restoring latest state. The selection will not be sent again automatically.");
@@ -1256,6 +1328,7 @@ export function PortraitControllerView({
     }
     if (!setupDisconnectObserved) return;
     setPendingStartingContract(null);
+    setPendingStartingBonus(null);
     setPendingActiveContract(null);
     setPendingSetupSubmission(null);
     setAwaitingSetupResynchronization(false);
@@ -1288,6 +1361,8 @@ export function PortraitControllerView({
 
   const setupFocusSelector = patch?.setup?.stage === "mission-selection"
     ? ".phone-starting-mission-select:not([disabled])"
+    : patch?.setup?.stage === "provision-selection"
+      ? ".phone-starting-bonus-card__select:not([disabled])"
     : patch?.setup?.stage === "ready-check"
       ? '[data-testid="phone-setup-ready-action"]:not([disabled])'
       : patch?.setup?.stage === "start-available"
@@ -1380,9 +1455,12 @@ export function PortraitControllerView({
     const isReady = ownSeat?.ready ?? false;
     const startingContractOptions = patch?.startingContractOptions ?? [];
     const selectedStartingContract = patch?.selectedStartingContract ?? null;
+    const startingBonusSelection = patch?.startingBonusSelection ?? null;
     const canReady = Boolean(
       patch?.canReady
       && selectedStartingContract
+      && !startingBonusSelection
+      && (patch?.startingBonusPickCount === undefined || patch.startingBonusPickCount >= 2)
       && onIntent
       && !isReady
       && !choosingStartingMission
@@ -1406,21 +1484,72 @@ export function PortraitControllerView({
     return (
       <section className="phone-portrait-controller">
         <div className="phone-portrait-panel phone-portrait-lobby-panel">
-          <main ref={lobbyScrollRef} className="phone-portrait-scroll phone-lobby-waiting-scroll phone-mission-setup-scroll" aria-label="Choose mission">
+          <main ref={lobbyScrollRef} className="phone-portrait-scroll phone-lobby-waiting-scroll phone-mission-setup-scroll" aria-label={startingBonusSelection ? "Choose starting provisions" : "Choose mission"}>
               <section ref={setupStageRef} className="phone-lobby-ready-panel phone-character-waiting-panel phone-mission-setup-surface">
               <header className="phone-mission-setup-header">
                 <div>
                   <span>{displayName}</span>
                   <strong>{self.character.name}</strong>
                 </div>
-                <small>Mission · Step 3 of 3</small>
+                <small>
+                  {startingBonusSelection
+                    ? `Provision · Pick ${startingBonusSelection.pickNumber} of ${startingBonusSelection.totalPicks}`
+                    : "Mission · Step 3 of 4"}
+                </small>
               </header>
 
-              <section
-                ref={startingMissionSectionRef}
-                className="phone-character-waiting-section phone-starting-mission-section"
-                aria-label="Starting Mission"
-              >
+              {startingBonusSelection ? (
+                <section
+                  className="phone-character-waiting-section phone-starting-bonus-section"
+                  aria-labelledby="phone-starting-bonus-title"
+                >
+                  <div className="phone-starting-bonus-heading">
+                    <span>Mission secured · Final setup step</span>
+                    <h1 id="phone-starting-bonus-title">Choose one provision</h1>
+                    <p>The server prepared two random options. Choose one now; a second pair follows.</p>
+                  </div>
+                  <div className="phone-starting-bonus-options">
+                    {startingBonusSelection.options.map((option) => {
+                      const optionId = option.kind === "gear" ? option.item.id : option.follower.id;
+                      const optionKey = `${option.kind}:${optionId}`;
+                      return (
+                        <StartingBonusCard
+                          key={optionKey}
+                          option={option}
+                          pending={pendingStartingBonus?.optionKey === optionKey}
+                          disabled={!onIntent || Boolean(pendingStartingBonus)}
+                          onSelect={() => {
+                            setPendingStartingBonus({
+                              offerId: startingBonusSelection.offerId,
+                              optionKey,
+                              sequence: patchSequence ?? 0
+                            });
+                            setPendingSetupSubmission({ kind: "starting-bonus", sequence: patchSequence ?? 0 });
+                            setSetupSubmissionRecovery(null);
+                            const sent = sendControllerIntent({
+                              type: "SELECT_STARTING_BONUS",
+                              seatId: self.seatId,
+                              offerId: startingBonusSelection.offerId,
+                              optionKind: option.kind,
+                              optionId
+                            });
+                            if (!sent) {
+                              setPendingStartingBonus(null);
+                              setPendingSetupSubmission(null);
+                              setSetupSubmissionRecovery("Restoring latest state. Review the provision before trying again.");
+                            }
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </section>
+              ) : (
+                <section
+                  ref={startingMissionSectionRef}
+                  className="phone-character-waiting-section phone-starting-mission-section"
+                  aria-label="Starting Mission"
+                >
                 <h1 className="phone-mission-setup-title">
                   {selectedStartingContract && !choosingStartingMission ? "Selected Starting Mission" : "Choose Starting Mission"}
                 </h1>
@@ -1457,17 +1586,20 @@ export function PortraitControllerView({
                 ) : (
                   <p className="phone-muted-copy">Waiting for starting mission options from the room.</p>
                 )}
-              </section>
+                </section>
+              )}
 
               <p className="phone-lobby-ready-state">
                 {isReady
                   ? isLateJoinPending ? "You have joined the turn order." : setup?.waitingInstruction ?? "You are ready. Watch the TV."
+                  : startingBonusSelection
+                    ? `Choose provision ${startingBonusSelection.pickNumber} of ${startingBonusSelection.totalPicks}.`
                   : selectedStartingContract
                     ? "Mission locked. Press Ready when set."
                     : setup?.actorSeatId === self.seatId ? setup.activeInstruction : readyDisabledReason}
               </p>
 
-              <div className={`phone-character-waiting-actions${selectedStartingContract ? "" : " is-mission-unselected"}`}>
+              {!startingBonusSelection ? <div className={`phone-character-waiting-actions${selectedStartingContract ? "" : " is-mission-unselected"}`}>
                 <button
                   type="button"
                   className="phone-button phone-button-primary phone-lobby-ready-button"
@@ -1515,7 +1647,7 @@ export function PortraitControllerView({
                     {startSubmitting ? "Starting..." : "Start Game"}
                   </button>
                 ) : null}
-              </div>
+              </div> : null}
               {setupSubmissionRecovery ? <p className="phone-submission-recovery" role="status">{setupSubmissionRecovery}</p> : null}
               {patch?.selfIsSetupHost ? (
                 <section className="phone-setup-blockers" aria-live="polite">
@@ -1533,8 +1665,10 @@ export function PortraitControllerView({
                 <span className="phone-character-waiting-status">
                   {isReady
                     ? "Ready for host"
+                    : startingBonusSelection
+                      ? `Mission reserved. Choose one option from provision pair ${startingBonusSelection.pickNumber} of ${startingBonusSelection.totalPicks}.`
                     : selectedStartingContract
-                      ? "Character and mission reserved."
+                      ? "Character, mission, and starting provisions reserved."
                       : "Character reserved. Choose a starting mission."}
                 </span>
               ) : (
@@ -1745,7 +1879,7 @@ export function PortraitControllerView({
               {renderRequiredAction(undefined, true)}
               <section className="phone-portrait-hero-card">
                 <div className="phone-portrait-art">
-                  <img src={getCharacterPortraitPath(self.character.id)} alt={self.character.name} />
+                  <PhoneOptimizedImage src={getCharacterPortraitPath(self.character.id)} alt={self.character.name} />
                 </div>
                 <div className="phone-portrait-hero-copy">
                   <p className="phone-panel-kicker">{activeSeatId === self.seatId ? "Active turn" : "Standby"}</p>

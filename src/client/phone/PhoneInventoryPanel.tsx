@@ -7,6 +7,7 @@ import {
 } from "../../game/rules/statUpgrades.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
+import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 import { getInventoryCategoryIconPath, type InventoryCategoryIcon } from "../shared/assetPaths.js";
 import { statOrder } from "../shared/statLabels.js";
 import type { AfflictionSummary, ClientIntent, PhonePatchPayload, ScarSummary, Stat, TrophyPileEntry } from "../shared/types.js";
@@ -63,7 +64,7 @@ function InventoryDisclosure({
         aria-controls={contentId}
         onClick={() => setOpen((current) => !current)}
       >
-        <img
+        <PhoneOptimizedImage
           className="phone-inventory-group-icon"
           src={getInventoryCategoryIconPath(icon)}
           alt=""

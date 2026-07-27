@@ -1975,6 +1975,12 @@ body {
   font-size: 2rem;
 }
 
+.phone-host-scenario-card-art > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .phone-host-scenario-card-copy {
   min-width: 0;
   display: grid;
@@ -5399,7 +5405,7 @@ select {
   background:
     linear-gradient(180deg, rgba(3, 5, 8, 0.42), rgba(3, 5, 8, 0.88)),
     radial-gradient(circle at 52% 26%, rgba(190, 78, 42, 0.18), transparent 38%),
-    url("/assets/riftfall/ui/signal-theatre/world-stage.png") center / cover no-repeat;
+    url("/assets/riftfall/ui/signal-theatre/world-stage.phone.webp") center / cover no-repeat;
   place-content: center;
   justify-items: center;
 }
@@ -5546,7 +5552,7 @@ select {
   background:
     linear-gradient(180deg, rgba(3, 5, 8, 0.56), rgba(3, 5, 8, 0.93)),
     radial-gradient(circle at 50% 22%, rgba(190, 78, 42, 0.14), transparent 40%),
-    url("/assets/riftfall/ui/signal-theatre/world-stage.png") center / cover no-repeat;
+    url("/assets/riftfall/ui/signal-theatre/world-stage.phone.webp") center / cover no-repeat;
 }
 
 .phone-portrait-controller:has(.phone-lobby-panel) .phone-lobby-panel {
@@ -6536,6 +6542,153 @@ select {
 
 .phone-starting-mission-section {
   gap: 0.65rem;
+}
+
+.phone-starting-bonus-section {
+  gap: 0.7rem;
+}
+
+.phone-starting-bonus-heading {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.phone-starting-bonus-heading span {
+  color: #a7d8c5;
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phone-starting-bonus-heading h1,
+.phone-starting-bonus-heading p {
+  margin: 0;
+}
+
+.phone-starting-bonus-heading h1 {
+  color: #f2ead9;
+  font: 800 clamp(1.05rem, 4.8vw, 1.35rem)/1.08 var(--font-display);
+}
+
+.phone-starting-bonus-heading p {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.phone-starting-bonus-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.phone-starting-bonus-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(164, 248, 219, 0.3);
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(27, 35, 39, 0.92), rgba(8, 12, 17, 0.98)),
+    rgba(8, 12, 17, 0.94);
+  box-shadow: inset 0 0 0 1px rgba(242, 234, 217, 0.04);
+}
+
+.phone-starting-bonus-card__art {
+  height: clamp(8rem, 24dvh, 11rem);
+  overflow: hidden;
+  border-bottom: 1px solid rgba(164, 248, 219, 0.2);
+  background: rgba(3, 6, 9, 0.9);
+}
+
+.phone-starting-bonus-card__art .artwork-frame {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.phone-starting-bonus-card__copy {
+  display: grid;
+  grid-template-rows: auto auto minmax(3.4rem, 1fr) auto;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.55rem;
+}
+
+.phone-starting-bonus-card__copy > span {
+  color: #a7d8c5;
+  font-size: 0.58rem;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.phone-starting-bonus-card__copy h2,
+.phone-starting-bonus-card__copy p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.phone-starting-bonus-card__copy h2 {
+  color: #f1e6cf;
+  font-size: 0.92rem;
+  line-height: 1.08;
+}
+
+.phone-starting-bonus-card__copy p {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.phone-starting-bonus-card__select {
+  width: 100%;
+  min-height: 44px;
+  padding-inline: 0.4rem;
+  white-space: normal;
+}
+
+.phone-starting-bonus-card__id {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  display: grid;
+  width: 1.6rem;
+  height: 1.6rem;
+  place-items: center;
+  border: 1px solid rgba(242, 234, 217, 0.34);
+  border-radius: 50%;
+  background: rgba(3, 6, 9, 0.78);
+  color: rgba(242, 234, 217, 0.76);
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 350px) {
+  .phone-starting-bonus-options {
+    grid-template-columns: 1fr;
+  }
+
+  .phone-starting-bonus-card {
+    grid-template-columns: 7rem minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+
+  .phone-starting-bonus-card__art {
+    height: 100%;
+    min-height: 9rem;
+    border-right: 1px solid rgba(164, 248, 219, 0.2);
+    border-bottom: 0;
+  }
 }
 
 .phone-starting-mission-list {

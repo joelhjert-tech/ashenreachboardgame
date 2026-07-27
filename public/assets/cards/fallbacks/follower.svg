@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="1024" viewBox="0 0 768 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Follower artwork unavailable</title>
+  <desc id="desc">An original Ashen Reach companion sigil.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#111716"/>
+      <stop offset="0.55" stop-color="#25342e"/>
+      <stop offset="1" stop-color="#080b0b"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#d3b879"/>
+      <stop offset="0.48" stop-color="#6f5930"/>
+      <stop offset="1" stop-color="#211b12"/>
+    </linearGradient>
+  </defs>
+  <rect width="768" height="1024" fill="url(#bg)"/>
+  <path d="M72 72h624v880H72z" fill="none" stroke="#927846" stroke-width="12"/>
+  <path d="M112 112h544v800H112z" fill="none" stroke="#3e4b42" stroke-width="4"/>
+  <circle cx="384" cy="405" r="176" fill="#0a0e0d" stroke="url(#metal)" stroke-width="22"/>
+  <path d="M384 225l54 96 109 20-75 82 15 111-103-47-103 47 15-111-75-82 109-20z" fill="#1b2723" stroke="#c4a664" stroke-width="14"/>
+  <circle cx="384" cy="405" r="54" fill="#80bda0" opacity=".75"/>
+  <path d="M238 648c42-70 93-105 146-105s104 35 146 105l62 144H176z" fill="#141b19" stroke="url(#metal)" stroke-width="18"/>
+  <path d="M285 682h198M312 735h144" stroke="#7aa58e" stroke-width="12" stroke-linecap="round"/>
+  <text x="384" y="876" fill="#d8c59b" font-family="serif" font-size="42" text-anchor="middle" letter-spacing="8">FOLLOWER</text>
+</svg>

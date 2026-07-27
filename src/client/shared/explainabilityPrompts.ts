@@ -325,15 +325,19 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
     const ready = payload.seats.filter((seat) => seat.displayName && seat.ready).length;
     const waitingForMission = payload.seats.find((seat) => seat.displayName && !seat.startingMissionSelected);
     const missionReady = payload.seats.filter((seat) => seat.displayName && seat.startingMissionSelected).length;
+    const waitingForProvisions = payload.seats.find(
+      (seat) => seat.displayName && seat.startingMissionSelected && seat.startingBonusComplete === false
+    );
     const readyText =
       waitingForMission
         ? `Waiting for ${waitingForMission.displayName ?? waitingForMission.seatId} to choose a starting mission.`
         : joined > 0 && missionReady < joined
           ? `Waiting for starting missions. Missions ${missionReady}/${Math.max(joined, 1)}.`
-          :
-      joined > 0 && ready >= joined
-        ? "All joined operatives are ready. Host may start when setup is correct."
-        : `Waiting for all players to ready on phone. Ready ${ready}/${Math.max(joined, 1)}.`;
+          : waitingForProvisions
+            ? `Waiting for ${waitingForProvisions.displayName ?? waitingForProvisions.seatId} to choose two starting provisions.`
+            : joined > 0 && ready >= joined
+              ? "All joined operatives are ready. Host may start when setup is correct."
+              : `Waiting for all players to ready on phone. Ready ${ready}/${Math.max(joined, 1)}.`;
 
     return {
       phaseLabel: joined > 0 ? "Ready check" : "Character selection",
@@ -341,12 +345,14 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
       requiredActorSeatId: null,
       requiredActorName: null,
       phaseReason: "The expedition has not started.",
-      availableActionSummary: "Players join, choose characters, choose starting missions, and ready from phones.",
+      availableActionSummary: "Players join, choose operatives, choose starting missions and provisions, then ready from phones.",
       lockedReason: waitingForMission
         ? "Start is locked until joined players choose starting missions."
-        : joined > 0 && ready < joined
-          ? "Start is locked until joined players are ready."
-          : null,
+        : waitingForProvisions
+          ? "Start is locked until joined players choose two starting provisions."
+          : joined > 0 && ready < joined
+            ? "Start is locked until joined players are ready."
+            : null,
       lastOutcomeSummary: latestOutcome,
       watchText: "Phones control character selection.",
       tone: "waiting"

@@ -12,6 +12,7 @@ import type {
 import { getMissionRelevanceForSector } from "../shared/missionRelevance.js";
 import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
 import { getSignalTheatreAssetPaths, getSignalTheatreStatSealPath } from "../shared/assetPaths.js";
+import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 import { useAuthoritativeResultCollapse } from "../shared/useAuthoritativeResultCollapse.js";
 import { getSignalTheatreEnvironment } from "../tv/signalTheatreEnvironmentManifest.js";
 import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
@@ -327,7 +328,7 @@ function MovementHeader({
         className="phone-move-instrument__seal"
         aria-label={planner?.active ? `Movement total ${finalMovement}` : "Movement total awaiting roll"}
       >
-        <img src={getSignalTheatreStatSealPath("command")} width={512} height={512} alt="" aria-hidden="true" />
+        <PhoneOptimizedImage src={getSignalTheatreStatSealPath("command")} width={512} height={512} alt="" aria-hidden="true" />
         <span>Total</span>
         <strong>{planner?.active ? finalMovement : "—"}</strong>
       </div>

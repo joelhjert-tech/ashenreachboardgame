@@ -269,7 +269,7 @@ describe("PhoneInventoryPanel", () => {
     openInventoryCategory(/followers.*records/i);
 
     const followerArt = screen.getByRole("img", { name: "Choir Defector" });
-    expect(followerArt).toHaveAttribute("src", "/assets/cards/fallbacks/artifact.svg");
+    expect(followerArt).toHaveAttribute("src", "/assets/cards/fallbacks/follower.svg");
     expect(screen.getByRole("button", { name: /inspect choir defector/i })).toBeInTheDocument();
   });
 
@@ -367,7 +367,7 @@ describe("PhoneInventoryPanel", () => {
     expect(relicGroup).not.toHaveTextContent(/^equipment$/i);
     expect(relicCard.querySelector(".phone-wrap-card__image")).toHaveAttribute(
       "src",
-      "/assets/cards/artifacts/artifact-oathchain-lens.png"
+      "/assets/cards/artifacts/artifact-oathchain-lens.phone.webp"
     );
     expect(relicCard).toHaveTextContent(/2 \/ 2 charges/i);
   });
@@ -580,13 +580,13 @@ describe("PhoneInventoryPanel", () => {
     expect(statusEffects).toHaveTextContent(/grit -2 tests, minimum 1/i);
 
     const statsRegion = screen.getByLabelText(/character stats/i);
-    const gritStat = within(statsRegion).getByRole("button", { name: /grit stat 2/i });
+    const gritStat = within(statsRegion).getByRole("button", { name: /grit current stat 2/i });
 
     expect(gritStat).toHaveTextContent(/status -2/i);
 
     fireEvent.click(gritStat);
 
-    expect(gritStat).toHaveTextContent(/temporary \/ status/i);
+    expect(gritStat).toHaveTextContent(/conditional \/ status/i);
     expect(gritStat).toHaveTextContent(/hollow belly test -2/i);
   });
 
@@ -614,7 +614,7 @@ describe("PhoneInventoryPanel", () => {
 
     const followerCard = screen.getByLabelText(/^choir defector:/i);
     expect(followerCard).toHaveClass("phone-wrap-card", "phone-wrap-card--inventory");
-    expect(followerCard.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/fallbacks/artifact.svg");
+    expect(followerCard.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/fallbacks/follower.svg");
     expect(within(followerCard).getByRole("button", { name: /inspect choir defector/i })).toBeInTheDocument();
     expect(followerCard.querySelector(".phone-wrap-card__actions")).toContainElement(screen.getByRole("button", { name: /use choir defector/i }));
   });
@@ -674,12 +674,12 @@ describe("PhoneInventoryPanel", () => {
     render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
 
     const iconPaths = [
-      "/assets/riftfall/ui/inventory-categories/artifacts.png",
-      "/assets/riftfall/ui/inventory-categories/equipment.png",
-      "/assets/riftfall/ui/inventory-categories/followers.png",
-      "/assets/riftfall/ui/objective-categories/completed.webp",
-      "/assets/riftfall/ui/inventory-categories/status.png",
-      "/assets/riftfall/ui/inventory-categories/progression.png"
+      "/assets/riftfall/ui/inventory-categories/artifacts.phone.webp",
+      "/assets/riftfall/ui/inventory-categories/equipment.phone.webp",
+      "/assets/riftfall/ui/inventory-categories/followers.phone.webp",
+      "/assets/riftfall/ui/objective-categories/completed.phone.webp",
+      "/assets/riftfall/ui/inventory-categories/status.phone.webp",
+      "/assets/riftfall/ui/inventory-categories/progression.phone.webp"
     ];
     const icons = Array.from(document.querySelectorAll<HTMLImageElement>(".phone-inventory-group-icon"));
 
@@ -1005,7 +1005,7 @@ describe("PhoneInventoryPanel", () => {
     openInventoryCategory(/followers.*records/i);
     expect(screen.getByText("Fandiablos")).toBeInTheDocument();
     expect(screen.getByText(/before threat draw/i)).toBeInTheDocument();
-    expect(document.querySelector('img[src="/assets/cards/artifacts/artifact-fandiablos.png"]')).toBeInTheDocument();
+    expect(document.querySelector('img[src="/assets/cards/artifacts/artifact-fandiablos.phone.webp"]')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /use.*1 wound/i }));
 
@@ -1341,7 +1341,7 @@ describe("PhoneInventoryPanel", () => {
     fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
 
     const statsRegion = screen.getByLabelText(/character stats/i);
-    const commandStat = within(statsRegion).getByRole("button", { name: /command stat 5/i });
+    const commandStat = within(statsRegion).getByRole("button", { name: /command current stat 5/i });
     const commandHeading = commandStat.querySelector(".phone-stat-card-heading");
 
     expect(commandStat.querySelector(".phone-stat-card-label")).toHaveTextContent(/^COMMAND$/);
@@ -1366,18 +1366,18 @@ describe("PhoneInventoryPanel", () => {
     expect(within(commandStat).getByText("Equipped")).toBeInTheDocument();
     expect(within(commandStat).getByText(/oath-chain ledger \+1/i)).toBeInTheDocument();
     expect(within(commandStat).getByText("Companion")).toBeInTheDocument();
-    expect(within(commandStat).getByText("Temporary / Status")).toBeInTheDocument();
-    expect(within(commandStat).getByText("Final")).toBeInTheDocument();
+    expect(within(commandStat).getByText("Conditional / Status")).toBeInTheDocument();
+    expect(within(commandStat).getByText("Current equipped value")).toBeInTheDocument();
     expect(within(commandStat).getAllByText("+0").length).toBe(2);
     expect(within(commandStat).getAllByText("5").length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText(/character vitals/i)[0]).toHaveTextContent(/salvage/i);
     expect(screen.getByRole("region", { name: /equipped gear bonuses/i })).toHaveTextContent(/coffin rig/i);
     expect(screen.getByRole("region", { name: /equipped gear bonuses/i })).toHaveTextContent(/\+1 forge · always active/i);
 
-    fireEvent.click(within(statsRegion).getByRole("button", { name: /grit stat 2/i }));
+    fireEvent.click(within(statsRegion).getByRole("button", { name: /grit current stat 2/i }));
 
     expect(commandStat).toHaveAttribute("aria-expanded", "false");
-    expect(within(statsRegion).getByRole("button", { name: /grit stat 2, details expanded/i })).toHaveAttribute("aria-expanded", "true");
+    expect(within(statsRegion).getByRole("button", { name: /grit current stat 2, details expanded/i })).toHaveAttribute("aria-expanded", "true");
     expect(document.querySelector(".phone-portrait-vitals")).toHaveTextContent(/scars 0/i);
     expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/heat/i);
     expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/trophies/i);
@@ -2005,10 +2005,10 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("button", { name: /rivalry/i })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("button", { name: /completed/i })).toHaveAttribute("aria-expanded", "false");
     expect(document.querySelectorAll(".phone-objective-group-icon")).toHaveLength(4);
-    expect(document.querySelector('img[src="/assets/riftfall/ui/objective-categories/shared-mission.webp"]')).toBeInTheDocument();
-    expect(document.querySelector('img[src="/assets/riftfall/ui/objective-categories/contract.webp"]')).toBeInTheDocument();
-    expect(document.querySelector('img[src="/assets/riftfall/ui/objective-categories/rivalry.webp"]')).toBeInTheDocument();
-    expect(document.querySelector('img[src="/assets/riftfall/ui/objective-categories/completed.webp"]')).toBeInTheDocument();
+    expect(document.querySelector('img[src="/assets/riftfall/ui/objective-categories/shared-mission.phone.webp"]')).toBeInTheDocument();
+    expect(document.querySelector('img[src="/assets/riftfall/ui/objective-categories/contract.phone.webp"]')).toBeInTheDocument();
+    expect(document.querySelector('img[src="/assets/riftfall/ui/objective-categories/rivalry.phone.webp"]')).toBeInTheDocument();
+    expect(document.querySelector('img[src="/assets/riftfall/ui/objective-categories/completed.phone.webp"]')).toBeInTheDocument();
 
     const agenda = screen.getByRole("region", { name: /private rivalry agenda/i });
 
@@ -2732,7 +2732,7 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    expect(screen.getByText(/mission · step 3 of 3/i)).toBeInTheDocument();
+    expect(screen.getByText(/mission · step 3 of 4/i)).toBeInTheDocument();
     expect(screen.getByText(/^sable vey$/i)).toBeInTheDocument();
     expect(screen.getAllByText(/choose starting mission/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/quietus ledger/i)).toBeInTheDocument();
@@ -2850,6 +2850,143 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("button", { name: `Inspect ${secondMission.name}` })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /^select mission$/i })).toHaveLength(1);
     expect(screen.getByRole("button", { name: /^selecting/i })).toBeDisabled();
+  });
+
+  it("shows two private provision choices after mission selection and unlocks Ready after the second pick", () => {
+    const onIntent = vi.fn();
+    const mission = {
+      id: "choir-quietus",
+      name: "Quietus Ledger",
+      factionGiver: "Glass Choir",
+      text: "Silence one hunter on the listening road.",
+      objective: { type: "defeatCount" as const, target: 1 },
+      reward: { type: "gain_note" as const, text: "The Choir owes you a clean favor." }
+    };
+    const firstOffer = createPatch({
+      phase: "start",
+      status: "lobby",
+      seats: [{
+        seatId: "seat-1",
+        characterId: "void-marshal",
+        characterSelected: true,
+        displayName: "Lane",
+        connected: true,
+        ready: false,
+        kicked: false,
+        startingMissionSelected: true,
+        startingMissionTitle: mission.name,
+        startingBonusPickCount: 0,
+        startingBonusComplete: false
+      }],
+      selectedStartingContract: mission,
+      startingContractOptions: [],
+      startingBonusPickCount: 0,
+      startingBonusSelection: {
+        offerId: "starting-bonus:seat-1:1:8",
+        pickNumber: 1,
+        totalPicks: 2,
+        options: [
+          {
+            kind: "gear",
+            item: {
+              id: "signal-rig",
+              name: "Signal Rig",
+              slot: "utility",
+              statBonus: { stat: "signal", amount: 1 },
+              effectModel: "permanent"
+            }
+          },
+          {
+            kind: "follower",
+            follower: {
+              id: "ember-guide",
+              name: "Ember Guide",
+              role: "guide",
+              text: "Keeps the cinder route legible."
+            }
+          }
+        ]
+      },
+      setup: {
+        id: "setup:provision-selection:seat-1:8",
+        stage: "provision-selection",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Lane",
+        title: "Choose Starting Provisions",
+        activeInstruction: "Choose two starting provisions.",
+        publicInstruction: "Lane is choosing starting provisions.",
+        waitingInstruction: "Another operative is choosing starting provisions.",
+        allowedCommand: "select-provision",
+        inputEnabled: true,
+        startReason: "Starting provisions are incomplete.",
+        startBlockers: ["Lane must choose two starting provisions."],
+        canStart: false,
+        connectedCount: 1,
+        readyCount: 0,
+        seatCapacity: 1,
+        revision: 8
+      },
+      canReady: false,
+      readyDisabledReason: "Choose two starting bonuses before Ready"
+    });
+
+    const renderView = (patch: PhonePatchPayload, patchSequence: number) => (
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId={null}
+        activeContractCard={null}
+        patch={patch}
+        patchSequence={patchSequence}
+        characters={characters}
+        onIntent={onIntent}
+        onLeave={vi.fn()}
+        onLobbyBack={vi.fn()}
+      />
+    );
+    const view = render(renderView(firstOffer, 8));
+
+    expect(screen.getByText(/provision · pick 1 of 2/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /signal rig/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /ember guide/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /choose equipment/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "SELECT_STARTING_BONUS",
+      seatId: "seat-1",
+      offerId: "starting-bonus:seat-1:1:8",
+      optionKind: "gear",
+      optionId: "signal-rig"
+    });
+    expect(screen.getByRole("button", { name: /claiming/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /choose follower/i })).toBeDisabled();
+
+    const completed = createPatch({
+      ...firstOffer,
+      seats: firstOffer.seats.map((seat) => ({
+        ...seat,
+        startingBonusPickCount: 2,
+        startingBonusComplete: true
+      })),
+      startingBonusPickCount: 2,
+      startingBonusSelection: null,
+      canReady: true,
+      readyDisabledReason: null,
+      setup: {
+        ...firstOffer.setup!,
+        stage: "ready-check",
+        allowedCommand: "ready",
+        activeInstruction: "Press Ready.",
+        startBlockers: []
+      }
+    });
+    view.rerender(renderView(completed, 9));
+
+    expect(screen.getByRole("button", { name: /^ready$/i })).toBeEnabled();
+    expect(screen.queryByText(/signal rig/i)).not.toBeInTheDocument();
   });
 
   it("recovers a stalled setup mission selection without duplicating it", () => {

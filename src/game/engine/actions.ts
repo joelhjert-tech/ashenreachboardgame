@@ -1143,6 +1143,13 @@ export type ClientIntent =
       contractId: string;
     }
   | {
+      type: "SELECT_STARTING_BONUS";
+      seatId: string;
+      offerId: string;
+      optionKind: "gear" | "follower";
+      optionId: string;
+    }
+  | {
       type: "RECRUIT_REPLACEMENT";
       seatId: string;
       replacementCharacterId: string;

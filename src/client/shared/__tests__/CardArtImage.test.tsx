@@ -128,13 +128,15 @@ describe("CardArtImage", () => {
   it("renders the preferred card art path first", () => {
     render(<CardArtImage cardType="artifact" cardId="artifact-yard" alt="artifact art" />);
 
-    expect(screen.getByAltText("artifact art")).toHaveAttribute("src", "/assets/cards/artifacts/artifact-yard.png");
+    expect(screen.getByAltText("artifact art")).toHaveAttribute("src", "/assets/cards/artifacts/artifact-yard.phone.webp");
   });
 
   it("falls back to the type placeholder when the image errors", () => {
     render(<CardArtImage cardType="scar" cardId="scar-wound-1" alt="scar art" />);
 
     const image = screen.getByAltText("scar art");
+    fireEvent.error(image);
+    expect(image).toHaveAttribute("src", "/assets/cards/scars/scar-wound-1.png");
     fireEvent.error(image);
 
     expect(image).toHaveAttribute("src", "/assets/cards/fallbacks/scar.svg");
@@ -151,7 +153,7 @@ describe("CardArtImage", () => {
 
     expect(screen.getByAltText("ashlock cleaver art")).toHaveAttribute(
       "src",
-      "/assets/cards/equipment/ashlock-cleaver.png"
+      "/assets/cards/equipment/ashlock-cleaver.phone.webp"
     );
   });
 
@@ -160,7 +162,17 @@ describe("CardArtImage", () => {
 
     expect(screen.getByAltText("oathchain lens art")).toHaveAttribute(
       "src",
-      "/assets/cards/artifacts/artifact-oathchain-lens.png"
+      "/assets/cards/artifacts/artifact-oathchain-lens.phone.webp"
     );
+  });
+
+  it("uses dedicated Follower art and falls back through the Follower category", () => {
+    render(<CardArtImage cardType="follower" cardId="grave-scribe" alt="grave scribe art" />);
+    const image = screen.getByAltText("grave scribe art");
+    expect(image).toHaveAttribute("src", "/assets/cards/followers/grave-scribe.phone.webp");
+    fireEvent.error(image);
+    expect(image).toHaveAttribute("src", "/assets/cards/followers/grave-scribe.png");
+    fireEvent.error(image);
+    expect(image).toHaveAttribute("src", "/assets/cards/fallbacks/follower.svg");
   });
 });

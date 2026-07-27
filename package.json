@@ -35,6 +35,8 @@
     "qa:mid-game-join": "tsx scripts/capture-mid-game-join-qa.ts",
     "audit:assets": "tsx scripts/audit-assets.ts",
     "audit:assets:release": "tsx scripts/audit-assets.ts --release",
+    "audit:manual-images": "tsx scripts/audit-manual-images.ts",
+    "generate:phone-images": "tsx scripts/generate-phone-images.ts",
     "generate:card-images:gemini": "npm run export:image-prompts && tsx scripts/generate-card-images-gemini.ts",
     "generate:card-images:openai": "npm run export:image-prompts && tsx scripts/generate-card-images-openai.ts",
     "export:image-prompts": "tsx scripts/export-image-prompts.ts"
@@ -59,6 +61,7 @@
     "concurrently": "^10.0.3",
     "jsdom": "^29.1.1",
     "playwright": "^1.61.0",
+    "sharp": "^0.34.3",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "vite": "^7.3.5",

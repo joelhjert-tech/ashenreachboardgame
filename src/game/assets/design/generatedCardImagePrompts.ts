@@ -2940,6 +2940,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "usage": "Voidsalt Poultice equipment card art."
   },
   {
+    "assetId": "follower_art_grave-scribe",
+    "assetType": "followerCardArt",
+    "cardId": "grave-scribe",
+    "cardType": "follower",
+    "title": "Grave Scribe",
+    "fileName": "grave-scribe.png",
+    "outputPath": "/assets/cards/followers/grave-scribe.png",
+    "fallbackPath": "/assets/cards/fallbacks/follower.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single original Ashen Reach follower portrait, expedition companion rather than an operative or enemy, follower role scout, An original Ashen Reach mechanical grave scribe hovering over a compact iron writing desk, articulated brass arms recording route notes onto worn scrolls, pale signal glow, dark industrial reliquary atmosphere, no text or logos, Grave Scribe travels the Ashen Reach, practical travel gear or harness, strong readable silhouette, no readable text",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Grave Scribe follower card art."
+  },
+  {
     "assetId": "scar_art_scar-ash-hunger",
     "assetType": "scarCardArt",
     "cardId": "scar-ash-hunger",

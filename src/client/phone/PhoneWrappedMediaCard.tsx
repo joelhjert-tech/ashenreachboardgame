@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
+import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 
 export type PhoneWrappedMediaCardVariant = "inventory" | "shop" | "movement" | "action";
 
@@ -60,7 +61,7 @@ export function PhoneWrappedMediaCard({
       <div className="phone-wrap-card__media" aria-hidden={mediaInteractive ? undefined : "true"}>
         {media ?? (
           imageSrc ? (
-            <img className="phone-wrap-card__image" src={imageSrc} alt={imageAlt} />
+            <PhoneOptimizedImage className="phone-wrap-card__image" src={imageSrc} alt={imageAlt} />
           ) : (
             <div className="phone-wrap-card__fallback">{fallbackIcon ?? "AR"}</div>
           )

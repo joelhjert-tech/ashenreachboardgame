@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { MISSION_RELIC_EXCHANGE_COST, MAX_ACTIVE_MISSIONS } from "../../game/rules/missionLifecycle.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
+import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { getInventoryCategoryIconPath } from "../shared/assetPaths.js";
 import type { ClientIntent, ContractCard, PhonePatchPayload } from "../shared/types.js";
@@ -146,7 +147,7 @@ export function PhoneMissionRelicExchange({
             <span className="phone-mission-reliquary__socket phone-mission-reliquary__socket--right">II</span>
             <span className="phone-mission-reliquary__socket phone-mission-reliquary__socket--bottom">III</span>
             <div className="phone-mission-reliquary__aperture">
-              <img
+              <PhoneOptimizedImage
                 src={getInventoryCategoryIconPath("artifacts")}
                 alt=""
                 aria-hidden="true"

@@ -55,6 +55,7 @@ import { useReducedMotion } from "../shared/useReducedMotion.js";
 import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 import { GameButton, type GameButtonTone } from "../shared/GameButton.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
+import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 import { getGearCardArtId, getGearCardArtType, getShopCategoryIconPath } from "../shared/assetPaths.js";
 import { statLabelById } from "../shared/statLabels.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
@@ -211,7 +212,7 @@ export function PhoneTileArrivalSummary({ arrival, compact = false }: { arrival:
       {!arrival.canEndTurn && arrival.blockedReason ? <div className="phone-tile-arrival__blocked">MANDATORY · {arrival.blockedReason}</div> : null}
       {getTileAssetPath(arrival.tileId) ? (
         <div className="phone-tile-arrival__art" aria-hidden="true">
-          <img src={getTileAssetPath(arrival.tileId)!} alt="" />
+          <PhoneOptimizedImage src={getTileAssetPath(arrival.tileId)!} alt="" />
         </div>
       ) : null}
       <details className="phone-tile-arrival__lore">
@@ -670,7 +671,7 @@ function MovementTileMedia({ destination }: { destination: PublicMoveDestination
 
   if (tileAssetPath) {
     return (
-      <img
+      <PhoneOptimizedImage
         src={tileAssetPath}
         alt=""
         className="phone-wrap-card__image phone-movement-tile-image"
@@ -692,7 +693,7 @@ function MovementTileMedia({ destination }: { destination: PublicMoveDestination
   );
 }
 
-const cardImageTypes = new Set<CardImageType>(["threat", "contract", "anomaly", "artifact", "equipment", "scar", "escalation"]);
+const cardImageTypes = new Set<CardImageType>(["threat", "contract", "anomaly", "artifact", "equipment", "follower", "scar", "escalation"]);
 
 function isCardImageType(value: string | null | undefined): value is CardImageType {
   return Boolean(value && cardImageTypes.has(value as CardImageType));
@@ -1683,7 +1684,7 @@ function MovementRouteConfidence({
 function CurrentTileMedia({ tile }: { tile: CurrentTileViewModel }): ReactElement {
   if (tile.artPath) {
     return (
-      <img
+      <PhoneOptimizedImage
         src={tile.artPath}
         alt=""
         className="phone-wrap-card__image phone-current-tile-image"

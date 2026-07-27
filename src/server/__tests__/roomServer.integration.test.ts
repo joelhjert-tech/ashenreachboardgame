@@ -1039,6 +1039,12 @@ function selectFirstStartingContract(roomServer: GameRoomServer, seatId: string)
   }
 
   roomServer.selectStartingContract(seatId, contractId);
+  for (let pick = 0; pick < 2; pick += 1) {
+    const seat = roomServer.getState().seats.find((entry) => entry.seatId === seatId);
+    const option = seat?.startingBonusOfferOptions?.[0];
+    if (!seat?.startingBonusOfferId || !option) throw new Error(`Missing starting bonus offer for ${seatId}`);
+    roomServer.selectStartingBonus(seatId, seat.startingBonusOfferId, option.kind, option.id);
+  }
   return contractId;
 }
 
@@ -3333,6 +3339,12 @@ describe("roomServer websocket integration", () => {
 
     const selectedContractId = selectedSeat.startingContractOptions[0]!;
     harness.roomServer.selectStartingContract("seat-1", selectedContractId);
+    for (let pick = 0; pick < 2; pick += 1) {
+      const provisionSeat = harness.roomServer.getState().seats[0]!;
+      const option = provisionSeat.startingBonusOfferOptions?.[0];
+      if (!provisionSeat.startingBonusOfferId || !option) throw new Error("Missing starting bonus offer");
+      harness.roomServer.selectStartingBonus("seat-1", provisionSeat.startingBonusOfferId, option.kind, option.id);
+    }
     harness.roomServer.setSeatReady("seat-1", true);
     harness.roomServer.startSession();
 

@@ -102,6 +102,12 @@ describe("single-player movement lifecycle", () => {
     const startingMission = server.getState().seats[0]?.startingContractOptions[0];
     expect(startingMission).toBeTruthy();
     server.selectStartingContract(joined.seatId, startingMission!);
+    for (let pick = 0; pick < 2; pick += 1) {
+      const provisionSeat = server.getState().seats[0]!;
+      const option = provisionSeat.startingBonusOfferOptions?.[0];
+      if (!provisionSeat.startingBonusOfferId || !option) throw new Error("Missing starting bonus offer");
+      server.selectStartingBonus(joined.seatId, provisionSeat.startingBonusOfferId, option.kind, option.id);
+    }
     server.setSeatReady(joined.seatId, true);
     server.startSession();
 

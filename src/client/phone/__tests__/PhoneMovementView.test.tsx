@@ -104,7 +104,7 @@ describe("PhoneMovementView", () => {
     expect(within(total).getByRole("strong")).toHaveTextContent("1");
     expect(total.querySelector("img")).toHaveAttribute(
       "src",
-      "/assets/riftfall/ui/signal-theatre/stat-seals/command.png"
+      "/assets/riftfall/ui/signal-theatre/stat-seals/command.phone.webp"
     );
     expect(screen.getAllByTestId("movement-tile-image")[0]).toHaveAttribute(
       "src",

@@ -8,6 +8,12 @@ function selectMissionAndReady(server: GameRoomServer, seatId: string): void {
   const contractId = seat?.startingContractOptions[0];
   if (!contractId) throw new Error(`Missing starting Contract for ${seatId}`);
   server.selectStartingContract(seatId, contractId);
+  for (let pick = 0; pick < 2; pick += 1) {
+    const provisionSeat = server.getState().seats.find((entry) => entry.seatId === seatId);
+    const option = provisionSeat?.startingBonusOfferOptions?.[0];
+    if (!provisionSeat?.startingBonusOfferId || !option) throw new Error(`Missing starting bonus offer for ${seatId}`);
+    server.selectStartingBonus(seatId, provisionSeat.startingBonusOfferId, option.kind, option.id);
+  }
   server.setSeatReady(seatId, true);
 }
 

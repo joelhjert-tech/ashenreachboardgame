@@ -144,7 +144,7 @@ describe("PhoneHazardChallengeView", () => {
     expect(screen.getByAltText("Sable Vey")).toHaveAttribute("src", expect.stringContaining("/assets/riftfall/characters/"));
     expect(view.container.querySelector(".phone-trial-rift img")).toHaveAttribute(
       "src",
-      "/assets/riftfall/ui/signal-theatre/stat-seals/guile.png"
+      "/assets/riftfall/ui/signal-theatre/stat-seals/guile.phone.webp"
     );
     expect(screen.getByTestId("phone-trial-total-comparison")).toHaveTextContent(/Your total—AgainstAnomaly total4/i);
   });
@@ -268,7 +268,7 @@ describe("PhoneHazardChallengeView", () => {
     expect(screen.getByAltText(/operative portrait/i)).toHaveClass("phone-result-gate__portrait-art");
     expect(screen.getByTestId("phone-resolution-card").querySelector(".phone-result-gate__environment")).toHaveAttribute(
       "src",
-      "/assets/riftfall/ui/result-ready/verdict-gate.webp"
+      "/assets/riftfall/ui/result-ready/verdict-gate.phone.webp"
     );
     expect(screen.getByRole("button", { name: /continue/i })).toBeVisible();
     expect(screen.queryByTestId("phone-trial-cinematic-stage")).not.toBeInTheDocument();

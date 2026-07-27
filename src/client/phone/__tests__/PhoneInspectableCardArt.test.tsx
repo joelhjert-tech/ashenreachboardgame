@@ -13,6 +13,14 @@ describe("PhoneInspectableCardArt", () => {
     render(<div onClick={onAction}><PhoneInspectableCardArt cardType="contract" cardId="compact-ember-courier" title="Ember Courier" lore="Carry the sealed route spark through the ash lanes." rules="Visit three marked sectors." /></div>);
     fireEvent.click(screen.getByRole("button", { name: /inspect ember courier/i }));
     expect(screen.getByRole("dialog", { name: /ember courier/i })).toBeInTheDocument();
+    expect(screen.getByAltText("Ember Courier")).toHaveAttribute(
+      "src",
+      "/assets/cards/contracts/compact-ember-courier.phone.webp"
+    );
+    expect(screen.getByAltText("Ember Courier full card artwork")).toHaveAttribute(
+      "src",
+      "/assets/cards/contracts/compact-ember-courier.png"
+    );
     expect(screen.getByText(/carry the sealed route spark/i)).toBeInTheDocument();
     expect(screen.getByText(/visit three marked sectors/i)).toBeInTheDocument();
     expect(onAction).not.toHaveBeenCalled();

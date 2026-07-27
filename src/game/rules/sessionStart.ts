@@ -10,6 +10,7 @@ export interface SessionStartSeat {
   displayName?: string | null;
   selectedStartingContractId?: string | null;
   startingMissionSelected?: boolean;
+  startingBonusSelections?: readonly unknown[];
   ready: boolean;
   kicked?: boolean;
 }
@@ -23,7 +24,12 @@ export interface SessionStartReadiness {
   occupiedCount: number;
   selectedCharacterCount: number;
   selectedMissionCount: number;
+  completedStartingBonusCount: number;
   readyCount: number;
+}
+
+export function hasCompletedStartingBonusSelection(seat: SessionStartSeat): boolean {
+  return seat.startingBonusSelections === undefined || seat.startingBonusSelections.length >= 2;
 }
 
 export function getSessionStartReadiness(input: {
@@ -36,6 +42,7 @@ export function getSessionStartReadiness(input: {
   const selectedMissionCount = occupiedSeats.filter(
     (seat) => Boolean(seat.selectedStartingContractId) || seat.startingMissionSelected === true
   ).length;
+  const completedStartingBonusCount = occupiedSeats.filter(hasCompletedStartingBonusSelection).length;
   const readyCount = occupiedSeats.filter((seat) => seat.ready).length;
   const base = {
     occupiedSeats,
@@ -43,6 +50,7 @@ export function getSessionStartReadiness(input: {
     occupiedCount: occupiedSeats.length,
     selectedCharacterCount,
     selectedMissionCount,
+    completedStartingBonusCount,
     readyCount
   };
 
@@ -75,6 +83,8 @@ export function getSessionStartReadiness(input: {
       blockers.push(`${name} must choose an operative`);
     } else if (!seat.selectedStartingContractId && seat.startingMissionSelected !== true) {
       blockers.push(`${name} must choose a starting mission`);
+    } else if (!hasCompletedStartingBonusSelection(seat)) {
+      blockers.push(`${name} must choose two starting bonuses`);
     } else if (!seat.ready) {
       blockers.push(`${name} must press Ready`);
     }
@@ -147,6 +157,18 @@ export function getSessionStartReadiness(input: {
       ...base,
       canStart: false,
       reason: `Waiting for ${waitingName} to choose a starting mission`,
+      blockers
+    };
+  }
+
+  if (completedStartingBonusCount < occupiedSeats.length) {
+    const waitingSeat = occupiedSeats.find((seat) => !hasCompletedStartingBonusSelection(seat));
+    const waitingName = waitingSeat?.displayName ?? waitingSeat?.seatId ?? "player";
+
+    return {
+      ...base,
+      canStart: false,
+      reason: `Waiting for ${waitingName} to choose two starting bonuses`,
       blockers
     };
   }

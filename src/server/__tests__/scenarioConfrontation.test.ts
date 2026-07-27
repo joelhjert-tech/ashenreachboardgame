@@ -77,6 +77,12 @@ function selectFirstStartingContract(roomServer: GameRoomServer, seatId: string)
   }
 
   roomServer.selectStartingContract(seatId, contractId);
+  for (let pick = 0; pick < 2; pick += 1) {
+    const seat = roomServer.getState().seats.find((entry) => entry.seatId === seatId);
+    const option = seat?.startingBonusOfferOptions?.[0];
+    if (!seat?.startingBonusOfferId || !option) throw new Error(`Missing starting bonus offer for ${seatId}`);
+    roomServer.selectStartingBonus(seatId, seat.startingBonusOfferId, option.kind, option.id);
+  }
 }
 
 function endBroadcastTurn(roomServer: GameRoomServer, seatId = "seat-1"): void {
