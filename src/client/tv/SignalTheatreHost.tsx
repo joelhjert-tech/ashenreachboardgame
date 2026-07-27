@@ -11,6 +11,7 @@ import type {
   StatePatch
 } from "../shared/types.js";
 import { JoinQrCard } from "./JoinQrCard.js";
+import { HostShopOverlay } from "./HostShopOverlay.js";
 import { buildHostMotionCueModel, type HostMotionCueKind } from "./HostMotionCue.js";
 import { OperativeChessPiece } from "./OperativeChessPiece.js";
 import { SignalActionCoin, type SignalActionCoinKind } from "./SignalActionCoin.js";
@@ -32,6 +33,7 @@ import { buildSignalSectorResolutionModel } from "./signalSectorResolutionPresen
 import { getSignalSectorResolutionDevFixture } from "./signalSectorResolutionDevFixtures.js";
 import { useSignalTheatreJourney } from "./useSignalTheatreJourney.js";
 import { useSignalTheatreEnvironmentPreload } from "./useSignalTheatreEnvironmentPreload.js";
+import { isHostShopActive } from "./hostShopState.js";
 import "./SignalTheatreHost.css";
 
 interface SignalTheatreHostProps {
@@ -395,6 +397,7 @@ export function SignalTheatreHost({
     : sectorResolution
     ? sectorResolution.opposition.name
     : focusSector?.name ?? (endResult ? endResult.modeLabel : "Signal relay");
+  const shopActive = Boolean(activePlayer && isHostShopActive(patch, activePlayer));
   const style = { "--signal-marker-position": `${markerPosition}%` } as CSSProperties;
   const stageImage = environment?.path ?? assets.worldStage;
   const movingSeatId = fixture?.motionPhase
@@ -421,7 +424,7 @@ export function SignalTheatreHost({
 
   return (
     <main
-      className={`signal-theatre signal-theatre--${kind} signal-theatre--tier-${environment?.tier ?? "unknown"}${journey || fixture?.motionPhase ? " signal-theatre--journey" : ""}${sectorResolution ? " signal-theatre--sector-resolution" : ""}${missionSelectionActive ? " signal-theatre--mission-selection" : ""}${fixture?.endgameTone ? ` signal-theatre--fixture-${fixture.endgameTone}` : ""}`}
+      className={`signal-theatre signal-theatre--${kind} signal-theatre--tier-${environment?.tier ?? "unknown"}${journey || fixture?.motionPhase ? " signal-theatre--journey" : ""}${sectorResolution ? " signal-theatre--sector-resolution" : ""}${missionSelectionActive ? " signal-theatre--mission-selection" : ""}${shopActive ? " signal-theatre--shop" : ""}${fixture?.endgameTone ? ` signal-theatre--fixture-${fixture.endgameTone}` : ""}`}
       data-testid="signal-theatre-host"
       data-signal-state={kind}
       data-motion-id={journey?.eventId ?? model?.id ?? endResult?.id ?? "stable"}
@@ -432,7 +435,7 @@ export function SignalTheatreHost({
       data-mission-selection={missionSelectionActive ? "true" : undefined}
       style={style}
     >
-      <div className="signal-theatre__base" aria-hidden={sectorResolution || missionSelectionActive ? "true" : undefined}>
+      <div className="signal-theatre__base" aria-hidden={sectorResolution || missionSelectionActive || shopActive ? "true" : undefined}>
         <section
           className="signal-theatre__environment"
           aria-label={`${focusSector?.name ?? "Unknown sector"}. ${occupants.length} operative${occupants.length === 1 ? "" : "s"} present.`}
@@ -559,7 +562,7 @@ export function SignalTheatreHost({
         </section>
       </div>
 
-      <aside className="signal-theatre__signal">
+      {!shopActive ? <aside className="signal-theatre__signal">
         <SignalActionCoin
           key={`${actionCoinKind}:${sectorResolution?.stat ?? "none"}:${model?.id ?? journey?.eventId ?? endResult?.id ?? "stable"}`}
           kind={actionCoinKind}
@@ -567,9 +570,11 @@ export function SignalTheatreHost({
           label={actionCoinLabel}
           detail={actionCoinDetail}
         />
-      </aside>
+      </aside> : null}
 
-      {missionSelectionActive ? (
+      {shopActive ? (
+        <HostShopOverlay patch={patch} activePlayer={activePlayer} />
+      ) : missionSelectionActive ? (
         <SignalMissionSelection ownerName={missionOwner?.displayName ?? "The operative"} />
       ) : sectorResolution ? (
         <SignalSectorResolution model={sectorResolution} />

@@ -58,7 +58,7 @@ import {
   type SignalCartographyFixture
 } from "./SignalCartographyPrototype.js";
 import {
-  TvScenarioApprovalPrototype,
+  TvScenarioBriefing,
   TvShopApprovalPrototype
 } from "./TvApprovalPrototypes.js";
 import {
@@ -2995,6 +2995,10 @@ export function TvApp(): ReactElement {
     (publicPatch?.payload.activeScenario
       ? scenarioCatalog.find((scenario) => scenario.id === publicPatch.payload.activeScenario?.id) ?? null
       : scenarioCatalog.find((scenario) => scenario.id === selectedScenarioId) ?? null) ?? null;
+  const setupScenarioPreview = publicPatch?.payload.setupScenarioPreview ?? null;
+  const previewScenario = setupScenarioPreview
+    ? scenarioCatalog.find((scenario) => scenario.id === setupScenarioPreview.scenarioId) ?? null
+    : null;
   const scenarioStatus = useMemo(() => getScenarioStatus(publicPatch), [publicPatch]);
   const rareStateActive = Boolean(
     publicPatch?.payload.pendingOrderedConsequence ||
@@ -3253,10 +3257,25 @@ export function TvApp(): ReactElement {
   }
   if (approvalPrototype === "scenario") {
     return (
-      <TvScenarioApprovalPrototype
+      <TvScenarioBriefing
         scenario={selectedScenario}
         playerCount={playerCount}
         hostName={activeSeat?.displayName ?? "Expedition Host"}
+      />
+    );
+  }
+  if (setupScenarioPreview && publicPatch?.payload.status === "lobby") {
+    return (
+      <TvScenarioBriefing
+        key={setupScenarioPreview.revision}
+        scenario={previewScenario}
+        mode={setupScenarioPreview.mode}
+        playerCount={setupScenarioPreview.playerCount}
+        hostName={setupScenarioPreview.requester.displayName}
+        roomCode={effectiveRoomCode}
+        joinedCount={joinedSeats.length}
+        readyCount={readySeats.length}
+        approvalFixture={false}
       />
     );
   }

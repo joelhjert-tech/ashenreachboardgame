@@ -1408,6 +1408,7 @@ export interface PublicPatchPayload {
   recentAbilityTriggers: AbilityTriggerSummary[];
   nemesis: ActiveNemesisSummary | null;
   hostView?: PublicHostViewState;
+  setupScenarioPreview?: PublicSetupScenarioPreview | null;
 }
 
 export type HostViewAutomaticReturnReason =
@@ -1429,6 +1430,19 @@ export interface PublicHostViewState {
   automaticReturnReason: HostViewAutomaticReturnReason;
   canRequestMap: boolean;
   unavailableReason: string | null;
+}
+
+export type HostSetupPreviewMode = "single-player" | "co-op" | "rivalry" | "nemesis";
+
+export interface PublicSetupScenarioPreview {
+  scenarioId: string;
+  mode: HostSetupPreviewMode;
+  playerCount: number;
+  revision: number;
+  requester: {
+    seatId: string;
+    displayName: string;
+  };
 }
 
 export type RequiredActionKind =
@@ -1744,6 +1758,13 @@ export type ServerEnvelope =
   | RejoinRejectedEnvelope;
 
 export type ClientIntent =
+  | {
+      type: "HOST_SETUP_PREVIEW_REQUESTED";
+      seatId: string;
+      scenarioId: string;
+      mode: HostSetupPreviewMode;
+      playerCount: number;
+    }
   | {
       type: "HOST_VIEW_REQUESTED";
       seatId: string;

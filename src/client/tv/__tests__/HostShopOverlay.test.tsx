@@ -52,6 +52,8 @@ describe("HostShopOverlay rebuild", () => {
   it("opens as a full-screen category chamber with only authoritative categories", () => {
     render(<HostShopOverlay patch={patchFixture(shopFixture())} activePlayer={activePlayer} />);
     expect(screen.getByTestId("host-shop-overlay")).toHaveClass("host-shop-rebuild");
+    expect(screen.getByTestId("host-shop-overlay").querySelector(".host-shop-establishment-background img"))
+      .toHaveAttribute("src", "/assets/riftfall/ui/signal-theatre/shopkeeper-establishment.png");
     expect(screen.getByTestId("host-shop-category-equipment")).toBeInTheDocument();
     expect(screen.getByTestId("host-shop-category-services")).toBeInTheDocument();
     expect(screen.getByTestId("host-shop-category-sell")).toBeInTheDocument();

@@ -531,6 +531,42 @@ export function PhoneApp(): ReactElement {
   const ownSeat = phonePatch?.payload.seats.find((seat) => seat.seatId === auth?.seatId) ?? null;
   const isSetupHost = Boolean(phonePatch?.payload.selfIsSetupHost);
   const previousTurnRef = useRef<{ activeSeatId: string | null; status: PhonePatchPayload["status"] } | null>(null);
+
+  useEffect(() => {
+    if (
+      !auth ||
+      !isSetupHost ||
+      phonePatch?.payload.status !== "lobby" ||
+      phonePatch.payload.lobbyConfigured !== false ||
+      !selectedSetupMode ||
+      !selectedScenarioId ||
+      !selectedScenarioIsValid
+    ) {
+      return;
+    }
+    sendIntent({
+      type: "HOST_SETUP_PREVIEW_REQUESTED",
+      seatId: auth.seatId,
+      scenarioId: selectedScenarioId,
+      mode: selectedSetupMode,
+      playerCount: selectedSetupMode === "single-player"
+        ? 1
+        : selectedSetupMode === "nemesis"
+          ? Math.min(configuredPlayerCount, 4)
+          : configuredPlayerCount
+    });
+  }, [
+    auth,
+    configuredPlayerCount,
+    isSetupHost,
+    phonePatch?.payload.lobbyConfigured,
+    phonePatch?.payload.status,
+    selectedScenarioId,
+    selectedScenarioIsValid,
+    selectedSetupMode,
+    sendIntent
+  ]);
+
   const leaveConfirmationDialog = roomBackGuard.confirmationOpen ? (
     <section className="phone-leave-dialog" role="dialog" aria-modal="true" aria-labelledby="phone-leave-dialog-title">
       <div>

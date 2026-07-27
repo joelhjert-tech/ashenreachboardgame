@@ -1,30 +1,28 @@
 import { useEffect, useState, type ReactElement } from "react";
-import { getSignalTheatreAssetPaths } from "../shared/assetPaths.js";
-import type { ScenarioCatalogEntry } from "../shared/types.js";
+import type {
+  PublicPatchPayload,
+  PublicPlayer,
+  PublicShopEncounterState,
+  ScenarioCatalogEntry,
+  StatePatch
+} from "../shared/types.js";
 import { HostImage } from "./HostImage.js";
+import { HostShopOverlay } from "./HostShopOverlay.js";
+import { JoinQrCard } from "./JoinQrCard.js";
 import "./TvApprovalPrototypes.css";
 
 const prototypeOffers = [
   {
     name: "Breachline Sextant",
-    category: "Route Aid · Artifact",
-    price: "5 Salvage",
-    summary: "Two charges. Before rolling movement, follow a legal same-reach route to a transition sector.",
-    artPath: "/assets/cards/artifacts/artifact-breachline-sextant.png"
+    summary: "Two charges. Before rolling movement, follow a legal same-reach route to a transition sector."
   },
   {
     name: "Mara Vell",
-    category: "Route Aid · Follower",
-    price: "4 Salvage",
-    summary: "A unique guide with two route charges. Stops at the transition sector and never bypasses a gate.",
-    artPath: "/assets/cards/artifacts/artifact-mara-vell-cinder-cartographer.png"
+    summary: "A unique guide with two route charges. Stops at the transition sector and never bypasses a gate."
   },
   {
     name: "Gateward Spindle",
-    category: "Route Aid · Artifact",
-    price: "5 Salvage",
-    summary: "Two charges and +1 Forge while equipped. The server chooses the canonical route.",
-    artPath: "/assets/cards/artifacts/artifact-gateward-spindle.png"
+    summary: "Two charges and +1 Forge while equipped. The server chooses the canonical route."
   }
 ] as const;
 
@@ -37,64 +35,79 @@ export function TvShopApprovalPrototype(): ReactElement {
     return () => window.clearInterval(timer);
   }, []);
   const selected = prototypeOffers[selectedIndex]!;
-  const previous = prototypeOffers[(selectedIndex - 1 + prototypeOffers.length) % prototypeOffers.length]!;
-  const next = prototypeOffers[(selectedIndex + 1) % prototypeOffers.length]!;
+  const shop: PublicShopEncounterState = {
+    sectorId: "outer_waymarket",
+    sectorName: "Anchor Market",
+    shopId: "prototype-brass-reliquary",
+    shopName: "The Brass Reliquary",
+    shopType: "Relic Establishment",
+    status: "open",
+    browseSelection: { view: "route-aids", selectedId: selected.name === "Mara Vell" ? "mara-vell-cinder-cartographer" : selected.name === "Gateward Spindle" ? "gateward-spindle" : "breachline-sextant" },
+    activePlayer: {
+      playerId: "seat-1",
+      name: "Joel",
+      characterName: "Ash Warden",
+      salvage: 8,
+      wounds: { current: 0, max: 6 },
+      trophies: 0,
+      completedContracts: 0
+    },
+    blockingThreats: [],
+    services: [],
+    revealedStock: [
+      { cardId: "breachline-sextant", name: prototypeOffers[0].name, type: "artifact", cost: { salvage: 5 }, summary: prototypeOffers[0].summary, rarity: "artifact", stock: 1, affordable: true },
+      { cardId: "mara-vell-cinder-cartographer", name: prototypeOffers[1].name, type: "follower", artCardId: "artifact-mara-vell-cinder-cartographer", cost: { salvage: 4 }, summary: prototypeOffers[1].summary, rarity: "unique", stock: 1, affordable: true },
+      { cardId: "gateward-spindle", name: prototypeOffers[2].name, type: "artifact", cost: { salvage: 5 }, summary: prototypeOffers[2].summary, rarity: "artifact", stock: 1, affordable: true }
+    ],
+    sellableCount: 0
+  };
+  const patch = {
+    type: "STATE_PATCH",
+    sessionId: "shop-prototype",
+    sequence: selectedIndex + 1,
+    phase: "action",
+    payload: { status: "active", shopEncounter: shop } as PublicPatchPayload
+  } satisfies StatePatch<PublicPatchPayload>;
+  const activePlayer = { seatId: "seat-1", sectorId: shop.sectorId } as PublicPlayer;
 
   return (
-    <main className="tv-shop-prototype" data-testid="tv-shop-approval-prototype">
-      <HostImage
-        src={getSignalTheatreAssetPaths().shopkeeperEstablishment}
-        alt=""
-        fit="cover"
-        aspectRatio="wide"
-        fallback="map"
-        className="tv-shop-prototype__background"
-      />
-      <div className="tv-shop-prototype__shade" aria-hidden="true" />
-      <header className="tv-shop-prototype__header">
-        <div><span>Establishment entered</span><h1>The Brass Reliquary</h1><small>Active buyer · Joel / Ash Warden</small></div>
-        <div className="tv-shop-prototype__market"><span>Public market</span><strong>Route Aids</strong><small>Phone selection drives this carousel</small></div>
-      </header>
-      <section className="tv-shop-prototype__carousel" aria-label="Public offers">
-        <article className="tv-shop-prototype__side" aria-hidden="true">
-          <HostImage src={previous.artPath} alt="" fit="cover" aspectRatio="card" fallback="card" />
-          <span>{previous.category}</span><strong>{previous.name}</strong>
-        </article>
-        <article className="tv-shop-prototype__selected" key={selected.name}>
-          <HostImage src={selected.artPath} alt={selected.name} fit="cover" aspectRatio="card" fallback="card" className="tv-shop-prototype__selected-art" />
-          <div className="tv-shop-prototype__selected-copy">
-            <span>{selected.category}</span>
-            <h2>{selected.name}</h2>
-            <strong>{selected.price}</strong>
-            <p>{selected.summary}</p>
-            <em>Awaiting confirmation on phone</em>
-          </div>
-        </article>
-        <article className="tv-shop-prototype__side" aria-hidden="true">
-          <HostImage src={next.artPath} alt="" fit="cover" aspectRatio="card" fallback="card" />
-          <span>{next.category}</span><strong>{next.name}</strong>
-        </article>
-      </section>
-      <footer className="tv-shop-prototype__footer">
-        <span>Signal Cartography locked during this visit</span>
-        <strong>{selectedIndex + 1} / {prototypeOffers.length}</strong>
-      </footer>
+    <main className="tv-shop-live-fixture" data-testid="tv-shop-approval-prototype">
+      <HostShopOverlay patch={patch} activePlayer={activePlayer} />
     </main>
   );
 }
 
-export function TvScenarioApprovalPrototype({
+export function TvScenarioBriefing({
   scenario,
   playerCount,
-  hostName = "Expedition Host"
+  hostName = "Expedition Host",
+  mode,
+  roomCode = null,
+  joinedCount = 0,
+  readyCount = 0,
+  approvalFixture = true
 }: {
   scenario: ScenarioCatalogEntry | null;
   playerCount: number;
   hostName?: string;
+  mode?: "single-player" | "co-op" | "rivalry" | "nemesis";
+  roomCode?: string | null;
+  joinedCount?: number;
+  readyCount?: number;
+  approvalFixture?: boolean;
 }): ReactElement {
   const pressureText = scenario?.pressureRule?.trim() || "No loss pressure";
+  const modeLabel = mode === "single-player"
+    ? "Single Player"
+    : mode === "co-op"
+      ? "Multiplayer Co-op"
+      : mode === "rivalry"
+        ? "Rivalry"
+        : mode === "nemesis"
+          ? "Nemesis Relay"
+          : scenario?.mode ?? "Co-op";
   return (
-    <main className="tv-scenario-prototype" data-testid="tv-scenario-approval-prototype">
+    <main className="tv-scenario-prototype" data-testid={approvalFixture ? "tv-scenario-approval-prototype" : "tv-expedition-briefing"}>
       <div className="tv-scenario-prototype__art">
         <HostImage
           src={scenario?.sheetArtPath ?? "/assets/riftfall/ui/signal-theatre/world-stage.png"}
@@ -107,9 +120,16 @@ export function TvScenarioApprovalPrototype({
       <div className="tv-scenario-prototype__veil" aria-hidden="true" />
       <header>
         <span>Expedition Briefing</span>
-        <strong>{scenario?.mode ?? "Co-op"} · {playerCount} operative{playerCount === 1 ? "" : "s"}</strong>
+        <strong>{modeLabel} · {playerCount} operative{playerCount === 1 ? "" : "s"}</strong>
         <small>Selected by {hostName}</small>
       </header>
+      {roomCode ? (
+        <aside className="tv-scenario-prototype__join" aria-label={`Join room ${roomCode}`}>
+          <JoinQrCard roomCode={roomCode} variant="compact" />
+          <span>Join room</span>
+          <strong>{roomCode}</strong>
+        </aside>
+      ) : null}
       <section>
         <span>{scenario?.difficulty ?? "Standard"} expedition</span>
         <h1>{scenario?.name ?? "Select a scenario"}</h1>
@@ -124,7 +144,12 @@ export function TvScenarioApprovalPrototype({
           <strong>{scenario?.victoryText ?? scenario?.specialRules?.[0] ?? "Confirm the expedition to begin."}</strong>
         </div>
       </section>
-      <footer><span>Scenario browsing preview · development only</span><strong>Confirm on host phone</strong></footer>
+      <footer>
+        <span>{roomCode ? `Room ${roomCode} · ${joinedCount} joined · ${readyCount} ready` : "Scenario browsing preview"}</span>
+        <strong>{approvalFixture ? "Confirm on host phone" : "Host Phone controls this briefing"}</strong>
+      </footer>
     </main>
   );
 }
+
+export { TvScenarioBriefing as TvScenarioApprovalPrototype };

@@ -14,7 +14,7 @@ describe("TV approval-only prototypes", () => {
 
     expect(screen.getByTestId("tv-shop-approval-prototype")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "The Brass Reliquary" })).toBeInTheDocument();
-    expect(screen.getByText(/signal cartography locked during this visit/i)).toBeInTheDocument();
+    expect(screen.getByText(/signal cartography locked/i)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Breachline Sextant" })).toHaveAttribute(
       "src",
       "/assets/cards/artifacts/artifact-breachline-sextant.png"
@@ -45,5 +45,38 @@ describe("TV approval-only prototypes", () => {
     expect(screen.getByText("No loss pressure")).toBeInTheDocument();
     expect(screen.getByText(/co-op · 3 operatives/i)).toBeInTheDocument();
     expect(screen.getByText(/selected by nera/i)).toBeInTheDocument();
+  });
+
+  it("promotes the briefing to a live room-safe presentation", () => {
+    const scenario = {
+      id: "scenario_broken_seal",
+      name: "The Broken Seal",
+      theme: "Restore the failing seal.",
+      difficulty: "medium",
+      expectedDuration: "60 min",
+      pressureRule: "Escalation advances.",
+      confrontationTitle: "Seal Core",
+      victoryText: "Restore the seal.",
+      specialRules: [],
+      setup: [],
+      confrontationSteps: []
+    } as unknown as ScenarioCatalogEntry;
+
+    render(
+      <TvScenarioApprovalPrototype
+        scenario={scenario}
+        playerCount={1}
+        hostName="Nera"
+        mode="single-player"
+        roomCode="ABCD"
+        joinedCount={1}
+        readyCount={0}
+        approvalFixture={false}
+      />
+    );
+
+    expect(screen.getByTestId("tv-expedition-briefing")).toHaveTextContent("Single Player · 1 operative");
+    expect(screen.getByText(/room abcd · 1 joined · 0 ready/i)).toBeInTheDocument();
+    expect(screen.queryByText(/development only/i)).not.toBeInTheDocument();
   });
 });

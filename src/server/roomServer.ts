@@ -643,6 +643,13 @@ export class GameRoomServer {
     requesterSeatId: null,
     automaticReturnReason: null
   };
+  private setupScenarioPreview: {
+    scenarioId: string;
+    mode: "single-player" | "co-op" | "rivalry" | "nemesis";
+    playerCount: number;
+    revision: number;
+    requesterSeatId: string;
+  } | null = null;
 
   public constructor(
     private state: GameState,
@@ -903,6 +910,47 @@ export class GameRoomServer {
 
       if (this.state.status === "ended") {
         throw new IntentRejectedError(intent.type, "Session has ended. Only the host can restart it.");
+      }
+
+      if (intent.type === "HOST_SETUP_PREVIEW_REQUESTED") {
+        if (this.state.status !== "lobby" || this.state.phase !== "start") {
+          throw new IntentRejectedError(intent.type, "Scenario preview is available only during lobby setup");
+        }
+        if (this.state.setupHostSeatId !== intent.seatId) {
+          throw new IntentRejectedError(intent.type, "Only the Host Phone can preview a scenario");
+        }
+        const scenario = getScenarioDefinition(intent.scenarioId);
+        const mapped = intent.mode === "single-player"
+          ? { sessionMode: "single-player" as const, interactionMode: "co-op" as const, gameMode: "standard" as const, playerCount: 1 }
+          : intent.mode === "co-op"
+            ? { sessionMode: "multiplayer" as const, interactionMode: "co-op" as const, gameMode: "standard" as const, playerCount: intent.playerCount }
+            : intent.mode === "rivalry"
+              ? { sessionMode: "multiplayer" as const, interactionMode: "rivalry" as const, gameMode: "standard" as const, playerCount: intent.playerCount }
+              : { sessionMode: "multiplayer" as const, interactionMode: "co-op" as const, gameMode: "nemesis_relay" as const, playerCount: intent.playerCount };
+        if (
+          !scenario ||
+          !Number.isInteger(mapped.playerCount) ||
+          mapped.playerCount < 1 ||
+          mapped.playerCount > (intent.mode === "nemesis" ? 4 : 6) ||
+          !isScenarioEligibleForSession(
+            scenario,
+            mapped.sessionMode,
+            mapped.interactionMode,
+            mapped.gameMode,
+            mapped.playerCount
+          )
+        ) {
+          throw new IntentRejectedError(intent.type, "That scenario is not available for the selected game type or player count");
+        }
+        this.setupScenarioPreview = {
+          scenarioId: scenario.id,
+          mode: intent.mode,
+          playerCount: mapped.playerCount,
+          revision: (this.setupScenarioPreview?.revision ?? 0) + 1,
+          requesterSeatId: intent.seatId
+        };
+        this.broadcastPatch();
+        return;
       }
 
       if (this.state.movementPresentationGate) {
@@ -1348,6 +1396,7 @@ export class GameRoomServer {
     this.state = state;
     this.events.length = 0;
     this.movementPreviewBySeatId.clear();
+    this.setupScenarioPreview = null;
   }
 
   joinSeat(displayName: string, characterId?: string): JoinSeatResult {
@@ -1590,6 +1639,19 @@ export class GameRoomServer {
             }
           : entry;
       })
+    };
+    this.setupScenarioPreview = {
+      scenarioId: scenario.id,
+      mode: input.gameMode === "nemesis_relay"
+        ? "nemesis"
+        : input.sessionMode === "single-player"
+          ? "single-player"
+          : input.interactionMode === "rivalry"
+            ? "rivalry"
+            : "co-op",
+      playerCount: configuredPlayerCount,
+      revision: (this.setupScenarioPreview?.revision ?? 0) + 1,
+      requesterSeatId: seatId
     };
     const retainedSeatIds = new Set(this.state.seats.map((entry) => entry.seatId));
     for (const client of [...this.clients]) {
@@ -1854,6 +1916,7 @@ export class GameRoomServer {
       turnOrder: startReadiness.occupiedSeatIds,
       players: this.applySelectedStartingContracts()
     };
+    this.setupScenarioPreview = null;
 
     const activeSeatId = this.state.turnOrder[0] ?? this.state.seats[0]?.seatId;
 
@@ -1936,6 +1999,13 @@ export class GameRoomServer {
     switch (type) {
       case "HOST_VIEW_REQUESTED":
         requireEnumField(message, "mode", new Set(["signal", "map"]), type);
+        break;
+      case "HOST_SETUP_PREVIEW_REQUESTED":
+        requireStringField(message, "scenarioId", type);
+        requireEnumField(message, "mode", new Set(["single-player", "co-op", "rivalry", "nemesis"]), type);
+        if (!Number.isInteger(message.playerCount)) {
+          throw new IntentRejectedError(type, "Scenario preview player count must be an integer");
+        }
         break;
       case "MOVEMENT_DESTINATION_PREVIEWED":
         if (message.toSectorId !== null) {
@@ -6832,6 +6902,7 @@ export class GameRoomServer {
         { type: reconfigureLobby ? "RETURN_TO_LOBBY" : "RESTART_SESSION", createdAt: new Date().toISOString() }
       ]
     };
+    this.setupScenarioPreview = null;
   }
 
   private getSeatLabel(seatId: string): string {
@@ -10736,7 +10807,34 @@ export class GameRoomServer {
       phase: this.state.phase,
       payload: {
         ...payload,
-        hostView: this.createHostViewProjection()
+        hostView: this.createHostViewProjection(),
+        ...(client.view === "tv"
+          ? { setupScenarioPreview: this.createSetupScenarioPreviewProjection() }
+          : {})
+      }
+    };
+  }
+
+  private createSetupScenarioPreviewProjection(): {
+    scenarioId: string;
+    mode: "single-player" | "co-op" | "rivalry" | "nemesis";
+    playerCount: number;
+    revision: number;
+    requester: { seatId: string; displayName: string };
+  } | null {
+    if (this.state.status !== "lobby" || !this.setupScenarioPreview) return null;
+    const requester = this.state.seats.find(
+      (seat) => seat.seatId === this.setupScenarioPreview?.requesterSeatId
+    );
+    if (!requester?.displayName || requester.kicked) return null;
+    return {
+      scenarioId: this.setupScenarioPreview.scenarioId,
+      mode: this.setupScenarioPreview.mode,
+      playerCount: this.setupScenarioPreview.playerCount,
+      revision: this.setupScenarioPreview.revision,
+      requester: {
+        seatId: requester.seatId,
+        displayName: requester.displayName
       }
     };
   }

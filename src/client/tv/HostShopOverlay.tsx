@@ -4,7 +4,8 @@ import {
   getCardArtPath,
   getGearCardArtId,
   getGearCardArtType,
-  getHostShopCategoryIconPath
+  getHostShopCategoryIconPath,
+  getSignalTheatreAssetPaths
 } from "../shared/assetPaths.js";
 import { HostImage } from "./HostImage.js";
 import type {
@@ -271,7 +272,7 @@ function ShopCarousel({ model }: { model: HostShopDisplayModel }): ReactElement 
     <main className="host-shop-rack" data-testid="host-shop-carousel">
       <section className="host-shop-rack-viewport" aria-label={`${model.view} stock carousel`}>
         {hasSides ? <article className="host-shop-rack-card host-shop-rack-card-previous" aria-hidden="true"><OfferArt offer={previous} quiet /></article> : null}
-        <article className={`host-shop-rack-card host-shop-rack-card-selected${selected.available ? "" : " host-shop-rack-card-locked"}`} data-testid="host-shop-selected-card">
+        <article key={selected.id} className={`host-shop-rack-card host-shop-rack-card-selected${selected.available ? "" : " host-shop-rack-card-locked"}`} data-testid="host-shop-selected-card">
           <div className="host-shop-rack-clamps" aria-hidden="true" />
           <OfferArt offer={selected} />
           <div className="host-shop-rack-card-label">
@@ -333,6 +334,16 @@ export function HostShopOverlay({
 
   return (
     <section className={`host-shop-overlay host-shop-rebuild host-shop-view-${model.view} host-shop-state-${model.status}`} aria-label="Shop services" data-testid="host-shop-overlay">
+      <HostImage
+        src={getSignalTheatreAssetPaths().shopkeeperEstablishment}
+        alt=""
+        fit="cover"
+        aspectRatio="wide"
+        fallback="map"
+        className="host-shop-establishment-background"
+        aria-hidden="true"
+      />
+      <div className="host-shop-establishment-shade" aria-hidden="true" />
       <div className="host-shop-atmosphere" aria-hidden="true"><i /><i /><i /></div>
       <header className="host-shop-identity-rail">
         <div><span>{model.status === "locked" ? "Shop blocked" : "Shop open"} · {model.shopType}</span><h1>{model.shopName}</h1><small>{model.sectorName}</small></div>
@@ -350,7 +361,7 @@ export function HostShopOverlay({
       ) : model.view === "categories" ? <ShopEntrance model={model} /> : <ShopCarousel model={model} />}
 
       <footer className="host-shop-command-rail">
-        <span>Player phone controls this market</span>
+        <span>Player phone controls this market · Signal Cartography locked</span>
         <strong>{model.view === "categories" ? `Waiting for ${model.playerName} to choose a category` : `${titleCase(model.view)} · ${model.offers.length || "sealed"} public offers`}</strong>
       </footer>
       <TransactionResult model={model} />

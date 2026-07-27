@@ -1121,10 +1121,11 @@ describe("PhoneApp", () => {
   });
 
   it("shows Host Phone game type controls before the lobby is configured", async () => {
+    const sendIntent = vi.fn();
     vi.mocked(useRoomSubscription).mockReturnValue({
       patch: createLobbyPhonePatch({ lobbyConfigured: false, selfIsSetupHost: true }),
       error: null,
-      sendIntent: vi.fn(),
+      sendIntent,
       status: "open",
       debugEvents: [],
       clearDebugEvents: vi.fn()
@@ -1149,6 +1150,15 @@ describe("PhoneApp", () => {
     expect(screen.getByRole("radiogroup", { name: /scenario options/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /confirm setup/i })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: /single player/i }));
+    await waitFor(() => {
+      expect(sendIntent).toHaveBeenCalledWith({
+        type: "HOST_SETUP_PREVIEW_REQUESTED",
+        seatId: "seat-1",
+        scenarioId: "scenario_broken_seal",
+        mode: "single-player",
+        playerCount: 1
+      });
+    });
     expect(networkMocks.configureSessionFromPhone).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /confirm setup/i }));
     await waitFor(() => {

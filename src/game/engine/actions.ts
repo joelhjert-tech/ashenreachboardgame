@@ -956,6 +956,13 @@ export type LegacyCompatibleGameAction =
 
 export type ClientIntent =
   | {
+      type: "HOST_SETUP_PREVIEW_REQUESTED";
+      seatId: string;
+      scenarioId: string;
+      mode: "single-player" | "co-op" | "rivalry" | "nemesis";
+      playerCount: number;
+    }
+  | {
       type: "HOST_VIEW_REQUESTED";
       seatId: string;
       mode: "signal" | "map";
