@@ -13,7 +13,47 @@ export const uiPrompts: ImagePromptSpec[] = [
     size: "wide",
     prompt: `${style}; cinematic 16:9 industrial relic shop interior carved into an ancient station, severe original ash-cloth shopkeeper behind a broad brass-blackened-iron counter, reliquary shelves and signal lamps framing clean central negative space for a TV offer carousel, warm ember gold against cold cyan light, no text, no logo`,
     negativePrompt: sharedNegativePrompt,
-    usage: "Development-only Signal Theatre shop prototype background pending visual approval."
+    usage: "Signal Theatre market establishment background."
+  },
+  {
+    id: "signal_theatre_shop_forge_armoury",
+    fileName: "forge-armoury.png",
+    outputPath: "/assets/riftfall/ui/signal-theatre/shops/forge-armoury.png",
+    assetType: "background",
+    size: "wide",
+    prompt: `${style}; cinematic 16:9 industrial forge armoury inside an ancient breach station, original masked armourer behind a blackened iron counter on the right, weapon racks, furnace machinery and spacious dark center-left negative space for a TV offer carousel, ember orange against cold signal blue, no text, no logo`,
+    negativePrompt: sharedNegativePrompt,
+    usage: "Signal Theatre Forge / Armoury shop background."
+  },
+  {
+    id: "signal_theatre_shop_medicae_shrine",
+    fileName: "medicae-shrine.png",
+    outputPath: "/assets/riftfall/ui/signal-theatre/shops/medicae-shrine.png",
+    assetType: "background",
+    size: "wide",
+    prompt: `${style}; cinematic 16:9 medicae shrine inside a derelict station chapel, original porcelain-masked attendant behind a worn ceramic counter on the right, remedy vessels and treatment lamps with spacious dark center-left negative space for a TV offer carousel, cold bone-white and cyan light, no text, no logo`,
+    negativePrompt: sharedNegativePrompt,
+    usage: "Signal Theatre Medicae / Shrine shop background."
+  },
+  {
+    id: "signal_theatre_shop_relic_dealer",
+    fileName: "relic-dealer.png",
+    outputPath: "/assets/riftfall/ui/signal-theatre/shops/relic-dealer.png",
+    assetType: "background",
+    size: "wide",
+    prompt: `${style}; cinematic 16:9 secret reliquary vault in a broken signal observatory, original ceramic-visored relic dealer behind a brass-black-stone counter on the right, sealed artifact cages and ward chains with spacious dark center-left negative space for a TV offer carousel, restrained violet and cold signal light, no text, no logo`,
+    negativePrompt: sharedNegativePrompt,
+    usage: "Signal Theatre Relic Dealer shop background."
+  },
+  {
+    id: "signal_theatre_shop_contract_broker",
+    fileName: "contract-broker.png",
+    outputPath: "/assets/riftfall/ui/signal-theatre/shops/contract-broker.png",
+    assetType: "background",
+    size: "wide",
+    prompt: `${style}; cinematic 16:9 fortified charter office inside an ancient customs hall, original contract broker behind a mechanical seal counter on the right, chained archive drawers and route charts with spacious dark center-left negative space for a TV offer carousel, muted amber against cold steel-blue light, no legible text, no logo`,
+    negativePrompt: sharedNegativePrompt,
+    usage: "Signal Theatre Contract Broker shop background."
   },
   {
     id: "ui_card_frame_red",

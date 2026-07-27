@@ -1,5 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none">
-  <path d="M48 9 70 30 59 80H37L26 30 48 9Z" stroke="#8d78b7" stroke-width="5"/>
-  <path d="m26 30 22 13 22-13M48 43v37M37 80 22 67M59 80l15-13" stroke="#e8dcc2" stroke-width="4"/>
-  <circle cx="48" cy="43" r="8" fill="#77639b" stroke="#d9c9ef" stroke-width="3"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="metal" x1="22" y1="15" x2="108" y2="114" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#eee0bd"/><stop offset=".48" stop-color="#8c6ca7"/><stop offset="1" stop-color="#35263f"/>
+    </linearGradient>
+    <radialGradient id="void" cx="0" cy="0" r="1" gradientTransform="translate(64 63) rotate(90) scale(45)">
+      <stop stop-color="#aa73dc" stop-opacity=".5"/><stop offset="1" stop-color="#160d20" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="m64 6 39 16 19 40-16 43-42 17-42-17L6 62l19-40L64 6Z" fill="#090b0c" stroke="url(#metal)" stroke-width="4"/>
+  <path d="m64 14 33 14 16 35-14 35-35 15-35-15-14-35 16-35 33-14Z" fill="url(#void)" stroke="#5c496a" stroke-width="2"/>
+  <path d="M64 22 91 48 80 99H48L37 48 64 22Z" fill="#111318" stroke="#eadcf5" stroke-width="4" stroke-linejoin="round"/>
+  <path d="m37 48 27 15 27-15M64 63v36M48 99 30 82M80 99l18-17" stroke="#9672b4" stroke-width="4"/>
+  <circle cx="64" cy="63" r="13" fill="#291c37" stroke="#d7b7ef" stroke-width="4"/>
+  <path d="m64 51 5 8 9 4-9 5-5 8-5-8-9-5 9-4 5-8Z" fill="#b770e9"/>
+  <path d="M64 15v10M104 31l-9 8M111 76l-12-3M24 31l9 8M17 76l12-3" stroke="#c9a7df" stroke-width="3"/>
+  <circle cx="64" cy="17" r="3" fill="#dfc9ec"/><circle cx="111" cy="63" r="3" fill="#dfc9ec"/>
+  <circle cx="64" cy="111" r="3" fill="#dfc9ec"/><circle cx="17" cy="63" r="3" fill="#dfc9ec"/>
 </svg>

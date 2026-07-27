@@ -1,5 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none">
-  <path d="M13 21h43l27 27-35 35-27-27V21Z" stroke="#c89a53" stroke-width="5"/>
-  <circle cx="32" cy="39" r="7" stroke="#e8dcc2" stroke-width="5"/>
-  <path d="M49 47h22M60 36v22" stroke="#d76f32" stroke-width="6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="metal" x1="24" y1="16" x2="105" y2="113" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#eee0bc"/><stop offset=".48" stop-color="#a36d54"/><stop offset="1" stop-color="#4a2c25"/>
+    </linearGradient>
+    <radialGradient id="trade" cx="0" cy="0" r="1" gradientTransform="translate(64 63) rotate(90) scale(43)">
+      <stop stop-color="#d96245" stop-opacity=".4"/><stop offset="1" stop-color="#260d09" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="m64 6 39 16 19 40-16 43-42 17-42-17L6 62l19-40L64 6Z" fill="#090b0c" stroke="url(#metal)" stroke-width="4"/>
+  <path d="m64 14 33 14 16 35-14 35-35 15-35-15-14-35 16-35 33-14Z" fill="url(#trade)" stroke="#664036" stroke-width="2"/>
+  <path d="M25 31h48l30 31-41 41-31-30V31Z" fill="#111314" stroke="#ead9b5" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="43" cy="49" r="8" stroke="#b9825c" stroke-width="4"/>
+  <path d="M55 75h35M75 61l15 14-15 14" stroke="#e36c49" stroke-width="5" stroke-linecap="square" stroke-linejoin="round"/>
+  <path d="M39 82h26" stroke="#d7c096" stroke-width="4"/>
+  <path d="m37 69 10-10 10 10-10 10-10-10Z" fill="#b16f4e" stroke="#f0d4aa" stroke-width="3"/>
+  <circle cx="64" cy="17" r="3" fill="#e4cfaa"/><circle cx="111" cy="63" r="3" fill="#e4cfaa"/>
+  <circle cx="64" cy="111" r="3" fill="#e4cfaa"/><circle cx="17" cy="63" r="3" fill="#e4cfaa"/>
 </svg>

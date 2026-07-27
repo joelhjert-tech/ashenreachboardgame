@@ -8,6 +8,7 @@ Assets are runtime data. Do not delete an asset just because TypeScript does not
 - Current board base/region/corner assets: `public/assets/map/board/`, `public/assets/map/corners/`
 - Signal Theatre sector environments: `public/assets/riftfall/environments/signal-theatre/sectors/`
 - Signal Theatre selectable player pieces: `public/assets/riftfall/ui/signal-theatre/player-pieces/`
+- Host TV shop-category emblems: `public/assets/riftfall/ui/shop/categories/`
 - Current generated card art: `public/assets/cards/`
 - Active card backs: `public/assets/cards/backs/`
 - Legacy/reference card art source: `public/assets/riftfall/cards/`
@@ -57,6 +58,7 @@ Remaining legacy files:
 - Board runtime asset list: `src/client/tv/mapAssetRegistry.ts`
 - Signal Theatre environment manifest: `src/client/tv/signalTheatreEnvironmentManifest.ts`
 - Runtime portrait/frame lookups: `src/client/shared/assetPaths.ts`
+- Host TV shop-category emblem lookup: `getHostShopCategoryIconPath` in `src/client/shared/assetPaths.ts`
 - Prompt manifest root: `src/game/assets/design/imagePrompts.ts`
 - Signal Theatre prompt catalog: `src/game/assets/design/signalTheatreEnvironmentPrompts.ts`
 - Signal Piece prompt catalog: `src/game/assets/design/signalPiecePrompts.ts`
@@ -73,6 +75,7 @@ Remaining legacy files:
 - Signal Theatre environment generation must create original Ashenreach locations and must not use legacy tile art or reference-game imagery as inputs.
 - Signal Piece PNGs use the six stable catalog IDs: `beacon`, `bastion`, `lantern`, `harrow`, `reliquary`, and `compass`.
 - Private phone inventory category emblems use `artifacts`, `equipment`, `followers`, `status`, and `progression` under `public/assets/riftfall/ui/inventory-categories/`.
+- Public Host TV shop-category emblems use `items`, `equipment`, `artifacts`, `route-aids`, `services`, and `sell` under `public/assets/riftfall/ui/shop/categories/`.
 - Card art generated from content uses the card ID as the PNG filename under `public/assets/cards/<type>/`.
 - Active threat card art is organized by `threatLane` under `public/assets/cards/threats/red/`, `public/assets/cards/threats/blue/`, and `public/assets/cards/threats/yellow/`.
 - Do not add new Ashenreach card art under `public/assets/riftfall/cards/`. Treat that folder as legacy/source/reference material only.
@@ -89,6 +92,8 @@ npm run audit:assets
 ```
 
 The asset audit is the source of truth for the current expected count. Signal Theatre adds 49 distinct sector environments and 6 selectable player-piece renders. The phone inventory adds 5 original category emblems.
+
+The runtime also includes six original SVG shop-category emblems. These are code-native UI vectors rather than card or environment artwork and must remain registered through `getRuntimeAssetPaths()`.
 
 Previous baseline after the July 2026 repository cleanup and contract-art refresh:
 
