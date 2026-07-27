@@ -94,7 +94,15 @@ async function main(): Promise<void> {
   const admin = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   admin.on("console", (message) => { if (message.type() === "error") errors.push(`admin: ${message.text()}`); });
   admin.on("pageerror", (error) => errors.push(`admin: ${error.message}`));
-  await admin.goto(`${client}/tv?admin=map`);
+  const adminSession = await post<SessionResponse>("/api/session/create", {
+    sessionMode: "single-player",
+    scenarioId: "scenario_broken_seal"
+  });
+  await admin.addInitScript(({ roomCode, hostToken }) => {
+    localStorage.setItem("ashen-reach-tv-room-code", roomCode);
+    localStorage.setItem("ashen-reach-tv-host-token", hostToken);
+  }, adminSession);
+  await admin.goto(`${client}/tv?room=${adminSession.roomCode}&admin=map`);
   await admin.getByRole("region", { name: "Admin map inspector" }).waitFor();
   await admin.getByLabel("Search map archive").fill("ashen chapel");
   await admin.getByRole("listbox", { name: "Map search results" }).getByRole("button", { name: /ashen-chapel/i }).click();

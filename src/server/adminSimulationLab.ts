@@ -459,7 +459,6 @@ export class AdminSimulationLab {
     resolvedSource?: Awaited<ReturnType<AdminContentEditor["findCard"]>>,
     pristineSessionId?: string
   ): Promise<AdminSimulationResult> {
-    if (!this.editor.enabled) throw new AdminContentError("Development simulation is disabled", 403);
     validateStartRequestShape(request);
     this.cleanup();
     if ([...this.sessions.values()].filter((entry) => entry.ownerKey === ownerKey).length >= MAX_SESSIONS_PER_ADMIN) {

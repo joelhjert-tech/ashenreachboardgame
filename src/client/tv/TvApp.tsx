@@ -85,9 +85,9 @@ function getInitialTvRoomCode(): string | null {
   return new URLSearchParams(window.location.search).get("room") ?? window.localStorage.getItem(roomCodeStorageKey);
 }
 const previousSessionEndedNotice = "Previous session ended. Create a new room to continue.";
-const AdminLibrary = lazy(() => import("./admin/AdminLibrary.js"));
-const AdminMapInspector = lazy(() => import("./admin/AdminMapInspector.js"));
-type TvAdminSurface = "library" | "map" | null;
+const AdminDashboard = lazy(() => import("./admin/AdminDashboard.js"));
+type TvAdminSurface = "dashboard" | null;
+type TvAdminTab = "overview" | "library" | "map" | "test" | "reports";
 
 const statLabelById = statShortLabelById;
 type TvResolutionDisplayMode = "idle" | "cardReveal" | "battle" | "outcome";
@@ -1149,16 +1149,16 @@ function TvStartupScreen({
   status,
   error,
   scenarioCatalog,
-  onOpenLibrary,
-  onOpenMapInspector
+  adminDashboardAvailable,
+  onOpenAdminDashboard
 }: {
   roomCode: string | null;
   patch: StatePatch<PublicPatchPayload> | null;
   status: string;
   error: string | null;
   scenarioCatalog: ScenarioCatalogEntry[];
-  onOpenLibrary: () => void;
-  onOpenMapInspector: () => void;
+  adminDashboardAvailable: boolean;
+  onOpenAdminDashboard: () => void;
 }): ReactElement {
   const seats = patch?.payload.seats ?? [];
   const joinedSeats = seats.filter((seat) => seat.displayName && !seat.kicked);
@@ -1195,10 +1195,9 @@ function TvStartupScreen({
       aria-label="Ashen Reach startup"
       style={{ "--tv-lobby-stage-image": `url("${getLobbyStagePath()}")` } as CSSProperties}
     >
-      <div className="tv-admin-tools tv-admin-tools--startup" aria-label="Host administration">
-        <button type="button" className="tv-admin-library-tab" onClick={onOpenLibrary} aria-label="Open Admin Library"><span aria-hidden="true">▤</span>Library</button>
-        <button type="button" className="tv-admin-library-tab" onClick={onOpenMapInspector} aria-label="Open Map Inspector"><span aria-hidden="true">⌘</span>Map Inspector</button>
-      </div>
+      {adminDashboardAvailable ? <div className="tv-admin-tools tv-admin-tools--startup" aria-label="Host administration">
+        <button type="button" className="tv-admin-library-tab" onClick={onOpenAdminDashboard} aria-label="Open Admin Dashboard"><span aria-hidden="true">⌘</span>Admin Dashboard</button>
+      </div> : null}
       <section className={`tv-startup-card${joinedSeats.length >= 5 ? " tv-startup-card--crowded" : ""}`}>
         <div className="tv-startup-brand">
           <span>ASHEN REACH</span>
@@ -2919,12 +2918,11 @@ export function TvApp(): ReactElement {
   const [startSubmitting, setStartSubmitting] = useState(false);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
-  const [adminSurface, setAdminSurface] = useState<TvAdminSurface>(() => {
-    const admin = new URLSearchParams(window.location.search).get("admin");
-    return admin === "library" || admin === "map" ? admin : null;
-  });
+  const [adminSurface, setAdminSurface] = useState<TvAdminSurface>(null);
+  const [adminInitialTab, setAdminInitialTab] = useState<TvAdminTab>("overview");
   const [adminLibraryCardId, setAdminLibraryCardId] = useState<string | null>(null);
   const [adminMapTileId, setAdminMapTileId] = useState<string | null>(null);
+  const adminQueryHandledRef = useRef(false);
   const [returnLobbyConfirmOpen, setReturnLobbyConfirmOpen] = useState(false);
   const [movementPresentation, setMovementPresentation] = useState<MovementArrivalModel | null>(null);
   const restoreValidatedRef = useRef(false);
@@ -2951,12 +2949,6 @@ export function TvApp(): ReactElement {
       .catch(() => setScenarioCatalog([]));
   }, []);
 
-  useEffect(() => {
-    if (patch?.payload.status === "active" || patch?.payload.status === "ended") {
-      setAdminSurface(null);
-    }
-  }, [patch?.payload.status]);
-
   const publicPatch = patch as StatePatch<PublicPatchPayload> | null;
   const synchronized = subscriptionSynchronized ?? status === "open";
   const authoritativePresentationReady = status === "open" && synchronized;
@@ -2970,6 +2962,32 @@ export function TvApp(): ReactElement {
     previousMovementPresentationRef.current = movementPresentation;
   }, [movementPresentation, publicPatch?.payload.movementPresentationGate, sendIntent]);
   const effectiveRoomCode = roomCode ?? publicPatch?.sessionId ?? null;
+  const adminAccessAllowed = Boolean(
+    effectiveRoomCode &&
+    hostToken &&
+    authoritativePresentationReady &&
+    publicPatch?.payload.status === "lobby"
+  );
+  useEffect(() => {
+    if (adminSurface && !adminAccessAllowed) {
+      setAdminSurface(null);
+    }
+  }, [adminAccessAllowed, adminSurface]);
+  useEffect(() => {
+    if (adminQueryHandledRef.current || !authoritativePresentationReady || !publicPatch) return;
+    const requested = new URLSearchParams(window.location.search).get("admin");
+    if (requested) {
+      adminQueryHandledRef.current = true;
+      if (adminAccessAllowed && ["dashboard", "overview", "library", "map", "test", "reports"].includes(requested)) {
+        setAdminInitialTab(requested === "dashboard" ? "overview" : requested as TvAdminTab);
+        setAdminSurface("dashboard");
+      } else {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("admin");
+        window.history.replaceState(null, "", url);
+      }
+    }
+  }, [adminAccessAllowed, authoritativePresentationReady, publicPatch]);
   const joinedSeats = publicPatch?.payload.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
   const readySeats = joinedSeats.filter((seat) => seat.ready);
   const legacyStartReadiness = getSessionStartReadiness({
@@ -3241,9 +3259,6 @@ export function TvApp(): ReactElement {
     (publicPatch.payload.status === "active" || publicPatch.payload.status === "ended") &&
     publicPatch.payload.lobbyConfigured !== false;
 
-  const devAdminSurface = import.meta.env.DEV
-    ? new URLSearchParams(window.location.search).get("admin")
-    : null;
   const cartographyFixture = import.meta.env.DEV
     ? new URLSearchParams(window.location.search).get("cartographyFixture")
     : null;
@@ -3287,6 +3302,20 @@ export function TvApp(): ReactElement {
       />
     );
   }
+  if (adminSurface === "dashboard" && adminAccessAllowed && effectiveRoomCode && hostToken) {
+    return (
+      <Suspense fallback={<div className="admin-library-loading">Opening host administration…</div>}>
+        <AdminDashboard
+          roomCode={effectiveRoomCode}
+          hostToken={hostToken}
+          initialTab={adminInitialTab}
+          initialCardId={adminLibraryCardId}
+          initialTileId={adminMapTileId}
+          onClose={() => setAdminSurface(null)}
+        />
+      </Suspense>
+    );
+  }
   if (setupScenarioPreview && publicPatch?.payload.status === "lobby") {
     return (
       <TvScenarioBriefing
@@ -3318,13 +3347,6 @@ export function TvApp(): ReactElement {
       />
     );
   }
-  if (devAdminSurface === "library") {
-    return <Suspense fallback={<div className="admin-library-loading">Opening archive…</div>}><AdminLibrary roomCode={effectiveRoomCode} hostToken={hostToken} initialCardId={adminLibraryCardId} onOpenMapTile={(tileId) => { setAdminMapTileId(tileId); setAdminSurface("map"); }} onClose={() => setAdminSurface(null)} /></Suspense>;
-  }
-  if (devAdminSurface === "map") {
-    return <Suspense fallback={<div className="admin-library-loading">Opening tactical archive…</div>}><AdminMapInspector initialTileId={adminMapTileId} onOpenLibraryCard={(cardId) => { setAdminLibraryCardId(cardId); setAdminSurface("library"); }} onClose={() => setAdminSurface(null)} /></Suspense>;
-  }
-
   if (signalTheatreMode) {
     return (
       <SignalTheatreHost
@@ -3336,6 +3358,8 @@ export function TvApp(): ReactElement {
         currentStepCopy={currentStepCopy}
         synchronized={authoritativePresentationReady}
         connectionStatus={status}
+        adminDashboardAvailable={adminAccessAllowed}
+        onOpenAdminDashboard={() => { setAdminInitialTab("overview"); setAdminSurface("dashboard"); }}
         onMovementPresentationCompleted={(eventId) => {
           const gate = publicPatch?.payload.movementPresentationGate;
           if (gate?.eventId) {
@@ -3349,9 +3373,7 @@ export function TvApp(): ReactElement {
   if (!gameUiReady) {
     return (
       <>
-        <TvStartupScreen roomCode={effectiveRoomCode} patch={publicPatch} status={status} error={requestError ?? error} scenarioCatalog={scenarioCatalog} onOpenLibrary={() => setAdminSurface("library")} onOpenMapInspector={() => setAdminSurface("map")} />
-        {adminSurface === "library" ? <Suspense fallback={<div className="admin-library-loading">Opening archive…</div>}><AdminLibrary roomCode={effectiveRoomCode} hostToken={hostToken} initialCardId={adminLibraryCardId} onOpenMapTile={(tileId) => { setAdminMapTileId(tileId); setAdminSurface("map"); }} onClose={() => setAdminSurface(null)} /></Suspense> : null}
-        {adminSurface === "map" ? <Suspense fallback={<div className="admin-library-loading">Opening tactical archive…</div>}><AdminMapInspector initialTileId={adminMapTileId} onOpenLibraryCard={(cardId) => { setAdminLibraryCardId(cardId); setAdminSurface("library"); }} onClose={() => setAdminSurface(null)} /></Suspense> : null}
+        <TvStartupScreen roomCode={effectiveRoomCode} patch={publicPatch} status={status} error={requestError ?? error} scenarioCatalog={scenarioCatalog} adminDashboardAvailable={adminAccessAllowed} onOpenAdminDashboard={() => { setAdminInitialTab("overview"); setAdminSurface("dashboard"); }} />
       </>
     );
   }

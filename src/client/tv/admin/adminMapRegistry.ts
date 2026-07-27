@@ -15,6 +15,8 @@ import { TILE_ASSETS } from "../tileAssetManifest.js";
 import { adminLibraryCards } from "./adminLibraryRegistry.js";
 import { canonicalTileChallengeReferences } from "./adminMapReferences.js";
 import { buildTileFunctionDefinition, simulateTileArrival, type TileFunctionDefinition } from "../../../game/rules/tileFunctions.js";
+import { getSignalTheatreEnvironment } from "../signalTheatreEnvironmentManifest.js";
+import { getSignalCartographySectorArtPath } from "../../shared/assetPaths.js";
 
 export type AdminMapView = "artwork" | "connections" | "content" | "images" | "movement";
 export type AdminConnectionType = "normal" | "ring-transition" | "gate" | "bridge" | "ferry" | "invalid";
@@ -61,6 +63,8 @@ export interface AdminMapTile {
   artworkUrl: string | null;
   artworkPath: string | null;
   artworkFolder: string | null;
+  signalTheatreEnvironmentPath: string | null;
+  signalCartographyPath: string;
   dataSourcePath: string;
   dataSourceFolder: string;
   layoutSourcePath: string;
@@ -238,6 +242,8 @@ export function buildAdminMapRegistry(
       artworkUrl,
       artworkPath,
       artworkFolder: artworkPath ? folderOf(artworkPath) : null,
+      signalTheatreEnvironmentPath: getSignalTheatreEnvironment(node.id)?.path ?? null,
+      signalCartographyPath: getSignalCartographySectorArtPath(node.id),
       dataSourcePath: DATA_SOURCE_PATH,
       dataSourceFolder: folderOf(DATA_SOURCE_PATH),
       layoutSourcePath: LAYOUT_SOURCE_PATH,

@@ -2,9 +2,27 @@ import {
   cardArtRuntimeCatalog,
   type RuntimeCardArtCatalogEntry
 } from "../../../game/assets/runtime/cardArtRuntimeCatalog.js";
+import { missions } from "../../../game/data/missions.js";
+import { nemeses } from "../../../game/data/nemeses.js";
+import { SCENARIOS } from "../../../game/data/scenarios.js";
+import { getScenarioSheetArtPath } from "../../../game/data/scenarioSheetArt.js";
+import {
+  getCharacterPortraitPathOrNull,
+  getNemesisPortraitPath
+} from "../../shared/assetPaths.js";
 import { getMapTileReferencesForCard } from "./adminMapReferences.js";
+import lifecycleMatrix from "../../../../docs/research/P23_CARD_CATEGORY_LIFECYCLE_MATRIX.json" with { type: "json" };
 
-export type AdminLibraryCardStatus = "active" | "legacy" | "reference" | "invalid";
+export type AdminLibraryCardStatus =
+  | "active"
+  | "qa-only"
+  | "compatibility-only"
+  | "superseded"
+  | "unreachable"
+  | "audit-needed"
+  | "legacy"
+  | "reference"
+  | "invalid";
 
 export interface AdminLibrarySkill {
   name: string;
@@ -40,6 +58,19 @@ export interface AdminLibraryCard {
   dataSourceFolder: string;
   metadataWarnings: string[];
   mapTileIds: string[];
+  lifecycle?: {
+    purpose?: string;
+    acquisitionOrTrigger?: string;
+    authoritativeResolver?: string;
+    outcome?: string;
+    repeatability?: string;
+    cleanup?: string;
+    visibility?: string;
+    reconnect?: string;
+  };
+  testFiles: string[];
+  relatedIds: string[];
+  editable: boolean;
 }
 
 type AuthoredCardRecord = Record<string, unknown>;
@@ -47,11 +78,15 @@ type AuthoredCardRecord = Record<string, unknown>;
 export interface AdminLibrarySourceEntry {
   sourcePath: string;
   value: unknown;
+  cardType?: string;
+  status?: AdminLibraryCardStatus;
+  artworkUrl?: string;
 }
 
 const authoredModules = import.meta.glob(
   [
     "../../../../content/cards/**/*.json",
+    "../../../../content/characters/*.json",
     "../../../../content/gear/*.json",
     "../../../../content/followers/*.json",
     "../../../../content/tile-challenges/*.json"
@@ -63,6 +98,46 @@ const sourceEntries: AdminLibrarySourceEntry[] = Object.entries(authoredModules)
   sourcePath: normalizeSourcePath(sourcePath),
   value
 }));
+
+const auxiliarySourceEntries: AdminLibrarySourceEntry[] = [
+  ...missions.map((mission) => ({
+    sourcePath: `src/game/data/missions.ts#${mission.id}`,
+    value: mission,
+    cardType: "mission",
+    status: "compatibility-only" as const,
+    artworkUrl: cardArtRuntimeCatalog.find((entry) => entry.cardType === "contract" && entry.cardId === mission.id)?.outputPath
+  })),
+  ...SCENARIOS.map((scenario) => ({
+    sourcePath: `src/game/data/scenarios.ts#${scenario.id}`,
+    value: scenario,
+    cardType: "scenario",
+    artworkUrl: getScenarioSheetArtPath(scenario) ?? undefined
+  })),
+  ...nemeses.map((nemesis) => ({
+    sourcePath: `src/game/data/nemeses.ts#${nemesis.id}`,
+    value: nemesis,
+    cardType: "nemesis",
+    artworkUrl: getNemesisPortraitPath(nemesis.id)
+  }))
+];
+
+interface LifecycleMatrixRecord {
+  id: string;
+  purpose?: string;
+  acquisitionOrTrigger?: string;
+  authoritativeResolver?: string;
+  outcome?: string;
+  repeatability?: string;
+  cleanup?: string;
+  visibility?: string;
+  reconnect?: string;
+  tests?: string[];
+  status?: string;
+}
+
+const lifecycleById = new Map(
+  (lifecycleMatrix.records as LifecycleMatrixRecord[]).map((record) => [record.id, record] as const)
+);
 
 function normalizeSourcePath(sourcePath: string): string {
   return sourcePath.replace(/\\/g, "/").replace(/^.*?content\//, "content/");
@@ -130,6 +205,7 @@ function inferCardType(sourcePath: string): string {
     };
     return singularByFolder[folder] ?? "unknown";
   }
+  if (sourcePath.startsWith("content/characters/")) return "operative";
   if (sourcePath.startsWith("content/gear/")) return "gear";
   if (sourcePath.startsWith("content/followers/")) return "follower";
   if (sourcePath.startsWith("content/tile-challenges/")) return "tile challenge";
@@ -138,7 +214,7 @@ function inferCardType(sourcePath: string): string {
 
 function inferArtType(cardType: string, record: AuthoredCardRecord): RuntimeCardArtCatalogEntry["cardType"] | null {
   if (cardType === "gear") return record.tier === "artifact" ? "artifact" : "equipment";
-  if (cardType === "follower" && typeof record.artCardId === "string") return "artifact";
+  if (cardType === "follower") return "follower";
   if (["threat", "contract", "anomaly", "artifact", "scar", "escalation"].includes(cardType)) {
     return cardType as RuntimeCardArtCatalogEntry["cardType"];
   }
@@ -194,11 +270,18 @@ function getRulesText(record: AuthoredCardRecord): string | undefined {
 function getArtwork(
   cardType: string,
   record: AuthoredCardRecord,
-  artEntries: RuntimeCardArtCatalogEntry[]
+  artEntries: RuntimeCardArtCatalogEntry[],
+  explicitArtworkUrl?: string
 ): Pick<AdminLibraryCard, "artworkUrl" | "artworkPath" | "artworkFolder"> {
+  const id = readString(record, "artCardId", "id");
+  const directUrl = explicitArtworkUrl
+    ?? (cardType === "operative" && id ? getCharacterPortraitPathOrNull(id) ?? undefined : undefined);
+  if (directUrl) {
+    const artworkPath = `public${directUrl}`;
+    return { artworkUrl: directUrl, artworkPath, artworkFolder: getFolder(artworkPath) };
+  }
   const artType = inferArtType(cardType, record);
   if (!artType) return {};
-  const id = readString(record, "artCardId", "id");
   const entry = artEntries.find((candidate) => candidate.cardType === artType && candidate.cardId === id);
   if (!entry) return {};
   const artworkPath = `public${entry.outputPath}`;
@@ -217,7 +300,7 @@ export function buildAdminLibraryCards(
   entries: AdminLibrarySourceEntry[],
   artEntries: RuntimeCardArtCatalogEntry[] = cardArtRuntimeCatalog
 ): AdminLibraryCard[] {
-  const baseCards = entries.flatMap(({ sourcePath, value }): AdminLibraryCard[] => {
+  const baseCards = entries.flatMap(({ sourcePath, value, cardType: suppliedCardType, status: suppliedStatus, artworkUrl }): AdminLibraryCard[] => {
     if (!isRecord(value)) {
       return [{
         id: sourcePath,
@@ -229,17 +312,34 @@ export function buildAdminLibraryCards(
         dataSourcePath: sourcePath,
         dataSourceFolder: getFolder(sourcePath),
         metadataWarnings: ["Source file does not contain a card object."],
-        mapTileIds: []
+        mapTileIds: [],
+        testFiles: [],
+        relatedIds: [],
+        editable: false
       }];
     }
 
     const id = readString(value, "id") ?? sourcePath.split("/").at(-1)?.replace(/\.json$/, "") ?? sourcePath;
     const name = readString(value, "title", "name", "enemyName") ?? id;
-    const cardType = inferCardType(sourcePath);
-    const difficulty = readNumberOrString(value, "difficulty");
+    const cardType = suppliedCardType ?? inferCardType(sourcePath);
+    const difficulty = readNumberOrString(value, "difficulty", "threshold", "combat");
     const skills = getSkills(value);
     const lore = readString(value, "flavor", "lore");
-    const artwork = getArtwork(cardType, value, artEntries);
+    const artwork = getArtwork(cardType, value, artEntries, artworkUrl);
+    const lifecycle = lifecycleById.get(id);
+    const qaOnly = value.qaOnly === true;
+    const lifecycleStatus: AdminLibraryCardStatus = suppliedStatus
+      ?? (qaOnly || lifecycle?.status === "development-only"
+        ? "qa-only"
+        : lifecycle?.status === "compatibility-only"
+          ? "compatibility-only"
+          : lifecycle?.status === "superseded"
+            ? "superseded"
+            : lifecycle?.status === "unreachable"
+              ? "unreachable"
+              : lifecycle
+                ? "active"
+                : "audit-needed");
     const metadataWarnings: string[] = [];
     if (!readString(value, "id")) metadataWarnings.push("Missing canonical card ID.");
     if (!readString(value, "title", "name", "enemyName")) metadataWarnings.push("Missing display name.");
@@ -248,6 +348,7 @@ export function buildAdminLibraryCards(
     if (!lore) metadataWarnings.push("Missing lore.");
     if (!artwork.artworkPath) metadataWarnings.push("Missing artwork or runtime artwork registry entry.");
     if (cardType === "unknown") metadataWarnings.push("Unknown card type.");
+    if (!lifecycle && lifecycleStatus === "audit-needed") metadataWarnings.push("Lifecycle audit has not classified this current record.");
     if (cardType === "scar") {
       if (!readString(value, "source")) metadataWarnings.push("Scar source is missing.");
       if (!readString(value, "origin")) metadataWarnings.push("Scar origin is missing.");
@@ -258,13 +359,17 @@ export function buildAdminLibraryCards(
         metadataWarnings.push("Scar Adaptation must include authored text and a typed executable rule.");
       }
     }
-    if (!sourcePath.startsWith("content/")) metadataWarnings.push("Data file is outside the canonical content boundary.");
+    const relatedIds = [
+      ...(Array.isArray(value.requiredSpaceIds) ? value.requiredSpaceIds.filter((entry): entry is string => typeof entry === "string") : []),
+      ...(typeof value.scenarioId === "string" ? [value.scenarioId] : [])
+    ];
+    const editable = /^(?:content\/cards\/(?:afflictions|anomalies|artifacts|contracts|escalations|scars|threats)|content\/gear|content\/followers|content\/tile-challenges)\/[^/]+\.json$/.test(sourcePath);
 
     return [{
       id,
       name,
       cardType,
-      status: "active",
+      status: lifecycleStatus,
       difficulty,
       difficultyScale: typeof value.severity === "number" ? Math.max(5, value.severity) : undefined,
       skills,
@@ -280,7 +385,20 @@ export function buildAdminLibraryCards(
       dataSourcePath: sourcePath,
       dataSourceFolder: getFolder(sourcePath),
       metadataWarnings,
-      mapTileIds: getMapTileReferencesForCard(id)
+      mapTileIds: getMapTileReferencesForCard(id),
+      lifecycle: lifecycle ? {
+        purpose: lifecycle.purpose,
+        acquisitionOrTrigger: lifecycle.acquisitionOrTrigger,
+        authoritativeResolver: lifecycle.authoritativeResolver,
+        outcome: lifecycle.outcome,
+        repeatability: lifecycle.repeatability,
+        cleanup: lifecycle.cleanup,
+        visibility: lifecycle.visibility,
+        reconnect: lifecycle.reconnect
+      } : undefined,
+      testFiles: lifecycle?.tests ?? [],
+      relatedIds,
+      editable
     }];
   });
 
@@ -301,4 +419,4 @@ export function buildAdminLibraryCards(
   })).sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 }
 
-export const adminLibraryCards = buildAdminLibraryCards(sourceEntries);
+export const adminLibraryCards = buildAdminLibraryCards([...sourceEntries, ...auxiliarySourceEntries]);

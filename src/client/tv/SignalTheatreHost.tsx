@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactElement } from "react";
+import { WrenchIcon } from "@phosphor-icons/react/dist/csr/Wrench";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import { BOARD_RING_TRANSITIONS } from "../../game/data/boardTransitions.js";
 import { getSignalTheatreAssetPaths } from "../shared/assetPaths.js";
@@ -47,6 +48,8 @@ interface SignalTheatreHostProps {
   synchronized: boolean;
   connectionStatus: string;
   onMovementPresentationCompleted?: (eventId: string) => void;
+  adminDashboardAvailable?: boolean;
+  onOpenAdminDashboard?: () => void;
 }
 
 interface SignalRouteModel {
@@ -210,12 +213,16 @@ function SignalLobby({
   patch,
   roomCode,
   synchronized,
-  connectionStatus
+  connectionStatus,
+  adminDashboardAvailable,
+  onOpenAdminDashboard
 }: {
   patch: StatePatch<PublicPatchPayload> | null;
   roomCode: string | null;
   synchronized: boolean;
   connectionStatus: string;
+  adminDashboardAvailable?: boolean;
+  onOpenAdminDashboard?: () => void;
 }): ReactElement {
   const joined = patch?.payload.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
   const ready = joined.filter((seat) => seat.ready).length;
@@ -228,6 +235,12 @@ function SignalLobby({
         <span>ASHENREACH</span>
         <small>{connectionCopy}</small>
       </header>
+      {adminDashboardAvailable && onOpenAdminDashboard ? (
+        <button type="button" className="signal-theatre__admin-entry" onClick={onOpenAdminDashboard}>
+          <WrenchIcon aria-hidden="true" weight="fill" />
+          Admin Dashboard
+        </button>
+      ) : null}
       <section className="signal-theatre__lobby-command">
         <span>Expedition assembly</span>
         <h1>{patch?.payload.setup?.title ?? "Gather at the relay"}</h1>
@@ -260,7 +273,9 @@ export function SignalTheatreHost({
   currentStepCopy,
   synchronized,
   connectionStatus,
-  onMovementPresentationCompleted
+  onMovementPresentationCompleted,
+  adminDashboardAvailable,
+  onOpenAdminDashboard
 }: SignalTheatreHostProps): ReactElement {
   const payload = patch?.payload ?? null;
   const journey = useSignalTheatreJourney({
@@ -278,7 +293,7 @@ export function SignalTheatreHost({
   useSignalTheatreEnvironmentPreload(preloadRoute, journey?.step ?? 0);
 
   if (!payload || payload.status === "lobby") {
-    return <SignalLobby patch={patch} roomCode={roomCode} synchronized={synchronized} connectionStatus={connectionStatus} />;
+    return <SignalLobby patch={patch} roomCode={roomCode} synchronized={synchronized} connectionStatus={connectionStatus} adminDashboardAvailable={adminDashboardAvailable} onOpenAdminDashboard={onOpenAdminDashboard} />;
   }
 
   const endResult = payload.matchProgress?.publicResult ?? null;

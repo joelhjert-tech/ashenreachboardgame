@@ -14,8 +14,11 @@ export interface AdminLibraryProps {
   onClose: () => void;
   initialCardId?: string | null;
   onOpenMapTile?: (tileId: string) => void;
+  onSelectedCardChange?: (card: AdminLibraryCard | null) => void;
   roomCode?: string | null;
   hostToken?: string | null;
+  embedded?: boolean;
+  capabilities?: AdminContentStatus | null;
 }
 
 function displayType(value: string): string {
@@ -67,7 +70,49 @@ function DifficultyMark({ card }: { card: AdminLibraryCard }): ReactElement {
   );
 }
 
+export function buildAdminCodexContext(card: AdminLibraryCard): Record<string, unknown> {
+  return {
+    schemaVersion: 1,
+    entity: {
+      id: card.id,
+      name: card.name,
+      family: card.cardType,
+      status: card.status,
+      sourcePath: card.dataSourcePath,
+      artworkPath: card.artworkPath ?? null
+    },
+    gameplay: {
+      difficulty: card.difficulty ?? null,
+      skills: card.skills,
+      encounterType: card.encounterType ?? null,
+      rulesText: card.rulesText ?? null,
+      reward: card.reward ?? null,
+      penalty: card.penalty ?? null,
+      effects: card.effects
+    },
+    lifecycle: card.lifecycle ?? null,
+    relationships: {
+      mapTileIds: card.mapTileIds,
+      relatedIds: card.relatedIds
+    },
+    audit: {
+      warnings: card.metadataWarnings,
+      tests: card.testFiles
+    }
+  };
+}
+
+function downloadJson(name: string, value: unknown): void {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 function Inspector({ card, onClear, onOpenMapTile, editorStatus, onEdit, onSimulate }: { card: AdminLibraryCard; onClear: () => void; onOpenMapTile?: (tileId: string) => void; editorStatus: AdminContentStatus | null; onEdit: () => void; onSimulate: () => void }): ReactElement {
+  const codexContext = buildAdminCodexContext(card);
   return (
     <aside className="admin-library-inspector" aria-label={`Inspect ${card.name}`}>
       <header>
@@ -77,7 +122,8 @@ function Inspector({ card, onClear, onOpenMapTile, editorStatus, onEdit, onSimul
       <div className="admin-library-inspector-scroll">
         <section className={`admin-library-edit-status is-${editorStatus?.mode ?? "view-only"}`}>
           <div><span>{editorStatus?.editingAllowed ? "DEVELOPMENT CONTENT EDITOR" : "VIEW ONLY"}</span><strong>{editorStatus?.editingAllowed ? "Edit enabled" : editorStatus?.mode === "active-session-locked" ? "Editing locked during active session" : "Repository editing disabled"}</strong></div>
-          {editorStatus?.editingAllowed ? <button type="button" onClick={onEdit}>Edit card</button> : null}
+          {editorStatus?.editingAllowed && card.editable ? <button type="button" onClick={onEdit}>Edit card</button> : null}
+          {editorStatus?.editingAllowed && !card.editable ? <p>This source is inspected here but is not supported by the guarded JSON editor.</p> : null}
           {!editorStatus?.editingAllowed && editorStatus?.reason ? <p>{editorStatus.reason}</p> : null}
         </section>
         {isCardSimulatable(card) ? <section className="admin-library-simulation-action"><span>ISOLATED GAMEPLAY TESTER</span><strong>Battle &amp; Event Simulation</strong><p>Run this card through the canonical server resolver without touching the live room.</p><button type="button" disabled={!editorStatus?.simulationAllowed} onClick={onSimulate}>Open Simulation Lab</button>{!editorStatus?.simulationAllowed ? <small>Start the development content server to enable simulations.</small> : null}</section> : <section className="admin-library-simulation-empty"><strong>NO SIMULATABLE EFFECTS</strong><p>This card contains descriptive or passive data only.</p></section>}
@@ -99,7 +145,27 @@ function Inspector({ card, onClear, onOpenMapTile, editorStatus, onEdit, onSimul
           {card.rawEffectData ? <details><summary>Raw Effect Data</summary><pre>{JSON.stringify(card.rawEffectData, null, 2)}</pre></details> : null}
         </section>
         <section className="admin-library-lore"><h3>Archive Lore</h3><p>{card.lore ?? "Not set"}</p></section>
+        <section className="admin-library-lifecycle">
+          <h3>Lifecycle and Coverage</h3>
+          {card.lifecycle ? (
+            <dl>
+              {Object.entries(card.lifecycle).filter((entry): entry is [string, string] => Boolean(entry[1])).map(([label, value]) => (
+                <div key={label}><dt>{displayType(label)}</dt><dd>{value}</dd></div>
+              ))}
+            </dl>
+          ) : <p>No current lifecycle record covers this entity. Treat it as audit-needed.</p>}
+          {card.testFiles.length > 0 ? <div className="admin-library-tests"><h4>Focused tests</h4>{card.testFiles.map((file) => <code key={file}>{file}</code>)}</div> : null}
+        </section>
         {card.mapTileIds.length > 0 ? <section className="admin-library-map-references"><h3>Map References</h3>{card.mapTileIds.map((tileId) => <button type="button" key={tileId} onClick={() => onOpenMapTile?.(tileId)}><span>Open in Map Inspector</span><strong>{tileId}</strong></button>)}</section> : null}
+        {card.relatedIds.length > 0 ? <section className="admin-library-related"><h3>Related IDs</h3>{card.relatedIds.map((id) => <code key={id}>{id}</code>)}</section> : null}
+        <section className="admin-library-codex">
+          <h3>Codex Context</h3>
+          <p>Exports canonical authoring context only. Room codes, credentials, players, and live private state are excluded.</p>
+          <div>
+            <button type="button" onClick={() => void navigator.clipboard?.writeText(JSON.stringify(codexContext, null, 2))}>Copy Codex Context</button>
+            <button type="button" onClick={() => downloadJson(`${card.id}-admin-context.json`, codexContext)}>Export JSON</button>
+          </div>
+        </section>
         <section className="admin-library-source">
           <h3>Source Location</h3>
           {[
@@ -115,7 +181,7 @@ function Inspector({ card, onClear, onOpenMapTile, editorStatus, onEdit, onSimul
   );
 }
 
-export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, roomCode, hostToken }: AdminLibraryProps): ReactElement {
+export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, onSelectedCardChange, roomCode, hostToken, embedded = false, capabilities = null }: AdminLibraryProps): ReactElement {
   const [libraryCards, setLibraryCards] = useState(adminLibraryCards);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -130,7 +196,7 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, ro
   const [selectedId, setSelectedId] = useState<string | null>(adminLibraryCards[0]?.dataSourcePath ?? null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editorDirty, setEditorDirty] = useState(false);
-  const [editorStatus, setEditorStatus] = useState<AdminContentStatus | null>(null);
+  const [editorStatus, setEditorStatus] = useState<AdminContentStatus | null>(capabilities);
   const [simulation, setSimulation] = useState<{ card: AdminLibraryCard; draft?: Record<string, unknown> | null } | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const filterRailRef = useRef<HTMLElement | null>(null);
@@ -142,19 +208,26 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, ro
   }, [initialCardId, libraryCards]);
 
   useEffect(() => {
+    if (capabilities) {
+      setEditorStatus(capabilities);
+      return;
+    }
     if (!roomCode || !hostToken) { setEditorStatus(null); return; }
     let cancelled = false;
     fetchAdminContentStatus({ roomCode, hostToken })
       .then((status) => { if (!cancelled) setEditorStatus(status); })
       .catch(() => { if (!cancelled) setEditorStatus(null); });
     return () => { cancelled = true; };
-  }, [hostToken, roomCode]);
+  }, [capabilities, hostToken, roomCode]);
 
   const types = useMemo(() => [...new Set(libraryCards.map((card) => card.cardType))].sort(), [libraryCards]);
   const skills = useMemo(() => [...new Set(libraryCards.flatMap((card) => card.skills.map((skill) => skill.name)))].sort(), [libraryCards]);
   const folders = useMemo(() => [...new Set(libraryCards.map((card) => card.dataSourceFolder))].sort(), [libraryCards]);
   const scarSources = useMemo(() => [...new Set(libraryCards.flatMap((card) => card.scarSource ? [card.scarSource] : []))].sort(), [libraryCards]);
   const selected = libraryCards.find((card) => card.dataSourcePath === selectedId) ?? null;
+  useEffect(() => {
+    onSelectedCardChange?.(selected);
+  }, [onSelectedCardChange, selected]);
 
   const filteredCards = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase();
@@ -239,12 +312,12 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, ro
   }
 
   return (
-    <section className="admin-library" aria-label="Admin card library">
+    <section className={`admin-library${embedded ? " is-embedded" : ""}`} aria-label="Admin card library">
       <header className="admin-library-header">
         <div><span>HOST ADMINISTRATION · {editorStatus?.editingAllowed ? "EDIT ENABLED" : "VIEW ONLY"}</span><h1>Card Library</h1></div>
         <label><span>Search archive</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, ID, lore, skill or folder" /></label>
         <label><span>Sort</span><select value={sort} onChange={(event) => setSort(event.target.value as LibrarySort)}><option value="name">Name</option><option value="cardType">Card type</option><option value="difficulty">Difficulty</option><option value="skill">Skill level</option><option value="source">Source folder</option><option value="warnings">Missing metadata first</option></select></label>
-        <button type="button" className="admin-library-close" onClick={closeLibrary}>Return to Command Board</button>
+        <button type="button" className="admin-library-close" onClick={closeLibrary}>{embedded ? "Dashboard Overview" : "Return to Command Board"}</button>
       </header>
       <div className={`admin-library-layout${editingId ? " is-editing" : ""}`}>
         <nav ref={filterRailRef} className="admin-library-filters" aria-label="Library filters">

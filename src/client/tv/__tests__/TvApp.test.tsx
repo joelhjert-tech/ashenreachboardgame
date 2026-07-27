@@ -66,12 +66,14 @@ vi.mock("../JoinQrCard.js", () => ({
 // TvApp owns opening and closing the admin surfaces; their detailed content is
 // covered by dedicated component suites. Keeping these shell tests shallow
 // avoids loading the complete card and map registries for one button assertion.
-vi.mock("../admin/AdminLibrary.js", () => ({
-  default: () => <section role="region" aria-label="Admin Card Library"><h1>Card Library</h1></section>
-}));
-
-vi.mock("../admin/AdminMapInspector.js", () => ({
-  default: () => <section role="region" aria-label="Admin Map Inspector"><h1>Map Inspector</h1></section>
+vi.mock("../admin/AdminDashboard.js", () => ({
+  default: (props: { initialTab?: string; onClose: () => void }) => (
+    <section role="region" aria-label="Host Admin Dashboard">
+      <h1>Host Admin Dashboard</h1>
+      <span>Initial tab: {props.initialTab ?? "overview"}</span>
+      <button type="button" onClick={props.onClose}>Return to lobby</button>
+    </section>
+  )
 }));
 
 const characters: CharacterCatalogEntry[] = [
@@ -967,44 +969,74 @@ describe("TvApp", () => {
     expect(screen.queryByRole("button", { name: /^multiplayer/i })).not.toBeInTheDocument();
   });
 
-  it("opens the read-only host Admin Library without sending a game intent", async () => {
+  it("opens the unified dashboard only from an authenticated synchronized lobby without sending a game intent", async () => {
+    window.history.replaceState({}, "", "/tv");
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const sendIntent = vi.fn();
+    const patch = createPatch();
+    patch.payload.status = "lobby";
     mockUseRoomSubscription.mockReturnValue({
-      patch: null,
+      patch,
       error: null,
       sendIntent,
-      status: "idle",
+      status: "open",
+      synchronized: true,
       debugEvents: [],
       clearDebugEvents: vi.fn()
     });
     render(<TvApp />);
 
-    await screen.findByRole("main", { name: /ashen reach startup/i });
-    fireEvent.click(screen.getByRole("button", { name: /open admin library/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^admin dashboard$/i }));
 
-    expect(await screen.findByRole("region", { name: /admin card library/i }, { timeout: 10_000 })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /card library/i })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: /host admin dashboard/i }, { timeout: 10_000 })).toBeInTheDocument();
+    expect(screen.getByText(/initial tab: overview/i)).toBeInTheDocument();
     expect(sendIntent).not.toHaveBeenCalled();
   });
 
-  it("opens the read-only host Map Inspector without sending a game intent", async () => {
+  it("maps an authenticated legacy admin map link to the dashboard map tab", async () => {
+    window.history.replaceState({}, "", "/tv?admin=map");
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const sendIntent = vi.fn();
+    const patch = createPatch();
+    patch.payload.status = "lobby";
     mockUseRoomSubscription.mockReturnValue({
-      patch: null,
+      patch,
       error: null,
       sendIntent,
-      status: "idle",
+      status: "open",
+      synchronized: true,
       debugEvents: [],
       clearDebugEvents: vi.fn()
     });
     render(<TvApp />);
 
-    await screen.findByRole("main", { name: /ashen reach startup/i });
-    fireEvent.click(screen.getByRole("button", { name: /open map inspector/i }));
-
-    expect(await screen.findByRole("region", { name: /admin map inspector/i }, { timeout: 10_000 })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /map inspector/i })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: /host admin dashboard/i }, { timeout: 10_000 })).toBeInTheDocument();
+    expect(screen.getByText(/initial tab: map/i)).toBeInTheDocument();
     expect(sendIntent).not.toHaveBeenCalled();
+  });
+
+  it("rejects a forged direct dashboard link without the restored host token", async () => {
+    window.history.replaceState({}, "", "/tv?admin=library");
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    const patch = createPatch();
+    patch.payload.status = "lobby";
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      synchronized: true,
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    render(<TvApp />);
+
+    expect(await screen.findByTestId("signal-theatre-host")).toHaveAttribute("data-signal-state", "lobby");
+    await waitFor(() => expect(window.location.search).not.toContain("admin="));
+    expect(screen.queryByRole("region", { name: /host admin dashboard/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^admin dashboard$/i })).not.toBeInTheDocument();
   });
 
   it("hides archive tools during play and lets the authenticated host return to mode selection", async () => {
@@ -1022,8 +1054,7 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     expect(await screen.findByTestId("tv-command-main")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /open admin library/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /open map inspector/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /open admin dashboard/i })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /return to lobby/i }));
     const dialog = screen.getByRole("dialog", { name: /return everyone to the lobby/i });

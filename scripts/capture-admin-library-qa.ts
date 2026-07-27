@@ -3,6 +3,18 @@ import { join, resolve } from "node:path";
 import { chromium, type Page } from "playwright";
 
 const output = resolve("reports", "ui", "admin-library");
+const clientOrigin = process.env.ASHEN_REACH_QA_CLIENT_ORIGIN ?? "http://127.0.0.1:5173";
+const apiOrigin = process.env.ASHEN_REACH_QA_API_ORIGIN ?? "http://127.0.0.1:8080";
+
+async function createRoom(): Promise<{ roomCode: string; hostToken: string }> {
+  const response = await fetch(`${apiOrigin}/api/session/create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionMode: "single-player", scenarioId: "scenario_broken_seal" })
+  });
+  if (!response.ok) throw new Error(`Room creation failed: ${response.status} ${await response.text()}`);
+  return await response.json() as { roomCode: string; hostToken: string };
+}
 
 async function verifyAndCapture(page: Page, filename: string): Promise<void> {
   await page.waitForTimeout(180);
@@ -30,13 +42,18 @@ async function searchAndSelect(page: Page, query: string, cardName: RegExp): Pro
 
 async function main(): Promise<void> {
   await mkdir(output, { recursive: true });
+  const room = await createRoom();
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   const errors: string[] = [];
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
   page.on("pageerror", (error) => errors.push(error.message));
 
-  await page.goto("http://127.0.0.1:5173/tv?admin=library");
+  await page.addInitScript(({ roomCode, hostToken }) => {
+    localStorage.setItem("ashen-reach-tv-room-code", roomCode);
+    localStorage.setItem("ashen-reach-tv-host-token", hostToken);
+  }, room);
+  await page.goto(`${clientOrigin}/tv?room=${room.roomCode}&admin=library`);
   await page.waitForLoadState("networkidle");
   await page.getByRole("region", { name: "Admin card library" }).waitFor();
   await verifyAndCapture(page, "library-overview-1920x1080.png");

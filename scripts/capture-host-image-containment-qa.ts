@@ -87,7 +87,11 @@ async function main(): Promise<void> {
   const admin = await browser.newPage({ viewport: viewports[0] });
   admin.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
   admin.on("pageerror", (error) => errors.push(error.message));
-  await admin.goto(`${clientOrigin}/tv?admin=library&resetAuth=1`);
+  await admin.addInitScript(({ roomCode, hostToken }) => {
+    localStorage.setItem("ashen-reach-tv-room-code", roomCode);
+    localStorage.setItem("ashen-reach-tv-host-token", hostToken);
+  }, lobbySession);
+  await admin.goto(`${clientOrigin}/tv?room=${lobbySession.roomCode}&admin=library`);
   await admin.getByRole("heading", { name: "Card Library" }).waitFor();
   await captureAll(admin, "admin-library");
   await admin.getByRole("button", { name: /Missing Artwork/i }).click();
@@ -97,7 +101,7 @@ async function main(): Promise<void> {
     await admin.getByText(/art unavailable/i).first().waitFor();
     await captureAll(admin, "admin-library-missing-art");
   }
-  await admin.goto(`${clientOrigin}/tv?admin=map&resetAuth=1`);
+  await admin.goto(`${clientOrigin}/tv?room=${lobbySession.roomCode}&admin=map`);
   await admin.getByRole("heading", { name: "Map Inspector" }).waitFor();
   await captureAll(admin, "admin-map-inspector");
   await admin.close();

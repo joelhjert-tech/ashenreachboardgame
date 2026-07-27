@@ -15,6 +15,7 @@ import { applyPhaseOneQaFixture, type PhaseOneQaFixture } from "./phaseOneQaFixt
 import { getSubmittedDisplayNameError, normalizeSubmittedDisplayName } from "../game/rules/playerIdentity.js";
 import { AdminContentEditor, AdminContentError, type AdminSaveRequest } from "./adminContentEditor.js";
 import { AdminSimulationLab } from "./adminSimulationLab.js";
+import { readAdminReportSummaries } from "./adminReports.js";
 import type { AdminSimulationBatchStartRequest, AdminSimulationRequest } from "../shared/adminSimulation.js";
 
 const DEFAULT_SERVER_PORT = 8080;
@@ -164,22 +165,34 @@ function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminC
           sendJson(response, 403, { error: "Administrator host authorization is required" });
           return;
         }
-        const activeSession = roomServer.getState().status === "active";
+        const roomStatus = roomServer.getState().status;
+        const lobbySession = roomStatus === "lobby";
         if (url.pathname === "/api/admin/content/status") {
           sendJson(response, 200, {
             enabled: adminContentEditor.enabled,
-            simulationAllowed: adminContentEditor.enabled,
-            editingAllowed: adminContentEditor.enabled && !activeSession,
-            mode: !adminContentEditor.enabled ? "view-only" : activeSession ? "active-session-locked" : "edit-enabled",
-            reason: !adminContentEditor.enabled
-              ? "Start the local development server with --admin-content-editor to enable repository writes."
-              : activeSession
-                ? "Editing is locked during an active session."
+            dashboardAllowed: lobbySession,
+            simulationAllowed: lobbySession,
+            qaFixturesAllowed: qaFixturesEnabled,
+            editingAllowed: adminContentEditor.enabled && lobbySession,
+            roomStatus,
+            mode: !lobbySession
+              ? "active-session-locked"
+              : adminContentEditor.enabled
+                ? "edit-enabled"
+                : "lobby-view",
+            reason: !lobbySession
+              ? "Host administration is available only while the room is in the lobby."
+              : !adminContentEditor.enabled
+                ? "Repository editing is disabled. Start the local server with --admin-content-editor to enable writes."
                 : null
           });
           return;
         }
-        if (!adminContentEditor.enabled) throw new AdminContentError("Development content editing is disabled", 403);
+        if (!lobbySession) throw new AdminContentError("Host administration is available only while the room is in the lobby", 423);
+        if (url.pathname === "/api/admin/content/reports") {
+          sendJson(response, 200, { reports: await readAdminReportSummaries(adminContentEditor.projectRoot) });
+          return;
+        }
         const simulationOwnerKey = expectedHostToken;
         if (url.pathname === "/api/admin/content/simulation-card") {
           if (!body.cardId || !body.cardFamily) throw new AdminContentError("Canonical card ID and family are required");
@@ -214,7 +227,7 @@ function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminC
           sendJson(response, 200, adminSimulationLab.cancelBatch(simulationOwnerKey, body.jobId));
           return;
         }
-        if (activeSession) throw new AdminContentError("Editing is locked during an active session", 423);
+        if (!adminContentEditor.enabled) throw new AdminContentError("Development content editing is disabled", 403);
         if (!body.sourcePath) throw new AdminContentError("A canonical card source path is required");
         if (url.pathname === "/api/admin/content/card") {
           sendJson(response, 200, await adminContentEditor.getCard(body.sourcePath));

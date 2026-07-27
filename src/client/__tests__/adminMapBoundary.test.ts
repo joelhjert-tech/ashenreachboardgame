@@ -10,10 +10,12 @@ describe("admin map client boundary", () => {
       "src/client/phone/PhoneActionPanel.tsx"
     ].map((path) => readFileSync(resolve(path), "utf8")).join("\n");
     const tvSource = readFileSync(resolve("src/client/tv/TvApp.tsx"), "utf8");
+    const dashboardSource = readFileSync(resolve("src/client/tv/admin/AdminDashboard.tsx"), "utf8");
     const inspectorSource = readFileSync(resolve("src/client/tv/admin/AdminMapInspector.tsx"), "utf8");
 
     expect(phoneSources).not.toMatch(/AdminMapInspector|Map Inspector/i);
-    expect(tvSource).toMatch(/AdminMapInspector/);
+    expect(tvSource).toMatch(/AdminDashboard/);
+    expect(dashboardSource).toMatch(/AdminMapInspector/);
     expect(inspectorSource).not.toMatch(/sendIntent|dispatch|three(?:\.js)?|<canvas/i);
   });
 });

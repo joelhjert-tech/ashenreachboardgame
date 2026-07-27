@@ -79,14 +79,18 @@ async function main(): Promise<void> {
   await assertNoOverflow(phone);
   await phone.screenshot({ path: join(output, "phone-390x844-replacement-mission.png"), fullPage: false });
 
+  const adminSession = await postJson<{ roomCode: string; hostToken: string }>(`${api}/api/session/create`, {
+    sessionMode: "single-player",
+    scenarioId: "scenario_broken_seal"
+  });
   const tv = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   tv.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
   tv.on("pageerror", (error) => errors.push(error.message));
   await tv.addInitScript(({ roomCode, hostToken }) => {
     localStorage.setItem("ashen-reach-tv-room-code", roomCode);
     localStorage.setItem("ashen-reach-tv-host-token", hostToken);
-  }, { roomCode: session.roomCode, hostToken: session.hostToken });
-  await tv.goto(`${client}/tv?room=${session.roomCode}&admin=library`);
+  }, adminSession);
+  await tv.goto(`${client}/tv?room=${adminSession.roomCode}&admin=library`);
   await tv.getByRole("region", { name: "Admin card library" }).waitFor();
   await tv.getByLabel("Search archive").fill("choir-echo-triangulation");
   await tv.getByRole("button", { name: /Echo Triangulation/i }).first().click();

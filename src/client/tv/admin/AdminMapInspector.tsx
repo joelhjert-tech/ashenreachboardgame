@@ -16,6 +16,7 @@ export interface AdminMapInspectorProps {
   onClose: () => void;
   onOpenLibraryCard?: (cardId: string) => void;
   initialTileId?: string | null;
+  embedded?: boolean;
 }
 
 interface ImageMetadata {
@@ -150,6 +151,12 @@ function TileInspector({ tile, connection, image, onSelectConnection, onOpenLibr
           </dl>
           {scaling !== null && scaling > 100 ? <p className="has-warning">⚠ Image is upscaled on the board.</p> : null}
         </section>
+        <section className="admin-map-presentation-assets">
+          <h3>Production Presentation</h3>
+          <p><span>Signal Theatre environment</span><code>{tile.signalTheatreEnvironmentPath ?? "Not set"}</code></p>
+          <p><span>Signal Cartography sector</span><code>{tile.signalCartographyPath}</code></p>
+          <p><span>Legacy compatibility tile</span><code>{tile.artworkPath ?? "Not set"}</code></p>
+        </section>
         <section className="admin-map-connections-list">
           <h3>Connected Tiles <span>{tile.connections.length}</span></h3>
           {tile.connections.map((entry) => <button type="button" key={entry.id} onClick={() => onSelectConnection(entry)}><span>{titleCase(entry.connectionType)} · {entry.isBidirectional ? "Two-way" : "One-way"}</span><strong>{entry.targetTileId}</strong><small>{entry.blockedReason ?? "Legal connection"}</small></button>)}
@@ -197,7 +204,7 @@ function TileInspector({ tile, connection, image, onSelectConnection, onOpenLibr
   );
 }
 
-export default function AdminMapInspector({ onClose, onOpenLibraryCard, initialTileId }: AdminMapInspectorProps): ReactElement {
+export default function AdminMapInspector({ onClose, onOpenLibraryCard, initialTileId, embedded = false }: AdminMapInspectorProps): ReactElement {
   const qaWarnings = import.meta.env.DEV && new URLSearchParams(window.location.search).get("mapAuditFixture") === "warnings";
   const tiles = useMemo(() => qaWarnings ? adminMapTiles.map((tile, index) => index === 0 ? { ...tile, artworkUrl: null, artworkPath: null, metadataWarnings: [...tile.metadataWarnings, "QA fixture: missing artwork.", "QA fixture: invalid destination qa-missing-sector."] } : tile) : adminMapTiles, [qaWarnings]);
   const [view, setView] = useState<AdminMapView>("artwork");
@@ -300,12 +307,12 @@ export default function AdminMapInspector({ onClose, onOpenLibraryCard, initialT
   };
 
   return (
-    <section className={`admin-map admin-map--${view}`} aria-label="Admin map inspector">
+    <section className={`admin-map admin-map--${view}${embedded ? " is-embedded" : ""}`} aria-label="Admin map inspector">
       <header className="admin-map-header">
         <div><span>HOST ADMINISTRATION · READ ONLY</span><h1>Map Inspector</h1></div>
         <label><span>Search map archive</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tile, ID, content or artwork" /></label>
         <div className="admin-map-header-tools"><button type="button" onClick={() => setZoom((value) => Math.max(0.7, value - 0.15))}>− Zoom</button><strong>{Math.round(zoom * 100)}%</strong><button type="button" onClick={() => setZoom((value) => Math.min(2.5, value + 0.15))}>+ Zoom</button><button type="button" onClick={fitBoard}>Fit Board</button></div>
-        <button type="button" className="admin-map-close" onClick={onClose}>Return to Command Board</button>
+        <button type="button" className="admin-map-close" onClick={onClose}>{embedded ? "Dashboard Overview" : "Return to Command Board"}</button>
         {matches.length ? <div className="admin-map-search-results" role="listbox" aria-label="Map search results">{matches.map((tile) => <button type="button" key={tile.id} onClick={() => { focusTile(tile.id); setSearch(""); }}><strong>{tile.name}</strong><code>{tile.id}</code></button>)}</div> : null}
       </header>
       <div className="admin-map-layout">

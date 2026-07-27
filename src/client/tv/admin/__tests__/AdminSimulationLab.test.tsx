@@ -19,7 +19,7 @@ const card = {
   id: "ash-choir-crusader", name: "Ash Choir Crusader", cardType: "threat", status: "active", difficulty: 8,
   skills: [{ name: "signal", level: 8 }], lore: "Each bell note lands before the blow.", rulesText: "Fight the bell shield.", encounterType: "enemy",
   effects: [{ label: "Defeat reward", value: "Gain note" }], artworkUrl: "/test.png", dataSourcePath: "content/cards/threats/ash-choir-crusader.json",
-  dataSourceFolder: "content/cards/threats/", metadataWarnings: [], mapTileIds: []
+  dataSourceFolder: "content/cards/threats/", metadataWarnings: [], mapTileIds: [], testFiles: [], relatedIds: [], editable: true
 } as AdminLibraryCard;
 
 const result = {

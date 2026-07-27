@@ -9,9 +9,23 @@ export interface AdminContentAuth {
 export interface AdminContentStatus {
   enabled: boolean;
   simulationAllowed?: boolean;
+  dashboardAllowed?: boolean;
+  qaFixturesAllowed?: boolean;
   editingAllowed: boolean;
-  mode: "view-only" | "active-session-locked" | "edit-enabled";
+  roomStatus?: "lobby" | "active" | "ended";
+  mode: "view-only" | "lobby-view" | "active-session-locked" | "edit-enabled";
   reason: string | null;
+}
+
+export interface AdminReportSummary {
+  id: string;
+  title: string;
+  path: string;
+  modifiedAt: string | null;
+  sizeBytes: number | null;
+  summary: string;
+  recordCount?: number;
+  available: boolean;
 }
 
 export interface AdminRevisionSummary {
@@ -60,6 +74,10 @@ async function postAdmin<T>(path: string, auth: AdminContentAuth, body: Record<s
 
 export function fetchAdminContentStatus(auth: AdminContentAuth): Promise<AdminContentStatus> {
   return postAdmin("/api/admin/content/status", auth);
+}
+
+export function fetchAdminReports(auth: AdminContentAuth): Promise<{ reports: AdminReportSummary[] }> {
+  return postAdmin("/api/admin/content/reports", auth);
 }
 
 export function fetchAdminCardSource(auth: AdminContentAuth, sourcePath: string): Promise<AdminCardSource> {

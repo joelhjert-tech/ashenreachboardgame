@@ -3,7 +3,7 @@ import { adminLibraryCards, buildAdminLibraryCards } from "../adminLibraryRegist
 
 describe("admin library registry", () => {
   it("normalizes every canonical active card-like content record", () => {
-    expect(adminLibraryCards).toHaveLength(372);
+    expect(adminLibraryCards).toHaveLength(417);
     expect(new Set(adminLibraryCards.map((card) => card.cardType))).toEqual(new Set([
       "affliction",
       "anomaly",
@@ -12,11 +12,16 @@ describe("admin library registry", () => {
       "escalation",
       "follower",
       "gear",
+      "mission",
+      "nemesis",
+      "operative",
       "scar",
+      "scenario",
       "threat",
       "tile challenge"
     ]));
-    expect(adminLibraryCards.every((card) => card.dataSourcePath.startsWith("content/"))).toBe(true);
+    expect(adminLibraryCards.every((card) => /^(?:content|src\/game\/data)\//.test(card.dataSourcePath))).toBe(true);
+    expect(adminLibraryCards.filter((card) => card.metadataWarnings.some((warning) => /duplicate card id/i.test(warning))).length).toBeGreaterThan(0);
   });
 
   it("uses canonical runtime artwork paths and preserves repository-relative source paths", () => {
