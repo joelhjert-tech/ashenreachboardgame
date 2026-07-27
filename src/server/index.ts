@@ -742,18 +742,34 @@ export async function startAshenReachServer(
     host,
     clientPort,
     lanHost,
-    close: async () =>
-      await new Promise<void>((resolve, reject) => {
-        websocketServer.close();
-        httpServer.close((error) => {
-          if (error) {
-            reject(error);
-            return;
-          }
+    close: async () => {
+      for (const client of websocketServer.clients) {
+        client.terminate();
+      }
 
-          resolve();
-        });
-      })
+      await Promise.all([
+        new Promise<void>((resolve, reject) => {
+          websocketServer.close((error) => {
+            if (error) {
+              reject(error);
+              return;
+            }
+
+            resolve();
+          });
+        }),
+        new Promise<void>((resolve, reject) => {
+          httpServer.close((error) => {
+            if (error) {
+              reject(error);
+              return;
+            }
+
+            resolve();
+          });
+        })
+      ]);
+    }
   };
 }
 
