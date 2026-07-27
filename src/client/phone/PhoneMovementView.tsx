@@ -4,6 +4,7 @@ import type {
   ClientIntent,
   ContractCard,
   PublicHostViewState,
+  PublicInnerApproachState,
   PublicMoveDestination,
   PublicMovementPlannerState,
   PhoneTierTransitionOption
@@ -53,6 +54,7 @@ interface PhoneMovementViewProps {
     revision: number;
     options: PhoneTierTransitionOption[];
   } | null;
+  innerApproach?: PublicInnerApproachState | null;
 }
 
 function destinationType(destination: PublicMoveDestination): string {
@@ -433,7 +435,8 @@ export function PhoneMovementView({
   actorName = "Your operative",
   diceCount = 1,
   hostView,
-  tierTransitions
+  tierTransitions,
+  innerApproach
 }: PhoneMovementViewProps): ReactElement {
   const models = useMemo(
     () => (planner?.destinations ?? []).map((destination) => buildDestinationPresentation(destination, activeContract)),
@@ -485,7 +488,8 @@ export function PhoneMovementView({
     planner?.currentSectorId,
     planner?.movementValue,
     planner?.selectedDestinationId,
-    tierTransitions?.revision
+    tierTransitions?.revision,
+    innerApproach?.revision
   ]);
 
   const rollFaces = planner?.rollFaces ?? (planner?.rolledValue !== undefined ? [planner.rolledValue] : planner?.active ? [planner.originalMovementValue ?? planner.movementValue] : []);
@@ -550,6 +554,18 @@ export function PhoneMovementView({
       destinationSectorId: transition.sectorId,
       movementRevision: tierTransitions?.revision ?? 0,
       voidKeyInstanceId: transition.voidKeyPrompt?.instanceId
+    });
+  };
+  const traverseInnerApproach = (destinationSectorId: string): void => {
+    if (submitted || movementResolving || travel || !innerApproach) return;
+    const option = innerApproach.options.find((entry) => entry.sectorId === destinationSectorId);
+    if (!option || option.disabledReason) return;
+    setSubmitted(true);
+    onIntent({
+      type: "INNER_APPROACH_MOVE_REQUESTED",
+      seatId,
+      destinationSectorId,
+      movementRevision: innerApproach.revision
     });
   };
 
@@ -617,7 +633,41 @@ export function PhoneMovementView({
             </span>
           </button>
         ) : null}
-        {canRoll && tierTransitions && tierTransitions.options.length > 0 ? (
+        {innerApproach ? (
+          <section className="phone-inner-approach" aria-label={`${innerApproach.pathLabel} progression`}>
+            <header>
+              <span>{innerApproach.pathLabel}: one step per turn</span>
+              <strong>{innerApproach.currentSectorName}</strong>
+              <p>
+                {innerApproach.challengeCleared
+                  ? "Challenge cleared. Advance one connected step or retreat."
+                  : `${innerApproach.challengeTitle} must be cleared before advancing.`}
+              </p>
+            </header>
+            <ol className="phone-inner-approach__steps" aria-label="Inner approach progress">
+              {innerApproach.steps.map((step, index) => (
+                <li key={step.sectorId} data-status={step.status}>
+                  <span>{step.status === "cleared" ? "Cleared" : step.status === "current" ? "Current" : step.status === "boss" ? "Boss" : index + 1}</span>
+                  <strong>{step.name}</strong>
+                </li>
+              ))}
+            </ol>
+            <div className="phone-inner-approach__options">
+              {innerApproach.options.map((option) => (
+                <button
+                  key={`${option.direction}:${option.sectorId}`}
+                  type="button"
+                  disabled={Boolean(option.disabledReason) || submitted}
+                  onClick={() => traverseInnerApproach(option.sectorId)}
+                >
+                  <span>{option.direction === "advance" ? "Advance" : "Retreat"}</span>
+                  <strong>{option.label}</strong>
+                  <small>{option.disabledReason ?? "Movement ends after this step"}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : canRoll && tierTransitions && tierTransitions.options.length > 0 ? (
           <section className="phone-tier-transition" aria-label="Tier crossing options">
             <header>
               <span>Tier crossing</span>
@@ -650,7 +700,7 @@ export function PhoneMovementView({
             </div>
           </section>
         ) : null}
-        {!travel && !movementResolving ? (
+        {!innerApproach && !travel && !movementResolving ? (
           <div
             className={`phone-auto-collapse-dice${diceDisclosure.collapsed ? " is-collapsed" : ""}`}
             data-testid="phone-movement-dice-disclosure"
@@ -673,7 +723,7 @@ export function PhoneMovementView({
             <strong>{travel.toSectorName}</strong>
             <p>{travel.fromSectorName} → {travel.toSectorName}</p>
           </div>
-        ) : planner?.active ? (
+        ) : !innerApproach && planner?.active ? (
           <>
             <MovementAdjustments planner={planner} seatId={seatId} onIntent={onIntent} />
             {models.length > 0 ? (
@@ -695,7 +745,7 @@ export function PhoneMovementView({
       </div>
       <div className="phone-move-prototype__docks">
         {selectedModel ? <div className="phone-move-prototype__selection">Selected: <strong>{selectedModel.destination.name}</strong></div> : null}
-        <div className="phone-move-prototype__action-dock" data-testid="movement-action-region">
+        {!innerApproach ? <div className="phone-move-prototype__action-dock" data-testid="movement-action-region">
           {selectedModel ? (
             <button type="button" className="phone-move-prototype__change" onClick={changeDestination}>Change</button>
           ) : null}
@@ -708,7 +758,7 @@ export function PhoneMovementView({
           >
             {submitted ? `Moving to ${selectedModel?.destination.name ?? "destination"}` : actionLabel}
           </button>
-        </div>
+        </div> : null}
         {showContextNavigation ? <ContextNavigation onNavigate={onContextNavigation} /> : null}
       </div>
     </section>

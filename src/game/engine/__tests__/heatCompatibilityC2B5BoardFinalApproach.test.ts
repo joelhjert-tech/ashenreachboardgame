@@ -22,8 +22,7 @@ const GROUP_5 = {
         effect: {
           type: "sequence",
           effects: [
-            { type: "gain_note", text: "guardian-span-clearance" },
-            { type: "gain_note", text: "Guardian Span threshold aligned for breach entry." }
+            { type: "gain_note", text: "Guardian Span threshold routes charted." }
           ]
         },
         failureSummary: "The threshold seals resisted alignment and the span lashed back with pressure."
@@ -37,8 +36,7 @@ const GROUP_5 = {
         effect: {
           type: "sequence",
           effects: [
-            { type: "gain_note", text: "guardian-span-clearance" },
-            { type: "gain_note", text: "Guardian Span route marker held long enough to chart the breach." }
+            { type: "gain_note", text: "Guardian Span ghost route charted." }
           ]
         },
         failureSummary: "The ghost marker bled out across the span and left you exposed to the threshold wash."
@@ -77,13 +75,7 @@ const GROUP_5 = {
         stat: "grit",
         difficulty: 12,
         summary: "Braced the cinder locks apart and forced a direct breach into the core chamber.",
-        effect: {
-          type: "sequence",
-          effects: [
-            { type: "gain_note", text: "gate-of-cinders-breached" },
-            { type: "gain_note", text: "Gate of Cinders forced open under brute brace pressure." }
-          ]
-        },
+        effect: { type: "gain_note", text: "Gate of Cinders forced open under brute brace pressure." },
         failureSummary: "The cinder locks held under the strain and burned the operative back."
       },
       {
@@ -92,13 +84,7 @@ const GROUP_5 = {
         stat: "signal",
         difficulty: 12,
         summary: "Timed the relay pulse perfectly and cut a clean breach into the core chamber.",
-        effect: {
-          type: "sequence",
-          effects: [
-            { type: "gain_note", text: "gate-of-cinders-breached" },
-            { type: "gain_note", text: "Gate of Cinders relay pulse timed cleanly for the core breach." }
-          ]
-        },
+        effect: { type: "gain_note", text: "Gate of Cinders relay pulse timed cleanly for the core breach." },
         failureSummary: "The relay timing slipped and the gate answered with a surge of static backlash."
       },
       {
@@ -107,13 +93,7 @@ const GROUP_5 = {
         stat: "guile",
         difficulty: 12,
         summary: "Ghosted the last breach path and slipped a viable route into the core chamber.",
-        effect: {
-          type: "sequence",
-          effects: [
-            { type: "gain_note", text: "gate-of-cinders-breached" },
-            { type: "gain_note", text: "Gate of Cinders ghost-path fixed long enough to reach the core." }
-          ]
-        },
+        effect: { type: "gain_note", text: "Gate of Cinders ghost-path fixed long enough to reach the core." },
         failureSummary: "The ghost-path collapsed underfoot and left the approach running hot."
       }
     ]
@@ -245,31 +225,36 @@ describe("Heat Compatibility C2B5 final board approach cleanup", () => {
     expect(getBoardSpace("inner_veil_rift")?.movementRequirements).toEqual([
       {
         allowedFrom: ["middle_guardian_span"],
-        requiredNotes: ["guardian-span-clearance"],
-        errorMessage: "Requires Guardian Span Clearance"
+        minimumArtifacts: 1,
+        errorMessage: "Requires at least 1 Artifact"
       }
     ]);
     expect(getBoardSpace("center_cinder_gate")?.movementRequirements).toEqual([
       {
-        allowedFrom: ["inner_gate_of_cinders", "inner_blackstar_shortcut"],
-        errorMessage: "Enter the Core from the Last Signal Well or Dead Star Reliquary"
-      },
-      {
-        requiredNotes: ["gate-of-cinders-breached"],
-        errorMessage: "Breach the Gate of Cinders first"
+        allowedFrom: ["inner_gate_of_cinders"],
+        errorMessage: "Enter the Core through the Gate of Cinders"
       }
     ]);
 
     const guardian = stateAtEffect("middle_guardianSpanThreshold");
     expect(getMovementStepBlockReason(guardian, guardian.players[0]!, "middle_guardian_span", "inner_veil_rift"))
-      .toBe("Requires Guardian Span Clearance");
-    guardian.players[0]!.private.notes.push("guardian-span-clearance");
+      .toBe("At least 1 Artifact is required to enter the Inner Reach");
+    guardian.players[0]!.character.heldGear.push({
+      id: "artifact-gate-test",
+      name: "Gate Test Artifact",
+      slot: "utility",
+      statBonus: { stat: "signal", amount: 1 },
+      tier: "artifact"
+    });
     expect(getMovementStepBlockReason(guardian, guardian.players[0]!, "middle_guardian_span", "inner_veil_rift")).toBeNull();
 
     const gate = stateAtEffect("inner_gateOfCindersTrial");
     expect(getMovementStepBlockReason(gate, gate.players[0]!, "inner_gate_of_cinders", "center_cinder_gate"))
-      .toBe("Breach the Gate of Cinders first");
-    gate.players[0]!.private.notes.push("gate-of-cinders-breached");
+      .toBe("Clear the Gate of Cinders before entering the Core");
+    gate.players[0]!.innerApproachProgress = {
+      pathId: "breach-road",
+      clearedSectorIds: ["inner_gate_of_cinders"]
+    };
     expect(getMovementStepBlockReason(gate, gate.players[0]!, "inner_gate_of_cinders", "center_cinder_gate")).toBeNull();
   });
 

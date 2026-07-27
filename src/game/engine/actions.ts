@@ -59,6 +59,15 @@ export interface TierTransitionCompletedAction extends BaseAction {
   voidKeyInstanceId?: string;
 }
 
+export interface InnerApproachMovedAction extends BaseAction {
+  type: "INNER_APPROACH_MOVED";
+  fromSectorId: string;
+  toSectorId: string;
+  direction: "advance" | "retreat";
+  pathId: "breach-road" | "choir-road";
+  movementRevision: number;
+}
+
 export interface MovementRollRequestedAction extends BaseAction {
   type: "MOVEMENT_ROLL_REQUESTED";
 }
@@ -831,6 +840,7 @@ export type GameAction =
   | MoveRequestedAction
   | TransitionRouteAidUsedAction
   | TierTransitionCompletedAction
+  | InnerApproachMovedAction
   | MovementRollRequestedAction
   | AdjustMovementRequestedAction
   | SelectRouteStarVariantAction
@@ -1002,6 +1012,12 @@ export type ClientIntent =
       destinationSectorId: string;
       movementRevision: number;
       voidKeyInstanceId?: string;
+    }
+  | {
+      type: "INNER_APPROACH_MOVE_REQUESTED";
+      seatId: string;
+      destinationSectorId: string;
+      movementRevision: number;
     }
   | {
       type: "USE_TRANSITION_ROUTE_AID";

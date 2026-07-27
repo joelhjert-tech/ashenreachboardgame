@@ -110,7 +110,9 @@ The server applies mandatory start-of-turn scenario, Scar, Affliction, operative
 
 ## 12. Movement roll
 
-When navigation begins, the active phone offers any canonical tier transition available from the current sector and **Roll Movement**. If the operative does not cross tiers, the server rolls and computes destinations at the exact accepted distance. Before the roll, only tier transitions and effects whose timing explicitly permits pre-roll use may appear.
+When navigation begins outside the Inner Reach, the active phone offers any canonical tier transition available from the current sector and **Roll Movement**. If the operative does not cross tiers, the server rolls and computes destinations at the exact accepted distance. Before the roll, only tier transitions and effects whose timing explicitly permits pre-roll use may appear.
+
+Inside the Inner Reach, no movement die is rolled. The operative follows one of two authored final-approach roads and may move exactly one connected step per turn. The current sector's fixed challenge must have been cleared successfully by that operative before an inward step is legal. A failed challenge leaves the operative in place for a later attempt. Retreating one prior step remains legal.
 
 Movement distance cannot be changed by table agreement. The Ashen Route Compass may apply its exact `-1` or `+1` adjustment only through its prompt and charge rules.
 
@@ -132,6 +134,9 @@ Operatives change regions only through authored transition sectors or explicit e
 
 A route that appears adjacent visually but lacks an authored transition is illegal. Gates may add requirements.
 
+- **Inner Reach:** an operative must own at least one Artifact item before entering. Guardian Span Clearance is not used.
+- **Inner approach:** Breach Road and Choir Road converge at Bone Meridian, then continue through the Gate of Cinders. Normal movement dice, movement adjustments, route aids, and gate overrides cannot skip these steps.
+- **Center:** only an operative who has cleared the Gate of Cinders may take the single final step into the Ashen Reach Core. Entering the Core starts the active scenario confrontation.
 - **Void Key:** personal one-movement gate-rule override in its approved window.
 - **Gate-Saint Key:** party-safe final-gate passage window; it does not unlock ordinary gates or permanently unlock the final gate.
 - Other movement Artifacts apply only as their phone prompts state.

@@ -103,6 +103,14 @@ import {
   getMovementBlockReason,
   getVoidKeyMovementRoute
 } from "../game/rules/movementPlanner.js";
+import {
+  buildInnerApproachMoveOptions,
+  getInnerApproachProgress,
+  getInnerApproachRouteProgress,
+  getInnerApproachPathForEntry,
+  isInnerApproachChallengeCleared,
+  isInnerApproachSector
+} from "../game/rules/innerApproach.js";
 import { canRiftAnchorSpikeSuppress } from "../game/rules/forcedDisplacement.js";
 import { getNextNonBattleTestModifierSource } from "../game/rules/nextNonBattleTestModifier.js";
 import {
@@ -214,6 +222,7 @@ import type {
   MissionRelicExchangeOpenedAction,
   MoveRequestedAction,
   TierTransitionCompletedAction,
+  InnerApproachMovedAction,
   NemesisCombatResolvedAction,
   NemesisDefeatedAction,
   NemesisMovedAction,
@@ -429,10 +438,12 @@ type ClientMessage = ClientIntent | RejoinMessage | HostCommandMessage;
 
 const CLIENT_INTENT_TYPES = new Set<string>([
   "HOST_VIEW_REQUESTED",
+  "HOST_SETUP_PREVIEW_REQUESTED",
   "RETURN_TO_LOBBY_REQUESTED",
   "MOVEMENT_DESTINATION_PREVIEWED",
   "MOVE_REQUESTED",
   "TIER_TRANSITION_REQUESTED",
+  "INNER_APPROACH_MOVE_REQUESTED",
   "USE_TRANSITION_ROUTE_AID",
   "ADJUST_MOVEMENT_REQUESTED",
   "SELECT_ROUTE_STAR_VARIANT",
@@ -603,7 +614,7 @@ export interface RoomExecutionServices {
 }
 
 export interface MovementTransitionDiagnostic {
-  event: "session-started" | "movement-rolled" | "movement-unavailable" | "movement-selected" | "movement-committed" | "tier-transition-committed" | "turn-completed";
+  event: "session-started" | "movement-rolled" | "movement-unavailable" | "movement-selected" | "movement-committed" | "tier-transition-committed" | "inner-approach-committed" | "turn-completed";
   sessionId: string;
   sequence: number;
   mode: SessionMode;
@@ -1025,6 +1036,12 @@ export class GameRoomServer {
 
       if (intent.type === "TIER_TRANSITION_REQUESTED") {
         this.resolveTierTransitionIntent(intent);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "INNER_APPROACH_MOVE_REQUESTED") {
+        this.resolveInnerApproachMoveIntent(intent);
         this.broadcastPatch();
         return;
       }
@@ -2035,6 +2052,12 @@ export class GameRoomServer {
           throw new IntentRejectedError(type, "Movement revision must be a non-negative integer");
         }
         if (message.voidKeyInstanceId !== undefined) requireStringField(message, "voidKeyInstanceId", type);
+        break;
+      case "INNER_APPROACH_MOVE_REQUESTED":
+        requireStringField(message, "destinationSectorId", type);
+        if (!Number.isInteger(message.movementRevision) || Number(message.movementRevision) < 0) {
+          throw new IntentRejectedError(type, "Movement revision must be a non-negative integer");
+        }
         break;
       case "USE_TRANSITION_ROUTE_AID":
         requireEnumField(message, "sourceKind", new Set(["gear", "follower"]), type);
@@ -4098,6 +4121,11 @@ export class GameRoomServer {
           intent.type,
           "Tier transitions must be resolved by the authoritative transition handler"
         );
+      case "INNER_APPROACH_MOVE_REQUESTED":
+        throw new IntentRejectedError(
+          intent.type,
+          "Inner approach movement must be resolved by the authoritative approach handler"
+        );
       case "MOVEMENT_ROLL_REQUESTED":
         return {
           type: "MOVEMENT_ROLL_REQUESTED",
@@ -4997,7 +5025,7 @@ export class GameRoomServer {
         const completedNodes = new Set(this.state.scenarioPreparation.completedObjectiveIds);
         const missingNode = BROKEN_CONCORDANCE_NODES.find((node) => !completedNodes.has(node.id));
         if (missingNode) return `Final gate locked: stabilize ${missingNode.name}.`;
-        if (!player.private.notes.includes("gate-of-cinders-breached")) {
+        if (!isInnerApproachChallengeCleared(this.state, player, "inner_gate_of_cinders")) {
           return "Final gate locked: breach the Gate of Cinders first.";
         }
         return null;
@@ -7676,6 +7704,14 @@ export class GameRoomServer {
     }
 
     const boardSpace = getBoardSpace(activePlayer.character.currentSpaceId);
+    if (boardSpace?.tier === "inner") {
+      throw new IntentRejectedError(
+        "MOVEMENT_ROLL_REQUESTED",
+        isInnerApproachChallengeCleared(this.state, activePlayer)
+          ? "Choose one connected inner approach step instead of rolling movement"
+          : `Clear ${boardSpace.name} before advancing`
+      );
+    }
     const movementProfile = boardSpace ? getMovementProfile(boardSpace.tier) : null;
     const roll =
       movementProfile && !movementProfile.movementRollAllowed
@@ -9232,6 +9268,82 @@ export class GameRoomServer {
     });
   }
 
+  private resolveInnerApproachMoveIntent(
+    intent: Extract<ClientIntent, { type: "INNER_APPROACH_MOVE_REQUESTED" }>
+  ): void {
+    if (this.state.status !== "active" || this.state.phase !== "navigation") {
+      throw new IntentRejectedError(intent.type, `Cannot traverse the inner approach during phase ${this.state.phase}`);
+    }
+    const activeSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? null;
+    if (activeSeatId !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "Only the active operative may traverse the inner approach");
+    }
+    if (this.state.movementRolls?.[intent.seatId]) {
+      throw new IntentRejectedError(intent.type, "Inner approach movement replaces the movement roll");
+    }
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+    if (!player || player.character.status !== "active" || !isInnerApproachSector(player.character.currentSpaceId)) {
+      throw new IntentRejectedError(intent.type, "The operative is not on the inner approach");
+    }
+    const revision = this.state.movementRouteRevisions?.[intent.seatId] ?? 0;
+    if (intent.movementRevision !== revision) {
+      throw new IntentRejectedError(intent.type, "Inner approach movement revision is stale");
+    }
+    const option = buildInnerApproachMoveOptions(this.state, intent.seatId)
+      .find((entry) => entry.sectorId === intent.destinationSectorId);
+    if (!option) {
+      throw new IntentRejectedError(intent.type, "Choose a connected inner approach step");
+    }
+    if (option.disabledReason) {
+      throw new IntentRejectedError(intent.type, option.disabledReason);
+    }
+    const routeProgress = getInnerApproachRouteProgress(this.state, intent.seatId);
+    if (!routeProgress) {
+      throw new IntentRejectedError(intent.type, "Inner approach path is unavailable");
+    }
+
+    const fromSectorId = player.character.currentSpaceId;
+    const createdAt = new Date().toISOString();
+    this.movementPreviewBySeatId.delete(intent.seatId);
+    this.applyAction({
+      type: "INNER_APPROACH_MOVED",
+      seatId: intent.seatId,
+      fromSectorId,
+      toSectorId: intent.destinationSectorId,
+      direction: option.direction,
+      pathId: routeProgress.pathId,
+      movementRevision: revision,
+      createdAt
+    } satisfies InnerApproachMovedAction);
+    this.beginMovementPresentationGate(
+      intent.seatId,
+      fromSectorId,
+      intent.destinationSectorId,
+      option.route,
+      createdAt
+    );
+    const destination = getBoardSpace(intent.destinationSectorId);
+    this.maybeAdvanceContractObjective(intent.seatId, {
+      type: "sector-visited",
+      sectorId: intent.destinationSectorId,
+      sectorTags: destination?.tags ?? []
+    }, `Visited ${destination?.name ?? intent.destinationSectorId}.`);
+    this.maybeTriggerAbilityOnMovementResolved(intent.seatId, intent.destinationSectorId, true);
+    this.applyScenarioOnSectorEntered(intent.seatId, intent.destinationSectorId);
+    if (this.maybeOpenBileSpitReaction(
+      intent.seatId,
+      intent.destinationSectorId,
+      `inner-approach-arrival:${intent.seatId}:${createdAt}`
+    )) {
+      return;
+    }
+    this.runAutomaticPhases(intent.seatId);
+    this.emitMovementDiagnostic("inner-approach-committed", intent.seatId, {
+      selectedDestinationId: intent.destinationSectorId,
+      route: option.route
+    });
+  }
+
   private beginMovementPresentationGate(
     seatId: string,
     fromSectorId: string,
@@ -9371,6 +9483,15 @@ export class GameRoomServer {
 
     if (!boardSpace) {
       throw new Error(`No board text is registered for ${player.character.currentSpaceId}`);
+    }
+    if (boardSpace.tier === "inner" && isInnerApproachChallengeCleared(this.state, player)) {
+      throw new IntentRejectedError(intent.type, `${boardSpace.name} has already been cleared by this operative`);
+    }
+    if (
+      this.state.phase !== "action" &&
+      !(this.state.phase === "navigation" && boardSpace.tier === "inner")
+    ) {
+      throw new IntentRejectedError(intent.type, `Cannot resolve ${boardSpace.name} during phase ${this.state.phase}`);
     }
 
     const boardTextEffect = resolveBoardTextEffect(boardSpace.textBox.effectKey);
@@ -11582,6 +11703,44 @@ function getPublicShopBlockedReason(
 
 function getPublicRing(tier: BoardTier): "outer" | "middle" | "inner" | "core" {
   return tier === "center" ? "core" : tier === "inner" ? "inner" : tier === "middle" ? "middle" : "outer";
+}
+
+function buildPublicInnerApproach(state: GameState, seatId: string) {
+  const player = state.players.find((entry) => entry.seatId === seatId);
+  const route = getInnerApproachRouteProgress(state, seatId);
+  if (!player || !route) return null;
+  const currentSpace = getBoardSpace(player.character.currentSpaceId);
+  if (!currentSpace) return null;
+  const cleared = new Set(route.clearedSectorIds);
+  return {
+    pathId: route.pathId,
+    pathLabel: route.pathId === "breach-road" ? "Breach Road" : "Choir Road",
+    currentSectorId: currentSpace.id,
+    currentSectorName: currentSpace.name,
+    currentIndex: route.currentIndex,
+    challengeCleared: cleared.has(currentSpace.id),
+    challengeTitle: currentSpace.textBox.title,
+    challengeDetail: currentSpace.textBox.text,
+    revision: state.movementRouteRevisions?.[seatId] ?? 0,
+    steps: route.sectorIds.map((sectorId, index) => ({
+      sectorId,
+      name: state.sectors.find((sector) => sector.id === sectorId)?.name ?? getBoardSpace(sectorId)?.name ?? sectorId,
+      status: sectorId === "center_cinder_gate"
+        ? "boss" as const
+        : cleared.has(sectorId)
+          ? "cleared" as const
+          : index === route.currentIndex
+            ? "current" as const
+            : "ahead" as const
+    })),
+    options: buildInnerApproachMoveOptions(state, seatId).map((option) => ({
+      sectorId: option.sectorId,
+      name: state.sectors.find((sector) => sector.id === option.sectorId)?.name ?? getBoardSpace(option.sectorId)?.name ?? option.sectorId,
+      direction: option.direction,
+      label: option.label,
+      disabledReason: option.disabledReason
+    }))
+  };
 }
 
 function getMovementDestinationMarkerLabel(index: number): string {
@@ -14489,6 +14648,25 @@ export function buildRequiredActionProjection(
     });
   }
 
+  const innerApproach = activeSeatId ? buildPublicInnerApproach(state, activeSeatId) : null;
+  if (state.phase === "navigation" && innerApproach) {
+    return present({
+      id: `inner-approach:${activeSeatId}:${innerApproach.revision}:${innerApproach.currentSectorId}`,
+      kind: innerApproach.challengeCleared ? "movement" : "test",
+      actorSeatId: activeSeatId,
+      requiredTab: innerApproach.challengeCleared ? "move" : "action",
+      label: innerApproach.challengeCleared ? "Advance one inner step" : `Clear ${innerApproach.currentSectorName}`,
+      ownerDetail: innerApproach.challengeCleared
+        ? "Choose the next connected approach step or retreat. Movement ends after one step."
+        : `Resolve ${innerApproach.challengeTitle}. Success permanently clears this step for your operative.`,
+      publicAction: innerApproach.challengeCleared
+        ? "choose one inner approach step"
+        : `resolve the challenge at ${innerApproach.currentSectorName}`,
+      sourceId: innerApproach.currentSectorId,
+      transitionStage: "required-action"
+    });
+  }
+
   if (context.movementActive || state.phase === "navigation") {
     const choosingPreRollTransition = context.tierTransitionAvailable && !context.movementActive;
     return present({
@@ -15103,6 +15281,7 @@ export function createTvProjection(
             : null;
         })()
       : null,
+    innerApproach: activeSeatId ? buildPublicInnerApproach(state, activeSeatId) : null,
     sectorExplorationSummary: buildPublicSectorExplorationSummary(state, activeSeatId),
     tileArrival: activeSeatId ? buildTileArrivalProjection(state, activeSeatId) : null,
     recentAbilityTriggers,
@@ -15658,6 +15837,7 @@ export function createPhoneProjection(
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
     movementPlanner: phoneMovementPlanner,
+    innerApproach: buildPublicInnerApproach(state, seatId),
     tierTransitions,
     transitionRouteAid,
     sectorExplorationSummary: buildPublicSectorExplorationSummary(state, seatId),

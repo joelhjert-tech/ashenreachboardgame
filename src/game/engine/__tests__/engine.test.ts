@@ -1320,7 +1320,7 @@ describe("active resolution visibility state", () => {
     });
   });
 
-  it("keeps resolution visible until continue reaches an outcome stage", () => {
+  it("keeps the resolution visible through its internal outcome and stable Continue stages", () => {
     const state = createState({
       activeResolution: {
         id: "seat-1:threat:signal-static:test",
@@ -1363,10 +1363,21 @@ describe("active resolution visibility state", () => {
     if (!secondContinue.ok) {
       return;
     }
-    expect(secondContinue.state.activeResolution).toBeNull();
+    expect(secondContinue.state.activeResolution?.stage).toBe("awaiting_continue");
+
+    const finalContinue = reduceGameState(secondContinue.state, {
+      type: "CONTINUE_RESOLUTION",
+      seatId: "seat-1",
+      createdAt: "2026-06-26T00:00:05.000Z"
+    });
+    expect(finalContinue.ok).toBe(true);
+    if (!finalContinue.ok) {
+      return;
+    }
+    expect(finalContinue.state.activeResolution).toBeNull();
   });
 
-  it("does not apply pending movement failure effects while the outcome summary is visible", () => {
+  it("applies pending movement consequences before exposing the stable Continue stage", () => {
     const server = new GameRoomServer(
       createState({
         phase: "resolution",
@@ -1423,8 +1434,8 @@ describe("active resolution visibility state", () => {
     (server as any).runAutomaticPhases("seat-1");
 
     expect(server.getState().phase).toBe("resolution");
-    expect(server.getState().activeResolution?.stage).toBe("outcome_summary");
-    expect(server.getState().pendingEffect).toEqual({ type: "legacy_compatibility_noop" });
+    expect(server.getState().activeResolution?.stage).toBe("awaiting_continue");
+    expect(server.getState().pendingEffect).toBeNull();
   });
 
   it("recovers an orphaned resolution state when the player continues", () => {
@@ -5470,7 +5481,7 @@ describe("escalation flow", () => {
       players: createState().players.slice(0, 1).map((player) => ({
         ...player,
         sectorId: "inner_gate_of_cinders",
-        private: { ...player.private, notes: ["guardian-span-clearance"] },
+        private: { ...player.private, notes: [] },
         character: {
           ...player.character,
           currentSpaceId: "inner_gate_of_cinders"
@@ -5530,16 +5541,18 @@ describe("escalation flow", () => {
     );
 
     server.handleIntent(client as never, {
-      type: "TIER_TRANSITION_REQUESTED",
+      type: "INNER_APPROACH_MOVE_REQUESTED",
       seatId: "seat-1",
       destinationSectorId: "center_cinder_gate",
       movementRevision: server.getState().movementRouteRevisions?.["seat-1"] ?? 0
     });
 
-    expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain("Breach the Gate of Cinders first");
+    expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain(
+      "Clear Gate of Cinders before advancing"
+    );
   });
 
-  it("lets Guardian Span board text earn the clearance note and then opens the inner breach move", () => {
+  it("keeps Guardian Span board text narrative while an owned Artifact opens the inner breach move", () => {
     const state = createState({
       phase: "action",
       turnOrder: ["seat-1"],
@@ -5549,7 +5562,17 @@ describe("escalation flow", () => {
         sectorId: "middle_guardian_span",
         character: {
           ...player.character,
-          currentSpaceId: "middle_guardian_span"
+          currentSpaceId: "middle_guardian_span",
+          heldGear: [
+            ...player.character.heldGear,
+            {
+              id: "artifact-inner-entry-test",
+              name: "Inner Entry Test Artifact",
+              slot: "utility",
+              statBonus: { stat: "signal", amount: 1 },
+              tier: "artifact"
+            }
+          ]
         }
       })),
       sectors: [
@@ -5587,9 +5610,8 @@ describe("escalation flow", () => {
       choiceId: "seal-alignment"
     });
 
-    expect(server.getState().players[0]?.private.notes).toContain("guardian-span-clearance");
     expect(server.getState().players[0]?.private.notes).toContain(
-      "Guardian Span threshold aligned for breach entry."
+      "Guardian Span threshold routes charted."
     );
 
     endBroadcastTurn(server);
@@ -5604,7 +5626,7 @@ describe("escalation flow", () => {
     expect(server.getState().players[0]?.sectorId).toBe("inner_veil_rift");
   });
 
-  it("allows entry into the core chamber after Gate of Cinders board text earns the breach note", () => {
+  it("allows entry into the core chamber after Gate of Cinders is authoritatively cleared", () => {
     const server = new GameRoomServer(
       withOnlyConnectedSeat(
         createState({
@@ -5615,7 +5637,7 @@ describe("escalation flow", () => {
           players: createState().players.slice(0, 1).map((player) => ({
             ...player,
             sectorId: "inner_gate_of_cinders",
-            private: { ...player.private, notes: ["guardian-span-clearance"] },
+            private: { ...player.private, notes: [] },
             character: {
               ...player.character,
               currentSpaceId: "inner_gate_of_cinders"
@@ -5656,14 +5678,16 @@ describe("escalation flow", () => {
       choiceId: "time-relays"
     });
 
-    expect(server.getState().players[0]?.private.notes).toContain("gate-of-cinders-breached");
     expect(server.getState().players[0]?.private.notes).toContain(
       "Gate of Cinders relay pulse timed cleanly for the core breach."
+    );
+    expect(server.getState().players[0]?.innerApproachProgress?.clearedSectorIds).toContain(
+      "inner_gate_of_cinders"
     );
 
     endBroadcastTurn(server);
     runIntent(server, {
-      type: "TIER_TRANSITION_REQUESTED",
+      type: "INNER_APPROACH_MOVE_REQUESTED",
       seatId: "seat-1",
       destinationSectorId: "center_cinder_gate",
       movementRevision: server.getState().movementRouteRevisions?.["seat-1"] ?? 0

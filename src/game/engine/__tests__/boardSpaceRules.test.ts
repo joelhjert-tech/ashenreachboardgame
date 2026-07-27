@@ -101,18 +101,14 @@ describe("board space data", () => {
     expect(veilRift?.movementRequirements).toEqual([
       {
         allowedFrom: ["middle_guardian_span"],
-        requiredNotes: ["guardian-span-clearance"],
-        errorMessage: "Requires Guardian Span Clearance"
+        minimumArtifacts: 1,
+        errorMessage: "Requires at least 1 Artifact"
       }
     ]);
     expect(cinderGate?.movementRequirements).toEqual([
       {
-        allowedFrom: ["inner_gate_of_cinders", "inner_blackstar_shortcut"],
-        errorMessage: "Enter the Core from the Last Signal Well or Dead Star Reliquary"
-      },
-      {
-        requiredNotes: ["gate-of-cinders-breached"],
-        errorMessage: "Breach the Gate of Cinders first"
+        allowedFrom: ["inner_gate_of_cinders"],
+        errorMessage: "Enter the Core through the Gate of Cinders"
       }
     ]);
   });

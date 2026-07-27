@@ -211,7 +211,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Artifact recharge spaces may spend a Gear charge to restore 2 Seal Integrity."
     ],
     tileEventHooks: [
-      "The Last Signal Well begins with a Blue threat marker.",
+      "The Gate of Cinders begins with a Blue threat marker.",
       "Pilgrim Lock or Static Chapel may hold the first shrine boon token.",
       "Anomaly sectors receive new Blue pressure when the Seal track rolls 3-4."
     ],
@@ -221,7 +221,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     },
     setup: [
       "Place 6 Seal tokens on the scenario sheet.",
-      "Place 1 Blue threat icon on The Last Signal Well.",
+      "Place 1 Blue threat icon on the Gate of Cinders.",
       "Place 1 shrine boon token on Pilgrim Lock or Static Chapel."
     ],
     specialRules: [

@@ -198,6 +198,65 @@ describe("single-player movement lifecycle", () => {
     )).toHaveLength(1);
   });
 
+  it("resolves one cleared inner approach step and rejects stale replay", () => {
+    const state = createInitialSessionState("solo-inner-approach", "single-player");
+    state.status = "active";
+    state.phase = "navigation";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.movementRouteRevisions = { "seat-1": 4 };
+    state.seats[0] = {
+      ...state.seats[0]!,
+      connected: true,
+      characterSelected: true,
+      ready: true
+    };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "inner_veil_rift",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "inner_veil_rift",
+        status: "active"
+      },
+      innerApproachProgress: {
+        pathId: "breach-road",
+        clearedSectorIds: ["inner_veil_rift"]
+      }
+    };
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]));
+    const messages: Array<Record<string, unknown>> = [];
+
+    server.handleIntent(client("seat-1", messages), {
+      type: "INNER_APPROACH_MOVE_REQUESTED",
+      seatId: "seat-1",
+      destinationSectorId: "inner_tomb_gate",
+      movementRevision: 4
+    });
+
+    expect(messages).toEqual([]);
+    expect(server.getState().players[0]?.character.currentSpaceId).toBe("inner_tomb_gate");
+    expect(server.getState().movementRouteRevisions?.["seat-1"]).toBe(5);
+    expect(server.getState().eventLog.filter((event) =>
+      (event as { type?: string }).type === "INNER_APPROACH_MOVED"
+    )).toHaveLength(1);
+
+    const staleMessages: Array<Record<string, unknown>> = [];
+    server.handleIntent(client("seat-1", staleMessages), {
+      type: "INNER_APPROACH_MOVE_REQUESTED",
+      seatId: "seat-1",
+      destinationSectorId: "inner_tomb_gate",
+      movementRevision: 4
+    });
+    expect(staleMessages).toEqual([expect.objectContaining({
+      type: "INTENT_REJECTED",
+      actionType: "INNER_APPROACH_MOVE_REQUESTED"
+    })]);
+    expect(server.getState().eventLog.filter((event) =>
+      (event as { type?: string }).type === "INNER_APPROACH_MOVED"
+    )).toHaveLength(1);
+  });
+
   it("completes a thirty-turn release soak with one owner, deterministic routes, and reconnect-safe projections", () => {
     const state = makeActiveSoloState("solo-thirty-turns");
     const diagnostics: MovementTransitionDiagnostic[] = [];

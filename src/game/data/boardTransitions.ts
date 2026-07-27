@@ -14,6 +14,7 @@ export interface BoardRingTransition {
   activationTiming: "beforeRoll";
   endsMovement: true;
   requiredNotes: string[];
+  minimumArtifacts: number;
   allowedFrom: string[];
   lockedReason: string | null;
   uiLabel: string;
@@ -29,6 +30,9 @@ function createTransition(sourceSectorId: string, destinationSectorId: string): 
   }
   const requirements = getBoardSpace(destinationSectorId)?.movementRequirements ?? [];
   const requiredNotes = [...new Set(requirements.flatMap((requirement) => requirement.requiredNotes ?? []))];
+  const minimumArtifacts = sourceNode.ring === "middle" && destinationNode.ring === "inner"
+    ? Math.max(1, ...requirements.map((requirement) => requirement.minimumArtifacts ?? 0))
+    : Math.max(0, ...requirements.map((requirement) => requirement.minimumArtifacts ?? 0));
   const allowedFrom = [...new Set(requirements.flatMap((requirement) => requirement.allowedFrom ?? []))];
   const lockedReason = requirements.find((requirement) => requirement.errorMessage)?.errorMessage ?? null;
   const direction = ringDepth[destinationNode.ring] > ringDepth[sourceNode.ring] ? "inward" : "outward";
@@ -46,6 +50,7 @@ function createTransition(sourceSectorId: string, destinationSectorId: string): 
     activationTiming: "beforeRoll",
     endsMovement: true,
     requiredNotes,
+    minimumArtifacts,
     allowedFrom,
     lockedReason,
     uiLabel: direction === "inward" ? `Enter ${destinationLabel}` : `Return to ${destinationLabel}`

@@ -95,6 +95,10 @@ function createPlayerState(
       hand: [],
       notes: []
     },
+    innerApproachProgress: {
+      pathId: null,
+      clearedSectorIds: []
+    },
     faceupAfflictions: [],
     facedownAfflictions: [],
     afflictionUsageState: createInitialAfflictionUsageState(),

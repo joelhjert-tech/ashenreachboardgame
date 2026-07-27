@@ -719,7 +719,7 @@ describe("BoardMap", () => {
     expect(screen.getByText(/sector rule/i)).toBeInTheDocument();
     expect(screen.getByText(/scenario directive controls the final confrontation/i)).toBeInTheDocument();
     expect(screen.getByText(/the ashen reach core is not a place/i)).toBeInTheDocument();
-    expect(screen.getByText(/from the last signal well/i)).toBeInTheDocument();
-    expect(screen.getByText(/needs gate-of-cinders-breached/i)).toBeInTheDocument();
+    expect(screen.getByText(/from gate of cinders/i)).toBeInTheDocument();
+    expect(screen.queryByText(/gate-of-cinders-breached/i)).not.toBeInTheDocument();
   });
 });

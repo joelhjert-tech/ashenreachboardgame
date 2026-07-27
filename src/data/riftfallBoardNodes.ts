@@ -40,7 +40,7 @@ const outerSeeds: RingNodeSeed[] = [
 
 const middleSeeds: RingNodeSeed[] = [
   { id: "middle_red_march_outpost", label: "Choir Bastion", ring: "middle", links: ["choir-execution-court"] },
-  { id: "middle_anomaly_well", label: "Static Chapel", ring: "middle", links: ["inner_cinder_lattice"] },
+  { id: "middle_anomaly_well", label: "Static Chapel", ring: "middle", links: ["choir-execution-court"] },
   { id: "middle_shard_sprawl", label: "Chain-Maul Yard", ring: "middle" },
   { id: "middle_rivalry_pit", label: "Mirror Barracks", ring: "middle" },
   { id: "black-relay-spire", label: "Black Relay Spire", ring: "middle" },
@@ -58,15 +58,26 @@ const middleSeeds: RingNodeSeed[] = [
 ];
 
 const innerSeeds: RingNodeSeed[] = [
-  { id: "inner_gate_of_cinders", label: "The Last Signal Well", ring: "inner", links: ["center_cinder_gate"] },
-  { id: "inner_choir_shrine", label: "Saint Engine Crypt", ring: "inner" },
-  { id: "inner_cinder_lattice", label: "The Crownless Observatory", ring: "inner" },
-  { id: "choir-execution-court", label: "Hollow Court", ring: "inner", links: ["middle_rivalry_pit"] },
-  { id: "inner_veil_rift", label: "Melted Gate", ring: "inner" },
-  { id: "inner_tomb_gate", label: "Rifted Approach", ring: "inner" },
-  { id: "inner_blackstar_shortcut", label: "Dead Star Reliquary", ring: "inner", links: ["center_cinder_gate"] },
-  { id: "the-bone-meridian", label: "Bone Meridian", ring: "inner" }
+  { id: "inner_gate_of_cinders", label: "Gate of Cinders", ring: "inner", links: ["center_cinder_gate"] },
+  { id: "inner_choir_shrine", label: "Saint Engine Crypt", ring: "inner", links: ["the-bone-meridian"] },
+  { id: "inner_cinder_lattice", label: "The Crownless Observatory", ring: "inner", links: ["inner_choir_shrine"] },
+  { id: "choir-execution-court", label: "Hollow Court", ring: "inner", links: ["middle_rivalry_pit", "inner_cinder_lattice"] },
+  { id: "inner_veil_rift", label: "Melted Gate", ring: "inner", links: ["inner_tomb_gate"] },
+  { id: "inner_tomb_gate", label: "Rifted Approach", ring: "inner", links: ["inner_blackstar_shortcut"] },
+  { id: "inner_blackstar_shortcut", label: "Dead Star Reliquary", ring: "inner", links: ["the-bone-meridian"] },
+  { id: "the-bone-meridian", label: "Bone Meridian", ring: "inner", links: ["inner_gate_of_cinders"] }
 ];
+
+const innerApproachPositions: Record<string, { x: number; y: number }> = {
+  inner_veil_rift: { x: 0.28, y: 0.46 },
+  inner_tomb_gate: { x: 0.34, y: 0.39 },
+  inner_blackstar_shortcut: { x: 0.4, y: 0.32 },
+  "choir-execution-court": { x: 0.72, y: 0.46 },
+  inner_cinder_lattice: { x: 0.66, y: 0.39 },
+  inner_choir_shrine: { x: 0.6, y: 0.32 },
+  "the-bone-meridian": { x: 0.5, y: 0.3 },
+  inner_gate_of_cinders: { x: 0.5, y: 0.4 }
+};
 
 const centerSeed: RingNodeSeed = {
   id: "center_cinder_gate",
@@ -167,16 +178,6 @@ function buildBoardNodes(): BoardNode[] {
     bottomCount: 6,
     leftCount: 2
   });
-  const innerPositions = rectangularTrackPositions({
-    left: 0.34,
-    right: 0.66,
-    top: 0.4,
-    bottom: 0.6,
-    topCount: 2,
-    rightCount: 2,
-    bottomCount: 2,
-    leftCount: 2
-  });
   const positionedSeeds: BoardNode[] = [
     ...outerSeeds.map((seed, index) => ({
       ...seed,
@@ -190,7 +191,7 @@ function buildBoardNodes(): BoardNode[] {
     })),
     ...innerSeeds.map((seed, index) => ({
       ...seed,
-      ...(innerPositions[index] ?? ringPosition(index, innerSeeds.length, 0.18, 0.15, 90)),
+      ...(innerApproachPositions[seed.id] ?? ringPosition(index, innerSeeds.length, 0.18, 0.15, 90)),
       connections: []
     })),
     { ...centerSeed, x: 0.5, y: 0.5, connections: [] }
@@ -199,7 +200,6 @@ function buildBoardNodes(): BoardNode[] {
 
   connectRing(connectionsById, outerSeeds);
   connectRing(connectionsById, middleSeeds);
-  connectRing(connectionsById, innerSeeds);
 
   [...outerSeeds, ...middleSeeds, ...innerSeeds].forEach((seed) => {
     seed.links?.forEach((targetId) => addConnection(connectionsById, seed.id, targetId));

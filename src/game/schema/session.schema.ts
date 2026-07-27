@@ -288,6 +288,10 @@ export const playerStateSchema = z.object({
   character: characterSchema,
   sectorId: z.string().min(1),
   private: playerPrivateStateSchema,
+  innerApproachProgress: z.object({
+    pathId: z.enum(["breach-road", "choir-road"]).nullable(),
+    clearedSectorIds: z.array(z.string().min(1))
+  }).strict().optional(),
   faceupAfflictions: z.array(afflictionInstanceSchema).optional(),
   facedownAfflictions: z.array(afflictionInstanceSchema).optional(),
   afflictionUsageState: afflictionUsageStateSchema.optional(),

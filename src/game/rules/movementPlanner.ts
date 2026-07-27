@@ -3,6 +3,10 @@ import { getBoardSpace } from "../data/boardSpaces.js";
 import { BOARD_RING_TRANSITIONS, type BoardRing } from "../data/boardTransitions.js";
 import type { GameState, PlayerState } from "../schema/session.schema.js";
 import { hasCrownKeyFragment } from "./nemesisRelay.js";
+import {
+  isInnerApproachChallengeCleared,
+  isInnerApproachSector
+} from "./innerApproach.js";
 
 export type MovementRoute = {
   routeId: string;
@@ -66,6 +70,10 @@ function getPlayer(state: GameState, seatId: string): PlayerState | null {
   return state.players.find((entry) => entry.seatId === seatId) ?? null;
 }
 
+function getOwnedArtifactCount(player: PlayerState): number {
+  return (player.character.heldGear ?? []).filter((item) => item.tier === "artifact").length;
+}
+
 export function buildTransitionRouteAidDestinations(
   state: GameState,
   seatId: string
@@ -74,7 +82,7 @@ export function buildTransitionRouteAidDestinations(
   if (!player) return [];
   const originId = player.character.currentSpaceId;
   const origin = getBoardSpace(originId);
-  if (!origin || origin.tier === "center") return [];
+  if (!origin || origin.tier === "inner" || origin.tier === "center") return [];
 
   const transitionIds = new Set(
     RIFTFALL_BOARD_NODES
@@ -126,6 +134,7 @@ export function buildTierTransitionOptions(
   const player = getPlayer(state, seatId);
   if (!player) return [];
   const originId = player.character.currentSpaceId;
+  if (getBoardSpace(originId)?.tier === "inner") return [];
 
   return BOARD_RING_TRANSITIONS
     .filter((transition) => transition.sourceSectorId === originId)
@@ -159,8 +168,10 @@ export function canVoidKeyOverrideTierTransition(
     .find((entry) => entry.sectorId === toSectorId);
   const target = getBoardSpace(toSectorId);
   if (!player || !transition?.disabledReason || !target?.movementRequirements?.length) return false;
+  if (target.tier === "inner" || target.tier === "center") return false;
 
   const notes = new Set(player.private.notes);
+  const artifactCount = getOwnedArtifactCount(player);
   const supportedReasons = target.movementRequirements.flatMap((requirement) => {
     const blockedByFrom = Boolean(
       requirement.allowedFrom && !requirement.allowedFrom.includes(player.character.currentSpaceId)
@@ -168,7 +179,10 @@ export function canVoidKeyOverrideTierTransition(
     const blockedByNotes = Boolean(
       requirement.requiredNotes && !requirement.requiredNotes.every((note) => notes.has(note))
     );
-    return blockedByFrom || blockedByNotes ? [requirement.errorMessage] : [];
+    const blockedByArtifacts = Boolean(
+      requirement.minimumArtifacts && artifactCount < requirement.minimumArtifacts
+    );
+    return blockedByFrom || blockedByNotes || blockedByArtifacts ? [requirement.errorMessage] : [];
   });
 
   return supportedReasons.length === 1 && supportedReasons[0] === transition.disabledReason;
@@ -215,7 +229,7 @@ function getRingTrack(ring: BoardNode["ring"]): BoardNode[] {
 export function getRingTrackNeighbor(sectorId: string, direction: -1 | 1): string | null {
   const node = RIFTFALL_BOARD_NODE_INDEX.get(sectorId);
 
-  if (!node || node.ring === "center") {
+  if (!node || node.ring === "inner" || node.ring === "center") {
     return null;
   }
 
@@ -365,7 +379,9 @@ export function getMovementStepBlockReason(
 ): string | null {
   const fromSector = state.sectors.find((sector) => sector.id === fromSectorId);
   const targetSpace = getBoardSpace(toSectorId);
+  const fromSpace = getBoardSpace(fromSectorId);
   const notes = new Set(player.private.notes);
+  const artifactCount = getOwnedArtifactCount(player);
 
   if (!fromSector) {
     return `Unknown sector ${fromSectorId}`;
@@ -379,6 +395,26 @@ export function getMovementStepBlockReason(
 
   if (regionTransitionBlockReason) {
     return regionTransitionBlockReason;
+  }
+
+  if (fromSpace?.tier === "middle" && targetSpace?.tier === "inner" && artifactCount < 1) {
+    return "At least 1 Artifact is required to enter the Inner Reach";
+  }
+
+  if (
+    (fromSpace?.tier === "inner" || targetSpace?.tier === "inner") &&
+    fromSpace?.tier === targetSpace?.tier
+  ) {
+    return "Inner Reach movement follows one cleared approach step per turn";
+  }
+
+  if (targetSpace?.tier === "center") {
+    if (fromSectorId !== "inner_gate_of_cinders") {
+      return "Enter the Core through the Gate of Cinders";
+    }
+    if (!isInnerApproachChallengeCleared(state, player, "inner_gate_of_cinders")) {
+      return "Clear the Gate of Cinders before entering the Core";
+    }
   }
 
   if (
@@ -398,6 +434,10 @@ export function getMovementStepBlockReason(
     if (requirement.requiredNotes && !requirement.requiredNotes.every((note) => notes.has(note))) {
       return requirement.errorMessage;
     }
+
+    if (requirement.minimumArtifacts && artifactCount < requirement.minimumArtifacts) {
+      return requirement.errorMessage;
+    }
   }
 
   return null;
@@ -414,6 +454,10 @@ export function buildMovementRoutePlan(state: GameState, seatId: string): Moveme
   const currentSector = state.sectors.find((sector) => sector.id === currentSectorId);
 
   if (!currentSector || !hasMovementRollForSeat(state, seatId)) {
+    return null;
+  }
+
+  if (isInnerApproachSector(currentSectorId)) {
     return null;
   }
 

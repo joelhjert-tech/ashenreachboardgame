@@ -292,6 +292,52 @@ describe("server required-action projection", () => {
     expect(after).toEqual(before);
   });
 
+  it("routes an uncleared inner trial to Action and a cleared step to Move", () => {
+    const state = activateMultiplayer();
+    const seatId = state.turnOrder[0]!;
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "inner_tomb_gate",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "inner_tomb_gate"
+      },
+      innerApproachProgress: {
+        pathId: "breach-road",
+        clearedSectorIds: ["inner_veil_rift"]
+      }
+    };
+
+    const challenge = createPhoneProjection(state, seatId);
+    expect(requiredAction(challenge)).toMatchObject({
+      kind: "test",
+      requiredTab: "action",
+      label: "Clear Rifted Approach",
+      sourceId: "inner_tomb_gate"
+    });
+    expect(challenge.innerApproach).toMatchObject({
+      pathId: "breach-road",
+      currentSectorId: "inner_tomb_gate",
+      challengeCleared: false
+    });
+
+    state.players[0]!.innerApproachProgress!.clearedSectorIds.push("inner_tomb_gate");
+    const advance = createPhoneProjection(state, seatId);
+    expect(requiredAction(advance)).toMatchObject({
+      kind: "movement",
+      requiredTab: "move",
+      label: "Advance one inner step"
+    });
+    const innerApproach = advance.innerApproach as
+      | { options: Array<{ sectorId: string; direction: string; disabledReason: string | null }> }
+      | null;
+    expect(innerApproach?.options[0]).toMatchObject({
+      sectorId: "inner_blackstar_shortcut",
+      direction: "advance",
+      disabledReason: null
+    });
+  });
+
   it("projects result, continuation, and end-turn stages without a client-authored transition", () => {
     const state = activateMultiplayer();
     const ownerSeatId = state.turnOrder[0]!;

@@ -198,7 +198,7 @@ describe("PhoneMovementView", () => {
               fromRing: "outer",
               toRing: "middle",
               label: "Enter Middle Reach",
-              disabledReason: "Requires Guardian Span Clearance"
+              disabledReason: "Requires at least 1 Artifact"
             }
           ]
         }}
@@ -250,6 +250,71 @@ describe("PhoneMovementView", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Roll movement" }));
     expect(onIntent).toHaveBeenCalledWith({ type: "MOVEMENT_ROLL_REQUESTED", seatId: "seat-1" });
+  });
+
+  it("shows one-step inner progression and submits only the authoritative connected step", () => {
+    const onIntent = vi.fn();
+    render(
+      <PhoneMovementView
+        planner={null}
+        seatId="seat-1"
+        activeContract={null}
+        currentSectorName="Rifted Approach"
+        canRoll={false}
+        movementResolving={false}
+        travel={null}
+        selectedSectorId={null}
+        onSelectedSectorId={vi.fn()}
+        onIntent={onIntent}
+        showContextNavigation={false}
+        innerApproach={{
+          pathId: "breach-road",
+          pathLabel: "Breach Road",
+          currentSectorId: "inner_tomb_gate",
+          currentSectorName: "Rifted Approach",
+          currentIndex: 1,
+          challengeCleared: true,
+          challengeTitle: "Marshal's Road",
+          challengeDetail: "Clear the grave route.",
+          revision: 12,
+          steps: [
+            { sectorId: "inner_veil_rift", name: "Melted Gate", status: "cleared" },
+            { sectorId: "inner_tomb_gate", name: "Rifted Approach", status: "cleared" },
+            { sectorId: "inner_blackstar_shortcut", name: "Dead Star Reliquary", status: "ahead" },
+            { sectorId: "the-bone-meridian", name: "Bone Meridian", status: "ahead" },
+            { sectorId: "inner_gate_of_cinders", name: "Gate of Cinders", status: "ahead" },
+            { sectorId: "center_cinder_gate", name: "The Ashen Reach Core", status: "boss" }
+          ],
+          options: [
+            {
+              sectorId: "inner_blackstar_shortcut",
+              name: "Dead Star Reliquary",
+              direction: "advance",
+              label: "Advance to Dead Star Reliquary",
+              disabledReason: null
+            },
+            {
+              sectorId: "inner_veil_rift",
+              name: "Melted Gate",
+              direction: "retreat",
+              label: "Retreat to Melted Gate",
+              disabledReason: null
+            }
+          ]
+        }}
+      />
+    );
+
+    expect(screen.getByRole("region", { name: "Breach Road progression" })).toHaveTextContent("one step per turn");
+    expect(screen.queryByRole("button", { name: "Roll movement" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("movement-action-region")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Advance.*Dead Star Reliquary/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "INNER_APPROACH_MOVE_REQUESTED",
+      seatId: "seat-1",
+      destinationSectorId: "inner_blackstar_shortcut",
+      movementRevision: 12
+    });
   });
 
   it("shows a new authoritative movement result before compacting it after 100ms", () => {

@@ -2877,6 +2877,7 @@ function PhoneMovePanel({
   diceCount,
   hostView,
   tierTransitions,
+  innerApproach,
   transitionRouteAid
 }: {
   movementPlanner: PublicMovementPlannerState | null | undefined;
@@ -2900,6 +2901,7 @@ function PhoneMovePanel({
   diceCount?: number;
   hostView?: PublicHostViewState;
   tierTransitions?: PhonePatchPayload["tierTransitions"];
+  innerApproach?: PhonePatchPayload["innerApproach"];
   transitionRouteAid?: PhonePatchPayload["transitionRouteAid"];
 }): ReactElement {
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(() => movementPlanner?.selectedDestinationId ?? null);
@@ -3039,6 +3041,7 @@ function PhoneMovePanel({
         diceCount={diceCount}
         hostView={hostView}
         tierTransitions={tierTransitions}
+        innerApproach={innerApproach}
       />
     </>
   );
@@ -4129,11 +4132,49 @@ export function PhoneActionPanel({
     });
   }
 
+  if (
+    patch.phase === "navigation" &&
+    patch.innerApproach &&
+    !patch.innerApproach.challengeCleared &&
+    boardSpace?.tier === "inner"
+  ) {
+    if (boardSpace.textBox.choices && boardSpace.textBox.choices.length > 0) {
+      boardSpace.textBox.choices.forEach((choice) => {
+        resolveActions.push({
+          key: `resolve-inner-approach-${choice.id}`,
+          label: choice.label,
+          detail: `${boardSpace.textBox.title}: advancement remains locked until success`,
+          tone: "primary",
+          onClick: () =>
+            onIntent({
+              type: "RESOLVE_SPACE_TEXT",
+              seatId: self.seatId,
+              choiceId: choice.id
+            })
+        });
+      });
+    } else {
+      resolveActions.push({
+        key: "resolve-inner-approach",
+        label: `Attempt ${boardSpace.textBox.title}`,
+        detail: "Success clears this approach step permanently for your operative.",
+        tone: "primary",
+        onClick: () =>
+          onIntent({
+            type: "RESOLVE_SPACE_TEXT",
+            seatId: self.seatId
+          })
+      });
+    }
+  }
+
   if (patch.phase === "action") {
     const canResolveSpaceText =
       !patch.encounter &&
       !!boardSpace &&
-      (boardSpace.tier === "inner" || boardSpace.tier === "center" || (sector?.encounterDecks.threat.length ?? 0) === 0);
+      (boardSpace.tier === "inner"
+        ? !patch.innerApproach?.challengeCleared
+        : boardSpace.tier === "center" || (sector?.encounterDecks.threat.length ?? 0) === 0);
 
     if (canResolveSpaceText && !isScenarioConfrontation) {
       if (boardSpace?.textBox.choices && boardSpace.textBox.choices.length > 0) {
@@ -4672,7 +4713,7 @@ export function PhoneActionPanel({
         seatId={self.seatId}
         activeContract={activeContract}
         onIntent={onIntent}
-        canRollMovement={patch.phase === "navigation" && !movementPlanner?.active}
+        canRollMovement={patch.phase === "navigation" && !movementPlanner?.active && !patch.innerApproach}
         movementResolving={Boolean(!movementPlanner?.active && (movementTravelPresentation || (patch.phase !== "navigation" && (activeResolution || movementOutcome))))}
         showContextNavigation={movementFlowActive && showMovementContextNavigation}
         onContextNavigation={onMovementNavigation}
@@ -4683,6 +4724,7 @@ export function PhoneActionPanel({
         diceCount={self.character.id === "char_ker_von_ker" ? 2 : 1}
         hostView={patch.hostView}
         tierTransitions={patch.tierTransitions}
+        innerApproach={patch.innerApproach}
         transitionRouteAid={patch.transitionRouteAid}
       />
     ) : activeTurnTab === "battle" ? (

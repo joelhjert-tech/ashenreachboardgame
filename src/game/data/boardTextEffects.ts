@@ -421,8 +421,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         effect: {
           type: "sequence",
           effects: [
-            { type: "gain_note", text: "guardian-span-clearance" },
-            { type: "gain_note", text: "Guardian Span threshold aligned for breach entry." }
+            { type: "gain_note", text: "Guardian Span threshold routes charted." }
           ]
         },
         failureSummary: "The threshold seals resisted alignment and the span lashed back with pressure."
@@ -435,8 +434,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         effect: {
           type: "sequence",
           effects: [
-            { type: "gain_note", text: "guardian-span-clearance" },
-            { type: "gain_note", text: "Guardian Span route marker held long enough to chart the breach." }
+            { type: "gain_note", text: "Guardian Span ghost route charted." }
           ]
         },
         failureSummary: "The ghost marker bled out across the span and left you exposed to the threshold wash."
@@ -541,11 +539,8 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         difficulty: 12,
         summary: "Braced the cinder locks apart and forced a direct breach into the core chamber.",
         effect: {
-          type: "sequence",
-          effects: [
-            { type: "gain_note", text: "gate-of-cinders-breached" },
-            { type: "gain_note", text: "Gate of Cinders forced open under brute brace pressure." }
-          ]
+          type: "gain_note",
+          text: "Gate of Cinders forced open under brute brace pressure."
         },
         failureSummary: "The cinder locks held under the strain and burned the operative back."
       },
@@ -555,11 +550,8 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         difficulty: 12,
         summary: "Timed the relay pulse perfectly and cut a clean breach into the core chamber.",
         effect: {
-          type: "sequence",
-          effects: [
-            { type: "gain_note", text: "gate-of-cinders-breached" },
-            { type: "gain_note", text: "Gate of Cinders relay pulse timed cleanly for the core breach." }
-          ]
+          type: "gain_note",
+          text: "Gate of Cinders relay pulse timed cleanly for the core breach."
         },
         failureSummary: "The relay timing slipped and the gate answered with a surge of static backlash."
       },
@@ -569,11 +561,8 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         difficulty: 12,
         summary: "Ghosted the last breach path and slipped a viable route into the core chamber.",
         effect: {
-          type: "sequence",
-          effects: [
-            { type: "gain_note", text: "gate-of-cinders-breached" },
-            { type: "gain_note", text: "Gate of Cinders ghost-path fixed long enough to reach the core." }
-          ]
+          type: "gain_note",
+          text: "Gate of Cinders ghost-path fixed long enough to reach the core."
         },
         failureSummary: "The ghost-path collapsed underfoot and left the approach running hot."
       }

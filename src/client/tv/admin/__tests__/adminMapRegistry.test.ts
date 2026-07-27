@@ -54,7 +54,6 @@ describe("admin map registry", () => {
   it("evaluates permission profiles through the production movement gate checks", () => {
     const withoutNotes = checkAdminReachability("ashwake-crossing");
     const withKnownClearances = checkAdminReachability("ashwake-crossing", [
-      "guardian-span-clearance",
       "gate-of-cinders-breached"
     ]);
 
@@ -65,7 +64,7 @@ describe("admin map registry", () => {
   it("surfaces canonical blocked reasons for closed movement gates", () => {
     const simulation = buildAdminMovementSimulation("middle_guardian_span", 1);
     expect(simulation.tierTransitions.some((transition) =>
-      /guardian span clearance|clearance/i.test(transition.disabledReason ?? "")
+      /at least 1 artifact is required/i.test(transition.disabledReason ?? "")
     )).toBe(true);
   });
 });

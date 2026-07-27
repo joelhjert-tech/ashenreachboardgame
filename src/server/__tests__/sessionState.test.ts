@@ -1385,8 +1385,8 @@ describe("canonical sector graph", () => {
       character: {
         ...state.players[0]!.character,
         currentSpaceId: "middle_guardian_span",
-        heldGear: [{ id: "void-key", instanceId: "void-key:test", name: "Void Key", slot: "utility", category: "chargedRelic", statBonus: { stat: "command", amount: 1 }, tier: "artifact", useLimit: "charge", effectModel: "charged", requiresEquipped: true, activationTiming: ["movementRouteConfirmation"], maxCharges: 2, startingCharges: 2, currentCharges: 2, chargeCost: 1, rechargeRule: "none", chargedEffect: "personalGateOverride" }],
-        equippedGear: { ...state.players[0]!.character.equippedGear, utility: "void-key" }
+        heldGear: [],
+        equippedGear: { ...state.players[0]!.character.equippedGear }
       }
     };
 
@@ -1403,11 +1403,21 @@ describe("canonical sector graph", () => {
     const innerGate = phoneProjection.tierTransitions?.options.find((destination) => destination.sectorId === "inner_veil_rift");
 
     expect(phoneProjection.tierTransitions?.revision).toBe(8);
-    expect(innerGate?.disabledReason).toBe("Requires Guardian Span Clearance");
-    expect(innerGate?.voidKeyPrompt).toMatchObject({ instanceId: "void-key:test", currentCharges: 2, maxCharges: 2 });
+    expect(innerGate?.disabledReason).toBe("At least 1 Artifact is required to enter the Inner Reach");
+    expect(innerGate?.voidKeyPrompt).toBeUndefined();
     expect(
       (createPhoneProjection(structuredClone(state), "seat-1") as typeof phoneProjection).tierTransitions
     ).toEqual(phoneProjection.tierTransitions);
+
+    state.players[0]!.character.heldGear.push({
+      id: "artifact-projection-test",
+      name: "Projection Test Artifact",
+      slot: "utility",
+      statBonus: { stat: "signal", amount: 1 },
+      tier: "artifact"
+    });
+    const withArtifact = createPhoneProjection(state, "seat-1") as typeof phoneProjection;
+    expect(withArtifact.tierTransitions?.options.find((destination) => destination.sectorId === "inner_veil_rift")?.disabledReason).toBeNull();
 
     state.movementRolls = { "seat-1": 1 };
     const afterRoll = createPhoneProjection(state, "seat-1") as {

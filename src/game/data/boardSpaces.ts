@@ -28,6 +28,7 @@ export interface MovementBoxDefinition {
 export interface MovementRequirementDefinition {
   allowedFrom?: string[];
   requiredNotes?: string[];
+  minimumArtifacts?: number;
   errorMessage: string;
 }
 
@@ -450,7 +451,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["red", "blue", "yellow"],
     textBox: {
       title: "Customs Threshold",
-      text: "Align the threshold seals with Command or ghost a route marker with Signal to gain Guardian Span Clearance.",
+      text: "Align the threshold seals with Command or ghost a route marker with Signal to chart the unstable breach.",
       effectKey: "middle_guardianSpanThreshold",
       choices: [
         {
@@ -664,8 +665,8 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     movementRequirements: [
       {
         allowedFrom: ["middle_guardian_span"],
-        requiredNotes: ["guardian-span-clearance"],
-        errorMessage: "Requires Guardian Span Clearance"
+        minimumArtifacts: 1,
+        errorMessage: "Requires at least 1 Artifact"
       }
     ],
     textBox: {
@@ -731,7 +732,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
       text: "Test Guile to cross the dead-star route and reveal an Artifact omen; failure inflicts 1 Wound.",
       effectKey: "inner_blackstarShortcut"
     },
-    notes: "High-risk inner shortcut."
+    notes: "High-risk trial on the Breach Road."
   },
   {
     id: "inner_choir_shrine",
@@ -748,13 +749,13 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
   },
   {
     id: "inner_gate_of_cinders",
-    name: "The Last Signal Well",
+    name: "Gate of Cinders",
     tier: "inner",
     index: 5,
     threatIcons: [],
     textBox: {
-      title: "Last Signal",
-      text: "Choose whether to force the last signal by endurance, relay timing, or a ghost-path through the final breach.",
+      title: "Break the Gate",
+      text: "Choose whether to force the final gate by endurance, relay timing, or a ghost-path through the cinder locks.",
       effectKey: "inner_gateOfCindersTrial",
       choices: [
         {
@@ -806,12 +807,8 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: [],
     movementRequirements: [
       {
-        allowedFrom: ["inner_gate_of_cinders", "inner_blackstar_shortcut"],
-        errorMessage: "Enter the Core from the Last Signal Well or Dead Star Reliquary"
-      },
-      {
-        requiredNotes: ["gate-of-cinders-breached"],
-        errorMessage: "Breach the Gate of Cinders first"
+        allowedFrom: ["inner_gate_of_cinders"],
+        errorMessage: "Enter the Core through the Gate of Cinders"
       }
     ],
     textBox: {
@@ -962,7 +959,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   middle_guardian_span: {
     tags: ["crossroads", "contract", "movement"],
-    ruleText: "Test Command or Signal to gain Guardian Span Clearance.",
+    ruleText: "Test Command or Signal to chart the unstable breach routes.",
     loreText: "Customs Gate taxes not just salvage, but secrets, blood type, and remembered sins."
   },
   middle_rivalry_pit: {
@@ -1062,8 +1059,8 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   inner_gate_of_cinders: {
     tags: ["scenario", "anomaly", "movement"],
-    ruleText: "Resolve the final signal trial before the Ashen Reach Core can be entered.",
-    loreText: "The Last Signal Well answers from below the board, repeating coordinates in the voices of the lost."
+    ruleText: "Clear the Gate of Cinders trial before the Ashen Reach Core can be entered.",
+    loreText: "The Gate of Cinders answers each approach with furnace locks, dead relay voices, and one last demand."
   },
   center_cinder_gate: {
     tags: ["scenario"],

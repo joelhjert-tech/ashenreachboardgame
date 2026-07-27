@@ -29,6 +29,7 @@ import type {
   MoveRequestedAction,
   TransitionRouteAidUsedAction,
   TierTransitionCompletedAction,
+  InnerApproachMovedAction,
   NemesisCombatResolvedAction,
   NemesisDefeatedAction,
   NemesisMovedAction,
@@ -135,6 +136,13 @@ import {
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import { buildMovementRoutePlan, buildTierTransitionOptions, buildTransitionRouteAidDestinations, canVoidKeyOverrideTierTransition, getForcedDisplacementDestination, getOwnerSelectedForcedDisplacementCandidates, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
+import {
+  buildInnerApproachMoveOptions,
+  getInnerApproachPathForEntry,
+  getInnerApproachProgress,
+  isInnerApproachChallengeCleared,
+  isInnerApproachSector
+} from "../rules/innerApproach.js";
 import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { canRiftAnchorSpikeSuppress } from "../rules/forcedDisplacement.js";
 import { resolveFloorZeroSalvageLoss, THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS } from "../rules/salvageLoss.js";
@@ -313,19 +321,27 @@ function canResolveSpaceText(state: GameState, seatId: string): void {
   ensureSeatTurn(state, seatId);
   ensureSeatCanTakeNormalTurnAction(state, seatId);
 
-  if (state.phase !== "action") {
-    throw new Error(`Cannot resolve space text during phase ${state.phase}`);
-  }
-
-  if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect) {
-    throw new Error("Resolve the current threat before using the sector text");
-  }
-
   const player = requirePlayer(state, seatId);
   const boardSpace = getBoardSpace(player.character.currentSpaceId);
 
   if (!boardSpace) {
     throw new Error(`No board text is registered for ${player.character.currentSpaceId}`);
+  }
+
+  if (boardSpace.tier === "inner" && isInnerApproachChallengeCleared(state, player)) {
+    throw new Error(`${boardSpace.name} has already been cleared by this operative`);
+  }
+
+  const retryingUnclearedInnerChallenge =
+    state.phase === "navigation" &&
+    boardSpace.tier === "inner" &&
+    !isInnerApproachChallengeCleared(state, player);
+  if (state.phase !== "action" && !retryingUnclearedInnerChallenge) {
+    throw new Error(`Cannot resolve space text during phase ${state.phase}`);
+  }
+
+  if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect) {
+    throw new Error("Resolve the current threat before using the sector text");
   }
 
   if (boardSpace.textBox.intent === "scenario-confrontation") {
@@ -1730,6 +1746,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       nextCharacter = { ...nextCharacter, currentSpaceId: transitionAction.toSectorId };
+      const entryPathId = getInnerApproachPathForEntry(transitionAction.toSectorId);
+      const currentInnerProgress = getInnerApproachProgress(state, player);
       const destinationName =
         state.sectors.find((sector) => sector.id === transitionAction.toSectorId)?.name
         ?? transitionAction.toSectorId;
@@ -1758,7 +1776,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           ? {
               ...entry,
               sectorId: transitionAction.toSectorId,
-              character: nextCharacter
+              character: nextCharacter,
+              innerApproachProgress: entryPathId
+                ? { ...currentInnerProgress, pathId: entryPathId }
+                : currentInnerProgress
             }
           : entry),
         lastOutcomeSummary: {
@@ -1788,6 +1809,102 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         fromSectorId: transitionAction.fromSectorId,
         toSectorId: transitionAction.toSectorId,
         createdAt: transitionAction.createdAt
+      }]);
+    }
+    case "INNER_APPROACH_MOVED": {
+      const approachAction = action as InnerApproachMovedAction;
+      try {
+        ensureSeatTurn(state, approachAction.seatId);
+        ensureSeatCanTakeNormalTurnAction(state, approachAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot traverse the inner approach");
+      }
+      if (state.phase !== "navigation" || state.movementRolls?.[approachAction.seatId]) {
+        return reject(state, action, "Inner approach movement is available only before rolling movement");
+      }
+
+      const player = requirePlayer(state, approachAction.seatId);
+      if (player.character.currentSpaceId !== approachAction.fromSectorId) {
+        return reject(state, action, "Inner approach origin is stale");
+      }
+      if ((state.movementRouteRevisions?.[approachAction.seatId] ?? 0) !== approachAction.movementRevision) {
+        return reject(state, action, "Inner approach movement revision is stale");
+      }
+      const option = buildInnerApproachMoveOptions(state, approachAction.seatId)
+        .find((entry) => entry.sectorId === approachAction.toSectorId);
+      if (!option || option.direction !== approachAction.direction || option.disabledReason) {
+        return reject(state, action, option?.disabledReason ?? "Choose a current canonical inner approach step");
+      }
+
+      const progress = getInnerApproachProgress(state, player);
+      if (progress.pathId !== approachAction.pathId) {
+        return reject(state, action, "Inner approach path identity is stale");
+      }
+      const nextCharacter = { ...player.character, currentSpaceId: approachAction.toSectorId };
+      const destinationName =
+        state.sectors.find((sector) => sector.id === approachAction.toSectorId)?.name
+        ?? approachAction.toSectorId;
+      return succeed({
+        ...state,
+        phase: "sector",
+        resolutionSource: null,
+        sequence: state.sequence + 1,
+        movementRolls: clearMovementRollForSeat(state, approachAction.seatId),
+        movementAdjustments: clearMovementAdjustmentForSeat(state, approachAction.seatId),
+        movementRouteRevisions: {
+          ...(state.movementRouteRevisions ?? {}),
+          [approachAction.seatId]: approachAction.movementRevision + 1
+        },
+        routeStarChoices: state.routeStarChoices
+          ? Object.fromEntries(Object.entries(state.routeStarChoices).filter(([seatId]) => seatId !== approachAction.seatId))
+          : undefined,
+        tileChallengeProgress: null,
+        tileArrivalThreatProgress: {
+          arrivalId: `arrival:${approachAction.seatId}:${approachAction.toSectorId}:${state.sequence + 1}`,
+          seatId: approachAction.seatId,
+          sectorId: approachAction.toSectorId,
+          nextThreatIconIndex: 0
+        },
+        players: state.players.map((entry) => entry.seatId === approachAction.seatId
+          ? {
+              ...entry,
+              sectorId: approachAction.toSectorId,
+              character: nextCharacter,
+              innerApproachProgress: {
+                ...progress,
+                pathId: approachAction.pathId
+              }
+            }
+          : entry),
+        lastOutcomeSummary: {
+          seatId: approachAction.seatId,
+          movedToSectorId: approachAction.toSectorId,
+          encounterCardId: null,
+          encounterTitle: destinationName,
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: approachAction.direction === "advance"
+            ? `Advanced one cleared inner step to ${destinationName}.`
+            : `Retreated one inner step to ${destinationName}.`
+        },
+        eventLog: [...state.eventLog, action]
+      }, [{
+        type: "MOVED",
+        seatId: approachAction.seatId,
+        fromSectorId: approachAction.fromSectorId,
+        toSectorId: approachAction.toSectorId,
+        createdAt: approachAction.createdAt
       }]);
     }
     case "MOVE_REQUESTED": {
@@ -3871,6 +3988,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ),
         players: updateActivePlayer(state, recruitAction.seatId, (entry) => ({
           ...entry,
+          innerApproachProgress: {
+            pathId: null,
+            clearedSectorIds: []
+          },
           character: ensureOwnedGearInstanceIds({
             ...recruitAction.replacementCharacter!,
             currentSpaceId: entry.sectorId,
@@ -5634,7 +5755,26 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               ]
             }
           : sectorAdjustedState;
-      const player = requirePlayer(withDiscoveredContracts, spaceTextAction.seatId);
+      const withInnerApproachClear =
+        spaceTextAction.success === true &&
+        typeof spaceTextAction.sectorId === "string" &&
+        isInnerApproachSector(spaceTextAction.sectorId)
+          ? {
+              ...withDiscoveredContracts,
+              players: withDiscoveredContracts.players.map((entry) => {
+                if (entry.seatId !== spaceTextAction.seatId) return entry;
+                const progress = getInnerApproachProgress(withDiscoveredContracts, entry);
+                return {
+                  ...entry,
+                  innerApproachProgress: {
+                    ...progress,
+                    clearedSectorIds: [...new Set([...progress.clearedSectorIds, spaceTextAction.sectorId!])]
+                  }
+                };
+              })
+            }
+          : withDiscoveredContracts;
+      const player = requirePlayer(withInnerApproachClear, spaceTextAction.seatId);
       const spaceTitle = getBoardSpace(player.character.currentSpaceId)?.name ?? player.character.currentSpaceId;
       const resolutionSource = inferSpaceTextResolutionSource(spaceTextAction);
       const resolutionCard = spaceTextAction.revealedCard
@@ -5707,7 +5847,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             });
 
       return succeed({
-        ...withDiscoveredContracts,
+        ...withInnerApproachClear,
         sequence: state.sequence + 1,
         phase: "broadcast",
         resolutionSource: null,
@@ -5735,7 +5875,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           summary: spaceTextAction.summary
         },
         activeResolution,
-        eventLog: [...withDiscoveredContracts.eventLog, action]
+        eventLog: [...withInnerApproachClear.eventLog, action]
       });
     }
     case "SCENARIO_PREPARATION_GAINED": {

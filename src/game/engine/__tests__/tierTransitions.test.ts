@@ -131,27 +131,49 @@ describe("pre-roll tier transitions", () => {
     expect(fabricated.ok).toBe(false);
   });
 
-  it("preserves authored clearances and consumes an equipped Void Key only as an allowed override", () => {
+  it("requires an owned Artifact for Inner Reach entry without consuming it", () => {
     const locked = activeTransitionState("middle_guardian_span");
     const option = buildTierTransitionOptions(locked, "seat-1")
       .find((entry) => entry.sectorId === "inner_veil_rift");
-    expect(option?.disabledReason).toBe("Requires Guardian Span Clearance");
+    expect(option?.disabledReason).toBe("At least 1 Artifact is required to enter the Inner Reach");
     expect(cross(locked, "inner_veil_rift").ok).toBe(false);
 
     equipVoidKey(locked);
-    const overridden = cross(locked, "inner_veil_rift", { voidKeyInstanceId: "void-key:test" });
-    expect(overridden.ok).toBe(true);
-    if (overridden.ok) {
+    const artifactEntry = cross(locked, "inner_veil_rift");
+    expect(artifactEntry.ok).toBe(true);
+    if (artifactEntry.ok) {
       expect(
-        overridden.state.players[0]?.character.heldGear
+        artifactEntry.state.players[0]?.character.heldGear
           .find((item) => item.instanceId === "void-key:test")
           ?.currentCharges
-      ).toBe(1);
+      ).toBe(2);
     }
 
     const legal = activeTransitionState();
     equipVoidKey(legal);
     expect(cross(legal, "middle_red_march_outpost", { voidKeyInstanceId: "void-key:test" }).ok).toBe(false);
+  });
+
+  it.each([
+    ["middle_guardian_span", "inner_veil_rift"],
+    ["middle_red_march_outpost", "choir-execution-court"],
+    ["middle_anomaly_well", "choir-execution-court"],
+    ["middle_rivalry_pit", "choir-execution-court"]
+  ] as const)("requires an Artifact at every authored Inner Reach entry: %s to %s", (origin, destination) => {
+    const state = activeTransitionState(origin);
+    expect(
+      buildTierTransitionOptions(state, "seat-1")
+        .find((entry) => entry.sectorId === destination)
+        ?.disabledReason
+    ).toBe("At least 1 Artifact is required to enter the Inner Reach");
+
+    equipVoidKey(state);
+    const crossed = cross(state, destination);
+    expect(crossed.ok).toBe(true);
+    if (!crossed.ok) return;
+    expect(crossed.state.players[0]?.innerApproachProgress?.pathId).toBe(
+      destination === "inner_veil_rift" ? "breach-road" : "choir-road"
+    );
   });
 
   it("does not let the Void Key bypass the Nemesis Relay Crown-Key requirement", () => {

@@ -1809,15 +1809,32 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
     const player = state.players.find((entry) => entry.seatId === seatId);
     if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
     state.phase = "navigation";
-    state.movementRolls = { ...(state.movementRolls ?? {}), [seatId]: 1 };
     state.pendingTileChallenge = null;
     const atCoreApproach = fixture.stage.startsWith("core-");
+    state.movementRolls = atCoreApproach
+      ? Object.fromEntries(Object.entries(state.movementRolls ?? {}).filter(([entrySeatId]) => entrySeatId !== seatId))
+      : { ...(state.movementRolls ?? {}), [seatId]: 1 };
     placePlayer(state, seatId, atCoreApproach ? "inner_gate_of_cinders" : "middle_guardian_span");
     player.private.notes = player.private.notes.filter(
       (note) => note !== "guardian-span-clearance" && note !== "gate-of-cinders-breached"
     );
-    if (fixture.stage === "guardian-cleared") player.private.notes.push("guardian-span-clearance");
-    if (fixture.stage === "core-cleared") player.private.notes.push("gate-of-cinders-breached");
+    player.innerApproachProgress = {
+      pathId: atCoreApproach ? "breach-road" : null,
+      clearedSectorIds: []
+    };
+    player.character.heldGear = player.character.heldGear.filter((item) => item.id !== "qa-inner-entry-artifact");
+    if (fixture.stage === "guardian-cleared") {
+      player.character.heldGear.push({
+        id: "qa-inner-entry-artifact",
+        name: "QA Inner Entry Artifact",
+        slot: "utility",
+        statBonus: { stat: "signal", amount: 1 },
+        tier: "artifact"
+      });
+    }
+    if (fixture.stage === "core-cleared") {
+      player.innerApproachProgress.clearedSectorIds.push("inner_gate_of_cinders");
+    }
     return;
   }
 

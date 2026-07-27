@@ -1529,7 +1529,7 @@ describe("PhoneActionPanel", () => {
                 faceUpThreats: [],
                 occupants: [],
                 strategicTags: ["gate"],
-                disabledReason: "Requires Guardian Span Clearance"
+                disabledReason: "Requires at least 1 Artifact"
               }
             ]
           }
@@ -1537,7 +1537,7 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getAllByText(/requires guardian span clearance/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/requires at least 1 artifact/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/ignore this route for now/i)).toBeNull();
     const lockedSelect = screen.getAllByRole("button").find((button) => button.textContent?.includes("Select") && button.hasAttribute("disabled"));
     expect(lockedSelect).toBeDefined();
@@ -2563,9 +2563,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /brace the cinder locks.*last signal/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /time the relay pulse.*last signal/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /ghost the last breach path.*last signal/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /brace the cinder locks.*break the gate/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /time the relay pulse.*break the gate/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ghost the last breach path.*break the gate/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Veil Rift breach-entry choices", () => {

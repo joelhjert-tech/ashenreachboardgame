@@ -15,6 +15,8 @@ describe("SignalCartographyPrototype", () => {
 
     expect(screen.getByTestId("signal-cartography-prototype")).toHaveAttribute("data-fixture", "route");
     expect(view.container.querySelectorAll(".signal-cartography__nodes > g")).toHaveLength(BOARD_SPACES.length);
+    expect(view.container.querySelectorAll(".signal-cartography__node-art")).toHaveLength(BOARD_SPACES.length);
+    expect(view.container.querySelector('image[href="/assets/riftfall/ui/signal-cartography/sectors/outer_waymarket.png"]')).toBeInTheDocument();
     expect(view.container.querySelectorAll(".signal-cartography__connections line.is-route")).toHaveLength(2);
     expect(screen.getByText("Public information only")).toBeVisible();
     expect(screen.getByText(/Encounter detected/i)).toBeVisible();
@@ -33,6 +35,22 @@ describe("SignalCartographyPrototype", () => {
 
     expect(view.container.querySelector(".signal-cartography__persistent")).toBeInTheDocument();
     expect(view.container.querySelectorAll(".signal-cartography__threats path").length).toBeGreaterThan(0);
+  });
+
+  it("renders the converging Inner Reach path without the retired center shortcut", () => {
+    const view = render(<SignalCartographyPrototype patch={null} fixture="inner" />);
+
+    expect(view.container.querySelector(".signal-cartography__nodes > g.is-inner-current"))
+      .toHaveAttribute("data-sector-id", "inner_gate_of_cinders");
+    expect(view.container.querySelectorAll(".signal-cartography__nodes > g.is-inner-cleared"))
+      .toHaveLength(4);
+    expect(view.container.querySelector(".signal-cartography__nodes > g.is-inner-boss"))
+      .toHaveAttribute("data-sector-id", "center_cinder_gate");
+    expect(
+      view.container.querySelector(
+        '.signal-cartography__connections line[data-from-sector-id="inner_blackstar_shortcut"][data-to-sector-id="center_cinder_gate"]'
+      )
+    ).not.toBeInTheDocument();
   });
 
   it("renders the authoritative live route, requester, and revealed public encounter", () => {
