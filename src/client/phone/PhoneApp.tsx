@@ -170,6 +170,7 @@ function getCharacterSelectionRank(character: CharacterCatalogEntry): number {
 
 type CharacterSelectionFilter = "recommended" | "all" | "advanced";
 type SetupSelectionStep = "piece" | "operative";
+type HostSetupStep = "mode" | "scenario";
 
 function matchesCharacterFilter(character: CharacterCatalogEntry, filter: CharacterSelectionFilter): boolean {
   if (filter === "all") {
@@ -246,6 +247,7 @@ export function PhoneApp(): ReactElement {
   const [scenarios, setScenarios] = useState<ScenarioCatalogEntry[]>([]);
   const [selectedScenarioId, setSelectedScenarioId] = useState("");
   const [selectedSetupMode, setSelectedSetupMode] = useState<"single-player" | "co-op" | "rivalry" | "nemesis" | null>(null);
+  const [hostSetupStep, setHostSetupStep] = useState<HostSetupStep>("mode");
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
   const [characterFilter, setCharacterFilter] = useState<CharacterSelectionFilter>("all");
   const [joiningRoom, setJoiningRoom] = useState(false);
@@ -586,10 +588,10 @@ export function PhoneApp(): ReactElement {
 
   useFocusOnRevision(
     hostScenarioPickerRef,
-    selectedSetupMode && phonePatch?.payload.setup?.stage === "mode-selection"
-      ? `${phonePatch.payload.setup.id}:${selectedSetupMode}`
+    selectedSetupMode && hostSetupStep === "scenario" && phonePatch?.payload.setup?.stage === "mode-selection"
+      ? `${phonePatch.payload.setup.id}:${selectedSetupMode}:scenario`
       : null,
-    Boolean(isSetupHost && selectedSetupMode && phonePatch?.payload.setup?.stage === "mode-selection"),
+    Boolean(isSetupHost && selectedSetupMode && hostSetupStep === "scenario" && phonePatch?.payload.setup?.stage === "mode-selection"),
     'button[role="radio"][aria-checked="true"]:not([disabled]), button[role="radio"]:not([disabled])'
   );
   useFocusOnRevision(
@@ -921,10 +923,12 @@ export function PhoneApp(): ReactElement {
                   <span>Host Phone</span>
                   <span>{status}</span>
                 </div>
-                <p className="phone-panel-kicker">Step 2 · Configure Expedition</p>
-                <h1>Host Phone Setup</h1>
-                <p className="phone-muted-copy">Choose a mode, compatible player count, and scenario.</p>
-                <section className="phone-host-mode-section" aria-labelledby="phone-setup-mode-title">
+                <p className="phone-panel-kicker">{hostSetupStep === "mode" ? "Step 1 of 2" : "Step 2 of 2"} · Configure Expedition</p>
+                <h1>{hostSetupStep === "mode" ? "Choose Mode" : "Choose Scenario"}</h1>
+                {hostSetupStep === "mode" ? (
+                  <>
+                    <p className="phone-muted-copy">Choose how this expedition will be played.</p>
+                    <section className="phone-host-mode-section" aria-labelledby="phone-setup-mode-title">
                   <div className="phone-host-scenario-heading">
                     <span id="phone-setup-mode-title">Mode</span>
                     <small>Only the Host Phone can change this.</small>
@@ -943,22 +947,36 @@ export function PhoneApp(): ReactElement {
                       <strong>Nemesis Relay</strong><span>Limited competitive pursuit for up to four players.</span>
                     </button>
                   </div>
-                </section>
-                {selectedSetupMode && selectedSetupMode !== "single-player" ? (
-                  <label className="field phone-host-player-count-picker">
-                    <span>Players</span>
-                    <select
-                      aria-label="Players"
-                      value={selectedSetupMode === "nemesis" ? Math.min(configuredPlayerCount, 4) : configuredPlayerCount}
-                      onChange={(event) => setConfiguredPlayerCount(Number(event.target.value))}
+                    </section>
+                    {selectedSetupMode && selectedSetupMode !== "single-player" ? (
+                      <label className="field phone-host-player-count-picker">
+                        <span>Players</span>
+                        <select
+                          aria-label="Players"
+                          value={selectedSetupMode === "nemesis" ? Math.min(configuredPlayerCount, 4) : configuredPlayerCount}
+                          onChange={(event) => setConfiguredPlayerCount(Number(event.target.value))}
+                        >
+                          {Array.from({ length: selectedSetupMode === "nemesis" ? 3 : 5 }, (_, index) => index + 2).map((count) => (
+                            <option key={count} value={count}>{count} players</option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="phone-button phone-button-primary phone-host-setup-confirm"
+                      disabled={!selectedSetupMode}
+                      onClick={() => setHostSetupStep("scenario")}
                     >
-                      {Array.from({ length: selectedSetupMode === "nemesis" ? 3 : 5 }, (_, index) => index + 2).map((count) => (
-                        <option key={count} value={count}>{count} players</option>
-                      ))}
-                    </select>
-                  </label>
-                ) : null}
-                <section ref={hostScenarioPickerRef} className="phone-host-scenario-picker" aria-label="Choose scenario">
+                      Continue to Scenario
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="phone-muted-copy">
+                      Choose one compatible expedition for {selectedSetupMode === "single-player" ? "Solo Run" : selectedSetupMode === "co-op" ? "Co-op" : selectedSetupMode === "rivalry" ? "Rivalry" : "Nemesis Relay"}.
+                    </p>
+                    <section ref={hostScenarioPickerRef} className="phone-host-scenario-picker" aria-label="Choose scenario">
                   <div className="phone-host-scenario-heading">
                       <span>Scenario</span>
                       <small>Swipe to compare compatible expeditions.</small>
@@ -996,16 +1014,21 @@ export function PhoneApp(): ReactElement {
                       );
                     })}
                   </div>
-                </section>
-                <button
-                  type="button"
-                  aria-label="Confirm Setup"
-                  className="phone-button phone-button-primary phone-host-setup-confirm"
-                  disabled={!selectedScenarioId || !selectedSetupMode || !selectedScenarioIsValid}
-                  onClick={() => void handleConfigureLobby()}
-                >
-                  Confirm {selectedSetupMode ? "Setup" : "Mode and Scenario"}
-                </button>
+                    </section>
+                    <div className="phone-host-setup-actions">
+                      <button type="button" className="phone-button" onClick={() => setHostSetupStep("mode")}>Back</button>
+                      <button
+                        type="button"
+                        aria-label="Confirm Setup"
+                        className="phone-button phone-button-primary phone-host-setup-confirm"
+                        disabled={!selectedScenarioId || !selectedSetupMode || !selectedScenarioIsValid}
+                        onClick={() => void handleConfigureLobby()}
+                      >
+                        Confirm Scenario
+                      </button>
+                    </div>
+                  </>
+                )}
                 {(joinError || error) && <p className="error">{joinError ?? error}</p>}
               </section>
             </main>

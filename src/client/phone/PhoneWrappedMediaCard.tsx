@@ -15,6 +15,7 @@ interface PhoneWrappedMediaCardProps {
   imageSrc?: string | null;
   imageAlt?: string;
   media?: ReactNode;
+  mediaInteractive?: boolean;
   fallbackIcon?: ReactNode;
   actions?: ReactNode;
   disabledReason?: ReactNode;
@@ -37,6 +38,7 @@ export function PhoneWrappedMediaCard({
   imageSrc,
   imageAlt = "",
   media,
+  mediaInteractive = false,
   fallbackIcon,
   actions,
   disabledReason,
@@ -55,7 +57,7 @@ export function PhoneWrappedMediaCard({
       data-wrap-card-state={dataState}
       data-inventory-state={dataState}
     >
-      <div className="phone-wrap-card__media" aria-hidden="true">
+      <div className="phone-wrap-card__media" aria-hidden={mediaInteractive ? undefined : "true"}>
         {media ?? (
           imageSrc ? (
             <img className="phone-wrap-card__image" src={imageSrc} alt={imageAlt} />

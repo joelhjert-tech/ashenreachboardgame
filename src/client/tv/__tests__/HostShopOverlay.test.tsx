@@ -57,10 +57,51 @@ describe("HostShopOverlay rebuild", () => {
     expect(screen.getByTestId("host-shop-category-equipment")).toBeInTheDocument();
     expect(screen.getByTestId("host-shop-category-services")).toBeInTheDocument();
     expect(screen.getByTestId("host-shop-category-sell")).toBeInTheDocument();
+    expect(screen.getByTestId("host-shop-category-equipment").querySelector("[data-shop-icon='equipment'] img"))
+      .toHaveAttribute("src", "/assets/riftfall/ui/shop/categories/equipment.svg");
+    expect(screen.getByTestId("host-shop-category-services").querySelector("[data-shop-icon='services'] img"))
+      .toHaveAttribute("src", "/assets/riftfall/ui/shop/categories/services.svg");
+    expect(screen.getByTestId("host-shop-category-sell").querySelector("[data-shop-icon='sell'] img"))
+      .toHaveAttribute("src", "/assets/riftfall/ui/shop/categories/sell.svg");
     expect(screen.queryByTestId("host-shop-category-items")).not.toBeInTheDocument();
     expect(screen.queryByTestId("host-shop-category-artifacts")).not.toBeInTheDocument();
     expect(screen.queryByTestId("host-shop-buyer-salvage")).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("uses a distinct custom emblem for every public shop path", () => {
+    render(
+      <HostShopOverlay
+        patch={patchFixture(shopFixture({
+          services: [
+            { id: "buy-supplies", label: "Browse Supplies", cost: {}, enabled: true },
+            { id: "buy-gear", label: "Browse Equipment", cost: {}, enabled: true },
+            { id: "trade-missions-for-artifact", label: "Artifact Exchange", cost: { completedContracts: 3 }, enabled: true },
+            { id: "buy-route-aids", label: "Browse Route Aids", cost: {}, enabled: true },
+            { id: "repair-gear", label: "Repair Gear", cost: { salvage: 2 }, enabled: true },
+            { id: "sell-gear", label: "Sell Gear", cost: {}, enabled: true }
+          ],
+          sellableCount: 1
+        }))}
+        activePlayer={activePlayer}
+      />
+    );
+
+    for (const category of ["items", "equipment", "artifacts", "route-aids", "services", "sell"] as const) {
+      expect(screen.getByTestId(`host-shop-category-${category}`).querySelector(`[data-shop-icon='${category}'] img`))
+        .toHaveAttribute("src", `/assets/riftfall/ui/shop/categories/${category}.svg`);
+    }
+  });
+
+  it("uses the establishment background authored for the current shop category", () => {
+    render(
+      <HostShopOverlay
+        patch={patchFixture(shopFixture({ shopCategory: "medicae-shrine" }))}
+        activePlayer={activePlayer}
+      />
+    );
+    expect(screen.getByTestId("host-shop-overlay").querySelector(".host-shop-establishment-background img"))
+      .toHaveAttribute("src", "/assets/riftfall/ui/signal-theatre/shops/medicae-shrine.png");
   });
 
   it("uses the synchronized selected stock ID for the carousel focus", () => {
@@ -108,6 +149,25 @@ describe("HostShopOverlay rebuild", () => {
     render(<HostShopOverlay patch={patchFixture(shopFixture({ browseSelection: { view: "services", selectedId: "buy-treatment" } }))} activePlayer={activePlayer} />);
     expect(screen.getByTestId("host-shop-selected-card")).toHaveTextContent("Field Surgery");
     expect(screen.getByLabelText("Selected offer details")).toHaveTextContent("2 Salvage");
+    expect(screen.getByLabelText("Selected offer details").querySelector("[data-shop-icon='services'] img"))
+      .toHaveAttribute("src", "/assets/riftfall/ui/shop/categories/services.svg");
+  });
+
+  it("does not duplicate Route Aids inside the Services carousel", () => {
+    render(
+      <HostShopOverlay
+        patch={patchFixture(shopFixture({
+          browseSelection: { view: "services", selectedId: "repair-gear" },
+          services: [
+            { id: "buy-route-aids", label: "Browse Route Aids", cost: {}, enabled: true },
+            { id: "repair-gear", label: "Repair Gear", cost: { salvage: 2 }, enabled: true }
+          ]
+        }))}
+        activePlayer={activePlayer}
+      />
+    );
+    expect(screen.getByTestId("host-shop-carousel")).toHaveTextContent("Repair Gear");
+    expect(screen.getByTestId("host-shop-carousel")).not.toHaveTextContent("Browse Route Aids");
   });
 
   it("keeps Artifact options owner-private on TV", () => {

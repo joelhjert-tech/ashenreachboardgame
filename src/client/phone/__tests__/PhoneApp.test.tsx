@@ -1144,11 +1144,11 @@ describe("PhoneApp", () => {
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
     fireEvent.click(screen.getByRole("button", { name: /join game/i }));
 
-    expect(await screen.findByRole("heading", { name: /host phone/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /choose mode/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /single player/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /multiplayer co-op/i })).toBeInTheDocument();
-    expect(screen.getByRole("radiogroup", { name: /scenario options/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /confirm setup/i })).toBeDisabled();
+    expect(screen.queryByRole("radiogroup", { name: /scenario options/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /continue to scenario/i })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: /single player/i }));
     await waitFor(() => {
       expect(sendIntent).toHaveBeenCalledWith({
@@ -1160,6 +1160,9 @@ describe("PhoneApp", () => {
       });
     });
     expect(networkMocks.configureSessionFromPhone).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /continue to scenario/i }));
+    expect(await screen.findByRole("heading", { name: /choose scenario/i })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: /scenario options/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /confirm setup/i }));
     await waitFor(() => {
       expect(networkMocks.configureSessionFromPhone).toHaveBeenCalledWith(
@@ -1168,8 +1171,10 @@ describe("PhoneApp", () => {
       );
     });
     networkMocks.configureSessionFromPhone.mockClear();
-    fireEvent.click(screen.getByRole("radio", { name: /ashen crown/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^back$/i }));
     fireEvent.click(screen.getByRole("button", { name: /multiplayer co-op/i }));
+    fireEvent.click(screen.getByRole("button", { name: /continue to scenario/i }));
+    fireEvent.click(screen.getByRole("radio", { name: /ashen crown/i }));
     fireEvent.click(screen.getByRole("button", { name: /confirm setup/i }));
     await waitFor(() => {
       expect(networkMocks.configureSessionFromPhone).toHaveBeenCalledWith(

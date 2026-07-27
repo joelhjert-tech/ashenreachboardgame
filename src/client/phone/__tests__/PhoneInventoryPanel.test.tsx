@@ -264,6 +264,15 @@ function openPhoneTabs(): void {
 }
 
 describe("PhoneInventoryPanel", () => {
+  it("renders canonical fallback artwork when an item or follower has no dedicated art id", () => {
+    render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
+    openInventoryCategory(/followers.*records/i);
+
+    const followerArt = screen.getByRole("img", { name: "Choir Defector" });
+    expect(followerArt).toHaveAttribute("src", "/assets/cards/fallbacks/artifact.svg");
+    expect(screen.getByRole("button", { name: /inspect choir defector/i })).toBeInTheDocument();
+  });
+
   it("shows round-exhaust companions as Ready or Exhausted without charge counters", () => {
     const basePatch = createPatch();
     const lucy = {
@@ -605,7 +614,8 @@ describe("PhoneInventoryPanel", () => {
 
     const followerCard = screen.getByLabelText(/^choir defector:/i);
     expect(followerCard).toHaveClass("phone-wrap-card", "phone-wrap-card--inventory");
-    expect(followerCard.querySelector(".phone-wrap-card__fallback")).toHaveTextContent("CD");
+    expect(followerCard.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/fallbacks/artifact.svg");
+    expect(within(followerCard).getByRole("button", { name: /inspect choir defector/i })).toBeInTheDocument();
     expect(followerCard.querySelector(".phone-wrap-card__actions")).toContainElement(screen.getByRole("button", { name: /use choir defector/i }));
   });
 

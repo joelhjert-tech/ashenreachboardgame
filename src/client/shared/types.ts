@@ -992,6 +992,30 @@ export interface PhoneTierTransitionOption {
   };
 }
 
+export interface PublicInnerApproachState {
+  pathId: "breach-road" | "choir-road";
+  pathLabel: string;
+  currentSectorId: string;
+  currentSectorName: string;
+  currentIndex: number;
+  challengeCleared: boolean;
+  challengeTitle: string;
+  challengeDetail: string;
+  revision: number;
+  steps: Array<{
+    sectorId: string;
+    name: string;
+    status: "cleared" | "current" | "ahead" | "boss";
+  }>;
+  options: Array<{
+    sectorId: string;
+    name: string;
+    direction: "advance" | "retreat";
+    label: string;
+    disabledReason: string | null;
+  }>;
+}
+
 export interface PublicSectorExplorationThreat {
   instanceId: string;
   cardId: string;
@@ -1393,6 +1417,7 @@ export interface PublicPatchPayload {
   battlePresentation?: BattlePresentation | null;
   shopEncounter?: PublicShopEncounterState | null;
   movementPlanner?: PublicMovementPlannerState | null;
+  innerApproach?: PublicInnerApproachState | null;
   movementPresentationGate?: {
     eventId: string;
     ownerSeatId: string;
@@ -1815,6 +1840,12 @@ export type ClientIntent =
       destinationSectorId: string;
       movementRevision: number;
       voidKeyInstanceId?: string;
+    }
+  | {
+      type: "INNER_APPROACH_MOVE_REQUESTED";
+      seatId: string;
+      destinationSectorId: string;
+      movementRevision: number;
     }
   | {
       type: "USE_TRANSITION_ROUTE_AID";

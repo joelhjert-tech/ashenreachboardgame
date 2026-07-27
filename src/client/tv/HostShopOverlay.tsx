@@ -5,7 +5,8 @@ import {
   getGearCardArtId,
   getGearCardArtType,
   getHostShopCategoryIconPath,
-  getSignalTheatreAssetPaths
+  getSignalTheatreShopBackgroundPath,
+  type HostShopIconCategory
 } from "../shared/assetPaths.js";
 import { HostImage } from "./HostImage.js";
 import type {
@@ -54,6 +55,7 @@ export interface HostShopDisplayModel {
   shopName: string;
   sectorName: string;
   shopType: string;
+  shopCategory: PublicShopEncounterState["shopCategory"];
   status: "open" | "locked" | "exhausted" | "dangerous";
   view: ShopView;
   categories: ShopCategoryModel[];
@@ -141,7 +143,7 @@ function getOffers(shop: PublicShopEncounterState, view: ShopView): ShopOfferMod
   }
   if (view === "services") {
     return shop.services
-      .filter((service) => !["buy-gear", "buy-supplies", "trade-missions-for-artifact", "sell-gear"].includes(service.id))
+      .filter((service) => !["buy-gear", "buy-supplies", "buy-route-aids", "trade-missions-for-artifact", "sell-gear"].includes(service.id))
       .map((service) => ({
         id: service.id,
         name: service.label,
@@ -173,6 +175,7 @@ function buildFromEncounter(shop: PublicShopEncounterState, deltas: ResultDelta[
     shopName: shop.shopName,
     sectorName: shop.sectorName,
     shopType: shop.shopType ?? "Reach Market",
+    shopCategory: shop.shopCategory ?? "market",
     status: shop.status,
     view,
     categories: getCategories(shop),
@@ -197,8 +200,29 @@ export function buildShopModel(
   return buildFromEncounter(shop, shopResultDeltas(patch.payload.publicResultDeltas));
 }
 
-function ShopCategoryIcon({ category }: { category: CategoryId }): ReactElement {
-  return <HostImage src={getHostShopCategoryIconPath(category === "route-aids" ? "equipment" : category)} alt="" fit="contain" aspectRatio="square" fallback="icon" draggable={false} />;
+function ShopCategoryIcon({
+  category,
+  active = false
+}: {
+  category: HostShopIconCategory;
+  active?: boolean;
+}): ReactElement {
+  return (
+    <span
+      className={`host-shop-category-icon host-shop-category-icon--${category}${active ? " is-active" : ""}`}
+      data-shop-icon={category}
+      aria-hidden="true"
+    >
+      <HostImage
+        src={getHostShopCategoryIconPath(category)}
+        alt=""
+        fit="contain"
+        aspectRatio="square"
+        fallback="icon"
+        draggable={false}
+      />
+    </span>
+  );
 }
 
 function ShopEntrance({ model }: { model: HostShopDisplayModel }): ReactElement {
@@ -221,7 +245,9 @@ function ShopEntrance({ model }: { model: HostShopDisplayModel }): ReactElement 
       <div className="host-shop-category-altars">
         {model.categories.map((category) => (
           <article key={category.id} className={`host-shop-category-altar${category.available ? "" : " host-shop-category-altar-locked"}`} data-testid={`host-shop-category-${category.id}`}>
-            <div className="host-shop-category-sigil"><ShopCategoryIcon category={category.id} /></div>
+            <div className="host-shop-category-sigil">
+              <ShopCategoryIcon category={category.id} active={category.available} />
+            </div>
             <span>{category.available ? (category.count === null ? "AVAILABLE" : `${category.count} READY`) : "LOCKED"}</span>
             <h3>{category.label}</h3>
             <p>{category.available ? category.description : category.blockedReason ?? "Requirements not met"}</p>
@@ -236,7 +262,20 @@ function OfferArt({ offer, quiet = false }: { offer: ShopOfferModel; quiet?: boo
   if (offer.artCardId && offer.artCardType) {
     return <HostImage src={getCardArtPath(offer.artCardType, offer.artCardId)} alt={quiet ? "" : offer.name} fit="contain" aspectRatio="card" fallback="card" />;
   }
-  return <div className="host-shop-service-sigil"><ShopCategoryIcon category="services" /></div>;
+  return <div className="host-shop-service-sigil"><ShopCategoryIcon category="services" active={!quiet} /></div>;
+}
+
+function iconCategoryForView(view: ShopView): HostShopIconCategory {
+  switch (view) {
+    case "supplies":
+      return "items";
+    case "route-aids":
+      return "route-aids";
+    case "categories":
+      return "services";
+    default:
+      return view;
+  }
 }
 
 function ShopCarousel({ model }: { model: HostShopDisplayModel }): ReactElement {
@@ -287,7 +326,10 @@ function ShopCarousel({ model }: { model: HostShopDisplayModel }): ReactElement 
       </section>
 
       <aside className="host-shop-dossier" aria-label="Selected offer details">
-        <span>{selected.category}</span>
+        <div className="host-shop-dossier-category">
+          <ShopCategoryIcon category={iconCategoryForView(model.view)} active />
+          <span>{selected.category}</span>
+        </div>
         <h2>{selected.name}</h2>
         <div className="host-shop-dossier-meta">
           <strong>{selected.price}</strong>
@@ -335,7 +377,7 @@ export function HostShopOverlay({
   return (
     <section className={`host-shop-overlay host-shop-rebuild host-shop-view-${model.view} host-shop-state-${model.status}`} aria-label="Shop services" data-testid="host-shop-overlay">
       <HostImage
-        src={getSignalTheatreAssetPaths().shopkeeperEstablishment}
+        src={getSignalTheatreShopBackgroundPath(model.shopCategory)}
         alt=""
         fit="cover"
         aspectRatio="wide"

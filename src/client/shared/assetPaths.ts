@@ -114,6 +114,7 @@ const uiAssetPaths = [
   "/assets/riftfall/ui/shop/categories/items.svg",
   "/assets/riftfall/ui/shop/categories/equipment.svg",
   "/assets/riftfall/ui/shop/categories/artifacts.svg",
+  "/assets/riftfall/ui/shop/categories/route-aids.svg",
   "/assets/riftfall/ui/shop/categories/services.svg",
   "/assets/riftfall/ui/shop/categories/sell.svg",
   "/assets/riftfall/ui/dice_roll_combat@2s.gif",
@@ -153,6 +154,31 @@ export function getSignalTheatreAssetPaths(): {
     journeyPath: "/assets/riftfall/ui/signal-theatre/journey-path.png",
     shopkeeperEstablishment: "/assets/riftfall/ui/signal-theatre/shopkeeper-establishment.png"
   };
+}
+
+export type SignalTheatreShopCategory =
+  | "forge-armoury"
+  | "market"
+  | "medicae-shrine"
+  | "relic-dealer"
+  | "contract-broker";
+
+const signalTheatreShopBackgroundByCategory: Record<SignalTheatreShopCategory, string> = {
+  "forge-armoury": "/assets/riftfall/ui/signal-theatre/shops/forge-armoury.png",
+  market: "/assets/riftfall/ui/signal-theatre/shopkeeper-establishment.png",
+  "medicae-shrine": "/assets/riftfall/ui/signal-theatre/shops/medicae-shrine.png",
+  "relic-dealer": "/assets/riftfall/ui/signal-theatre/shops/relic-dealer.png",
+  "contract-broker": "/assets/riftfall/ui/signal-theatre/shops/contract-broker.png"
+};
+
+export function getSignalTheatreShopBackgroundPath(
+  category: SignalTheatreShopCategory | null | undefined
+): string {
+  return signalTheatreShopBackgroundByCategory[category ?? "market"];
+}
+
+export function getSignalCartographySectorArtPath(sectorId: string): string {
+  return `/assets/riftfall/ui/signal-cartography/sectors/${sectorId}.png`;
 }
 
 export function getSignalTheatreStatSealPath(stat: Stat): string {
@@ -265,7 +291,15 @@ export function getShopCategoryIconPath(category: string | null | undefined): st
   }
 }
 
-export function getHostShopCategoryIconPath(category: "items" | "equipment" | "artifacts" | "services" | "sell"): string {
+export type HostShopIconCategory =
+  | "items"
+  | "equipment"
+  | "artifacts"
+  | "route-aids"
+  | "services"
+  | "sell";
+
+export function getHostShopCategoryIconPath(category: HostShopIconCategory): string {
   return `/assets/riftfall/ui/shop/categories/${category}.svg`;
 }
 
@@ -298,7 +332,14 @@ export function getRuntimeAssetPaths(): string[] {
     ...Object.values(statFrameByStat),
     ...Object.values(battleCardBackPaths),
     ...uiAssetPaths,
-    ...getSignalTheatreEnvironmentPaths()
+    ...getSignalTheatreEnvironmentPaths(),
+    ...Object.values(signalTheatreShopBackgroundByCategory),
+    ...getSignalTheatreEnvironmentPaths().map((path) =>
+      path.replace(
+        "/assets/riftfall/environments/signal-theatre/sectors/",
+        "/assets/riftfall/ui/signal-cartography/sectors/"
+      )
+    )
   ].filter((value, index, paths) => paths.indexOf(value) === index);
 }
 

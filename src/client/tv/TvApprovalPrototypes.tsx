@@ -26,7 +26,21 @@ const prototypeOffers = [
   }
 ] as const;
 
-export function TvShopApprovalPrototype(): ReactElement {
+export function TvLobbyQrPrototype({ roomCode = "ASHEN" }: { roomCode?: string }): ReactElement {
+  return (
+    <main className="tv-lobby-qr-prototype" data-testid="tv-lobby-qr-prototype">
+      <JoinQrCard roomCode={roomCode} variant="full" />
+    </main>
+  );
+}
+
+export function TvShopApprovalPrototype({
+  category = "market",
+  view = "route-aids"
+}: {
+  category?: NonNullable<PublicShopEncounterState["shopCategory"]>;
+  view?: "categories" | "route-aids" | "services";
+}): ReactElement {
   const [selectedIndex, setSelectedIndex] = useState(0);
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -41,8 +55,16 @@ export function TvShopApprovalPrototype(): ReactElement {
     shopId: "prototype-brass-reliquary",
     shopName: "The Brass Reliquary",
     shopType: "Relic Establishment",
+    shopCategory: category,
     status: "open",
-    browseSelection: { view: "route-aids", selectedId: selected.name === "Mara Vell" ? "mara-vell-cinder-cartographer" : selected.name === "Gateward Spindle" ? "gateward-spindle" : "breachline-sextant" },
+    browseSelection: {
+      view,
+      selectedId: view === "services"
+        ? "repair-gear"
+        : view === "route-aids"
+          ? selected.name === "Mara Vell" ? "mara-vell-cinder-cartographer" : selected.name === "Gateward Spindle" ? "gateward-spindle" : "breachline-sextant"
+          : null
+    },
     activePlayer: {
       playerId: "seat-1",
       name: "Joel",
@@ -53,13 +75,20 @@ export function TvShopApprovalPrototype(): ReactElement {
       completedContracts: 0
     },
     blockingThreats: [],
-    services: [],
+    services: [
+      { id: "buy-supplies", label: "Browse Supplies", shopCategory: "market", cost: {}, enabled: true },
+      { id: "buy-gear", label: "Browse Equipment", shopCategory: "forge-armoury", cost: {}, enabled: true },
+      { id: "trade-missions-for-artifact", label: "Artifact Exchange", shopCategory: "relic-dealer", cost: { completedContracts: 3 }, enabled: true },
+      { id: "buy-route-aids", label: "Browse Route Aids", shopCategory: "relic-dealer", cost: {}, enabled: true },
+      { id: "repair-gear", label: "Repair Gear", shopCategory: "forge-armoury", cost: { salvage: 2 }, enabled: true },
+      { id: "sell-gear", label: "Sell Gear", cost: {}, enabled: true }
+    ],
     revealedStock: [
       { cardId: "breachline-sextant", name: prototypeOffers[0].name, type: "artifact", cost: { salvage: 5 }, summary: prototypeOffers[0].summary, rarity: "artifact", stock: 1, affordable: true },
       { cardId: "mara-vell-cinder-cartographer", name: prototypeOffers[1].name, type: "follower", artCardId: "artifact-mara-vell-cinder-cartographer", cost: { salvage: 4 }, summary: prototypeOffers[1].summary, rarity: "unique", stock: 1, affordable: true },
       { cardId: "gateward-spindle", name: prototypeOffers[2].name, type: "artifact", cost: { salvage: 5 }, summary: prototypeOffers[2].summary, rarity: "artifact", stock: 1, affordable: true }
     ],
-    sellableCount: 0
+    sellableCount: 1
   };
   const patch = {
     type: "STATE_PATCH",

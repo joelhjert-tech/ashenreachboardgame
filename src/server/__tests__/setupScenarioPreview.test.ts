@@ -59,6 +59,33 @@ function preview(server: GameRoomServer): PreviewPatch["payload"]["setupScenario
 }
 
 describe("host setup scenario preview", () => {
+  it("accepts the preview intent through the raw phone message boundary", () => {
+    const server = new GameRoomServer(createLobbyState());
+    const parsed = (server as unknown as {
+      parseClientMessage: (message: unknown) => {
+        type: string;
+        seatId: string;
+        scenarioId: string;
+        mode: string;
+        playerCount: number;
+      };
+    }).parseClientMessage({
+      type: "HOST_SETUP_PREVIEW_REQUESTED",
+      seatId: "seat-1",
+      scenarioId: "scenario_broken_seal",
+      mode: "single-player",
+      playerCount: 1
+    });
+
+    expect(parsed).toMatchObject({
+      type: "HOST_SETUP_PREVIEW_REQUESTED",
+      seatId: "seat-1",
+      scenarioId: "scenario_broken_seal",
+      mode: "single-player",
+      playerCount: 1
+    });
+  });
+
   it("projects a validated host-phone selection to TV without changing game state", () => {
     const server = new GameRoomServer(createLobbyState());
     const host = phone();

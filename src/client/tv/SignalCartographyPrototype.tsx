@@ -1,10 +1,16 @@
 import { useMemo, type CSSProperties, type ReactElement } from "react";
 import { BOARD_SPACES, type BoardTier, type ThreatIcon } from "../../game/data/boardSpaces.js";
 import { RIFTFALL_BOARD_NODES } from "../../data/riftfallBoardNodes.js";
-import type { PublicPatchPayload, Stat, StatePatch } from "../shared/types.js";
+import { getSignalCartographySectorArtPath } from "../shared/assetPaths.js";
+import type {
+  PublicInnerApproachState,
+  PublicPatchPayload,
+  Stat,
+  StatePatch
+} from "../shared/types.js";
 import "./SignalCartographyPrototype.css";
 
-export type SignalCartographyFixture = "live" | "route" | "challenge" | "dense";
+export type SignalCartographyFixture = "live" | "route" | "challenge" | "dense" | "inner";
 
 interface SignalCartographyPrototypeProps {
   patch: StatePatch<PublicPatchPayload> | null;
@@ -43,6 +49,41 @@ const fixtureRoute = [
   "outer_waymarket",
   "coldwind-wharf"
 ];
+const fixtureInnerApproach: PublicInnerApproachState = {
+  pathId: "breach-road",
+  pathLabel: "Breach Road",
+  currentSectorId: "inner_gate_of_cinders",
+  currentSectorName: "Gate of Cinders",
+  currentIndex: 4,
+  challengeCleared: true,
+  challengeTitle: "Break the Gate",
+  challengeDetail: "The final approach has been cleared.",
+  revision: 12,
+  steps: [
+    { sectorId: "inner_veil_rift", name: "Melted Gate", status: "cleared" },
+    { sectorId: "inner_tomb_gate", name: "Rifted Approach", status: "cleared" },
+    { sectorId: "inner_blackstar_shortcut", name: "Dead Star Reliquary", status: "cleared" },
+    { sectorId: "the-bone-meridian", name: "Bone Meridian", status: "cleared" },
+    { sectorId: "inner_gate_of_cinders", name: "Gate of Cinders", status: "current" },
+    { sectorId: "center_cinder_gate", name: "The Ashen Reach Core", status: "boss" }
+  ],
+  options: [
+    {
+      sectorId: "center_cinder_gate",
+      name: "The Ashen Reach Core",
+      direction: "advance",
+      label: "Enter the Ashen Reach Core",
+      disabledReason: null
+    },
+    {
+      sectorId: "the-bone-meridian",
+      name: "Bone Meridian",
+      direction: "retreat",
+      label: "Retreat to Bone Meridian",
+      disabledReason: null
+    }
+  ]
+};
 
 function initials(value: string): string {
   const result = value
@@ -66,14 +107,20 @@ function splitLabel(value: string): [string, string?] {
 
 function nodeDimensions(tier: BoardTier): { width: number; height: number } {
   if (tier === "center") return { width: 180, height: 76 };
-  if (tier === "inner") return { width: 154, height: 60 };
+  if (tier === "inner") return { width: 118, height: 46 };
   if (tier === "middle") return { width: 148, height: 56 };
   return { width: 142, height: 54 };
 }
 
 function buildFixtureOccupants(fixture: SignalCartographyFixture): Map<string, MapOccupant[]> {
   const result = new Map<string, MapOccupant[]>();
-  const target = fixture === "dense" ? "ashen-chapel" : fixture === "route" ? "north-dock-bastion" : "outer_waymarket";
+  const target = fixture === "dense"
+    ? "ashen-chapel"
+    : fixture === "route"
+      ? "north-dock-bastion"
+      : fixture === "inner"
+        ? "inner_gate_of_cinders"
+        : "outer_waymarket";
   result.set(
     target,
     Array.from({ length: fixture === "dense" ? 6 : 1 }, (_, index) => ({
@@ -144,8 +191,9 @@ export function SignalCartographyPrototype({
   const selectedDestination = patch?.payload.movementPlanner?.destinations.find(
     (destination) => destination.sectorId === patch.payload.movementPlanner?.selectedDestinationId
   );
+  const innerApproach = patch?.payload.innerApproach ?? (fixture === "inner" ? fixtureInnerApproach : null);
   const route = fixture === "live"
-    ? selectedDestination?.route ?? []
+    ? selectedDestination?.route ?? innerApproach?.steps.map((step) => step.sectorId) ?? []
     : fixture === "route" ? fixtureRoute : [];
   const persistentSectorIds = new Set(
     patch?.payload.movementPlanner?.destinations
@@ -157,8 +205,17 @@ export function SignalCartographyPrototype({
   );
   const activeSectorId =
     patch?.payload.players.find((player) => player.seatId === patch.payload.turnOrder[patch.payload.activeSeatIndex])?.sectorId ??
-    (fixture === "dense" ? "ashen-chapel" : fixture === "route" ? "north-dock-bastion" : "outer_ember_sanctum");
+    (fixture === "dense"
+      ? "ashen-chapel"
+      : fixture === "route"
+        ? "north-dock-bastion"
+        : fixture === "inner"
+          ? "inner_gate_of_cinders"
+          : "outer_ember_sanctum");
   const legalDestinationIds = new Set(
+    innerApproach?.options
+      .filter((option) => !option.disabledReason)
+      .map((option) => option.sectorId) ??
     patch?.payload.movementPlanner?.destinations
       .filter((destination) => !destination.disabledReason)
       .map((destination) => destination.sectorId) ??
@@ -181,8 +238,16 @@ export function SignalCartographyPrototype({
           <span className="signal-cartography__pulse" aria-hidden="true" />
           <strong>
             {fixture === "live"
-              ? selectedDestination ? `Route to ${selectedDestination.name}` : "Movement survey"
-              : fixture === "route" ? "Route planning" : fixture === "challenge" ? "Challenge survey" : "Six-operative density"}
+              ? innerApproach
+                ? `${innerApproach.pathLabel} · step ${innerApproach.currentIndex + 1}`
+                : selectedDestination ? `Route to ${selectedDestination.name}` : "Movement survey"
+              : fixture === "route"
+                ? "Route planning"
+                : fixture === "challenge"
+                  ? "Challenge survey"
+                  : fixture === "inner"
+                    ? "Inner approach"
+                    : "Six-operative density"}
           </strong>
           <small>Public information only</small>
         </div>
@@ -202,6 +267,22 @@ export function SignalCartographyPrototype({
               <feGaussianBlur stdDeviation="4" result="blur" />
               <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
             </filter>
+            {BOARD_SPACES.map((space) => (
+              <pattern
+                key={space.id}
+                id={`cartography-art-${space.id}`}
+                width="1"
+                height="1"
+                patternContentUnits="objectBoundingBox"
+              >
+                <image
+                  href={getSignalCartographySectorArtPath(space.id)}
+                  width="1"
+                  height="1"
+                  preserveAspectRatio="xMidYMid slice"
+                />
+              </pattern>
+            ))}
           </defs>
           <rect width={WIDTH} height={HEIGHT} fill="url(#cartography-iris)" />
           <g className="signal-cartography__reach-lines" aria-hidden="true">
@@ -222,6 +303,8 @@ export function SignalCartographyPrototype({
                   return (
                     <line
                       key={key}
+                      data-from-sector-id={node.id}
+                      data-to-sector-id={neighbor.id}
                       x1={node.x * WIDTH}
                       y1={node.y * HEIGHT}
                       x2={neighbor.x * WIDTH}
@@ -243,6 +326,7 @@ export function SignalCartographyPrototype({
               const isActive = space.id === activeSectorId;
               const isLegal = legalDestinationIds.has(space.id);
               const isRoute = route.includes(space.id);
+              const innerStep = innerApproach?.steps.find((step) => step.sectorId === space.id);
               const recurring = patch?.payload.sectors
                 .find((sector) => sector.id === space.id)
                 ?.tileChallenges?.[0];
@@ -254,6 +338,9 @@ export function SignalCartographyPrototype({
                 isActive ? "is-active" : "",
                 isLegal ? "is-legal" : "",
                 isRoute ? "is-route" : "",
+                innerStep?.status === "cleared" ? "is-inner-cleared" : "",
+                innerStep?.status === "current" ? "is-inner-current" : "",
+                innerStep?.status === "boss" ? "is-inner-boss" : "",
                 persistentFixture ? "has-persistent" : ""
               ].filter(Boolean).join(" ");
 
@@ -261,9 +348,19 @@ export function SignalCartographyPrototype({
                 <g
                   key={space.id}
                   className={nodeClass}
+                  data-sector-id={space.id}
                   transform={`translate(${x} ${y})`}
                   aria-label={`${space.name}, ${tierLabels[space.tier]}`}
                 >
+                  <rect
+                    x={-dimensions.width / 2}
+                    y={-dimensions.height / 2}
+                    width={dimensions.width}
+                    height={dimensions.height}
+                    rx="9"
+                    className="signal-cartography__node-art"
+                    fill={`url(#cartography-art-${space.id})`}
+                  />
                   <rect
                     x={-dimensions.width / 2}
                     y={-dimensions.height / 2}
@@ -324,6 +421,7 @@ export function SignalCartographyPrototype({
           <div><i className="is-route" />Selected route</div>
           <div><i className="is-legal" />Legal destination</div>
           <div><i className="is-persistent" />Revealed encounter</div>
+          {innerApproach ? <div><i className="is-inner-cleared" />Cleared inner trial</div> : null}
           <div className="signal-cartography__legend-threats">
             <b style={{ "--legend-color": threatColors.red } as CSSProperties}>R</b>
             <b style={{ "--legend-color": threatColors.blue } as CSSProperties}>B</b>
@@ -340,7 +438,7 @@ export function SignalCartographyPrototype({
             : "Requested from the Movement screen"}
         </span>
         <strong>Encounter detected → Signal Theatre returns automatically</strong>
-        <span>49 sectors · authoritative routes</span>
+        <span>{innerApproach ? "One cleared inner step per turn" : "49 sectors · authoritative routes"}</span>
       </footer>
     </main>
   );

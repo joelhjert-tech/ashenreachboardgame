@@ -27,12 +27,13 @@ describe("JoinQrCard", () => {
     cleanup();
   });
 
-  it("renders the LAN phone join URL instead of a localhost QR target", async () => {
+  it("renders only the room code and QR presentation in the full lobby tile", async () => {
     render(<JoinQrCard roomCode="AB12C" />);
 
-    expect(screen.getByText("http://192.168.1.40:5173/?room=AB12C")).toBeInTheDocument();
-    expect(screen.getByText(/lan join url is active/i)).toBeInTheDocument();
-    expect(screen.queryByText(/phones need the lan url/i)).not.toBeInTheDocument();
+    expect(screen.getByText("AB12C")).toBeInTheDocument();
+    expect(screen.getByLabelText(/qr code to join room ab12c/i)).toBeInTheDocument();
+    expect(screen.queryByText("http://192.168.1.40:5173/?room=AB12C")).not.toBeInTheDocument();
+    expect(screen.queryByText(/scan|join on phone|lan join/i)).not.toBeInTheDocument();
   });
 
   it("renders the compact header variant as a QR-only tile", () => {

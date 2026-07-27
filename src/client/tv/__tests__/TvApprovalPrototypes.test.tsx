@@ -4,11 +4,18 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ScenarioCatalogEntry } from "../../shared/types.js";
-import { TvScenarioApprovalPrototype, TvShopApprovalPrototype } from "../TvApprovalPrototypes.js";
+import { TvLobbyQrPrototype, TvScenarioApprovalPrototype, TvShopApprovalPrototype } from "../TvApprovalPrototypes.js";
 
 afterEach(cleanup);
 
 describe("TV approval-only prototypes", () => {
+  it("keeps the lobby join view to the room code and QR only", () => {
+    render(<TvLobbyQrPrototype roomCode="ASHEN" />);
+    expect(screen.getByText("ASHEN")).toBeInTheDocument();
+    expect(screen.getByLabelText(/qr code to join room ashen/i)).toBeInTheDocument();
+    expect(screen.queryByText(/scan|join|phone|connected/i)).not.toBeInTheDocument();
+  });
+
   it("shows the original shop interior, public carousel, and map lock without private funds", () => {
     render(<TvShopApprovalPrototype />);
 
@@ -20,6 +27,15 @@ describe("TV approval-only prototypes", () => {
       "/assets/cards/artifacts/artifact-breachline-sextant.png"
     );
     expect(screen.queryByText(/remaining salvage|wallet|private sale/i)).not.toBeInTheDocument();
+  });
+
+  it("shows all six custom Host TV shop emblems in the category prototype", () => {
+    render(<TvShopApprovalPrototype view="categories" />);
+
+    for (const category of ["items", "equipment", "artifacts", "route-aids", "services", "sell"]) {
+      expect(screen.getByTestId(`host-shop-category-${category}`).querySelector(`[data-shop-icon='${category}']`))
+        .toBeInTheDocument();
+    }
   });
 
   it("renders an Expedition Briefing with explicit pressure-free copy", () => {

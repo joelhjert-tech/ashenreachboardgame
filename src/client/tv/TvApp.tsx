@@ -37,6 +37,7 @@ import type {
   PublicMoveDestination,
   PublicMovementPlannerState,
   PublicPlayer,
+  PublicShopEncounterState,
   PublicSeat,
   ScenarioCatalogEntry,
   SessionMode,
@@ -59,8 +60,10 @@ import {
 } from "./SignalCartographyPrototype.js";
 import {
   TvScenarioBriefing,
+  TvLobbyQrPrototype,
   TvShopApprovalPrototype
 } from "./TvApprovalPrototypes.js";
+import { TvBattleRevealPrototype, type TvBattleRevealStage } from "./TvBattleRevealPrototype.js";
 import {
   getMovementArrivalModel,
   type MovementArrivalModel
@@ -1204,8 +1207,6 @@ function TvStartupScreen({
           <p>{startReason}</p>
         </div>
         <div className="tv-startup-room">
-          <span>Room Code</span>
-          <strong>{roomCode ?? "..."}</strong>
           {roomCode ? <JoinQrCard roomCode={roomCode} variant="full" /> : null}
         </div>
         {patch && (
@@ -3251,9 +3252,23 @@ export function TvApp(): ReactElement {
   const approvalPrototype = import.meta.env.DEV
     ? new URLSearchParams(window.location.search).get("tvPrototype")
     : null;
+  const requestedShopCategory = new URLSearchParams(window.location.search).get("shopCategory");
+  const requestedShopView = new URLSearchParams(window.location.search).get("shopView");
   const signalTheatreMode = new URLSearchParams(window.location.search).get("hostDesign") !== "legacy";
   if (approvalPrototype === "shop") {
-    return <TvShopApprovalPrototype />;
+    return (
+      <TvShopApprovalPrototype
+        category={["forge-armoury", "market", "medicae-shrine", "relic-dealer", "contract-broker"].includes(requestedShopCategory ?? "")
+          ? requestedShopCategory as NonNullable<PublicShopEncounterState["shopCategory"]>
+          : "market"}
+        view={["categories", "route-aids", "services"].includes(requestedShopView ?? "")
+          ? requestedShopView as "categories" | "route-aids" | "services"
+          : "route-aids"}
+      />
+    );
+  }
+  if (approvalPrototype === "lobby-qr") {
+    return <TvLobbyQrPrototype roomCode="ASHEN" />;
   }
   if (approvalPrototype === "scenario") {
     return (
@@ -3261,6 +3276,16 @@ export function TvApp(): ReactElement {
         scenario={selectedScenario}
         playerCount={playerCount}
         hostName={activeSeat?.displayName ?? "Expedition Host"}
+      />
+    );
+  }
+  if (approvalPrototype === "battle-reveal") {
+    const requestedStage = new URLSearchParams(window.location.search).get("battleRevealStage");
+    return (
+      <TvBattleRevealPrototype
+        forcedStage={["card", "identity", "ready"].includes(requestedStage ?? "")
+          ? requestedStage as TvBattleRevealStage
+          : null}
       />
     );
   }
@@ -3279,7 +3304,7 @@ export function TvApp(): ReactElement {
       />
     );
   }
-  if (cartographyFixture && ["route", "challenge", "dense"].includes(cartographyFixture)) {
+  if (cartographyFixture && ["route", "challenge", "dense", "inner"].includes(cartographyFixture)) {
     return (
       <SignalCartographyPrototype
         patch={publicPatch}

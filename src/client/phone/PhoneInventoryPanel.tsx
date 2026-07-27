@@ -109,22 +109,14 @@ function toUseIntent(card: InventoryCardViewModel, seatId: string): ClientIntent
 }
 
 function InventoryThumbnail({ card }: { card: InventoryCardViewModel }): ReactElement {
-  if (card.artCardId) {
-    return (
-      <PhoneInspectableCardArt
-        cardType={card.artCardType ?? "artifact"}
-        cardId={card.artCardId}
-        title={card.name}
-        rules={card.effectText}
-        className="phone-wrap-card__image phone-inventory-card-art"
-      />
-    );
-  }
-
   return (
-    <div className="phone-wrap-card__fallback phone-inventory-card-fallback" aria-hidden="true">
-      {card.fallbackLabel}
-    </div>
+    <PhoneInspectableCardArt
+      cardType={card.artCardType ?? "artifact"}
+      cardId={card.artCardId}
+      title={card.name}
+      rules={card.effectText}
+      className="phone-wrap-card__image phone-inventory-card-art"
+    />
   );
 }
 
@@ -306,6 +298,7 @@ function InventoryCard({
       dataState={stateLabel}
       ariaLabel={`${card.name}: ${card.status}. ${statusReason}`}
       media={<InventoryThumbnail card={card} />}
+      mediaInteractive
       title={card.name}
       eyebrow={card.group}
       status={<span className="phone-inventory-card-status">{statusLabel}</span>}

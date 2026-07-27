@@ -1,0 +1,233 @@
+.tv-battle-reveal-prototype {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+  color: #efe4d0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(96, 24, 18, .32), transparent 30%),
+    linear-gradient(145deg, #06090b, #120808 54%, #030507);
+}
+
+.tv-battle-reveal-prototype__veil {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .84), transparent 24% 76%, rgba(0, 0, 0, .84)),
+    repeating-linear-gradient(180deg, transparent 0 3px, rgba(255, 255, 255, .014) 4px);
+}
+
+.tv-battle-reveal-prototype > header {
+  display: grid;
+  justify-items: center;
+  padding: clamp(1rem, 2.4vh, 2rem) 2rem .5rem;
+  text-align: center;
+}
+
+.tv-battle-reveal-prototype > header span,
+.tv-battle-reveal-prototype__identity span,
+.tv-battle-reveal-prototype__seal span,
+.tv-battle-reveal-prototype > footer {
+  color: #db8069;
+  font: 900 clamp(.68rem, .78vw, .92rem)/1 "Arial Narrow", sans-serif;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.tv-battle-reveal-prototype > header h1 {
+  margin: .3rem 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 4vw, 4.8rem);
+  line-height: .86;
+  text-transform: uppercase;
+}
+
+.tv-battle-reveal-prototype > header small {
+  color: #9f9a91;
+  font-weight: 700;
+}
+
+.tv-battle-reveal-prototype__stage {
+  position: relative;
+  align-self: center;
+  justify-self: center;
+  display: grid;
+  grid-template-columns: minmax(15rem, 31vw) clamp(8rem, 12vw, 13rem) minmax(15rem, 31vw);
+  align-items: center;
+  width: min(92vw, 104rem);
+  min-height: 0;
+}
+
+.tv-battle-reveal-prototype__card {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-width: 0;
+  height: min(63vh, 42rem);
+  perspective: 1400px;
+}
+
+.tv-battle-reveal-prototype__card-inner {
+  position: relative;
+  min-height: 0;
+  transform-style: preserve-3d;
+  transition: transform 820ms cubic-bezier(.2, .78, .2, 1);
+}
+
+.tv-battle-reveal-prototype.is-identity .tv-battle-reveal-prototype__card-inner,
+.tv-battle-reveal-prototype.is-ready .tv-battle-reveal-prototype__card-inner {
+  transform: rotateY(180deg);
+}
+
+.tv-battle-reveal-prototype__card--operative .tv-battle-reveal-prototype__card-inner {
+  transform-origin: right center;
+}
+
+.tv-battle-reveal-prototype__card--enemy .tv-battle-reveal-prototype__card-inner {
+  transform-origin: left center;
+}
+
+.tv-battle-reveal-prototype__card-back,
+.tv-battle-reveal-prototype__card-front {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(222, 165, 102, .48);
+  background: rgba(4, 7, 9, .92);
+  backface-visibility: hidden;
+  box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, .62);
+}
+
+.tv-battle-reveal-prototype__card-back img,
+.tv-battle-reveal-prototype__card-front img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tv-battle-reveal-prototype__card-front {
+  transform: rotateY(180deg);
+}
+
+.tv-battle-reveal-prototype__identity {
+  display: grid;
+  gap: .28rem;
+  min-height: 5.5rem;
+  padding: .85rem 1rem;
+  border-top: 1px solid rgba(222, 165, 102, .4);
+  opacity: 0;
+  transform: translateY(.8rem);
+  transition: opacity 360ms 650ms ease, transform 360ms 650ms ease;
+}
+
+.tv-battle-reveal-prototype__card--enemy .tv-battle-reveal-prototype__identity {
+  text-align: right;
+}
+
+.tv-battle-reveal-prototype.is-identity .tv-battle-reveal-prototype__identity,
+.tv-battle-reveal-prototype.is-ready .tv-battle-reveal-prototype__identity {
+  opacity: 1;
+  transform: none;
+}
+
+.tv-battle-reveal-prototype__identity strong {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 2.4vw, 2.8rem);
+  line-height: .92;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tv-battle-reveal-prototype__identity small {
+  color: #aaa49a;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.tv-battle-reveal-prototype__seal {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  gap: .15rem;
+  text-align: center;
+  opacity: 0;
+  transform: scale(.64);
+  transition: opacity 480ms 320ms ease, transform 560ms 320ms cubic-bezier(.16, 1, .3, 1);
+}
+
+.tv-battle-reveal-prototype.is-ready .tv-battle-reveal-prototype__seal {
+  opacity: 1;
+  transform: none;
+}
+
+.tv-battle-reveal-prototype__seal img {
+  width: clamp(7rem, 10vw, 11rem);
+  height: auto;
+  filter: drop-shadow(0 0 1.2rem rgba(222, 72, 49, .6));
+}
+
+.tv-battle-reveal-prototype__seal strong {
+  color: #fff1dc;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.2vw, 3.8rem);
+}
+
+.tv-battle-reveal-prototype__seal small {
+  color: #aaa49a;
+  font-weight: 800;
+}
+
+.tv-battle-reveal-prototype > footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 3.8rem;
+  border-top: 1px solid rgba(222, 165, 102, .26);
+  background: rgba(2, 4, 6, .82);
+}
+
+.tv-battle-reveal-prototype > footer i {
+  width: clamp(3rem, 8vw, 9rem);
+  height: 1px;
+  background: linear-gradient(90deg, #8a4b39, #dca768);
+}
+
+.tv-battle-reveal-prototype.is-card > footer span:not(:first-child),
+.tv-battle-reveal-prototype.is-card > footer strong,
+.tv-battle-reveal-prototype.is-identity > footer strong {
+  opacity: .36;
+}
+
+@media (max-width: 1400px), (max-height: 800px) {
+  .tv-battle-reveal-prototype__stage {
+    grid-template-columns: minmax(13rem, 32vw) 7rem minmax(13rem, 32vw);
+  }
+
+  .tv-battle-reveal-prototype__card {
+    height: min(60vh, 32rem);
+  }
+
+  .tv-battle-reveal-prototype__identity {
+    min-height: 4.6rem;
+    padding: .65rem .8rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-battle-reveal-prototype__card-inner,
+  .tv-battle-reveal-prototype__identity,
+  .tv-battle-reveal-prototype__seal {
+    transition: none;
+  }
+}
