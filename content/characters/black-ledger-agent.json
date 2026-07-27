@@ -2,6 +2,7 @@
   "id": "black-ledger-agent",
   "name": "Joss Var",
   "archetype": "Black Ledger Agent",
+  "lore": "A former convoy assessor who survived a purge by carrying the erased debts of an entire route network in a cipher ledger.",
   "currentSpaceId": "hollow-veil-yard",
   "status": "active",
   "stats": {
@@ -30,7 +31,7 @@
     {
       "id": "silent-audit",
       "name": "Silent Audit",
-      "text": "Once per round, after you clear a sector with no unresolved blockers, record a private leverage entry."
+      "text": "Once per round, after you clear a sector with no unresolved blockers, gain +1 Guile on your next Guile check this turn."
     },
     {
       "id": "debt-knife",

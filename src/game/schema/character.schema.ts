@@ -87,6 +87,7 @@ const characterFields = {
   id: z.string().min(1),
   name: z.string().min(1),
   archetype: z.string().min(1),
+  lore: z.string().min(1).optional(),
   qaOnly: z.boolean().optional(),
   currentSpaceId: z.string().min(1),
   status: characterStatusSchema,

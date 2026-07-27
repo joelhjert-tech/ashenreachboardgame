@@ -453,6 +453,24 @@ function createContracts(): Map<string, ContractCard> {
           completionText: "The Cartels opened a clean crossing thread for one black-lantern run."
         }
       }
+    ],
+    [
+      "cartel-crosswind-ledger",
+      {
+        id: "cartel-crosswind-ledger",
+        name: "Crosswind Ledger",
+        factionGiver: "Pale Cartels",
+        text: "Visit the marked route stops in sequence.",
+        objective: {
+          type: "multiStopRoute",
+          ordered: true,
+          targets: [
+            { id: "ashwake", type: "spaceId", value: "ashwake-crossing", label: "Ashwake Crossing" },
+            { id: "mirecoil", type: "spaceId", value: "mirecoil-beacon", label: "Mirecoil Beacon" }
+          ]
+        },
+        reward: { effects: [], completionText: "The route ledger is complete." }
+      }
     ]
   ]);
 }
@@ -1067,6 +1085,30 @@ describe("first eligible character timing", () => {
     server.getState().eventLog.push({ type: abilityId === "houndblade-charge" ? "TURN_COMPLETED" : "ROUND_COMPLETED" } as never);
     internals.markFirstEligibleCharacterAbility("seat-1", stat, mode, encounter as ThreatCard);
     expect(server.getState().eventLog.filter((entry) => (entry as { abilityId?: string }).abilityId === abilityId)).toHaveLength(2);
+  });
+
+  it.each([
+    ["Deepdale", "char_deepdale", "forge", hazard("yellow-forge", "forge", "yellow"), "Black Dust Craft"],
+    ["Kira", "char_kira_dog", "guile", hazard("yellow-guile", "guile", "yellow"), "Ash-Scent Tracker"],
+    ["Brask", "salvage-warden", "forge", hazard("yellow-scrap", "forge", "yellow"), "Scrap Bastion"]
+  ] as const)("applies %s's authored passive modifier before an eligible check", (_name, characterId, stat, encounter, label) => {
+    const server = timingServer(
+      characterId,
+      { command: 3, grit: 3, signal: 3, guile: 3, forge: 3 },
+      encounter
+    );
+    const internals = server as unknown as {
+      getCharacterModifierSources: (
+        player: GameState["players"][number],
+        stat: "command" | "grit" | "signal" | "guile" | "forge",
+        mode: "battle" | "check"
+      ) => Array<{ label: string; value: number }>;
+    };
+
+    expect(internals.getCharacterModifierSources(server.getState().players[0]!, stat, "check")).toContainEqual({
+      label,
+      value: 1
+    });
   });
 });
 
@@ -4542,7 +4584,7 @@ describe("escalation flow", () => {
 
     expect(server.getState().escalationLevel).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
-      "Choir Lash bled the breach spike into a controlled pulse."
+      "Choir Lash grants +1 on the next Signal check this turn."
     );
   });
 
@@ -4831,7 +4873,7 @@ describe("escalation flow", () => {
     });
 
     expect(server.getState().players[0]?.private.notes).not.toContain("Ashwake crossing cleared. The convoy lane is charted.");
-    expect(server.getState().players[0]?.private.notes).toContain("Void Command marked the cleared lane for allied movement.");
+    expect(server.getState().players[0]?.private.notes).not.toContain("Void Command marked the cleared lane for allied movement.");
   });
 
   it("requires an authored choice before resolving Shard Sprawl sector text", () => {
@@ -4927,7 +4969,7 @@ describe("escalation flow", () => {
     expect(server.getState().players[0]?.private.notes).toContain(
       "Shard Sprawl passage stock secured for the next route push."
     );
-    expect(server.getState().players[0]?.private.notes).toContain("Void Command marked the cleared lane for allied movement.");
+    expect(server.getState().players[0]?.private.notes).not.toContain("Void Command marked the cleared lane for allied movement.");
   });
 
   it("discovers a local Mirecoil contract through sector text and adds it to the live contract pool", () => {
@@ -6776,7 +6818,7 @@ describe("contracts", () => {
     });
 
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
-      "Witchglass choir mapped the live signal into a stable route note."
+      "Witchglass Choir grants +1 on the next Guile check this turn."
     );
   });
 
@@ -6834,7 +6876,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets Route Burn leave an allied lane note after the Signal Witch clears a route", () => {
+  it("does not trigger the retired Route Burn note", () => {
     const characters = createCharacters();
     const server = new GameRoomServer(
       createState({
@@ -6882,7 +6924,7 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).not.toContain(
       "Route Burn marked a safer allied approach through the live lane."
     );
   });
@@ -6997,11 +7039,11 @@ describe("contracts", () => {
 
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract?.progress).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
-      "Broken Claim converted local leverage into objective progress."
+      "Broken Claim converted local leverage into defeat-contract progress."
     );
   });
 
-  it("lets the Rift Cartographer map a cleared lane into a route note", () => {
+  it("does not add a post-resolution Breach Atlas note", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7050,7 +7092,7 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).not.toContain(
       "Breach Atlas logged a safer approach through the mapped lane."
     );
   });
@@ -7141,7 +7183,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets Old Oaths mark convoy discipline when a new route job is accepted", () => {
+  it("lets Old Oaths prepare the next Command check when a new job is accepted", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7177,11 +7219,18 @@ describe("contracts", () => {
     });
 
     expect(server.getState().players[0]?.private.notes).toContain(
-      "Old Oaths made the frightened route crews fall into line at once."
+      "Old Oaths grants +1 on the next Command check this turn."
     );
+    expect(server.getState().eventLog).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: "ABILITY_TRIGGERED",
+        abilityId: "old-oaths",
+        rollModifier: { stat: "command", mode: "check", label: "Old Oaths", value: 1 }
+      })
+    ]));
   });
 
-  it("lets Chain Signal preserve a cleared convoy lane for the Fleet Elder", () => {
+  it("does not trigger the retired Chain Signal note", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7227,7 +7276,7 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).not.toContain(
       "Chain Signal fixed the route into a convoy-safe sequence for the next push."
     );
   });
@@ -7276,11 +7325,11 @@ describe("contracts", () => {
     });
 
     expect(server.getState().players[0]?.private.notes).toContain(
-      "Ashwake Step marked the opening lane before anyone else had to test it."
+      "Ashwake Step grants +1 on the next Command check this turn."
     );
   });
 
-  it("lets Void Command mark the Void Marshal's cleared live lane", () => {
+  it("does not trigger the retired Void Command note", () => {
     const characters = createCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7323,12 +7372,12 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.private.notes).toContain(
+    expect(server.getState().players[0]?.private.notes).not.toContain(
       "Void Command marked the cleared lane for allied movement."
     );
   });
 
-  it("lets Signal Relay reward a Void Marshal combat win when another operative shares the sector", () => {
+  it("does not trigger the retired Signal Relay note", () => {
     const characters = createCharacters();
     const server = new GameRoomServer(
       withOnlyConnectedSeat(
@@ -7373,12 +7422,12 @@ describe("contracts", () => {
       stat: "grit"
     });
 
-    expect(server.getState().players[0]?.private.notes).toContain(
+    expect(server.getState().players[0]?.private.notes).not.toContain(
       "Signal Relay amplified allied pressure in the Marshal's sector."
     );
   });
 
-  it("lets Silent Audit mark Black Ledger leverage after a cleared-sector read", () => {
+  it("lets Silent Audit prepare the next Guile check after a cleared-sector read", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7425,8 +7474,15 @@ describe("contracts", () => {
     });
 
     expect(server.getState().players[0]?.private.notes).toContain(
-      "Silent Audit extracted sharper route intelligence from the cleared sector."
+      "Silent Audit grants +1 on the next Guile check this turn."
     );
+    expect(server.getState().eventLog).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: "ABILITY_TRIGGERED",
+        abilityId: "silent-audit",
+        rollModifier: { stat: "guile", mode: "check", label: "Silent Audit", value: 1 }
+      })
+    ]));
   });
 
   it("lets Debt Knife add extra contract pressure on a marked kill", () => {
@@ -7518,7 +7574,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets Yard Warden keep a Hollow Veil salvage site useful for the Salvage Warden", () => {
+  it("does not trigger the retired Yard Warden note", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7566,12 +7622,12 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.private.notes).toContain(
+    expect(server.getState().players[0]?.private.notes).not.toContain(
       "Yard Warden secured the salvage site for a second pass and cleaner extraction."
     );
   });
 
-  it("lets Last Haul pull one more useful tool during a stabilize window", () => {
+  it("lets Last Haul ready one exhausted Gear during a stabilize window", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7589,7 +7645,8 @@ describe("contracts", () => {
                 ...entry,
                 character: {
                   ...cloneCharacter(characters.get("salvage-warden")),
-                  currentSpaceId: "sector-a"
+                  currentSpaceId: "sector-a",
+                  heldGear: [{ ...createGear().get("tuning-spines")!, exhausted: true }]
                 }
               }
             : entry
@@ -7608,13 +7665,14 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heldGear.map((item) => item.id)).toContain("veil-hook");
+    expect(server.getState().players[0]?.character.heldGear.find((item) => item.id === "tuning-spines")?.exhausted).toBe(false);
+    expect(server.getState().players[0]?.character.heldGear.map((item) => item.id)).not.toContain("veil-hook");
     expect(server.getState().players[0]?.private.notes).toContain(
-      "Last Haul pried one more useful recovery out of the breaking route."
+      "Last Haul readied Tuning Spines."
     );
   });
 
-  it("lets Grave Spark mark the Grave Engineer's successful forge check", () => {
+  it("does not add a post-roll Grave Spark note after a Forge check", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7662,12 +7720,12 @@ describe("contracts", () => {
       stat: "forge"
     });
 
-    expect(server.getState().players[0]?.private.notes).toContain(
+    expect(server.getState().players[0]?.private.notes).not.toContain(
       "Grave Spark turned the dead system into one more workable machine."
     );
   });
 
-  it("lets Mortuary Triage shave escalation during a stabilize window", () => {
+  it("lets Mortuary Triage ready one exhausted Gear without extra pressure reduction", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7685,7 +7743,8 @@ describe("contracts", () => {
                 ...entry,
                 character: {
                   ...cloneCharacter(characters.get("grave-engineer")),
-                  currentSpaceId: "sector-c"
+                  currentSpaceId: "sector-c",
+                  heldGear: [{ ...createGear().get("tuning-spines")!, exhausted: true }]
                 }
               }
             : entry
@@ -7705,8 +7764,9 @@ describe("contracts", () => {
     });
 
     expect(server.getState().escalationLevel).toBe(0);
+    expect(server.getState().players[0]?.character.heldGear.find((item) => item.id === "tuning-spines")?.exhausted).toBe(false);
     expect(server.getState().players[0]?.private.notes).toContain(
-      "Mortuary Triage turned panic into a field procedure the line could trust."
+      "Mortuary Triage readied Tuning Spines."
     );
   });
 
@@ -7882,7 +7942,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets Ruin Courtesy mark a clean movement through broken ground", () => {
+  it("does not trigger the retired Ruin Courtesy note", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7920,7 +7980,7 @@ describe("contracts", () => {
       toSectorId: "sector-b"
     });
 
-    expect(server.getState().players[0]?.private.notes).toContain(
+    expect(server.getState().players[0]?.private.notes).not.toContain(
       "Ruin Courtesy made the shattered approach feel like a hall already claimed."
     );
   });
@@ -7956,7 +8016,7 @@ describe("contracts", () => {
     runIntent(server, {
       type: "ACCEPT_CONTRACT",
       seatId: "seat-1",
-      contractId: "choir-hush-census"
+      contractId: "cartel-crosswind-ledger"
     });
 
     expect(server.getState().players[0]?.character.activeContract?.progress).toBe(1);
@@ -7965,7 +8025,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets Ghost Mile mark a clean movement through a false lane", () => {
+  it("does not trigger the retired Ghost Mile note", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -8003,12 +8063,12 @@ describe("contracts", () => {
       toSectorId: "sector-b"
     });
 
-    expect(server.getState().players[0]?.private.notes).toContain(
+    expect(server.getState().players[0]?.private.notes).not.toContain(
       "Ghost Mile stripped the false path out of the approach before it could set in."
     );
   });
 
-  it("lets Rift Script record a clean hostile-ground annotation after a successful guile check", () => {
+  it("does not trigger the retired Rift Script note", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -8055,12 +8115,12 @@ describe("contracts", () => {
       stat: "guile"
     });
 
-    expect(server.getState().players[0]?.private.notes).toContain(
+    expect(server.getState().players[0]?.private.notes).not.toContain(
       "Rift Script annotated the hostile ground before the path could blur again."
     );
   });
 
-  it("lets the Rift Cartographer turn a successful Webglass route choice into a mapped lane", () => {
+  it("does not add a post-resolution Breach Atlas note after Webglass", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -8110,7 +8170,7 @@ describe("contracts", () => {
     expect(server.getState().players[0]?.private.notes).toContain(
       "Webglass hidden lane mapped through shifting lanes."
     );
-    expect(server.getState().players[0]?.private.notes).toContain(
+    expect(server.getState().players[0]?.private.notes).not.toContain(
       "Breach Atlas logged a safer approach through the mapped lane."
     );
   });
@@ -8132,6 +8192,7 @@ describe("contracts", () => {
               character: {
                 ...cloneCharacter(characters.get("siege-medic")),
                 currentSpaceId: "sector-a",
+                wounds: 1
               }
             }
           ]
@@ -8255,7 +8316,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets Scrap Bastion mark the Salvage Warden's successful forge check", () => {
+  it("does not add a post-roll Scrap Bastion note after a Forge check", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -8308,7 +8369,7 @@ describe("contracts", () => {
       stat: "forge"
     });
 
-    expect(server.getState().players[0]?.private.notes).toContain(
+    expect(server.getState().players[0]?.private.notes).not.toContain(
       "Scrap Bastion converted damaged cover into a workable defensive shell."
     );
   });

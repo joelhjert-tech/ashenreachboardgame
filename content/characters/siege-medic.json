@@ -2,14 +2,15 @@
   "id": "siege-medic",
   "name": "Dr. Yuna Castell",
   "archetype": "Siege Medic",
+  "lore": "Yuna learned medicine where every clinic was also a barricade. She carries splints, bitter draughts, and the discipline to keep an expedition alive under siege.",
   "currentSpaceId": "ashwake-crossing",
   "status": "active",
   "stats": {
     "command": 3,
     "grit": 3,
-    "signal": 2,
+    "signal": 3,
     "guile": 2,
-    "forge": 5
+    "forge": 4
   },
   "trophies": 0,
   "wounds": 0,
@@ -25,17 +26,17 @@
     {
       "id": "field-triage",
       "name": "Field Triage",
-      "text": "Once per round, after you resolve a sanctuary, clinic, or stabilization action, heal 1 Wound from yourself or an operative in your sector."
+      "text": "Once per round, after you use Ember Sanctum Rest or Stabilize, heal 1 Wound."
     },
     {
       "id": "scar-ledger",
       "name": "Scar Ledger",
-      "text": "When a Scar would block your Gear or action, reveal it and reduce its penalty by 1 for this roll only."
+      "text": "After you complete a Contract, heal 1 Wound."
     },
     {
       "id": "siege-discipline",
       "name": "Siege Discipline",
-      "text": "At the start of your turn, if you have at least 1 Wound, record a private triage entry."
+      "text": "At the start of your turn, if you have at least 1 Wound, heal 1 Wound."
     },
     {
       "id": "amber-draught",

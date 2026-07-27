@@ -2,6 +2,7 @@
   "id": "fleet-elder",
   "name": "Orenna Tash",
   "archetype": "Fleet Elder",
+  "lore": "Orenna remembers every convoy that vanished beyond the beacons. She turns those losses into strict marching law, keeping scattered operatives moving as one battered fleet.",
   "currentSpaceId": "emberwatch-step",
   "status": "active",
   "stats": {
@@ -30,17 +31,12 @@
     {
       "id": "old-oaths",
       "name": "Old Oaths",
-      "text": "Once per round, when you accept a route or escort Contract, record a private convoy briefing."
-    },
-    {
-      "id": "chain-signal",
-      "name": "Chain Signal",
-      "text": "Descriptive only. Orenna's cleared movement and contract sectors carry a convoy briefing for the next operative."
+      "text": "Once per round, when you accept a Contract, gain +1 on your next Command check this turn."
     },
     {
       "id": "fleet-memory",
       "name": "Fleet Memory",
-      "text": "At the start of your turn, if scenario pressure is above 0, record a private convoy briefing."
+      "text": "At the start of your turn, reduce scenario pressure by 1 if it is above 0."
     }
   ],
   "startingGear": [

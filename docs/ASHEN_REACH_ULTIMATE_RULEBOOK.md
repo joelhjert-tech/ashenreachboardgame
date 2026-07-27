@@ -51,6 +51,10 @@ An invalid, stale, or unauthorized start request changes nothing.
 
 The chosen scenario defines setup, special pressure, confrontation steps, victory conditions, and defeat conditions. Each operative begins at the authored starting sector with server-created resources, gear, private state, and contract options.
 
+Every normal operative begins with exactly 15 base attribute points. Each starting attribute is between 1 and 5. Permanent Trophy upgrades may later raise an attribute to the normal rank cap of 6. Equipped Gear, Followers, temporary effects, and contextual bonuses are separate modifiers and may raise the displayed current value beyond that permanent cap.
+
+Safe permanent or conditional starting Gear is equipped automatically when its slot is empty. A second item for an occupied slot remains carried so its owner can choose between them. Consumables, dangerous items, charged relics, and other player-timed effects are never activated or equipped automatically.
+
 The game supports eight authored scenarios currently listed by the host: The Broken Seal, The Throne of Ash, The Mirror of False Heroes, The Devourer Beneath, The Labyrinth Engine, The Dying Star, The Broken Concordance, and The Grinning Tithe. Read the active scenario panel; do not transfer special rules between scenarios.
 
 The Grinning Tithe is a solo/co-op boss hunt with no Loss Pressure. Its Red Threat lane is a shared shuffled three-card Pallid Retinue bag. The bag draws without replacement, reshuffles only after exhaustion, and remains private until a card is revealed. Boss wounds persist across operatives and visits; six wounds defeat the Pallid Curator.

@@ -2,13 +2,14 @@
   "id": "rift-cartographer",
   "name": "Senna Pell",
   "archetype": "Rift Cartographer",
+  "lore": "Senna charts roads that exist only between pulses of the rift. Her maps are written in vanished distances, safe crossings, and the silhouettes of places yet to arrive.",
   "currentSpaceId": "mirecoil-beacon",
   "status": "active",
   "stats": {
-    "command": 1,
+    "command": 2,
     "grit": 2,
     "signal": 5,
-    "guile": 5,
+    "guile": 4,
     "forge": 2
   },
   "trophies": 0,
@@ -25,22 +26,12 @@
     {
       "id": "breach-atlas",
       "name": "Breach Atlas",
-      "text": "Once per round, after you enter or clear a movement/anomaly sector, record a private route insight."
-    },
-    {
-      "id": "ghost-mile",
-      "name": "Ghost Mile",
-      "text": "Descriptive only. A failed movement or route test leaves Senna with a revised route insight for a later decision."
+      "text": "Passive. Add +1 Signal or Guile on tests in movement or anomaly sectors."
     },
     {
       "id": "surveyor-cut",
       "name": "Surveyor's Cut",
-      "text": "Once per round, when you accept a route Contract, set its progress to at least 1."
-    },
-    {
-      "id": "rift-script",
-      "name": "Rift Script",
-      "text": "Descriptive only. After a clean Signal or Guile read, Senna shares route intelligence with the sector."
+      "text": "Once per round, when you accept a multi-stop route Contract, set its progress to at least 1."
     }
   ],
   "startingGear": [

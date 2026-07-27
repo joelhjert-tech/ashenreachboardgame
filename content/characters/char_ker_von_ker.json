@@ -2,14 +2,15 @@
   "id": "char_ker_von_ker",
   "name": "Ker Von Ker",
   "archetype": "Iron Bulwark",
+  "lore": "The last shield of a dismantled chapel guard, Ker advances slowly because every step is chosen as ground that must never be surrendered.",
   "currentSpaceId": "emberwatch-step",
   "status": "active",
   "stats": {
-    "command": 1,
+    "command": 2,
     "grit": 5,
-    "signal": 1,
-    "guile": 3,
-    "forge": 5
+    "signal": 2,
+    "guile": 2,
+    "forge": 4
   },
   "trophies": 0,
   "wounds": 0,
@@ -28,16 +29,6 @@
       "text": "Passive. Add +1 Grit when fighting an enemy with difficulty 8 or higher."
     },
     {
-      "id": "iron-bulwark",
-      "name": "Iron Bulwark",
-      "text": "Passive. Enemy dice cannot explode against you."
-    },
-    {
-      "id": "close-quarters-doctrine",
-      "name": "Close-Quarters Doctrine",
-      "text": "Descriptive only. Ker refuses evasive lines and commits to holding the battle space."
-    },
-    {
       "id": "hold-the-line",
       "name": "Hold the Line",
       "text": "Once per round, the first battle or hazard Wound assigned to you is prevented. Weakness: when you roll movement, roll 2 dice and use the lower result."
@@ -45,7 +36,7 @@
   ],
   "startingGear": [
     "chapel-guard-harness",
-    "wound-clamp"
+    "ashen-bayonet"
   ],
   "startingContract": "warden-span-vigil"
 }

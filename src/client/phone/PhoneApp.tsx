@@ -1236,6 +1236,7 @@ export function PhoneApp(): ReactElement {
                                   {character.presentation.recommendedForFirstGame ? <em>First-game pick</em> : null}
                                 </span>
                                 <small>{character.presentation.playstyleSummary}</small>
+                                {character.lore ? <small className="phone-muted-copy">{character.lore}</small> : null}
                               </span>
                             )}
                             <small className="phone-character-select-label">

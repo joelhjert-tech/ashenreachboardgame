@@ -2,12 +2,13 @@
   "id": "char_popelord",
   "name": "Popelord",
   "archetype": "Mire Sovereign",
+  "lore": "A self-crowned keeper of drowned salvage yards, Popelord rules by knowing which heaps breathe, which paths sink, and which warnings arrive too late.",
   "currentSpaceId": "mirecoil-beacon",
   "status": "active",
   "stats": {
     "command": 3,
-    "grit": 5,
-    "signal": 1,
+    "grit": 4,
+    "signal": 2,
     "guile": 2,
     "forge": 4
   },
@@ -31,16 +32,6 @@
       "id": "compost-cape",
       "name": "Compost Cape",
       "text": "Once per round, the first yellow hazard you face has -1 difficulty."
-    },
-    {
-      "id": "yard-king",
-      "name": "Yard King",
-      "text": "Descriptive only. Popelord turns cleared salvage and hazard ground into a stronger local haul."
-    },
-    {
-      "id": "ripe-warning",
-      "name": "Ripe Warning",
-      "text": "Descriptive only. Popelord warns arrivals about unresolved yellow blockers. Weakness: failed blue Anomaly tests remain especially dangerous."
     }
   ],
   "startingGear": [

@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { loadCharacters } from "../../content/characters.js";
+import { loadGear } from "../../content/gear.js";
 import { getCharacterPresentation } from "../../data/characterPresentation.js";
 
 describe("character role and complexity presentation", () => {
   it("provides role and complexity metadata for every normal operative", () => {
     const normalCharacters = [...loadCharacters().values()].filter((character) => !character.qaOnly);
+    const gear = loadGear();
 
     expect(normalCharacters.length).toBeGreaterThan(0);
 
@@ -19,7 +21,9 @@ describe("character role and complexity presentation", () => {
       expect(presentation?.weaknesses.length).toBeGreaterThan(0);
       expect(presentation?.usefulStats.length).toBeGreaterThan(0);
       expect(presentation?.signatureItemSummary).toMatch(/\S/);
+      expect(character.startingGear?.some((gearId) => presentation?.signatureItemSummary.startsWith(gear.get(gearId)?.name ?? "\0"))).toBe(true);
       expect(presentation?.startingContractSummary).toMatch(/\S/);
+      expect(character.lore).toMatch(/\S/);
     }
   });
 

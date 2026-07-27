@@ -270,8 +270,8 @@ export function MobilePlayerCard({
                       {breakdown.companionSources.length > 0
                         ? ` (${breakdown.companionSources.map((source) => `${source.label} ${formatSignedStatBonus(source.value)}`).join(", ")})`
                         : ""}
-                      {" | "}Temporary / Status {formatSignedStatBonus(breakdown.temporaryStatus)}
-                      {" | "}Final {breakdown.final}
+                      {" | "}Conditional / Status {formatSignedStatBonus(breakdown.temporaryStatus)}
+                      {" | "}Current equipped value {breakdown.final}
                     </small>
                   </div>
                 );

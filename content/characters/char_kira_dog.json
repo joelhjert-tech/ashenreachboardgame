@@ -2,13 +2,14 @@
   "id": "char_kira_dog",
   "name": "Kira Dog",
   "archetype": "Houndblade Hero",
+  "lore": "A route hound raised among ash couriers, Kira finds the living trail through wreckage and meets whatever follows it with a hooked blade.",
   "currentSpaceId": "ashwake-crossing",
   "status": "active",
   "stats": {
     "command": 3,
     "grit": 5,
-    "signal": 1,
-    "guile": 4,
+    "signal": 2,
+    "guile": 3,
     "forge": 2
   },
   "trophies": 0,
@@ -28,19 +29,9 @@
       "text": "Once per turn, add +1 Grit to the first battle you start."
     },
     {
-      "id": "loyal-guard",
-      "name": "Loyal Guard",
-      "text": "Descriptive only. Kira is the roster's guardian striker; ally-damage transfer needs an explicit shared-reaction window before it can become a live rule."
-    },
-    {
       "id": "ash-scent-tracker",
       "name": "Ash-Scent Tracker",
-      "text": "Descriptive only. Kira tracks non-blue threats after they are revealed."
-    },
-    {
-      "id": "heroic-bite",
-      "name": "Heroic Bite",
-      "text": "After you defeat an enemy with difficulty 7 or higher, mark it as a hard-won trophy in the encounter record. Weakness: Ash-Scent Tracker cannot inspect blue Anomalies."
+      "text": "Passive. Add +1 Guile on non-blue Hazard tests."
     }
   ],
   "startingGear": [

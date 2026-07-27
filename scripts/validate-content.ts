@@ -18,7 +18,6 @@ import { FOLLOWER_ACQUISITION_SOURCES, QA_FOLLOWER_IDS } from "../src/game/data/
 import { BOARD_SPACES } from "../src/game/data/boardSpaces.js";
 import { BOARD_TEXT_EFFECTS, validateBoardTextEffectCoverage } from "../src/game/data/boardTextEffects.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../src/game/data/canonicalSectorGraph.js";
-import { ashenReachCharacters } from "../src/game/data/characters.js";
 import { missions } from "../src/game/data/missions.js";
 import { nemeses } from "../src/game/data/nemeses.js";
 import { SCENARIOS } from "../src/game/data/scenarios.js";
@@ -53,6 +52,11 @@ import {
   NORMAL_STARTING_SALVAGE,
   SOLO_STARTING_SALVAGE
 } from "../src/game/rules/startingLoadout.js";
+import {
+  NORMAL_STARTING_STAT_BUDGET,
+  NORMAL_STARTING_STAT_MAX,
+  NORMAL_STARTING_STAT_MIN
+} from "../src/game/rules/statUpgrades.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
 const contentRoot = join(process.cwd(), "content");
@@ -219,20 +223,20 @@ for (const character of characters.values()) {
   const totalStats = statValues.reduce((total, value) => total + value, 0);
 
   if (!character.qaOnly) {
-    if (totalStats < 14 || totalStats > 16) {
-      errors.push(`Character ${character.id} stat total ${totalStats} is outside normal 14-16 range`);
+    if (totalStats !== NORMAL_STARTING_STAT_BUDGET) {
+      errors.push(`Character ${character.id} must use the ${NORMAL_STARTING_STAT_BUDGET}-point starting budget; found ${totalStats}`);
     }
 
-    if (totalStats !== 15) {
-      errors.push(`Character ${character.id} should normally use the 15-point baseline; found ${totalStats}`);
+    if (statValues.some((value) => value < NORMAL_STARTING_STAT_MIN)) {
+      errors.push(`Character ${character.id} has a starting stat below ${NORMAL_STARTING_STAT_MIN}`);
     }
 
-    if (statValues.some((value) => value <= 0)) {
-      errors.push(`Character ${character.id} has a zero starting stat`);
+    if (statValues.some((value) => value > NORMAL_STARTING_STAT_MAX)) {
+      errors.push(`Character ${character.id} has a starting stat above ${NORMAL_STARTING_STAT_MAX} without qaOnly`);
     }
 
-    if (statValues.some((value) => value > 5)) {
-      errors.push(`Character ${character.id} has a starting stat above 5 without qaOnly`);
+    if (!character.lore?.trim()) {
+      errors.push(`Character ${character.id} is missing canonical lore`);
     }
   }
 
@@ -497,10 +501,6 @@ function validateLoreLanguage(): void {
 
   for (const scenario of SCENARIOS) {
     validateLoreObject(scenario, `scenario:${scenario.id}`);
-  }
-
-  for (const character of ashenReachCharacters) {
-    validateLoreObject(character, `character:${character.id}`);
   }
 
   for (const mission of missions) {

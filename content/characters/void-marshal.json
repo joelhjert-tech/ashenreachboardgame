@@ -2,6 +2,7 @@
   "id": "void-marshal",
   "name": "Tarek Voss",
   "archetype": "Void Marshal",
+  "lore": "Tarek commands with the certainty of a sealed bulkhead. His orders turn frightened crews into a line that can survive one more crossing and one more impossible objective.",
   "currentSpaceId": "ashwake-crossing",
   "status": "active",
   "stats": {
@@ -23,19 +24,9 @@
   },
   "abilities": [
     {
-      "id": "void-command",
-      "name": "Void Command",
-      "text": "Once per round, after you clear a sector or complete a Contract, record a private command briefing."
-    },
-    {
       "id": "ashwake-step",
       "name": "Ashwake Step",
-      "text": "At the start of your turn in a clear sector, record a private command briefing."
-    },
-    {
-      "id": "signal-relay",
-      "name": "Signal Relay",
-      "text": "Once per round, after you win a battle with another operative in your sector, record how the command relay held the line."
+      "text": "At the start of your turn in a clear sector, gain +1 on your next Command check this turn."
     },
     {
       "id": "marshal-presence",
@@ -45,7 +36,7 @@
   ],
   "startingGear": [
     "rustknife-carbine",
-    "chapel-guard-harness"
+    "surveyor-chalk"
   ],
   "startingContract": "dominion-warbell-recovery"
 }

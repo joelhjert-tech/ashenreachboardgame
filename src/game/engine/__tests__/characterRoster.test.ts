@@ -31,6 +31,8 @@ describe("character roster content", () => {
       expect(character.startingGear?.length).toBeGreaterThanOrEqual(1);
       expect(character.startingGear?.length).toBeLessThanOrEqual(2);
       expect(character.startingContract).toBeTruthy();
+      expect(character.lore).toMatch(/\S/);
+      expect(character.abilities.every((ability) => !/descriptive only/i.test(ability.text))).toBe(true);
     }
   });
 
@@ -58,6 +60,10 @@ describe("character roster content", () => {
       expect(loaded.salvage).toBe(3);
       expect(loaded.heldGear.map((item) => item.id)).toEqual(character.startingGear);
       expect(loaded.activeContract?.contractId).toBe(character.startingContract);
+      const equippedIds = Object.values(loaded.equippedGear).filter((itemId): itemId is string => Boolean(itemId));
+      expect(equippedIds.length).toBeGreaterThan(0);
+      expect(equippedIds.every((itemId) => loaded.heldGear.some((item) => item.id === itemId))).toBe(true);
+      expect(equippedIds.every((itemId) => gear.get(itemId)?.requiresEquipped === true)).toBe(true);
     }
   });
 
@@ -75,7 +81,7 @@ describe("character roster content", () => {
       name: "Cinder Wattle",
       archetype: "Adaptive Scavenger",
       stats: { command: 3, grit: 3, signal: 3, guile: 3, forge: 3 },
-      startingGear: ["bridge-spike"],
+      startingGear: ["bridge-spike", "ashen-bayonet"],
       startingContract: "map-broken-paths"
     });
     expect(Object.values(cw!.stats).reduce((sum, value) => sum + value, 0)).toBe(15);
@@ -99,11 +105,11 @@ describe("character roster content", () => {
     expect(deepdale?.archetype).toBe("Deep Route Delver");
     expect(deepdale?.currentSpaceId).toBe("mirecoil-beacon");
     expect(deepdale?.stats).toEqual({
-      command: 1,
+      command: 2,
       grit: 3,
       signal: 4,
       guile: 2,
-      forge: 5
+      forge: 4
     });
   });
 
@@ -116,9 +122,9 @@ describe("character roster content", () => {
     expect(bjornis?.stats).toEqual({
       command: 2,
       grit: 5,
-      signal: 1,
+      signal: 2,
       guile: 3,
-      forge: 4
+      forge: 3
     });
   });
 
@@ -127,8 +133,8 @@ describe("character roster content", () => {
     const bjornis = characters.get("char_bjornis");
     const ker = characters.get("char_ker_von_ker");
 
-    expect(bjornis?.stats).toEqual({ command: 2, grit: 5, signal: 1, guile: 3, forge: 4 });
-    expect(ker?.stats).toEqual({ command: 1, grit: 5, signal: 1, guile: 3, forge: 5 });
+    expect(bjornis?.stats).toEqual({ command: 2, grit: 5, signal: 2, guile: 3, forge: 3 });
+    expect(ker?.stats).toEqual({ command: 2, grit: 5, signal: 2, guile: 2, forge: 4 });
     expect(Object.values(bjornis?.stats ?? {}).reduce((sum, value) => sum + value, 0)).toBe(15);
     expect(Object.values(ker?.stats ?? {}).reduce((sum, value) => sum + value, 0)).toBe(15);
   });
@@ -140,10 +146,10 @@ describe("character roster content", () => {
     expect(rumi?.archetype).toBe("Violet Riftblade");
     expect(rumi?.currentSpaceId).toBe("glassmere-spindle");
     expect(rumi?.stats).toEqual({
-      command: 1,
+      command: 2,
       grit: 3,
       signal: 5,
-      guile: 4,
+      guile: 3,
       forge: 2
     });
   });

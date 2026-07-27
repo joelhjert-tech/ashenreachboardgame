@@ -1,6 +1,9 @@
 import type { Stat } from "../schema/character.schema.js";
 
 export const NORMAL_STAT_UPGRADE_CAP = 6;
+export const NORMAL_STARTING_STAT_BUDGET = 15;
+export const NORMAL_STARTING_STAT_MAX = 5;
+export const NORMAL_STARTING_STAT_MIN = 1;
 export const STAT_UPGRADE_STATS = ["command", "grit", "signal", "guile", "forge"] as const satisfies readonly Stat[];
 
 export function isUpgradeableStat(value: unknown): value is Stat {

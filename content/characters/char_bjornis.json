@@ -2,14 +2,15 @@
   "id": "char_bjornis",
   "name": "Bjornis",
   "archetype": "Firebreak Conqueror",
+  "lore": "A furnace-line veteran who reads battle through smoke and carries the memory of every crew he failed to pull from a burning breach.",
   "currentSpaceId": "cinder-fields",
   "status": "active",
   "stats": {
     "command": 2,
     "grit": 5,
-    "signal": 1,
+    "signal": 2,
     "guile": 3,
-    "forge": 4
+    "forge": 3
   },
   "trophies": 0,
   "wounds": 0,
@@ -26,16 +27,6 @@
       "id": "firebreak-vow",
       "name": "Firebreak Vow",
       "text": "Passive. Add +1 Grit against red threats and while fighting in Cinder Fields."
-    },
-    {
-      "id": "smoke-sniffer",
-      "name": "Smoke Sniffer",
-      "text": "Descriptive only. Bjornis reads smoke, scorch, and enemy movement before committing Gear."
-    },
-    {
-      "id": "cinder-hug",
-      "name": "Cinder Hug",
-      "text": "Descriptive only. Bjornis is the roster's red-lane protector; ally-damage transfer needs an explicit shared-reaction window before it can become a live rule."
     },
     {
       "id": "foam-and-fury",

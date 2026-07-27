@@ -2,6 +2,7 @@
   "id": "cinder-wattle",
   "name": "Cinder Wattle",
   "archetype": "Adaptive Scavenger",
+  "lore": "A brood-vat survivor armoured in scavenged machine parts, Cinder Wattle approaches every unknown system as something that can be learned before it can kill.",
   "currentSpaceId": "hollow-veil-yard",
   "status": "active",
   "stats": {
@@ -29,7 +30,8 @@
     }
   ],
   "startingGear": [
-    "bridge-spike"
+    "bridge-spike",
+    "ashen-bayonet"
   ],
   "startingContract": "map-broken-paths"
 }

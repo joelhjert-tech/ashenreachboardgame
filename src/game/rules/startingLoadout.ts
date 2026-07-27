@@ -1,7 +1,7 @@
 import type { AuthoredCharacter } from "../schema/character.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
 import type { Follower } from "../schema/follower.schema.js";
-import type { GearItem } from "../schema/gear.schema.js";
+import type { GearItem, GearSlot } from "../schema/gear.schema.js";
 import type { SessionMode } from "../schema/session.schema.js";
 import { isSinglePlayerMode } from "./soloTuning.js";
 
@@ -90,6 +90,31 @@ function resolveStartingFollowerIds(character: AuthoredCharacter, sessionMode: S
   return isSinglePlayerMode(sessionMode) ? [SOLO_DEFAULT_STARTING_FOLLOWER_ID] : [];
 }
 
+function getStartingAutoEquipPriority(item: GearItem): number {
+  if (item.effectModel === "permanent") return 3;
+  if (item.effectModel === "conditional") return 2;
+  if (item.category === "passive" && !item.useLimit) return 1;
+  return 0;
+}
+
+function resolveStartingEquippedGear(
+  current: AuthoredCharacter["equippedGear"],
+  startingGear: GearItem[]
+): AuthoredCharacter["equippedGear"] {
+  const equipped = { ...current };
+
+  for (const slot of ["weapon", "armor", "utility"] as const satisfies readonly GearSlot[]) {
+    if (equipped[slot]) continue;
+    const candidate = startingGear
+      .map((item, index) => ({ item, index, priority: item.slot === slot ? getStartingAutoEquipPriority(item) : 0 }))
+      .filter((entry) => entry.priority > 0)
+      .sort((left, right) => right.priority - left.priority || left.index - right.index)[0]?.item;
+    if (candidate) equipped[slot] = candidate.id;
+  }
+
+  return equipped;
+}
+
 export function applyStartingLoadout(character: AuthoredCharacter, options: StartingLoadoutOptions): AuthoredCharacter {
   const nextCharacter = cloneCharacter(character);
   const assignStartingContract = options.assignStartingContract ?? true;
@@ -114,6 +139,7 @@ export function applyStartingLoadout(character: AuthoredCharacter, options: Star
         ? { contractId: startingContractId, progress: 0 }
         : null,
     heldGear: uniqueById([...nextCharacter.heldGear, ...startingGear]),
+    equippedGear: resolveStartingEquippedGear(nextCharacter.equippedGear, startingGear),
     followers: uniqueById([...(nextCharacter.followers ?? []), ...startingFollowers])
   };
 }

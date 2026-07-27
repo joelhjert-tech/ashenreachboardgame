@@ -34,7 +34,7 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
     strengths: ["Private economy", "Guile checks", "Contract tempo"],
     weaknesses: ["Low direct combat", "Needs timing discipline"],
     usefulStats: ["guile", "signal"],
-    signatureItemSummary: "Blackstar Ampoule: risky utility for pressure-heavy turns.",
+    signatureItemSummary: "Salvage Ledger: equipped utility that strengthens salvage and shop decisions.",
     startingContractSummary: "Ledger skim: rewards contract-aware route choices."
   },
   char_bjornis: {
@@ -45,7 +45,7 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
     strengths: ["Grit battles", "Forge rewards", "Threat removal"],
     weaknesses: ["Weak Signal", "Limited subtlety"],
     usefulStats: ["grit", "forge"],
-    signatureItemSummary: "Red-March Warbell: combat-first gear for loud turns.",
+    signatureItemSummary: "Nailspike Maul: a heavy starting weapon for direct Grit battles.",
     startingContractSummary: "Salvage tithe: clear objectives through force and recovery."
   },
   char_deepdale: {
@@ -54,9 +54,9 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
     playstyleSummary: "Reads dangerous paths and converts careful movement into forge-side progress.",
     recommendedForFirstGame: true,
     strengths: ["Forge checks", "Signal routes", "Map safety"],
-    weaknesses: ["Low Command", "Needs planned destinations"],
+    weaknesses: ["Modest Command", "Needs planned destinations"],
     usefulStats: ["forge", "signal"],
-    signatureItemSummary: "Grave Lens: improves inspection and route decisions.",
+    signatureItemSummary: "Field Lens: improves inspection and route decisions.",
     startingContractSummary: "Bone-road guide: rewards careful route planning."
   },
   char_ker_von_ker: {
@@ -67,28 +67,28 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
     strengths: ["Durability", "Grit checks", "Blocked sectors"],
     weaknesses: ["Low finesse", "Can become slow"],
     usefulStats: ["grit", "command"],
-    signatureItemSummary: "Last-Breath Rivet: defensive gear for survival windows.",
+    signatureItemSummary: "Chapel Guard Harness: defensive armor for survival windows.",
     startingContractSummary: "Guardian span vigil: protects key lanes."
   },
   char_kira_dog: {
-    role: "Scout",
+    role: "Vanguard Scout",
     complexity: "beginner",
-    playstyleSummary: "Finds safe lines quickly and makes movement choices easier to read.",
+    playstyleSummary: "Tracks non-blue hazards and remains dangerous when a route turns into a close fight.",
     recommendedForFirstGame: true,
     strengths: ["Route reads", "Fast decisions", "Threat avoidance"],
     weaknesses: ["Limited heavy combat", "Needs clear objectives"],
     usefulStats: ["guile", "grit"],
-    signatureItemSummary: "Veil Hook: mobility utility for route turns.",
+    signatureItemSummary: "Chainhook Blade: a mobile weapon for close route encounters.",
     startingContractSummary: "Lantern run: rewards reaching and reporting key spaces."
   },
   char_popelord: {
-    role: "Mystic",
+    role: "Mire Bulwark",
     complexity: "advanced",
-    playstyleSummary: "Uses mire pressure and strange relic timing to turn bad sectors into leverage.",
+    playstyleSummary: "Endures mire hazards and turns salvage-heavy ground into stubborn forward progress.",
     recommendedForFirstGame: false,
-    strengths: ["Signal spikes", "Mire control", "Relic timing"],
-    weaknesses: ["Complex triggers", "Fragile if cornered"],
-    usefulStats: ["signal", "forge"],
+    strengths: ["Grit checks", "Mire control", "Forge pressure"],
+    weaknesses: ["Low Guile", "Limited route subtlety"],
+    usefulStats: ["grit", "forge"],
     signatureItemSummary: "Black Route Fuse: volatile utility for route and anomaly turns.",
     startingContractSummary: "Salvage tithe: turns resource pressure into progress."
   },
@@ -100,7 +100,7 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
     strengths: ["Signal checks", "Guile timing", "Companion combos"],
     weaknesses: ["Low Command", "Needs sequencing"],
     usefulStats: ["signal", "guile"],
-    signatureItemSummary: "Mirror Reroll Token: protects critical roll windows.",
+    signatureItemSummary: "Mirror Token: equipped utility that reinforces Command checks.",
     startingContractSummary: "Blackstar sample: rewards anomaly-aware play."
   },
   "cinder-monk": {
@@ -111,7 +111,7 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
     strengths: ["Scar control", "Grit resilience", "Signal support"],
     weaknesses: ["Lower Guile", "Needs table awareness"],
     usefulStats: ["grit", "signal"],
-    signatureItemSummary: "Scar-Sink Prayer: stabilizes pressure before it leaves a mark.",
+    signatureItemSummary: "Oath Chain: equipped utility that reinforces Command checks.",
     startingContractSummary: "Shrine confession: rewards cleansing and recovery."
   },
   "fleet-elder": {
@@ -122,7 +122,7 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
     strengths: ["Command", "Team tempo", "Objective clarity"],
     weaknesses: ["Low Grit", "Poor solo brawling"],
     usefulStats: ["command", "signal"],
-    signatureItemSummary: "Marshal Seal: improves command-side table plays.",
+    signatureItemSummary: "Emberlock Pistol: a reliable sidearm for a Command-led expedition.",
     startingContractSummary: "Beacon duty: rewards steady table progress."
   },
   "grave-engineer": {
@@ -133,7 +133,7 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
     strengths: ["Forge checks", "Gear economy", "Hazard control"],
     weaknesses: ["Low Signal", "Needs tools online"],
     usefulStats: ["forge", "guile"],
-    signatureItemSummary: "Coffin Rig: gear-first utility for hard work.",
+    signatureItemSummary: "Ironhide Bracers: durable armor for hazardous engineering work.",
     startingContractSummary: "Cleanse ledger: rewards solving sector problems."
   },
   "oathbroken-prince": {
@@ -144,7 +144,7 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
     strengths: ["Guile plays", "Duel pressure", "Contract bursts"],
     weaknesses: ["Fragile stat spread", "Punishes mistiming"],
     usefulStats: ["guile", "command"],
-    signatureItemSummary: "Oath-Chain Ledger: contract-linked timing gear.",
+    signatureItemSummary: "Oath Chain: contract-linked utility for Command checks.",
     startingContractSummary: "Gate tithe: rewards committed objective routes."
   },
   "rift-cartographer": {
@@ -155,18 +155,18 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
     strengths: ["Movement planning", "Guile routes", "Safe objectives"],
     weaknesses: ["Weak brawling", "Needs map attention"],
     usefulStats: ["guile", "signal"],
-    signatureItemSummary: "Ashen Route Compass: route gear for movement decisions.",
+    signatureItemSummary: "Route Compass: route gear for movement decisions.",
     startingContractSummary: "Quiet route: rewards reaching planned sectors."
   },
   "salvage-warden": {
     role: "Salvager",
     complexity: "standard",
-    playstyleSummary: "Turns spare gear and shop timing into table resources.",
+    playstyleSummary: "Turns salvage sites into recovered gear and keeps exhausted equipment operational.",
     recommendedForFirstGame: true,
-    strengths: ["Forge value", "Shop turns", "Resource recovery"],
-    weaknesses: ["Needs market access", "Moderate combat"],
+    strengths: ["Forge value", "Gear recovery", "Hazard sectors"],
+    weaknesses: ["Low Signal", "Moderate combat"],
     usefulStats: ["forge", "guile"],
-    signatureItemSummary: "Tuning Spines: practical gear for repair and salvage.",
+    signatureItemSummary: "Salvage Guard Mask: practical armor for repair and salvage.",
     startingContractSummary: "Salt burial: rewards salvage discipline."
   },
   "siege-medic": {
@@ -175,8 +175,8 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
     playstyleSummary: "Keeps wounds under control and makes danger easier for new tables.",
     recommendedForFirstGame: true,
     strengths: ["Healing", "Grit survival", "Recovery turns"],
-    weaknesses: ["Low Signal", "Needs wounded targets"],
-    usefulStats: ["grit", "command"],
+    weaknesses: ["Low Guile", "Needs wounded targets"],
+    usefulStats: ["forge", "command", "signal"],
     signatureItemSummary: "Saintwire Splint: wound-focused recovery gear.",
     startingContractSummary: "Surgery bond: rewards keeping operatives alive."
   },
@@ -188,18 +188,18 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
     strengths: ["Signal checks", "Anomaly handling", "Support magic"],
     weaknesses: ["Low Grit", "Avoids prolonged fights"],
     usefulStats: ["signal", "guile"],
-    signatureItemSummary: "Choir-Static Censer: Signal utility for strange sectors.",
+    signatureItemSummary: "Signal Lantern: equipped utility for Signal checks in strange sectors.",
     startingContractSummary: "Spindle harmonics: rewards anomaly and Signal play."
   },
   "void-marshal": {
     role: "Commander",
     complexity: "beginner",
-    playstyleSummary: "A clear first-game leader with Command pressure and safe recovery tools.",
+    playstyleSummary: "A clear first-game leader who converts secure sectors and objective pushes into command momentum.",
     recommendedForFirstGame: true,
-    strengths: ["Command", "Team direction", "Recovery"],
+    strengths: ["Command", "Team direction", "Pressure control"],
     weaknesses: ["Low Signal", "Needs support in weird sectors"],
     usefulStats: ["command", "grit"],
-    signatureItemSummary: "Cinder Suture Kit: emergency recovery for rough turns.",
+    signatureItemSummary: "Surveyor Chalk: equipped utility that supports Signal checks.",
     startingContractSummary: "Warbell recovery: rewards direct table leadership."
   }
 };

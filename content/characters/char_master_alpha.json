@@ -2,6 +2,7 @@
   "id": "char_master_alpha",
   "name": "MASTER ALPHA",
   "archetype": "QA ONLY - The Broken Commander",
+  "lore": "A development-only operative used to exercise overflow, recovery, and end-state systems; MASTER ALPHA is never part of normal Ashenreach continuity.",
   "qaOnly": true,
   "currentSpaceId": "ashwake-crossing",
   "status": "active",

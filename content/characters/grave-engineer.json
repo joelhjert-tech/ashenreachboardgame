@@ -2,13 +2,14 @@
   "id": "grave-engineer",
   "name": "Dessa Korr",
   "archetype": "Grave Engineer",
+  "lore": "Dessa rebuilds dead machines with the patience of an undertaker. Every recovered brace, wire, and casket plate becomes another defence against the Reach.",
   "currentSpaceId": "hollow-veil-yard",
   "status": "active",
   "stats": {
-    "command": 1,
+    "command": 2,
     "grit": 3,
     "signal": 2,
-    "guile": 4,
+    "guile": 3,
     "forge": 5
   },
   "trophies": 0,
@@ -25,17 +26,17 @@
     {
       "id": "coffin-rigging",
       "name": "Coffin Rigging",
-      "text": "Once per round, after you resolve a salvage, yard, or machine sector, draw 1 Equipment. You may equip it if it is Armor."
+      "text": "Once per round, after resolving Hollow Veil Sweep, recover Coffin Rig. Equip it if your Armor slot is empty."
     },
     {
       "id": "mortuary-triage",
       "name": "Mortuary Triage",
-      "text": "When you heal a Wound, you may also repair 1 exhausted Gear."
+      "text": "Once per round, after you Stabilize, ready one exhausted Gear you own."
     },
     {
       "id": "grave-spark",
       "name": "Grave Spark",
-      "text": "Passive. Add +1 Forge on machine, lock, salvage, or dead-infrastructure tests."
+      "text": "Passive. Add +1 Forge on tests in salvage or shop sectors."
     },
     {
       "id": "cold-brace",

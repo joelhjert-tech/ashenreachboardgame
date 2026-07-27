@@ -127,7 +127,7 @@ describe("MobilePlayerCard", () => {
       />
     );
 
-    expect(screen.getByText(/base 3 \| upgrades \+1 \| equipped \+1 \(marshal seal \+1\) \| companion \+0 \| temporary \/ status \+0 \| final 5/i)).toBeInTheDocument();
+    expect(screen.getByText(/base 3 \| upgrades \+1 \| equipped \+1 \(marshal seal \+1\) \| companion \+0 \| conditional \/ status \+0 \| current equipped value 5/i)).toBeInTheDocument();
     expect(screen.getByText("(+1)")).toBeInTheDocument();
     expect(document.querySelector(".phone-sheet-stat-card-command")).toHaveTextContent(/5/);
   });

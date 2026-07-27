@@ -2545,32 +2545,90 @@ export class GameRoomServer {
     const encounter = this.state.currentEncounter;
     const sector = getBoardSpace(player.sectorId);
     const tags = new Set(sector?.tags ?? []);
+    const sources: RollModifierSource[] = [];
 
     if (player.character.id === "char_bjornis" && mode === "battle" && stat === "grit" && (encounter?.threatLane === "red" || player.sectorId === "cinder-fields")) {
-      return [{ label: "Firebreak Vow", value: 1 }];
+      sources.push({ label: "Firebreak Vow", value: 1 });
     }
 
     if (player.character.id === "char_bjornis" && mode === "check" && stat === "signal" && encounter?.threatLane === "blue") {
-      return [{ label: "Blue Anomaly weakness", value: -1 }];
+      sources.push({ label: "Blue Anomaly weakness", value: -1 });
     }
 
     if (player.character.id === "char_ker_von_ker" && mode === "battle" && stat === "grit" && encounter?.cardType === "enemy" && encounter.difficulty >= 8) {
-      return [{ label: "Shield Breaker", value: 1 }];
+      sources.push({ label: "Shield Breaker", value: 1 });
     }
 
     if (player.character.id === "char_kira_dog" && mode === "battle" && stat === "grit" && !this.hasAbilityTriggeredThisTurn(player.seatId, "houndblade-charge")) {
-      return [{ label: "Houndblade Charge", value: 1 }];
+      sources.push({ label: "Houndblade Charge", value: 1 });
     }
 
     if (player.character.id === "char_popelord" && mode === "battle" && stat === "grit" && (tags.has("salvage") || tags.has("hazard"))) {
-      return [{ label: "Mire Pitchfork", value: 1 }];
+      sources.push({ label: "Mire Pitchfork", value: 1 });
     }
 
     if (player.character.id === "char_rumi" && !this.hasAbilityTriggeredThisRound(player.seatId, "violet-edge") && (stat === "signal" || stat === "guile")) {
-      return [{ label: "Violet Edge", value: 1 }];
+      sources.push({ label: "Violet Edge", value: 1 });
     }
 
-    return [];
+    if (
+      player.character.id === "char_deepdale" &&
+      mode === "check" &&
+      stat === "forge" &&
+      encounter?.cardType === "hazard" &&
+      encounter.threatLane === "yellow"
+    ) {
+      sources.push({ label: "Black Dust Craft", value: 1 });
+    }
+
+    if (
+      player.character.id === "char_deepdale" &&
+      mode === "check" &&
+      stat === "signal" &&
+      encounter?.cardType === "hazard" &&
+      encounter.threatLane === "blue"
+    ) {
+      sources.push({ label: "Lantern Delver", value: 1 });
+    }
+
+    if (
+      player.character.id === "char_kira_dog" &&
+      mode === "check" &&
+      stat === "guile" &&
+      encounter?.cardType === "hazard" &&
+      encounter.threatLane !== "blue"
+    ) {
+      sources.push({ label: "Ash-Scent Tracker", value: 1 });
+    }
+
+    if (
+      player.character.id === "grave-engineer" &&
+      mode === "check" &&
+      stat === "forge" &&
+      (tags.has("salvage") || tags.has("shop"))
+    ) {
+      sources.push({ label: "Grave Spark", value: 1 });
+    }
+
+    if (
+      player.character.id === "salvage-warden" &&
+      mode === "check" &&
+      stat === "forge" &&
+      (tags.has("salvage") || (encounter?.cardType === "hazard" && encounter.threatLane === "yellow"))
+    ) {
+      sources.push({ label: "Scrap Bastion", value: 1 });
+    }
+
+    if (
+      player.character.id === "rift-cartographer" &&
+      mode === "check" &&
+      (stat === "signal" || stat === "guile") &&
+      (tags.has("movement") || tags.has("anomaly"))
+    ) {
+      sources.push({ label: "Breach Atlas", value: 1 });
+    }
+
+    return sources;
   }
 
   private getCharacterDifficultyModifier(player: PlayerState, encounter: ThreatCard): number {
@@ -5344,19 +5402,43 @@ export class GameRoomServer {
       );
     }
 
-    if (player.character.id === "fleet-elder" && !this.hasAbilityTriggeredThisRound(seatId, "old-oaths")) {
-      this.applyAbilityMutation(
-        seatId,
-        "old-oaths",
-        "Old Oaths turned the fresh job into immediate convoy discipline.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Old Oaths made the frightened route crews fall into line at once."]
+    if (player.character.id === "fleet-elder") {
+      if (!this.hasAbilityTriggeredThisRound(seatId, "convoy-law")) {
+        this.applyAbilityMutation(
+          seatId,
+          "convoy-law",
+          "Convoy Law steadied the expedition as the Contract entered the ledger.",
+          (entry) => ({
+            ...entry,
+            private: {
+              ...entry.private,
+              notes: [...entry.private.notes, "Convoy Law secured the new obligation without exposing its private terms."]
+            }
+          })
+        );
+
+        if (this.state.escalationLevel > 0) {
+          this.feedEscalation(seatId, -1, "Convoy Law");
+        }
+      }
+
+      if (!this.hasAbilityTriggeredThisRound(seatId, "old-oaths")) {
+        this.applyAbilityMutation(
+          seatId,
+          "old-oaths",
+          "Old Oaths prepared the Fleet Elder's next Command check.",
+          (entry) => ({
+            ...entry,
+            private: {
+              ...entry.private,
+              notes: [...entry.private.notes, "Old Oaths grants +1 on the next Command check this turn."]
+            }
+          }),
+          {
+            rollModifier: { stat: "command", mode: "check", label: "Old Oaths", value: 1 }
           }
-        })
-      );
+        );
+      }
     }
 
     if (player.character.id === "rift-cartographer" && !this.hasAbilityTriggeredThisRound(seatId, "surveyor-cut")) {
@@ -5367,12 +5449,13 @@ export class GameRoomServer {
         ? this.state.availableContracts.find((entry) => entry.id === activeMission.contractId) ?? null
         : null;
 
-      this.applyAbilityMutation(
-        seatId,
-        "surveyor-cut",
-        "Surveyor's Cut banked the fresh route lead as future leverage.",
-        (entry) =>
-          activeMission && contract
+      if (contract?.objective.type === "multiStopRoute") {
+        this.applyAbilityMutation(
+          seatId,
+          "surveyor-cut",
+          "Surveyor's Cut banked the fresh route lead as future leverage.",
+          (entry) =>
+            activeMission
             ? {
                 ...entry,
                 private: {
@@ -5391,8 +5474,9 @@ export class GameRoomServer {
                   )
                 )
               }
-            : entry
-      );
+              : entry
+        );
+      }
     }
   }
 
@@ -5501,9 +5585,12 @@ export class GameRoomServer {
           ...entry,
           private: {
             ...entry.private,
-            notes: [...entry.private.notes, "Ashwake Step marked the opening lane before anyone else had to test it."]
+            notes: [...entry.private.notes, "Ashwake Step grants +1 on the next Command check this turn."]
           }
-        })
+        }),
+        {
+          rollModifier: { stat: "command", mode: "check", label: "Ashwake Step", value: 1 }
+        }
       );
     }
 
@@ -5559,7 +5646,7 @@ export class GameRoomServer {
 
     if (
       player.character.id === "siege-medic" &&
-      (this.state.escalationLevel > 0 || player.character.wounds > 0) &&
+      player.character.wounds > 0 &&
       !this.hasAbilityTriggeredThisRound(seatId, "siege-discipline")
     ) {
       this.applyAbilityMutation(
@@ -5581,52 +5668,7 @@ export class GameRoomServer {
     }
   }
 
-  private maybeTriggerAbilityOnMovementResolved(seatId: string, toSectorId: string, success: boolean): void {
-    const player = this.state.players.find((entry) => entry.seatId === seatId);
-    const sector = this.state.sectors.find((entry) => entry.id === toSectorId) ?? null;
-
-    if (!player || !sector || !success) {
-      return;
-    }
-
-    if (
-      player.character.id === "oathbroken-prince" &&
-      sector.danger >= 2 &&
-      !this.hasAbilityTriggeredThisRound(seatId, "ruin-courtesy")
-    ) {
-      this.applyAbilityMutation(
-        seatId,
-        "ruin-courtesy",
-        "Ruin Courtesy turned the broken ground into something like inherited territory.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Ruin Courtesy made the shattered approach feel like a hall already claimed."]
-          }
-        })
-      );
-    }
-
-    if (
-      player.character.id === "rift-cartographer" &&
-      sector.danger >= 2 &&
-      !this.hasAbilityTriggeredThisRound(seatId, "ghost-mile")
-    ) {
-      this.applyAbilityMutation(
-        seatId,
-        "ghost-mile",
-        "Ghost Mile let the Cartographer dismiss the false route before it bit down.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Ghost Mile stripped the false path out of the approach before it could set in."]
-          }
-        })
-      );
-    }
-  }
+  private maybeTriggerAbilityOnMovementResolved(_seatId: string, _toSectorId: string, _success: boolean): void {}
 
   private maybeTriggerAbilityOnCheckResolved(seatId: string, stat: string, success: boolean): void {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
@@ -5648,43 +5690,12 @@ export class GameRoomServer {
           ...entry,
           private: {
             ...entry.private,
-            notes: [...entry.private.notes, "Witchglass choir mapped the live signal into a stable route note."]
+            notes: [...entry.private.notes, "Witchglass Choir grants +1 on the next Guile check this turn."]
           }
-        })
-      );
-    }
-
-    if (player.character.id === "grave-engineer" && stat === "forge" && !this.hasAbilityTriggeredThisRound(seatId, "grave-spark")) {
-      this.applyAbilityMutation(
-        seatId,
-        "grave-spark",
-        "Grave Spark treated the dead infrastructure like familiar craftwork.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Grave Spark turned the dead system into one more workable machine."]
-          }
-        })
-      );
-    }
-
-    if (
-      player.character.id === "rift-cartographer" &&
-      (stat === "signal" || stat === "guile") &&
-      !this.hasAbilityTriggeredThisRound(seatId, "rift-script")
-    ) {
-      this.applyAbilityMutation(
-        seatId,
-        "rift-script",
-        "Rift Script translated the clean read into notes fast enough for the team to reuse.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Rift Script annotated the hostile ground before the path could blur again."]
-          }
-        })
+        }),
+        {
+          rollModifier: { stat: "guile", mode: "check", label: "Witchglass Choir", value: 1 }
+        }
       );
     }
 
@@ -5711,20 +5722,6 @@ export class GameRoomServer {
       );
     }
 
-    if (player.character.id === "salvage-warden" && stat === "forge" && !this.hasAbilityTriggeredThisRound(seatId, "scrap-bastion")) {
-      this.applyAbilityMutation(
-        seatId,
-        "scrap-bastion",
-        "Scrap Bastion turned the rough forge work into a controlled field hold.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Scrap Bastion converted damaged cover into a workable defensive shell."]
-          }
-        })
-      );
-    }
   }
 
   private maybeTriggerAbilityOnSpaceTextResolved(seatId: string, effectKey: string): void {
@@ -5732,21 +5729,6 @@ export class GameRoomServer {
 
     if (!player) {
       return;
-    }
-
-    if (player.character.id === "void-marshal" && !this.hasAbilityTriggeredThisRound(seatId, "void-command")) {
-      this.applyAbilityMutation(
-        seatId,
-        "void-command",
-        "Void Command marked the sector and steadied the route.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Void Command marked the cleared lane for allied movement."]
-          }
-        })
-      );
     }
 
     if (
@@ -5763,25 +5745,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Hush Static drowned the local anomaly in controlled noise."]
-          }
-        })
-      );
-    }
-
-    if (
-      player.character.id === "signal-witch" &&
-      (effectKey === "outer_ashwakeClearLane" || effectKey === "middle_webglassFracture") &&
-      !this.hasAbilityTriggeredThisRound(seatId, "route-burn")
-    ) {
-      this.applyAbilityMutation(
-        seatId,
-        "route-burn",
-        "Route Burn left a safer signal trace in the lane behind you.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Route Burn marked a safer allied approach through the live lane."]
           }
         })
       );
@@ -5811,48 +5774,6 @@ export class GameRoomServer {
     }
 
     if (
-      player.character.id === "fleet-elder" &&
-      (effectKey === "outer_ashwakeClearLane" ||
-        effectKey === "outer_mirecoilTraffic" ||
-        effectKey === "outer_emberwatchBrace") &&
-      !this.hasAbilityTriggeredThisRound(seatId, "chain-signal")
-    ) {
-      this.applyAbilityMutation(
-        seatId,
-        "chain-signal",
-        "Chain Signal locked the cleared transport lane into a live convoy sequence.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Chain Signal fixed the route into a convoy-safe sequence for the next push."]
-          }
-        })
-      );
-    }
-
-    if (
-      player.character.id === "rift-cartographer" &&
-      (effectKey === "outer_ashwakeClearLane" ||
-        effectKey === "middle_webglassFracture" ||
-        effectKey === "middle_guardianSpanThreshold") &&
-      !this.hasAbilityTriggeredThisRound(seatId, "breach-atlas")
-    ) {
-      this.applyAbilityMutation(
-        seatId,
-        "breach-atlas",
-        "Breach Atlas locked the route into a safer working map.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Breach Atlas logged a safer approach through the mapped lane."]
-          }
-        })
-      );
-    }
-
-    if (
       player.character.id === "oathbroken-prince" &&
       getActiveMissions(player.character).length > 0 &&
       (effectKey === "outer_mirecoilTraffic" ||
@@ -5865,34 +5786,36 @@ export class GameRoomServer {
         ? this.state.availableContracts.find((entry) => entry.id === activeMission.contractId) ?? null
         : null;
 
-      this.applyAbilityMutation(
-        seatId,
-        "broken-claim",
-        "Broken Claim turned the cleared lane into progress on the Prince's active objective.",
-        (entry) =>
-          activeMission && contract
-            ? {
-                ...entry,
-                private: {
-                  ...entry.private,
-                  notes: [...entry.private.notes, "Broken Claim converted local leverage into objective progress."]
-                },
-                character: setActiveMissions(
-                  entry.character,
-                  getActiveMissions(entry.character).map((mission, index) =>
-                    index === 0
-                      ? {
-                          ...mission,
-                          progress: advanceContractObjectiveProgress(contract, mission.progress, {
-                            type: "enemy-defeated"
-                          })
-                        }
-                      : mission
+      if (contract?.objective.type === "defeatCount") {
+        this.applyAbilityMutation(
+          seatId,
+          "broken-claim",
+          "Broken Claim turned the cleared lane into progress on the Prince's defeat Contract.",
+          (entry) =>
+            activeMission
+              ? {
+                  ...entry,
+                  private: {
+                    ...entry.private,
+                    notes: [...entry.private.notes, "Broken Claim converted local leverage into defeat-contract progress."]
+                  },
+                  character: setActiveMissions(
+                    entry.character,
+                    getActiveMissions(entry.character).map((mission, index) =>
+                      index === 0
+                        ? {
+                            ...mission,
+                            progress: advanceContractObjectiveProgress(contract, mission.progress, {
+                              type: "enemy-defeated"
+                            })
+                          }
+                        : mission
+                    )
                   )
-                )
-              }
-            : entry
-      );
+                }
+              : entry
+        );
+      }
     }
 
     if (
@@ -5911,9 +5834,12 @@ export class GameRoomServer {
           ...entry,
           private: {
             ...entry.private,
-            notes: [...entry.private.notes, "Silent Audit extracted sharper route intelligence from the cleared sector."]
+            notes: [...entry.private.notes, "Silent Audit grants +1 on the next Guile check this turn."]
           }
-        })
+        }),
+        {
+          rollModifier: { stat: "guile", mode: "check", label: "Silent Audit", value: 1 }
+        }
       );
     }
 
@@ -5940,7 +5866,11 @@ export class GameRoomServer {
       );
     }
 
-    if (effectKey === "outer_hollowVeilSweep" && player.character.id === "grave-engineer") {
+    if (
+      effectKey === "outer_hollowVeilSweep" &&
+      player.character.id === "grave-engineer" &&
+      !this.hasAbilityTriggeredThisRound(seatId, "coffin-rigging")
+    ) {
       this.applyAbilityMutation(
         seatId,
         "coffin-rigging",
@@ -5964,7 +5894,11 @@ export class GameRoomServer {
       );
     }
 
-    if (effectKey === "outer_hollowVeilSweep" && player.character.id === "salvage-warden") {
+    if (
+      effectKey === "outer_hollowVeilSweep" &&
+      player.character.id === "salvage-warden" &&
+      !this.hasAbilityTriggeredThisRound(seatId, "salvage-right")
+    ) {
       this.applyAbilityMutation(
         seatId,
         "salvage-right",
@@ -5984,25 +5918,6 @@ export class GameRoomServer {
                 ? entry.character.equippedGear.armor ?? "coffin-rig"
                 : entry.character.equippedGear.armor
             }
-          }
-        })
-      );
-    }
-
-    if (
-      effectKey === "outer_hollowVeilSweep" &&
-      player.character.id === "salvage-warden" &&
-      !this.hasAbilityTriggeredThisRound(seatId, "yard-warden")
-    ) {
-      this.applyAbilityMutation(
-        seatId,
-        "yard-warden",
-        "Yard Warden locked the salvage site down for a cleaner haul.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Yard Warden secured the salvage site for a second pass and cleaner extraction."]
           }
         })
       );
@@ -6062,45 +5977,58 @@ export class GameRoomServer {
       player.character.id === "salvage-warden" &&
       !this.hasAbilityTriggeredThisRound(seatId, "last-haul")
     ) {
-      const veilHook = this.gear.get("veil-hook");
+      const exhaustedGear = player.character.heldGear.find((item) => item.exhausted);
 
-      this.applyAbilityMutation(
-        seatId,
-        "last-haul",
-        "Last Haul turned the failing line into one more useful recovery.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Last Haul pried one more useful recovery out of the breaking route."]
-          },
-          character: {
-            ...entry.character,
-            heldGear:
-              veilHook && !entry.character.heldGear.some((item) => item.id === veilHook.id)
-                ? [...entry.character.heldGear, veilHook]
-                : entry.character.heldGear
-          }
-        })
-      );
+      if (exhaustedGear) {
+        this.applyAbilityMutation(
+          seatId,
+          "last-haul",
+          `Last Haul readied ${exhaustedGear.name}.`,
+          (entry) => ({
+            ...entry,
+            private: {
+              ...entry.private,
+              notes: [...entry.private.notes, `Last Haul readied ${exhaustedGear.name}.`]
+            },
+            character: {
+              ...entry.character,
+              heldGear: entry.character.heldGear.map((item) =>
+                (exhaustedGear.instanceId && item.instanceId === exhaustedGear.instanceId) ||
+                (!exhaustedGear.instanceId && item.id === exhaustedGear.id)
+                  ? { ...item, exhausted: false }
+                  : item
+              )
+            }
+          })
+        );
+      }
     }
 
     if (player.character.id === "grave-engineer" && !this.hasAbilityTriggeredThisRound(seatId, "mortuary-triage")) {
-      this.applyAbilityMutation(
-        seatId,
-        "mortuary-triage",
-        "Mortuary Triage converted the stabilization window into procedural calm.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Mortuary Triage turned panic into a field procedure the line could trust."]
-          }
-        })
-      );
+      const exhaustedGear = player.character.heldGear.find((item) => item.exhausted);
 
-      if (this.state.escalationLevel > 0) {
-        this.feedEscalation(seatId, -1, "Mortuary Triage");
+      if (exhaustedGear) {
+        this.applyAbilityMutation(
+          seatId,
+          "mortuary-triage",
+          `Mortuary Triage readied ${exhaustedGear.name}.`,
+          (entry) => ({
+            ...entry,
+            private: {
+              ...entry.private,
+              notes: [...entry.private.notes, `Mortuary Triage readied ${exhaustedGear.name}.`]
+            },
+            character: {
+              ...entry.character,
+              heldGear: entry.character.heldGear.map((item) =>
+                (exhaustedGear.instanceId && item.instanceId === exhaustedGear.instanceId) ||
+                (!exhaustedGear.instanceId && item.id === exhaustedGear.id)
+                  ? { ...item, exhausted: false }
+                  : item
+              )
+            }
+          })
+        );
       }
     }
   }
@@ -6174,25 +6102,6 @@ export class GameRoomServer {
     }
 
     if (
-      player.character.id === "void-marshal" &&
-      this.state.players.filter((entry) => entry.seatId !== seatId && entry.sectorId === player.sectorId).length > 0 &&
-      !this.hasAbilityTriggeredThisRound(seatId, "signal-relay")
-    ) {
-      this.applyAbilityMutation(
-        seatId,
-        "signal-relay",
-        "Signal Relay turned nearby allied pressure into a steadier field presence.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Signal Relay amplified allied pressure in the Marshal's sector."]
-          }
-        })
-      );
-    }
-
-    if (
       player.character.id === "oathbroken-prince" &&
       player.character.activeContract &&
       !this.hasAbilityTriggeredThisRound(seatId, "crown-debt")
@@ -6233,9 +6142,12 @@ export class GameRoomServer {
           ...entry,
           private: {
             ...entry.private,
-            notes: [...entry.private.notes, "Choir Lash bled the breach spike into a controlled pulse."]
+            notes: [...entry.private.notes, "Choir Lash grants +1 on the next Signal check this turn."]
           }
-        })
+        }),
+        {
+          rollModifier: { stat: "signal", mode: "check", label: "Choir Lash", value: 1 }
+        }
       );
     }
 

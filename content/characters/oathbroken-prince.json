@@ -2,6 +2,7 @@
   "id": "oathbroken-prince",
   "name": "Reskin Hale",
   "archetype": "Oathbroken Prince",
+  "lore": "Reskin carries a crown no court still recognizes. He bargains with ruined houses and broken oaths, converting every dangerous victory into leverage for his next claim.",
   "currentSpaceId": "glassmere-spindle",
   "status": "active",
   "stats": {
@@ -25,22 +26,17 @@
     {
       "id": "broken-claim",
       "name": "Broken Claim",
-      "text": "Once per round, after you clear a sector matching your active Contract tag, advance that Contract by 1 valid progress step."
+      "text": "Once per round, after resolving Mirecoil Traffic, Hollow Veil Sweep, or Glassmere Chorus while pursuing a defeat Contract, advance it by 1."
     },
     {
       "id": "ash-tithe",
       "name": "Ash Tithe",
-      "text": "When you gain Salvage from a sector, gain +1 Salvage."
+      "text": "After you complete a Contract, gain 1 Salvage."
     },
     {
       "id": "crown-debt",
       "name": "Crown Debt",
-      "text": "Rivalry only. Once per round, after another operative in your sector gains Salvage, mark them; the next time you help or hinder them, gain 1 Salvage."
-    },
-    {
-      "id": "ruin-courtesy",
-      "name": "Ruin Courtesy",
-      "text": "Once per round, after you enter a danger 2+ sector, record a private debt entry. Weakness: Broken Claim cannot gain bonus progress from blue Anomaly sectors."
+      "text": "Once per round, after you defeat an enemy while pursuing a Contract, gain 1 Salvage."
     }
   ],
   "startingGear": [

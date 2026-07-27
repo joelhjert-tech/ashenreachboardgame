@@ -202,7 +202,7 @@ export function getResultReadyGatePath(): string {
 }
 
 export function getCharacterPortraitPath(characterId: string): string {
-  return characterPortraitById[characterId] ?? "/assets/riftfall/characters/char_void_marshal_kael_dorn.png";
+  return characterPortraitById[characterId] ?? "/assets/riftfall/characters/void-marshal.png";
 }
 
 export function getCharacterPortraitPathOrNull(characterId: string): string | null {

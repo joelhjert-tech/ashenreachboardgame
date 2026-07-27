@@ -2,13 +2,14 @@
   "id": "signal-witch",
   "name": "Lane",
   "archetype": "Signal Witch",
+  "lore": "Lane hears the Reach as a choir of broken transmitters. She catches danger in the static, then turns its echo into a path no ordinary navigator could follow.",
   "currentSpaceId": "glassmere-spindle",
   "status": "active",
   "stats": {
-    "command": 1,
+    "command": 2,
     "grit": 2,
     "signal": 5,
-    "guile": 4,
+    "guile": 3,
     "forge": 3
   },
   "trophies": 0,
@@ -25,12 +26,7 @@
     {
       "id": "witchglass-choir",
       "name": "Witchglass Choir",
-      "text": "Once per round, after you pass a Signal test, record a private route insight."
-    },
-    {
-      "id": "route-burn",
-      "name": "Route Burn",
-      "text": "Descriptive only. After clearing blue or movement ground, Lane leaves route intelligence for the table."
+      "text": "Once per round, after you pass a Signal test, gain +1 on your next Guile check this turn."
     },
     {
       "id": "hush-static",
@@ -40,7 +36,7 @@
     {
       "id": "choir-lash",
       "name": "Choir Lash",
-      "text": "Once per round, when scenario pressure rises on your turn, record a private route insight."
+      "text": "Once per round, when scenario pressure rises on your turn, gain +1 on your next Signal check this turn."
     }
   ],
   "startingGear": [

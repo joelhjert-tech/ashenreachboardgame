@@ -265,7 +265,7 @@ function PortraitStatCard({
       style={getChallengeThemeStyle(stat) as CSSProperties}
       data-stat={stat}
       aria-expanded={expanded}
-      aria-label={`${label} stat ${breakdown.final}${relevant ? ", relevant now" : ""}${expanded ? ", details expanded" : ""}`}
+      aria-label={`${label} current stat ${breakdown.final}${relevant ? ", relevant now" : ""}${expanded ? ", details expanded" : ""}`}
       onClick={onToggle}
     >
       <span className="phone-stat-card-heading">
@@ -325,7 +325,7 @@ function PortraitStatCard({
             </dd>
           </div>
           <div>
-            <dt>Temporary / Status</dt>
+            <dt>Conditional / Status</dt>
             <dd>
               {formatSignedStatBonus(breakdown.temporaryStatus)}
               {breakdown.contextualSources.length > 0 ? (
@@ -340,7 +340,7 @@ function PortraitStatCard({
             </dd>
           </div>
           <div>
-            <dt>Final</dt>
+            <dt>Current equipped value</dt>
             <dd>{breakdown.final}</dd>
           </div>
         </dl>

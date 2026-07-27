@@ -108,6 +108,7 @@ export interface PublicPlayerCharacter {
   id: string;
   name: string;
   archetype: string;
+  lore?: string;
   qaOnly?: boolean;
   presentation?: CharacterPresentation;
   status: "active" | "recalled";
@@ -315,6 +316,7 @@ export interface PrivateCharacter {
   id: string;
   name: string;
   archetype: string;
+  lore?: string;
   qaOnly?: boolean;
   presentation?: CharacterPresentation;
   currentSpaceId: string;

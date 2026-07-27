@@ -2,6 +2,7 @@
   "id": "cinder-monk",
   "name": "Mira",
   "archetype": "Cinder Monk",
+  "lore": "Mira keeps an ember oath for every settlement abandoned to the breach, carrying their names as vows she can spend only when the final gate answers.",
   "currentSpaceId": "emberwatch-step",
   "status": "active",
   "stats": {

@@ -2,14 +2,15 @@
   "id": "char_deepdale",
   "name": "Deepdale",
   "archetype": "Deep Route Delver",
+  "lore": "A patient tunnel listener from the buried rail clans, Deepdale maps safe ground by the pitch of stressed metal and the drift of black dust.",
   "currentSpaceId": "mirecoil-beacon",
   "status": "active",
   "stats": {
-    "command": 1,
+    "command": 2,
     "grit": 3,
     "signal": 4,
     "guile": 2,
-    "forge": 5
+    "forge": 4
   },
   "trophies": 0,
   "wounds": 0,
@@ -23,24 +24,14 @@
   },
   "abilities": [
     {
-      "id": "underway-ear",
-      "name": "Underway Ear",
-      "text": "Descriptive only. Deepdale reads the pressure of movement and hazard routes before committing Gear."
-    },
-    {
       "id": "black-dust-craft",
       "name": "Black Dust Craft",
-      "text": "Descriptive only. Deepdale's route craft keeps machines and salvage gear working in hostile ground."
+      "text": "Passive. Add +1 Forge on yellow Hazard tests."
     },
     {
       "id": "lantern-delver",
       "name": "Lantern Delver",
-      "text": "Descriptive only. Deepdale follows anomaly-lit routes by lantern discipline."
-    },
-    {
-      "id": "deep-bargain",
-      "name": "Deep Bargain",
-      "text": "Descriptive only. Deepdale bargains through route knowledge at field markets; no shop discount is currently granted."
+      "text": "Passive. Add +1 Signal on blue Hazard and Anomaly tests."
     }
   ],
   "startingGear": [
