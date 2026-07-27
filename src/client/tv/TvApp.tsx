@@ -2,8 +2,6 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSPropertie
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { getSessionStartReadiness } from "../../game/rules/sessionStart.js";
 import { getChallengeTheme, getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
-import { HostAudioControls } from "../audio/HostAudioControls.js";
-import { useAshenReachAudio } from "../audio/useAshenReachAudio.js";
 import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import { ChallengeBadge, ThreatIconBadge } from "../shared/ChallengeBadge.js";
@@ -50,6 +48,7 @@ import { HostBattleChamber } from "./HostBattleChamber.js";
 import { isHostBattleActive } from "./hostBattleState.js";
 import { hostPresentationTimings } from "../shared/motionTokens.js";
 import { HostShopOverlay } from "./HostShopOverlay.js";
+import { HostYouTubePlayer } from "./HostYouTubePlayer.js";
 import { isHostShopActive } from "./hostShopState.js";
 import { HostMovementJourney } from "./HostMovementJourney.js";
 import { HostMotionCue } from "./HostMotionCue.js";
@@ -2970,7 +2969,6 @@ export function TvApp(): ReactElement {
     }
     previousMovementPresentationRef.current = movementPresentation;
   }, [movementPresentation, publicPatch?.payload.movementPresentationGate, sendIntent]);
-  const audio = useAshenReachAudio(publicPatch);
   const effectiveRoomCode = roomCode ?? publicPatch?.sessionId ?? null;
   const joinedSeats = publicPatch?.payload.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
   const readySeats = joinedSeats.filter((seat) => seat.ready);
@@ -3377,7 +3375,7 @@ export function TvApp(): ReactElement {
 
         {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
         {sessionNotice && <div className="tv-banner">{sessionNotice}</div>}
-        <HostAudioControls audio={audio} />
+        <HostYouTubePlayer />
         <EndgameOverlay
           patch={publicPatch}
           onReturnToLobby={hostToken

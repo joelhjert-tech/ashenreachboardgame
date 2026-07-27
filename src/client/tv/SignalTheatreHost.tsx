@@ -11,6 +11,7 @@ import type {
   StatePatch
 } from "../shared/types.js";
 import { JoinQrCard } from "./JoinQrCard.js";
+import { HostYouTubePlayer } from "./HostYouTubePlayer.js";
 import { HostShopOverlay } from "./HostShopOverlay.js";
 import { buildHostMotionCueModel, type HostMotionCueKind } from "./HostMotionCue.js";
 import { OperativeChessPiece } from "./OperativeChessPiece.js";
@@ -245,6 +246,7 @@ function SignalLobby({
       <ol className="signal-theatre__sequence" aria-label="Setup sequence">
         {["Join", "Choose", "Ready", "Begin"].map((label, index) => <li key={label} className={index <= (ready > 0 ? 2 : joined.length > 0 ? 1 : 0) ? "is-complete" : ""}>{label}</li>)}
       </ol>
+      <HostYouTubePlayer />
     </main>
   );
 }
@@ -281,6 +283,7 @@ export function SignalTheatreHost({
 
   const endResult = payload.matchProgress?.publicResult ?? null;
   const search = typeof window === "undefined" ? "" : window.location.search;
+  const youtubeLayoutFixture = import.meta.env.DEV && new URLSearchParams(search).has("youtubeLayoutFixture");
   const fixture = getSignalTheatreDevFixture(search);
   const model = buildHostMotionCueModel({
     patch,
@@ -292,9 +295,11 @@ export function SignalTheatreHost({
   });
   const sectorResolution = journey
     ? null
+    : youtubeLayoutFixture
+      ? null
     : getSignalSectorResolutionDevFixture(search, payload)
       ?? buildSignalSectorResolutionModel(payload);
-  const missionSelectionActive = payload.pendingMissionSelectionStatus?.status === "awaitingSelection";
+  const missionSelectionActive = !youtubeLayoutFixture && payload.pendingMissionSelectionStatus?.status === "awaitingSelection";
   const missionOwner = missionSelectionActive
     ? payload.seats.find((seat) => seat.seatId === payload.pendingMissionSelectionStatus?.ownerSeatId) ?? null
     : null;
@@ -397,7 +402,7 @@ export function SignalTheatreHost({
     : sectorResolution
     ? sectorResolution.opposition.name
     : focusSector?.name ?? (endResult ? endResult.modeLabel : "Signal relay");
-  const shopActive = Boolean(activePlayer && isHostShopActive(patch, activePlayer));
+  const shopActive = !youtubeLayoutFixture && Boolean(activePlayer && isHostShopActive(patch, activePlayer));
   const style = { "--signal-marker-position": `${markerPosition}%` } as CSSProperties;
   const stageImage = environment?.path ?? assets.worldStage;
   const movingSeatId = fixture?.motionPhase
@@ -571,6 +576,8 @@ export function SignalTheatreHost({
           detail={actionCoinDetail}
         />
       </aside> : null}
+
+      <HostYouTubePlayer />
 
       {shopActive ? (
         <HostShopOverlay patch={patch} activePlayer={activePlayer} />
