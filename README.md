@@ -47,9 +47,16 @@ Run the full local stack:
 npm run dev
 ```
 
+On Windows, double-click `START_ASHEN_REACH.bat` in the project folder. The
+launcher checks Node.js, installs missing dependencies on the first run, starts
+the API and client, and opens the Host TV automatically. Keep its terminal
+window open while playing and press `Ctrl+C` once to stop the server.
+
 Useful scripts:
 
 - `npm run dev` starts the HTTP API, WebSocket server, and Vite client
+- `npm run dev -- --open-tv` starts the full stack and opens the Host TV
+- `npm run dev -- --open-phone` starts the full stack and opens the phone controller
 - `npm run dev:server` starts only the server
 - `npm run dev:client` starts only the client
 - `npm run validate:content` validates all content files and cross-references

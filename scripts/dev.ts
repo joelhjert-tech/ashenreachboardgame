@@ -1,11 +1,33 @@
+import { spawn } from "node:child_process";
 import type { AddressInfo } from "node:net";
 import { createServer as createViteServer, type InlineConfig } from "vite";
 import { startAshenReachServer } from "../src/server/index.js";
 import { createPortAvailabilityCheck, findAvailablePort } from "../src/server/ports.js";
 
+function openExternalUrl(url: string): void {
+  const command =
+    process.platform === "win32"
+      ? { executable: "rundll32.exe", args: ["url.dll,FileProtocolHandler", url] }
+      : process.platform === "darwin"
+        ? { executable: "open", args: [url] }
+        : { executable: "xdg-open", args: [url] };
+
+  const browser = spawn(command.executable, command.args, {
+    detached: true,
+    stdio: "ignore",
+    windowsHide: true
+  });
+  browser.on("error", (error) => {
+    console.warn(`Could not open the browser automatically: ${error.message}`);
+  });
+  browser.unref();
+}
+
 async function main(): Promise<void> {
   const clientPortArg = process.argv.find((entry) => entry.startsWith("--client-port="))?.split("=")[1];
   const apiPortArg = process.argv.find((entry) => entry.startsWith("--api-port="))?.split("=")[1];
+  const openTvOnStart = process.argv.includes("--open-tv");
+  const openPhoneOnStart = process.argv.includes("--open-phone");
   const requestedClientPort = Number(clientPortArg ?? process.env.CLIENT_PORT ?? 5173);
   if (apiPortArg) process.env.PORT = apiPortArg;
   const resolvedClientPort = await findAvailablePort(requestedClientPort, {
@@ -47,20 +69,47 @@ async function main(): Promise<void> {
   const clientAddress = viteServer.httpServer?.address() as AddressInfo | null;
   const listeningClientPort = clientAddress?.port ?? resolvedClientPort;
   const clientOrigin = process.env.PUBLIC_CLIENT_ORIGIN || `http://${server.lanHost}:${listeningClientPort}`;
+  const localClientOrigin = `http://127.0.0.1:${listeningClientPort}`;
   const tvUrl = `${clientOrigin}/tv`;
   const phoneUrl = `${clientOrigin}/`;
+  const localTvUrl = `${localClientOrigin}/tv`;
+  const localPhoneUrl = `${localClientOrigin}/`;
 
-  console.log("Ashen Reach local dev");
-  console.log(`  API:    ${apiOrigin}`);
-  console.log(`  WS:     ${wsOrigin}`);
+  console.log("");
+  console.log("============================================================");
+  console.log("  ASHEN REACH IS READY");
+  console.log("============================================================");
+  console.log(`  TV on this computer: ${localTvUrl}`);
+  console.log(`  Phone on this computer: ${localPhoneUrl}`);
+  console.log("");
+  console.log("  Devices on the same Wi-Fi:");
   console.log(`  TV:     ${tvUrl}`);
   console.log(`  Phone:  ${phoneUrl}`);
+  console.log("");
+  console.log(`  API:    ${apiOrigin}`);
+  console.log(`  WS:     ${wsOrigin}`);
+  console.log("============================================================");
+  console.log("  Keep this window open while playing.");
+  console.log("  Press Ctrl+C once to stop Ashen Reach.");
+  console.log("============================================================");
+  console.log("");
+
+  if (openTvOnStart) {
+    console.log("Opening the Host TV...");
+    openExternalUrl(localTvUrl);
+  } else if (openPhoneOnStart) {
+    console.log("Opening the phone controller...");
+    openExternalUrl(localPhoneUrl);
+  }
 
   const shutdown = async () => {
     process.off("SIGINT", handleSigint);
     process.off("SIGTERM", handleSigterm);
+    console.log("");
+    console.log("Stopping Ashen Reach...");
     await viteServer.close();
     await server.close();
+    console.log("Ashen Reach stopped.");
     process.exit(0);
   };
 
