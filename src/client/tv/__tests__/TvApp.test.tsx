@@ -958,8 +958,8 @@ describe("TvApp", () => {
       "--tv-lobby-stage-image": 'url("/assets/riftfall/ui/ashen-reach-lobby-stage.png")'
     });
     expect(startup).toHaveTextContent(/ashen reach/i);
-    expect(startup).toHaveTextContent(/room code/i);
     expect(startup).toHaveTextContent(/scan to control setup/i);
+    expect(screen.getByTestId("mock-join-qr")).toHaveAttribute("data-room-code");
     expect(screen.queryByText(/tactical map/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("region", { name: /^scenario$/i })).not.toBeInTheDocument();
@@ -1039,7 +1039,7 @@ describe("TvApp", () => {
   it("auto-attaches the TV display to the server room without storing a host token", async () => {
     render(<TvApp />);
 
-    expect((await screen.findAllByText(/RT7P4/i)).length).toBeGreaterThan(0);
+    expect(await screen.findByTestId("mock-join-qr")).toHaveAttribute("data-room-code", "RT7P4");
     expect(mockFetchSessionSummary).toHaveBeenCalled();
     expect(mockUseRoomSubscription).toHaveBeenCalledWith(
       expect.objectContaining({
