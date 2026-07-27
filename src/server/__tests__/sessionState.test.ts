@@ -118,6 +118,10 @@ describe("canonical sector graph", () => {
     const lantern = { ...loadGear().get("choir-lantern")!, instanceId: "choir-instance", currentCharges: 2, maxCharges: 2 };
     state.players[0]!.character.heldGear.push(lantern);
     state.players[0]!.character.equippedGear.utility = "choir-lantern";
+    state.players[0]!.character.equippedGearInstances = {
+      ...state.players[0]!.character.equippedGearInstances,
+      utility: "choir-instance"
+    };
     const server = new GameRoomServer(state);
     (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
     const pendingId = server.getState().pendingTileChallenge!.id;
@@ -185,6 +189,10 @@ describe("canonical sector graph", () => {
       { ...definition, instanceId: "censer-b", currentCharges: 2, maxCharges: 2 }
     );
     state.players[0]!.character.equippedGear.utility = "choir-static-censer";
+    state.players[0]!.character.equippedGearInstances = {
+      ...state.players[0]!.character.equippedGearInstances,
+      utility: "censer-a"
+    };
     const server = new GameRoomServer(state);
     const sent: Array<Record<string, unknown>> = [];
     const client: ConnectedClient = { seatId: "seat-1", view: "phone", socket: { send: (payload: string) => sent.push(JSON.parse(payload)), close() {} } as unknown as ConnectedClient["socket"] };
@@ -623,7 +631,7 @@ describe("canonical sector graph", () => {
     expect(firstPlayer?.character.activeContract).toBeNull();
     expect(state.seats[0]?.startingContractOptions).toEqual([]);
     expect(state.seats[0]?.selectedStartingContractId).toBeNull();
-    expect(firstPlayer?.character.heldGear.map((item) => item.id)).toEqual(["rustknife-carbine", "chapel-guard-harness"]);
+    expect(firstPlayer?.character.heldGear.map((item) => item.id)).toEqual(["rustknife-carbine", "surveyor-chalk"]);
     expect(firstPlayer?.character.followers ?? []).toEqual([]);
     expect(state.soloRerollCharges).toEqual({});
   });
@@ -664,7 +672,7 @@ describe("canonical sector graph", () => {
     expect(state.players[0]?.character.activeContract).toBeNull();
     expect(state.seats[0]?.startingContractOptions).toEqual([]);
     expect(state.seats[0]?.selectedStartingContractId).toBeNull();
-    expect(state.players[0]?.character.heldGear.map((item) => item.id)).toEqual(["rustknife-carbine", "chapel-guard-harness"]);
+    expect(state.players[0]?.character.heldGear.map((item) => item.id)).toEqual(["rustknife-carbine", "surveyor-chalk"]);
     expect(state.players[0]?.character.followers?.map((follower) => follower.id)).toEqual(["grave-scribe"]);
     expect(tvProjection.sessionMode).toBe("single-player");
     expect(tvProjection.escalationThreshold).toBe(8);

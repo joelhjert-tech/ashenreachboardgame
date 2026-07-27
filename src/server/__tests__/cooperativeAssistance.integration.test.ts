@@ -327,7 +327,11 @@ describe("authoritative cooperative assistance lifecycle", () => {
             ...player,
             sectorId: "center_cinder_gate",
             character: { ...player.character, currentSpaceId: "center_cinder_gate", stats: { ...player.character.stats, grit: 6 } },
-            private: { ...player.private, notes: [...player.private.notes, "gate-of-cinders-breached"] }
+            private: { ...player.private, notes: [...player.private.notes, "gate-of-cinders-breached"] },
+            innerApproachProgress: {
+              pathId: "breach-road" as const,
+              clearedSectorIds: ["inner_gate_of_cinders"]
+            }
           }
         : player),
       scenarioPreparation: {

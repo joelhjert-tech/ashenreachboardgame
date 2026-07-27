@@ -66,6 +66,10 @@ describe("server required-action projection", () => {
       seat.characterId = index === 0 ? "void-marshal" : "signal-witch";
       seat.characterSelected = true;
       seat.selectedStartingContractId = `mission-${index}`;
+      seat.startingBonusSelections = [
+        { kind: "gear", id: `test-gear-${index}` },
+        { kind: "follower", id: `test-follower-${index}` }
+      ];
       seat.ready = true;
     }
     setup = buildSetupProjection(state);

@@ -1,9 +1,22 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { reduceGameState } from "../../engine/reducer.js";
 import type { GameState } from "../../schema/session.schema.js";
 import { createInitialSessionState } from "../../../server/sessionState.js";
 import { createTvProjection } from "../../../server/roomServer.js";
 import { buildMovementRoutePlan, getLegalMovementRouteVariant } from "../movementPlanner.js";
+
+vi.mock("../../data/boardSpaces.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../data/boardSpaces.js")>();
+  const template = actual.getBoardSpace("outer_ember_sanctum")!;
+  const fixtureIds = new Set(["origin", "left", "right", "destination"]);
+  return {
+    ...actual,
+    getBoardSpace: (sectorId: string) =>
+      fixtureIds.has(sectorId)
+        ? { ...template, id: sectorId, name: sectorId, tier: "outer" as const }
+        : actual.getBoardSpace(sectorId)
+  };
+});
 
 function createDiamondState(): GameState {
   const state = createInitialSessionState("route-variant-foundation", "single-player");
@@ -94,22 +107,14 @@ describe("authoritative movement route variants", () => {
   });
 
   it("projects variants grouped under one destination without hidden encounter data", () => {
-    const state = createInitialSessionState("route-variant-projection", "single-player");
+    const state = createDiamondState();
     const seatId = state.players[0]!.seatId;
-    state.status = "active";
-    state.phase = "navigation";
-    state.turnOrder = [seatId];
-    state.activeSeatIndex = 0;
-    state.players[0]!.sectorId = "inner_veil_rift";
-    state.players[0]!.character.currentSpaceId = "inner_veil_rift";
-    state.movementRolls = { [seatId]: 4 };
-    state.movementRouteRevisions = { [seatId]: 7 };
     const projection = createTvProjection(state);
     const planner = projection.movementPlanner as {
       movementRevision: number;
       destinations: Array<{ sectorId: string; defaultRouteId: string; routeVariants: Array<{ routeId: string; sectorIds: string[] }> }>;
     };
-    const destination = planner.destinations.find((entry) => entry.sectorId === "inner_gate_of_cinders")!;
+    const destination = planner.destinations.find((entry) => entry.sectorId === "destination")!;
 
     expect(planner.movementRevision).toBe(7);
     expect(destination.routeVariants).toHaveLength(2);
