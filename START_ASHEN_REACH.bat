@@ -38,7 +38,13 @@ if not exist "node_modules\.bin\tsx.cmd" (
 
 echo Starting the game server and Host TV...
 echo The TV will open automatically when Ashen Reach is ready.
+echo Closing this command window will also stop the game server.
 echo.
+
+set "ASHEN_REACH_LAUNCHER_PID="
+for /f "usebackq delims=" %%P in (`powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\get-parent-process-id.ps1" 2^>nul`) do (
+  if not defined ASHEN_REACH_LAUNCHER_PID set "ASHEN_REACH_LAUNCHER_PID=%%P"
+)
 
 call npm.cmd run dev -- --open-tv
 set "EXIT_CODE=%ERRORLEVEL%"

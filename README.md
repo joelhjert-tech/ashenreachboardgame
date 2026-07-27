@@ -50,7 +50,8 @@ npm run dev
 On Windows, double-click `START_ASHEN_REACH.bat` in the project folder. The
 launcher checks Node.js, installs missing dependencies on the first run, starts
 the API and client, and opens the Host TV automatically. Keep its terminal
-window open while playing and press `Ctrl+C` once to stop the server.
+window open while playing. Press `Ctrl+C` once or close that command window to
+stop the API and client automatically.
 
 Useful scripts:
 

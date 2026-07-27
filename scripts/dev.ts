@@ -4,6 +4,15 @@ import { createServer as createViteServer, type InlineConfig } from "vite";
 import { startAshenReachServer } from "../src/server/index.js";
 import { createPortAvailabilityCheck, findAvailablePort } from "../src/server/ports.js";
 
+function isProcessRunning(processId: number): boolean {
+  try {
+    process.kill(processId, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
 function openExternalUrl(url: string): void {
   const command =
     process.platform === "win32"
@@ -102,15 +111,28 @@ async function main(): Promise<void> {
     openExternalUrl(localPhoneUrl);
   }
 
-  const shutdown = async () => {
-    process.off("SIGINT", handleSigint);
-    process.off("SIGTERM", handleSigterm);
-    console.log("");
-    console.log("Stopping Ashen Reach...");
-    await viteServer.close();
-    await server.close();
-    console.log("Ashen Reach stopped.");
-    process.exit(0);
+  let launcherWatch: NodeJS.Timeout | null = null;
+  let shutdownPromise: Promise<void> | null = null;
+  const shutdown = (reason?: string): Promise<void> => {
+    if (shutdownPromise) return shutdownPromise;
+
+    shutdownPromise = (async () => {
+      if (launcherWatch) {
+        clearInterval(launcherWatch);
+        launcherWatch = null;
+      }
+      process.off("SIGINT", handleSigint);
+      process.off("SIGTERM", handleSigterm);
+      console.log("");
+      if (reason) console.log(reason);
+      console.log("Stopping Ashen Reach...");
+      await viteServer.close();
+      await server.close();
+      console.log("Ashen Reach stopped.");
+      process.exit(0);
+    })();
+
+    return shutdownPromise;
   };
 
   const handleSigint = () => {
@@ -122,6 +144,16 @@ async function main(): Promise<void> {
 
   process.on("SIGINT", handleSigint);
   process.on("SIGTERM", handleSigterm);
+
+  const launcherProcessId = Number.parseInt(process.env.ASHEN_REACH_LAUNCHER_PID ?? "", 10);
+  if (Number.isSafeInteger(launcherProcessId) && launcherProcessId > 0) {
+    launcherWatch = setInterval(() => {
+      if (!isProcessRunning(launcherProcessId)) {
+        void shutdown("Launcher window closed.");
+      }
+    }, 750);
+    launcherWatch.unref();
+  }
 }
 
 main().catch((error) => {
