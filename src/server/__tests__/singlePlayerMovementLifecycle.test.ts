@@ -142,6 +142,62 @@ describe("single-player movement lifecycle", () => {
     expect(server.getState().lastOutcomeSummary?.summary).toContain("No legal destination");
   });
 
+  it("resolves a pre-roll tier request once through the server intent path", () => {
+    const state = createInitialSessionState("solo-tier-transition", "single-player");
+    state.status = "active";
+    state.phase = "navigation";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.movementRouteRevisions = { "seat-1": 11 };
+    state.seats[0] = {
+      ...state.seats[0]!,
+      connected: true,
+      characterSelected: true,
+      ready: true
+    };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "outer_ember_sanctum",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "outer_ember_sanctum",
+        status: "active"
+      }
+    };
+    const messages: Array<Record<string, unknown>> = [];
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]));
+
+    server.handleIntent(client("seat-1", messages), {
+      type: "TIER_TRANSITION_REQUESTED",
+      seatId: "seat-1",
+      destinationSectorId: "middle_red_march_outpost",
+      movementRevision: 11
+    });
+
+    expect(messages).toEqual([]);
+    expect(server.getState().players[0]?.character.currentSpaceId).toBe("middle_red_march_outpost");
+    expect(server.getState().movementRolls?.["seat-1"]).toBeUndefined();
+    expect(server.getState().movementPresentationGate).toBeNull();
+    expect(server.getState().eventLog.filter((event) =>
+      (event as { type?: string }).type === "TIER_TRANSITION_COMPLETED"
+    )).toHaveLength(1);
+
+    const duplicateMessages: Array<Record<string, unknown>> = [];
+    server.handleIntent(client("seat-1", duplicateMessages), {
+      type: "TIER_TRANSITION_REQUESTED",
+      seatId: "seat-1",
+      destinationSectorId: "middle_red_march_outpost",
+      movementRevision: 11
+    });
+    expect(duplicateMessages).toEqual([expect.objectContaining({
+      type: "INTENT_REJECTED",
+      actionType: "TIER_TRANSITION_REQUESTED"
+    })]);
+    expect(server.getState().eventLog.filter((event) =>
+      (event as { type?: string }).type === "TIER_TRANSITION_COMPLETED"
+    )).toHaveLength(1);
+  });
+
   it("completes a thirty-turn release soak with one owner, deterministic routes, and reconnect-safe projections", () => {
     const state = makeActiveSoloState("solo-thirty-turns");
     const diagnostics: MovementTransitionDiagnostic[] = [];

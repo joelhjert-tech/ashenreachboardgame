@@ -50,6 +50,15 @@ export interface TransitionRouteAidUsedAction extends BaseAction {
   movementRevision: number;
 }
 
+export interface TierTransitionCompletedAction extends BaseAction {
+  type: "TIER_TRANSITION_COMPLETED";
+  fromSectorId: string;
+  toSectorId: string;
+  direction: "inward" | "outward";
+  movementRevision: number;
+  voidKeyInstanceId?: string;
+}
+
 export interface MovementRollRequestedAction extends BaseAction {
   type: "MOVEMENT_ROLL_REQUESTED";
 }
@@ -821,6 +830,7 @@ export type GameAction =
   | NamedPlayerRulesReconciledAction
   | MoveRequestedAction
   | TransitionRouteAidUsedAction
+  | TierTransitionCompletedAction
   | MovementRollRequestedAction
   | AdjustMovementRequestedAction
   | SelectRouteStarVariantAction
@@ -985,6 +995,13 @@ export type ClientIntent =
       voidKeyInstanceId?: string;
       routeId?: string;
       movementRevision?: number;
+    }
+  | {
+      type: "TIER_TRANSITION_REQUESTED";
+      seatId: string;
+      destinationSectorId: string;
+      movementRevision: number;
+      voidKeyInstanceId?: string;
     }
   | {
       type: "USE_TRANSITION_ROUTE_AID";

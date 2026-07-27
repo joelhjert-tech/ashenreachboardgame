@@ -110,7 +110,7 @@ The server applies mandatory start-of-turn scenario, Scar, Affliction, operative
 
 ## 12. Movement roll
 
-When navigation begins, the active phone offers **Roll Movement**. The server rolls and computes destinations at the exact accepted distance. Before the roll, only effects whose timing explicitly permits pre-roll use may appear.
+When navigation begins, the active phone offers any canonical tier transition available from the current sector and **Roll Movement**. If the operative does not cross tiers, the server rolls and computes destinations at the exact accepted distance. Before the roll, only tier transitions and effects whose timing explicitly permits pre-roll use may appear.
 
 Movement distance cannot be changed by table agreement. The Ashen Route Compass may apply its exact `-1` or `+1` adjustment only through its prompt and charge rules.
 
@@ -128,7 +128,9 @@ The route must use authored connections and satisfy exact distance, gate, scenar
 
 ## 14. Regions, transitions, and gates
 
-Operatives change regions only through authored transition sectors or explicit effects. A route that appears adjacent visually but lacks an authored transition is illegal. Gates may add requirements.
+Operatives change regions only through authored transition sectors or explicit effects. When navigation begins on a transition sector, the phone offers each canonical inward or outward edge before the movement roll. Choosing one crosses exactly one edge without a die or approach check, ends movement, and begins the destination's normal arrival lifecycle. Choosing **Roll Movement** instead removes tier crossing for that turn; the resulting exact-distance route stays within the current region.
+
+A route that appears adjacent visually but lacks an authored transition is illegal. Gates may add requirements.
 
 - **Void Key:** personal one-movement gate-rule override in its approved window.
 - **Gate-Saint Key:** party-safe final-gate passage window; it does not unlock ordinary gates or permanently unlock the final gate.

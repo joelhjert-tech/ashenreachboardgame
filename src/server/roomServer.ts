@@ -92,7 +92,9 @@ import {
 } from "../game/rules/nemesisRelay.js";
 import {
   buildMovementRoutePlan,
+  buildTierTransitionOptions,
   buildTransitionRouteAidDestinations,
+  canVoidKeyOverrideTierTransition,
   getForcedDisplacementDestination,
   getMovementStepBlockReason,
   getRingTrackNeighbor,
@@ -211,6 +213,7 @@ import type {
   MissionRelicClaimedAction,
   MissionRelicExchangeOpenedAction,
   MoveRequestedAction,
+  TierTransitionCompletedAction,
   NemesisCombatResolvedAction,
   NemesisDefeatedAction,
   NemesisMovedAction,
@@ -429,6 +432,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "RETURN_TO_LOBBY_REQUESTED",
   "MOVEMENT_DESTINATION_PREVIEWED",
   "MOVE_REQUESTED",
+  "TIER_TRANSITION_REQUESTED",
   "USE_TRANSITION_ROUTE_AID",
   "ADJUST_MOVEMENT_REQUESTED",
   "SELECT_ROUTE_STAR_VARIANT",
@@ -599,7 +603,7 @@ export interface RoomExecutionServices {
 }
 
 export interface MovementTransitionDiagnostic {
-  event: "session-started" | "movement-rolled" | "movement-unavailable" | "movement-selected" | "movement-committed" | "turn-completed";
+  event: "session-started" | "movement-rolled" | "movement-unavailable" | "movement-selected" | "movement-committed" | "tier-transition-committed" | "turn-completed";
   sessionId: string;
   sequence: number;
   mode: SessionMode;
@@ -1015,6 +1019,12 @@ export class GameRoomServer {
         const choice = this.state.routeStarChoices?.[intent.seatId];
         if (!choice || choice.routeId !== intent.routeId) throw new IntentRejectedError(intent.type, "Route Star selection was rejected");
         this.movementPreviewBySeatId.set(intent.seatId, { destinationId: intent.destinationId, routeId: intent.routeId });
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "TIER_TRANSITION_REQUESTED") {
+        this.resolveTierTransitionIntent(intent);
         this.broadcastPatch();
         return;
       }
@@ -2018,6 +2028,13 @@ export class GameRoomServer {
         requireStringField(message, "toSectorId", type);
         if (message.routeId !== undefined) requireStringField(message, "routeId", type);
         if (message.movementRevision !== undefined && (!Number.isInteger(message.movementRevision) || Number(message.movementRevision) < 1)) throw new IntentRejectedError(type, "Movement revision must be a positive integer");
+        break;
+      case "TIER_TRANSITION_REQUESTED":
+        requireStringField(message, "destinationSectorId", type);
+        if (!Number.isInteger(message.movementRevision) || Number(message.movementRevision) < 0) {
+          throw new IntentRejectedError(type, "Movement revision must be a non-negative integer");
+        }
+        if (message.voidKeyInstanceId !== undefined) requireStringField(message, "voidKeyInstanceId", type);
         break;
       case "USE_TRANSITION_ROUTE_AID":
         requireEnumField(message, "sourceKind", new Set(["gear", "follower"]), type);
@@ -4076,6 +4093,11 @@ export class GameRoomServer {
           movementRevision: intent.movementRevision,
           createdAt
         } satisfies MoveRequestedAction;
+      case "TIER_TRANSITION_REQUESTED":
+        throw new IntentRejectedError(
+          intent.type,
+          "Tier transitions must be resolved by the authoritative transition handler"
+        );
       case "MOVEMENT_ROLL_REQUESTED":
         return {
           type: "MOVEMENT_ROLL_REQUESTED",
@@ -9122,6 +9144,94 @@ export class GameRoomServer {
     this.runAutomaticPhases(intent.seatId);
   }
 
+  private resolveTierTransitionIntent(
+    intent: Extract<ClientIntent, { type: "TIER_TRANSITION_REQUESTED" }>
+  ): void {
+    if (this.state.status !== "active" || this.state.phase !== "navigation") {
+      throw new IntentRejectedError(intent.type, `Cannot cross tiers during phase ${this.state.phase}`);
+    }
+    const activeSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? null;
+    if (activeSeatId !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "Only the active operative may cross tiers");
+    }
+    if (this.state.movementRolls?.[intent.seatId]) {
+      throw new IntentRejectedError(intent.type, "Tier crossing must be chosen before rolling movement");
+    }
+
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+    if (!player || player.character.status !== "active") {
+      throw new IntentRejectedError(intent.type, "This operative cannot cross tiers");
+    }
+    const revision = this.state.movementRouteRevisions?.[intent.seatId] ?? 0;
+    if (intent.movementRevision !== revision) {
+      throw new IntentRejectedError(intent.type, "Tier-transition movement revision is stale");
+    }
+    const transition = buildTierTransitionOptions(this.state, intent.seatId)
+      .find((entry) => entry.sectorId === intent.destinationSectorId);
+    if (!transition) {
+      throw new IntentRejectedError(intent.type, "Choose a canonical tier transition from the current sector");
+    }
+    if (transition.disabledReason) {
+      const key = intent.voidKeyInstanceId
+        ? player.character.heldGear.find((item) =>
+            item.id === "void-key" && item.instanceId === intent.voidKeyInstanceId
+          )
+        : null;
+      const charges = key?.currentCharges ?? key?.charges ?? 0;
+      if (
+        !key ||
+        charges < 1 ||
+        player.character.equippedGear.utility !== key.id ||
+        !canVoidKeyOverrideTierTransition(this.state, intent.seatId, intent.destinationSectorId)
+      ) {
+        throw new IntentRejectedError(intent.type, transition.disabledReason);
+      }
+    } else if (intent.voidKeyInstanceId) {
+      throw new IntentRejectedError(intent.type, "Void Key is not required for this transition");
+    }
+
+    const fromSectorId = player.character.currentSpaceId;
+    const createdAt = new Date().toISOString();
+    this.movementPreviewBySeatId.delete(intent.seatId);
+    this.applyAction({
+      type: "TIER_TRANSITION_COMPLETED",
+      seatId: intent.seatId,
+      fromSectorId,
+      toSectorId: intent.destinationSectorId,
+      direction: transition.direction,
+      movementRevision: revision,
+      voidKeyInstanceId: intent.voidKeyInstanceId,
+      createdAt
+    } satisfies TierTransitionCompletedAction);
+    this.beginMovementPresentationGate(
+      intent.seatId,
+      fromSectorId,
+      intent.destinationSectorId,
+      transition.route,
+      createdAt
+    );
+    const destination = getBoardSpace(intent.destinationSectorId);
+    this.maybeAdvanceContractObjective(intent.seatId, {
+      type: "sector-visited",
+      sectorId: intent.destinationSectorId,
+      sectorTags: destination?.tags ?? []
+    }, `Visited ${destination?.name ?? intent.destinationSectorId}.`);
+    this.maybeTriggerAbilityOnMovementResolved(intent.seatId, intent.destinationSectorId, true);
+    this.applyScenarioOnSectorEntered(intent.seatId, intent.destinationSectorId);
+    if (this.maybeOpenBileSpitReaction(
+      intent.seatId,
+      intent.destinationSectorId,
+      `tier-transition-arrival:${intent.seatId}:${createdAt}`
+    )) {
+      return;
+    }
+    this.runAutomaticPhases(intent.seatId);
+    this.emitMovementDiagnostic("tier-transition-committed", intent.seatId, {
+      selectedDestinationId: intent.destinationSectorId,
+      route: transition.route
+    });
+  }
+
   private beginMovementPresentationGate(
     seatId: string,
     fromSectorId: string,
@@ -11028,7 +11138,7 @@ type PublicMoveDestination = {
     fromRing: "outer" | "middle" | "inner" | "core";
     toRing: "outer" | "middle" | "inner" | "core";
     label: string;
-    exactMovementRequired: 1;
+    activationTiming: "beforeRoll";
     endsMovement: true;
   };
   disabledReason?: string;
@@ -11712,7 +11822,7 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
               fromRing: getPublicRing(ringTransition.sourceRing),
               toRing: getPublicRing(ringTransition.destinationRing),
               label: ringTransition.uiLabel,
-              exactMovementRequired: 1,
+              activationTiming: "beforeRoll",
               endsMovement: true
             }
           : undefined,
@@ -13890,6 +14000,7 @@ function buildCinderWattleAbilityProjection(state: GameState, seatId: string): R
 interface RequiredActionProjectionContext {
   movementActive: boolean;
   movementSelected: boolean;
+  tierTransitionAvailable: boolean;
   shopActive: boolean;
 }
 
@@ -14379,14 +14490,33 @@ export function buildRequiredActionProjection(
   }
 
   if (context.movementActive || state.phase === "navigation") {
+    const choosingPreRollTransition = context.tierTransitionAvailable && !context.movementActive;
     return present({
       id: `movement:${activeSeatId ?? "none"}:${state.movementRouteRevisions?.[activeSeatId ?? ""] ?? 0}`,
       kind: "movement",
       actorSeatId: activeSeatId,
       requiredTab: "move",
-      label: context.movementSelected ? "Confirm destination" : context.movementActive ? "Choose a destination" : "Roll movement",
-      ownerDetail: context.movementSelected ? "Confirm the selected route." : context.movementActive ? "Choose one legal destination." : "Roll movement to reveal legal destinations.",
-      publicAction: context.movementSelected ? "confirm the selected route" : context.movementActive ? "choose a legal destination" : "roll movement",
+      label: context.movementSelected
+        ? "Confirm destination"
+        : context.movementActive
+          ? "Choose a destination"
+          : choosingPreRollTransition
+            ? "Cross tier or roll movement"
+            : "Roll movement",
+      ownerDetail: context.movementSelected
+        ? "Confirm the selected route."
+        : context.movementActive
+          ? "Choose one legal destination."
+          : choosingPreRollTransition
+            ? "Cross through the connected tier gate or roll for same-tier movement."
+            : "Roll movement to reveal legal destinations.",
+      publicAction: context.movementSelected
+        ? "confirm the selected route"
+        : context.movementActive
+          ? "choose a legal destination"
+          : choosingPreRollTransition
+            ? "choose whether to cross tiers or roll movement"
+            : "roll movement",
       transitionStage: latestTurnCompleted ? "next-turn-ready" : "required-action"
     });
   }
@@ -14642,6 +14772,13 @@ export function createTvProjection(
     requiredAction: buildRequiredActionProjection(state, null, {
       movementActive: Boolean(activeSeatId && buildPublicMovementPlanner(state, activeSeatId)?.active),
       movementSelected: Boolean(activeSeatId && state.routeStarChoices?.[activeSeatId]),
+      tierTransitionAvailable: Boolean(
+        activeSeatId &&
+        state.status === "active" &&
+        state.phase === "navigation" &&
+        !state.movementRolls?.[activeSeatId] &&
+        buildTierTransitionOptions(state, activeSeatId).some((transition) => !transition.disabledReason)
+      ),
       shopActive: Boolean(shopEncounter)
     }),
     cooperativeAssistance: buildCooperativeAssistanceProjection(state),
@@ -15103,6 +15240,45 @@ export function createPhoneProjection(
     ? state.pendingGearEquipChoice
     : null;
   const phoneMovementPlanner = buildPhoneMovementPlanner(state, seatId);
+  const tierTransitions = (() => {
+    if (
+      !player ||
+      player.character.status !== "active" ||
+      state.status !== "active" ||
+      state.phase !== "navigation" ||
+      state.turnOrder[state.activeSeatIndex] !== seatId ||
+      state.movementRolls?.[seatId]
+    ) return null;
+
+    const voidKey = player.character.heldGear.find((item) =>
+      item.id === "void-key" &&
+      player.character.equippedGear.utility === item.id &&
+      (item.currentCharges ?? item.charges ?? 0) > 0
+    );
+    const options = buildTierTransitionOptions(state, seatId).map((transition) => ({
+      sectorId: transition.sectorId,
+      name: state.sectors.find((sector) => sector.id === transition.sectorId)?.name ?? transition.sectorId,
+      direction: transition.direction,
+      fromRing: getPublicRing(transition.fromRing),
+      toRing: getPublicRing(transition.toRing),
+      label: transition.label,
+      disabledReason: transition.disabledReason,
+      voidKeyPrompt:
+        transition.disabledReason &&
+        voidKey &&
+        canVoidKeyOverrideTierTransition(state, seatId, transition.sectorId)
+          ? {
+              instanceId: voidKey.instanceId!,
+              currentCharges: voidKey.currentCharges ?? voidKey.charges ?? 0,
+              maxCharges: voidKey.maxCharges ?? 2,
+              chargeCost: 1 as const
+            }
+          : undefined
+    }));
+    return options.length > 0
+      ? { revision: state.movementRouteRevisions?.[seatId] ?? 0, options }
+      : null;
+  })();
   const transitionRouteAid = (() => {
     if (
       !player ||
@@ -15179,6 +15355,9 @@ export function createPhoneProjection(
     requiredAction: buildRequiredActionProjection(state, seatId, {
       movementActive: Boolean(phoneMovementPlanner?.active),
       movementSelected: Boolean(phoneMovementPlanner?.selectedDestinationId),
+      tierTransitionAvailable: Boolean(
+        tierTransitions?.options.some((transition) => !transition.disabledReason || transition.voidKeyPrompt)
+      ),
       shopActive: Boolean(phoneShopEncounter)
     }),
     sessionMode: state.sessionMode,
@@ -15479,6 +15658,7 @@ export function createPhoneProjection(
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
     movementPlanner: phoneMovementPlanner,
+    tierTransitions,
     transitionRouteAid,
     sectorExplorationSummary: buildPublicSectorExplorationSummary(state, seatId),
     privateRivalry,

@@ -1,5 +1,6 @@
 import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
 import { getBoardSpace } from "../data/boardSpaces.js";
+import { BOARD_RING_TRANSITIONS, type BoardRing } from "../data/boardTransitions.js";
 import type { GameState, PlayerState } from "../schema/session.schema.js";
 import { hasCrownKeyFragment } from "./nemesisRelay.js";
 
@@ -26,6 +27,16 @@ export type TransitionRouteAidDestination = {
   sectorId: string;
   route: string[];
   distance: number;
+};
+
+export type TierTransitionOption = {
+  sectorId: string;
+  route: [string, string];
+  direction: "inward" | "outward";
+  fromRing: BoardRing;
+  toRing: BoardRing;
+  label: string;
+  disabledReason: string | null;
 };
 
 function hashRouteIdentity(value: string): string {
@@ -108,6 +119,61 @@ export function buildTransitionRouteAidDestinations(
   );
 }
 
+export function buildTierTransitionOptions(
+  state: GameState,
+  seatId: string
+): TierTransitionOption[] {
+  const player = getPlayer(state, seatId);
+  if (!player) return [];
+  const originId = player.character.currentSpaceId;
+
+  return BOARD_RING_TRANSITIONS
+    .filter((transition) => transition.sourceSectorId === originId)
+    .map((transition) => ({
+      sectorId: transition.destinationSectorId,
+      route: [originId, transition.destinationSectorId] as [string, string],
+      direction: transition.direction,
+      fromRing: transition.sourceRing,
+      toRing: transition.destinationRing,
+      label: transition.uiLabel,
+      disabledReason: getMovementStepBlockReason(
+        state,
+        player,
+        originId,
+        transition.destinationSectorId
+      )
+    }))
+    .sort((left, right) =>
+      Number(left.direction === "outward") - Number(right.direction === "outward")
+      || left.sectorId.localeCompare(right.sectorId)
+    );
+}
+
+export function canVoidKeyOverrideTierTransition(
+  state: GameState,
+  seatId: string,
+  toSectorId: string
+): boolean {
+  const player = getPlayer(state, seatId);
+  const transition = buildTierTransitionOptions(state, seatId)
+    .find((entry) => entry.sectorId === toSectorId);
+  const target = getBoardSpace(toSectorId);
+  if (!player || !transition?.disabledReason || !target?.movementRequirements?.length) return false;
+
+  const notes = new Set(player.private.notes);
+  const supportedReasons = target.movementRequirements.flatMap((requirement) => {
+    const blockedByFrom = Boolean(
+      requirement.allowedFrom && !requirement.allowedFrom.includes(player.character.currentSpaceId)
+    );
+    const blockedByNotes = Boolean(
+      requirement.requiredNotes && !requirement.requiredNotes.every((note) => notes.has(note))
+    );
+    return blockedByFrom || blockedByNotes ? [requirement.errorMessage] : [];
+  });
+
+  return supportedReasons.length === 1 && supportedReasons[0] === transition.disabledReason;
+}
+
 export function hasMovementRollForSeat(state: GameState, seatId: string): boolean {
   const rolledValue = state.movementRolls?.[seatId];
 
@@ -162,17 +228,6 @@ export function getRingTrackNeighbor(sectorId: string, direction: -1 | 1): strin
 
   const nextIndex = (index + direction + ringTrack.length) % ringTrack.length;
   return ringTrack[nextIndex]?.id ?? null;
-}
-
-function isAuthoredTransitionEdge(fromSectorId: string, toSectorId: string): boolean {
-  const fromNode = RIFTFALL_BOARD_NODE_INDEX.get(fromSectorId);
-  const toNode = RIFTFALL_BOARD_NODE_INDEX.get(toSectorId);
-
-  if (!fromNode || !toNode || fromNode.ring === toNode.ring) {
-    return false;
-  }
-
-  return fromNode.connections.includes(toSectorId) && toNode.connections.includes(fromSectorId);
 }
 
 function addMovementRoute(
@@ -387,35 +442,27 @@ export function buildMovementRoutePlan(state: GameState, seatId: string): Moveme
   });
 
   if (movementValue === 1) {
+    const fromSpace = getBoardSpace(currentSectorId);
     for (const neighborId of currentSector.neighbors) {
-      const nextRoute = [currentSectorId, neighborId];
-      const disabledReason = getMovementStepBlockReason(state, player, currentSectorId, neighborId);
+      const toSpace = getBoardSpace(neighborId);
+      if (!fromSpace || !toSpace || fromSpace.tier !== toSpace.tier) continue;
 
+      const route = [currentSectorId, neighborId];
+      const disabledReason = getMovementStepBlockReason(state, player, currentSectorId, neighborId);
       if (disabledReason) {
         addBlockedMovementRoute(blockedRoutesByDestination, identifyBlockedRoute(state, seatId, {
           sectorId: neighborId,
           distance: 1,
-          route: nextRoute,
+          route,
           disabledReason
         }));
         continue;
       }
-
-      const fromSpace = getBoardSpace(currentSectorId);
-      const toSpace = getBoardSpace(neighborId);
-      const isSameRegionStep = !fromSpace || !toSpace || fromSpace.tier === toSpace.tier;
-
-      if (isSameRegionStep || isAuthoredTransitionEdge(currentSectorId, neighborId)) {
-        addMovementRoute(
-          routesByDestination,
-          identifyRoute(state, seatId, {
-            sectorId: neighborId,
-            distance: 1,
-            route: nextRoute
-          }),
-          currentSectorId
-        );
-      }
+      addMovementRoute(
+        routesByDestination,
+        identifyRoute(state, seatId, { sectorId: neighborId, distance: 1, route }),
+        currentSectorId
+      );
     }
   }
 

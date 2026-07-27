@@ -28,6 +28,7 @@ import type {
   MovementRollRequestedAction,
   MoveRequestedAction,
   TransitionRouteAidUsedAction,
+  TierTransitionCompletedAction,
   NemesisCombatResolvedAction,
   NemesisDefeatedAction,
   NemesisMovedAction,
@@ -133,7 +134,7 @@ import {
 } from "../rules/nextNormalMovementRollModifier.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
-import { buildMovementRoutePlan, buildTransitionRouteAidDestinations, getForcedDisplacementDestination, getOwnerSelectedForcedDisplacementCandidates, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
+import { buildMovementRoutePlan, buildTierTransitionOptions, buildTransitionRouteAidDestinations, canVoidKeyOverrideTierTransition, getForcedDisplacementDestination, getOwnerSelectedForcedDisplacementCandidates, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
 import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { canRiftAnchorSpikeSuppress } from "../rules/forcedDisplacement.js";
 import { resolveFloorZeroSalvageLoss, THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS } from "../rules/salvageLoss.js";
@@ -1672,6 +1673,121 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         fromSectorId: routeAid.fromSectorId,
         toSectorId: routeAid.toSectorId,
         createdAt: routeAid.createdAt
+      }]);
+    }
+    case "TIER_TRANSITION_COMPLETED": {
+      const transitionAction = action as TierTransitionCompletedAction;
+      try {
+        ensureSeatTurn(state, transitionAction.seatId);
+        ensureSeatCanTakeNormalTurnAction(state, transitionAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot cross tiers");
+      }
+      if (state.phase !== "navigation" || state.movementRolls?.[transitionAction.seatId]) {
+        return reject(state, action, "Tier transitions are available only before rolling movement");
+      }
+
+      const player = requirePlayer(state, transitionAction.seatId);
+      if (player.character.currentSpaceId !== transitionAction.fromSectorId) {
+        return reject(state, action, "Tier-transition origin is stale");
+      }
+      if ((state.movementRouteRevisions?.[transitionAction.seatId] ?? 0) !== transitionAction.movementRevision) {
+        return reject(state, action, "Tier-transition movement revision is stale");
+      }
+
+      const transition = buildTierTransitionOptions(state, transitionAction.seatId)
+        .find((entry) => entry.sectorId === transitionAction.toSectorId);
+      if (!transition || transition.direction !== transitionAction.direction) {
+        return reject(state, action, "Tier transition must use a current canonical edge");
+      }
+
+      let nextCharacter = player.character;
+      if (transition.disabledReason) {
+        const key = transitionAction.voidKeyInstanceId
+          ? player.character.heldGear.find((item) =>
+              item.id === "void-key" && item.instanceId === transitionAction.voidKeyInstanceId
+            )
+          : null;
+        const charges = key?.currentCharges ?? key?.charges ?? 0;
+        if (
+          !key ||
+          charges < 1 ||
+          player.character.equippedGear.utility !== key.id ||
+          !canVoidKeyOverrideTierTransition(state, transitionAction.seatId, transitionAction.toSectorId)
+        ) {
+          return reject(state, action, transition.disabledReason);
+        }
+        nextCharacter = {
+          ...player.character,
+          heldGear: player.character.heldGear.map((item) =>
+            item.instanceId === key.instanceId
+              ? { ...item, currentCharges: charges - 1, maxCharges: item.maxCharges ?? 2 }
+              : item
+          )
+        };
+      } else if (transitionAction.voidKeyInstanceId) {
+        return reject(state, action, "Void Key is not required for this transition");
+      }
+
+      nextCharacter = { ...nextCharacter, currentSpaceId: transitionAction.toSectorId };
+      const destinationName =
+        state.sectors.find((sector) => sector.id === transitionAction.toSectorId)?.name
+        ?? transitionAction.toSectorId;
+      return succeed({
+        ...state,
+        phase: "sector",
+        resolutionSource: null,
+        sequence: state.sequence + 1,
+        movementRolls: clearMovementRollForSeat(state, transitionAction.seatId),
+        movementAdjustments: clearMovementAdjustmentForSeat(state, transitionAction.seatId),
+        movementRouteRevisions: {
+          ...(state.movementRouteRevisions ?? {}),
+          [transitionAction.seatId]: transitionAction.movementRevision + 1
+        },
+        routeStarChoices: state.routeStarChoices
+          ? Object.fromEntries(Object.entries(state.routeStarChoices).filter(([seatId]) => seatId !== transitionAction.seatId))
+          : undefined,
+        tileChallengeProgress: null,
+        tileArrivalThreatProgress: {
+          arrivalId: `arrival:${transitionAction.seatId}:${transitionAction.toSectorId}:${state.sequence + 1}`,
+          seatId: transitionAction.seatId,
+          sectorId: transitionAction.toSectorId,
+          nextThreatIconIndex: 0
+        },
+        players: state.players.map((entry) => entry.seatId === transitionAction.seatId
+          ? {
+              ...entry,
+              sectorId: transitionAction.toSectorId,
+              character: nextCharacter
+            }
+          : entry),
+        lastOutcomeSummary: {
+          seatId: transitionAction.seatId,
+          movedToSectorId: transitionAction.toSectorId,
+          encounterCardId: null,
+          encounterTitle: destinationName,
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: `Crossed ${transition.direction} into ${destinationName}.`
+        },
+        eventLog: [...state.eventLog, action]
+      }, [{
+        type: "MOVED",
+        seatId: transitionAction.seatId,
+        fromSectorId: transitionAction.fromSectorId,
+        toSectorId: transitionAction.toSectorId,
+        createdAt: transitionAction.createdAt
       }]);
     }
     case "MOVE_REQUESTED": {

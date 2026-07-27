@@ -164,7 +164,7 @@ describe("PhoneMovementView", () => {
     });
   });
 
-  it("uses one compact roll action before the planner is active", () => {
+  it("offers canonical tier crossing before the compact roll action", () => {
     const onIntent = vi.fn();
     render(
       <PhoneMovementView
@@ -179,10 +179,75 @@ describe("PhoneMovementView", () => {
         onSelectedSectorId={vi.fn()}
         onIntent={onIntent}
         showContextNavigation
+        tierTransitions={{
+          revision: 9,
+          options: [
+            {
+              sectorId: "middle_red_march_outpost",
+              name: "Choir Bastion",
+              direction: "inward",
+              fromRing: "outer",
+              toRing: "middle",
+              label: "Enter Middle Reach",
+              disabledReason: null
+            },
+            {
+              sectorId: "middle_guardian_span",
+              name: "Guardian Span",
+              direction: "inward",
+              fromRing: "outer",
+              toRing: "middle",
+              label: "Enter Middle Reach",
+              disabledReason: "Requires Guardian Span Clearance"
+            }
+          ]
+        }}
       />
     );
+    expect(screen.getByRole("region", { name: "Tier crossing options" })).toHaveTextContent("Cross before rolling");
+    expect(screen.getByRole("button", { name: /Enter Middle Reach.*Choir Bastion/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Enter Middle Reach.*Guardian Span/i })).toBeDisabled();
     expect(screen.getAllByRole("button", { name: "Roll movement" })).toHaveLength(1);
     expect(document.querySelector(".phone-move-prototype__roll-state")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Enter Middle Reach.*Choir Bastion/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "TIER_TRANSITION_REQUESTED",
+      seatId: "seat-1",
+      destinationSectorId: "middle_red_march_outpost",
+      movementRevision: 9,
+      voidKeyInstanceId: undefined
+    });
+  });
+
+  it("rolls normally when the player declines a tier crossing", () => {
+    const onIntent = vi.fn();
+    render(
+      <PhoneMovementView
+        planner={null}
+        seatId="seat-1"
+        activeContract={null}
+        currentSectorName="Ashwalk Bridge"
+        canRoll
+        movementResolving={false}
+        travel={null}
+        selectedSectorId={null}
+        onSelectedSectorId={vi.fn()}
+        onIntent={onIntent}
+        showContextNavigation
+        tierTransitions={{
+          revision: 9,
+          options: [{
+            sectorId: "middle_red_march_outpost",
+            name: "Choir Bastion",
+            direction: "inward",
+            fromRing: "outer",
+            toRing: "middle",
+            label: "Enter Middle Reach",
+            disabledReason: null
+          }]
+        }}
+      />
+    );
     fireEvent.click(screen.getByRole("button", { name: "Roll movement" }));
     expect(onIntent).toHaveBeenCalledWith({ type: "MOVEMENT_ROLL_REQUESTED", seatId: "seat-1" });
   });
@@ -229,44 +294,7 @@ describe("PhoneMovementView", () => {
     expect(screen.getByRole("button", { name: /Select destination B, Glass Signal Pier/ })).toBeInTheDocument();
   });
 
-  it("recommends a harder inward route when the authoritative roll can reach it", () => {
-    const inwardPlanner: PublicMovementPlannerState = {
-      ...planner,
-      destinations: [{
-        ...planner.destinations[0]!,
-        name: "Iron Choir Gate",
-        ring: "middle",
-        ringTransition: {
-          direction: "inward",
-          fromRing: "outer",
-          toRing: "middle",
-          label: "Enter middle ring",
-          exactMovementRequired: 1,
-          endsMovement: true
-        }
-      }]
-    };
-    render(
-      <PhoneMovementView
-        planner={inwardPlanner}
-        seatId="seat-1"
-        activeContract={null}
-        currentSectorName="Ashwalk Bridge"
-        canRoll={false}
-        movementResolving={false}
-        travel={null}
-        selectedSectorId={null}
-        onSelectedSectorId={vi.fn()}
-        onIntent={vi.fn()}
-        showContextNavigation={false}
-      />
-    );
-
-    expect(screen.getByRole("note", { name: /inward route recommendation/i })).toHaveTextContent("Iron Choir Gate");
-    expect(screen.getByRole("note", { name: /inward route recommendation/i })).toHaveTextContent(/harder challenges and stronger rewards/i);
-  });
-
-  it("announces a canonical inward crossing even when the current exact roll cannot reach it", () => {
+  it("does not show the retired post-roll advance-opportunity notice", () => {
     render(
       <PhoneMovementView
         planner={planner}
@@ -284,9 +312,8 @@ describe("PhoneMovementView", () => {
       />
     );
 
-    const note = screen.getByRole("note", { name: /inward route recommendation/i });
-    expect(note).toHaveTextContent("Choir Bastion");
-    expect(note).toHaveTextContent(/future exact movement roll/i);
+    expect(screen.queryByText(/advance opportunity|future exact movement roll/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Tier crossing options" })).not.toBeInTheDocument();
   });
 
   it("expands only the selected destination and lets Back collapse its detail first", () => {

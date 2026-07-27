@@ -1,13 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { MapTrifoldIcon } from "@phosphor-icons/react/dist/csr/MapTrifold";
-import { getBoardSpace } from "../../game/data/boardSpaces.js";
-import { BOARD_RING_TRANSITIONS } from "../../game/data/boardTransitions.js";
 import type {
   ClientIntent,
   ContractCard,
   PublicHostViewState,
   PublicMoveDestination,
-  PublicMovementPlannerState
+  PublicMovementPlannerState,
+  PhoneTierTransitionOption
 } from "../shared/types.js";
 import { getMissionRelevanceForSector } from "../shared/missionRelevance.js";
 import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
@@ -50,6 +49,10 @@ interface PhoneMovementViewProps {
   actorName?: string;
   diceCount?: number;
   hostView?: PublicHostViewState;
+  tierTransitions?: {
+    revision: number;
+    options: PhoneTierTransitionOption[];
+  } | null;
 }
 
 function destinationType(destination: PublicMoveDestination): string {
@@ -280,13 +283,15 @@ function MovementHeader({
   canRoll,
   currentSectorName,
   travel,
-  movementResolving
+  movementResolving,
+  tierTransitionAvailable
 }: {
   planner: PublicMovementPlannerState | null | undefined;
   canRoll: boolean;
   currentSectorName: string;
   travel: { fromSectorName: string; toSectorName: string } | null;
   movementResolving: boolean;
+  tierTransitionAvailable: boolean;
 }): ReactElement {
   const routeCount = planner?.destinations.filter(canSelectDestination).length ?? 0;
   const finalMovement = planner?.movementValue ?? 0;
@@ -299,14 +304,16 @@ function MovementHeader({
         ? planner.rolledValue !== undefined && planner.rolledValue !== planner.movementValue
           ? `Roll ${planner.rolledValue} · ${finalMovementLabel}`
           : finalMovementLabel
-        : canRoll ? "Roll required" : "Resolving";
+        : canRoll ? tierTransitionAvailable ? "Choose route" : "Roll required" : "Resolving";
   const locationLabel = travel ? "Route locked" : planner?.currentSectorName ?? currentSectorName;
   const statusLabel = travel ? "" : planner?.active ? `${routeCount} legal destination${routeCount === 1 ? "" : "s"}` : "Awaiting movement roll";
   const instruction = travel
     ? ""
     : planner?.active
       ? `Choose one destination exactly ${planner.movementValue} step${planner.movementValue === 1 ? "" : "s"} away.`
-      : "Roll once to reveal your legal destinations.";
+      : tierTransitionAvailable
+        ? "Cross the connected tier now, or roll for same-tier movement."
+        : "Roll once to reveal your legal destinations.";
   return (
     <header className="phone-move-prototype__header phone-move-instrument__header">
       <div className="phone-move-instrument__heading">
@@ -414,7 +421,6 @@ export function PhoneMovementView({
   planner,
   seatId,
   activeContract,
-  currentSectorId,
   currentSectorName,
   canRoll,
   movementResolving,
@@ -426,7 +432,8 @@ export function PhoneMovementView({
   onContextNavigation,
   actorName = "Your operative",
   diceCount = 1,
-  hostView
+  hostView,
+  tierTransitions
 }: PhoneMovementViewProps): ReactElement {
   const models = useMemo(
     () => (planner?.destinations ?? []).map((destination) => buildDestinationPresentation(destination, activeContract)),
@@ -473,7 +480,13 @@ export function PhoneMovementView({
       onSelectedSectorId(serverSelected);
       setExpandedSectorId(serverSelected);
     }
-  }, [onSelectedSectorId, planner?.currentSectorId, planner?.movementValue, planner?.selectedDestinationId]);
+  }, [
+    onSelectedSectorId,
+    planner?.currentSectorId,
+    planner?.movementValue,
+    planner?.selectedDestinationId,
+    tierTransitions?.revision
+  ]);
 
   const rollFaces = planner?.rollFaces ?? (planner?.rolledValue !== undefined ? [planner.rolledValue] : planner?.active ? [planner.originalMovementValue ?? planner.movementValue] : []);
   const diceModel: AuthoritativeDiceModel = {
@@ -499,23 +512,10 @@ export function PhoneMovementView({
   );
 
   const selectedModel = models.find((model) => model.destination.sectorId === selectedSectorId) ?? null;
-  const legalInwardDestinations = (planner?.destinations ?? []).filter(
-    (destination) =>
-      destination.ringTransition?.direction === "inward" &&
-      (!destination.disabledReason || destination.voidKeyPrompt)
+  const tierTransitionAvailable = Boolean(
+    canRoll &&
+    tierTransitions?.options.some((transition) => !transition.disabledReason || transition.voidKeyPrompt)
   );
-  const stableSectorId = currentSectorId ?? planner?.currentSectorId;
-  const canonicalInwardRouteNames = stableSectorId
-    ? BOARD_RING_TRANSITIONS
-        .filter((transition) => transition.sourceSectorId === stableSectorId && transition.direction === "inward")
-        .map((transition) => getBoardSpace(transition.destinationSectorId)?.name ?? transition.destinationSectorId)
-    : [];
-  const inwardRouteNames = [
-    ...new Set([
-      ...canonicalInwardRouteNames,
-      ...legalInwardDestinations.map((destination) => destination.name)
-    ])
-  ];
   const movementState = movementResolving || travel
     ? "resolving"
     : planner?.active
@@ -539,6 +539,17 @@ export function PhoneMovementView({
       voidKeyInstanceId: destination.voidKeyPrompt?.instanceId,
       routeId: planner?.routeStarCommitted ? destination.routeId : undefined,
       movementRevision: planner?.routeStarCommitted ? planner.movementRevision : undefined
+    });
+  };
+  const crossTier = (transition: PhoneTierTransitionOption): void => {
+    if (submitted || movementResolving || travel || (transition.disabledReason && !transition.voidKeyPrompt)) return;
+    setSubmitted(true);
+    onIntent({
+      type: "TIER_TRANSITION_REQUESTED",
+      seatId,
+      destinationSectorId: transition.sectorId,
+      movementRevision: tierTransitions?.revision ?? 0,
+      voidKeyInstanceId: transition.voidKeyPrompt?.instanceId
     });
   };
 
@@ -578,7 +589,14 @@ export function PhoneMovementView({
       data-movement-state={movementState}
       aria-label="Tactical destination movement"
     >
-      <MovementHeader planner={planner} canRoll={canRoll} currentSectorName={currentSectorName} travel={travel} movementResolving={movementResolving} />
+      <MovementHeader
+        planner={planner}
+        canRoll={canRoll}
+        currentSectorName={currentSectorName}
+        travel={travel}
+        movementResolving={movementResolving}
+        tierTransitionAvailable={tierTransitionAvailable}
+      />
       <div className="phone-move-prototype__content">
         {hostView ? (
           <button
@@ -598,6 +616,39 @@ export function PhoneMovementView({
               <small>{hostView.unavailableReason ?? "Shared public display"}</small>
             </span>
           </button>
+        ) : null}
+        {canRoll && tierTransitions && tierTransitions.options.length > 0 ? (
+          <section className="phone-tier-transition" aria-label="Tier crossing options">
+            <header>
+              <span>Tier crossing</span>
+              <strong>Cross before rolling</strong>
+              <p>Crossing is guaranteed and ends movement at the connected sector.</p>
+            </header>
+            <div className="phone-tier-transition__options">
+              {tierTransitions.options.map((transition) => {
+                const selectable = !transition.disabledReason || Boolean(transition.voidKeyPrompt);
+                return (
+                  <button
+                    key={transition.sectorId}
+                    type="button"
+                    disabled={!selectable || submitted}
+                    onClick={() => crossTier(transition)}
+                  >
+                    <span>{transition.direction === "inward" ? "Advance" : "Return"}</span>
+                    <strong>{transition.label}</strong>
+                    <small>{transition.name} · Movement ends</small>
+                    {transition.disabledReason ? (
+                      <em>
+                        {transition.voidKeyPrompt
+                          ? `Use Void Key · ${transition.voidKeyPrompt.currentCharges}/${transition.voidKeyPrompt.maxCharges} charges`
+                          : transition.disabledReason}
+                      </em>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
         ) : null}
         {!travel && !movementResolving ? (
           <div
@@ -625,18 +676,6 @@ export function PhoneMovementView({
         ) : planner?.active ? (
           <>
             <MovementAdjustments planner={planner} seatId={seatId} onIntent={onIntent} />
-            {inwardRouteNames.length > 0 ? (
-              <aside className="phone-move-inward-guidance" role="note" aria-label="Inward route recommendation">
-                <span>Advance opportunity</span>
-                <strong>{inwardRouteNames.join(" · ")}</strong>
-                <p>
-                  Recommended when prepared: inner reaches carry harder challenges and stronger rewards.
-                  {legalInwardDestinations.length > 0
-                    ? " This roll can reach the crossing."
-                    : " A future exact movement roll and any printed requirement still apply."}
-                </p>
-              </aside>
-            ) : null}
             {models.length > 0 ? (
               <TacticalDestinationList
                 models={models}

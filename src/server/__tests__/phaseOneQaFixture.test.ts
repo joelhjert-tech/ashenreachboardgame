@@ -227,7 +227,7 @@ describe("Phase 1 QA fixture", () => {
     expect(state.players[0]?.character.salvage).toBe(4);
   });
 
-  it("prepares four canonical one-step routes for the movement UI comparison", () => {
+  it("prepares four canonical same-tier one-step routes for the movement UI comparison", () => {
     const state = createInitialSessionState("QA001", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
     state.status = "active";
     applyPhaseOneQaFixture(state, "seat-1", { kind: "phone-movement", stage: "four-routes" });

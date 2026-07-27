@@ -64,6 +64,8 @@ describe("admin map registry", () => {
 
   it("surfaces canonical blocked reasons for closed movement gates", () => {
     const simulation = buildAdminMovementSimulation("middle_guardian_span", 1);
-    expect(simulation.plan?.blockedRoutes.some((route) => /guardian span clearance|clearance/i.test(route.disabledReason ?? ""))).toBe(true);
+    expect(simulation.tierTransitions.some((transition) =>
+      /guardian span clearance|clearance/i.test(transition.disabledReason ?? "")
+    )).toBe(true);
   });
 });

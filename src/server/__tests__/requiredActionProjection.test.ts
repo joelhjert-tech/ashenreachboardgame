@@ -95,6 +95,35 @@ describe("server required-action projection", () => {
     expect(waiting.detail).toContain("Waiting for Joel to roll movement");
   });
 
+  it("announces a pre-roll tier choice without exposing private transition controls on TV", () => {
+    const state = activateMultiplayer();
+    const activeSeatId = state.turnOrder[state.activeSeatIndex]!;
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "outer_ember_sanctum",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "outer_ember_sanctum"
+      }
+    };
+
+    const phone = createPhoneProjection(state, activeSeatId) as Record<string, unknown> & {
+      tierTransitions?: { options: Array<{ sectorId: string }> } | null;
+    };
+    const tv = createTvProjection(state) as Record<string, unknown>;
+
+    expect(requiredAction(phone)).toMatchObject({
+      kind: "movement",
+      label: "Cross tier or roll movement",
+      requiredTab: "move",
+      canAct: true
+    });
+    expect(phone.tierTransitions?.options).toEqual(expect.arrayContaining([
+      expect.objectContaining({ sectorId: "middle_red_march_outpost" })
+    ]));
+    expect(tv).not.toHaveProperty("tierTransitions");
+  });
+
   it("keeps an authoritative approach result on Move instead of routing it to Battle", () => {
     const state = activateMultiplayer();
     const activeSeatId = state.turnOrder[state.activeSeatIndex]!;
@@ -251,11 +280,13 @@ describe("server required-action projection", () => {
     const before = buildRequiredActionProjection(state, state.turnOrder[0]!, {
       movementActive: false,
       movementSelected: false,
+      tierTransitionAvailable: false,
       shopActive: false
     });
     const after = buildRequiredActionProjection(JSON.parse(JSON.stringify(state)), state.turnOrder[0]!, {
       movementActive: false,
       movementSelected: false,
+      tierTransitionAvailable: false,
       shopActive: false
     });
     expect(after).toEqual(before);

@@ -11,7 +11,7 @@ export interface BoardRingTransition {
   destinationRing: BoardRing;
   direction: "inward" | "outward";
   edgeCost: 1;
-  exactMovementRequired: 1;
+  activationTiming: "beforeRoll";
   endsMovement: true;
   requiredNotes: string[];
   allowedFrom: string[];
@@ -32,6 +32,9 @@ function createTransition(sourceSectorId: string, destinationSectorId: string): 
   const allowedFrom = [...new Set(requirements.flatMap((requirement) => requirement.allowedFrom ?? []))];
   const lockedReason = requirements.find((requirement) => requirement.errorMessage)?.errorMessage ?? null;
   const direction = ringDepth[destinationNode.ring] > ringDepth[sourceNode.ring] ? "inward" : "outward";
+  const destinationLabel = destinationNode.ring === "center"
+    ? "Center"
+    : `${destinationNode.ring[0]!.toUpperCase()}${destinationNode.ring.slice(1)} Reach`;
   return {
     edgeId: `${sourceSectorId}--${destinationSectorId}`,
     sourceSectorId,
@@ -40,12 +43,12 @@ function createTransition(sourceSectorId: string, destinationSectorId: string): 
     destinationRing: destinationNode.ring,
     direction,
     edgeCost: 1,
-    exactMovementRequired: 1,
+    activationTiming: "beforeRoll",
     endsMovement: true,
     requiredNotes,
     allowedFrom,
     lockedReason,
-    uiLabel: direction === "inward" ? `Enter ${destinationNode.ring} ring` : `Return to ${destinationNode.ring} ring`
+    uiLabel: direction === "inward" ? `Enter ${destinationLabel}` : `Return to ${destinationLabel}`
   };
 }
 

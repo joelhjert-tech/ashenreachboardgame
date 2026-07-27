@@ -2876,6 +2876,7 @@ function PhoneMovePanel({
   resultDeltas,
   diceCount,
   hostView,
+  tierTransitions,
   transitionRouteAid
 }: {
   movementPlanner: PublicMovementPlannerState | null | undefined;
@@ -2898,6 +2899,7 @@ function PhoneMovePanel({
   resultDeltas: ResultDelta[];
   diceCount?: number;
   hostView?: PublicHostViewState;
+  tierTransitions?: PhonePatchPayload["tierTransitions"];
   transitionRouteAid?: PhonePatchPayload["transitionRouteAid"];
 }): ReactElement {
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(() => movementPlanner?.selectedDestinationId ?? null);
@@ -3036,6 +3038,7 @@ function PhoneMovePanel({
         actorName={actorName}
         diceCount={diceCount}
         hostView={hostView}
+        tierTransitions={tierTransitions}
       />
     </>
   );
@@ -4679,6 +4682,7 @@ export function PhoneActionPanel({
         resultDeltas={currentDeltas}
         diceCount={self.character.id === "char_ker_von_ker" ? 2 : 1}
         hostView={patch.hostView}
+        tierTransitions={patch.tierTransitions}
         transitionRouteAid={patch.transitionRouteAid}
       />
     ) : activeTurnTab === "battle" ? (

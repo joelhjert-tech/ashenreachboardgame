@@ -4,7 +4,7 @@ import { BOARD_SPACES } from "../../data/boardSpaces.js";
 import { BOARD_TEXT_EFFECTS } from "../../data/boardTextEffects.js";
 import { BOARD_RING_TRANSITIONS, getUndirectedBoardRingTransitions } from "../../data/boardTransitions.js";
 import { createInitialSessionState } from "../../../server/sessionState.js";
-import { buildMovementRoutePlan } from "../movementPlanner.js";
+import { buildMovementRoutePlan, buildTierTransitionOptions } from "../movementPlanner.js";
 
 const expectedPairs = [
   "black-relay-spire|glassmere-spindle",
@@ -44,10 +44,14 @@ describe("canonical board topology progression", () => {
   it("derives exactly the approved cross-ring edges from the graph", () => {
     expect(getUndirectedBoardRingTransitions().map((edge) => pair(edge.sourceSectorId, edge.destinationSectorId)).sort()).toEqual(expectedPairs);
     expect(BOARD_RING_TRANSITIONS).toHaveLength(26);
-    expect(BOARD_RING_TRANSITIONS.every((transition) => transition.edgeCost === 1 && transition.endsMovement)).toBe(true);
+    expect(BOARD_RING_TRANSITIONS.every((transition) =>
+      transition.edgeCost === 1
+      && transition.endsMovement
+      && transition.activationTiming === "beforeRoll"
+    )).toBe(true);
   });
 
-  it("offers every canonical transition through the authoritative planner at exact movement one", () => {
+  it("offers every canonical transition as a pre-roll tier option", () => {
     const state = createInitialSessionState("topology-transition-test");
     state.status = "active";
     state.phase = "navigation";
@@ -59,9 +63,38 @@ describe("canonical board topology progression", () => {
     for (const transition of BOARD_RING_TRANSITIONS) {
       state.players[0]!.sectorId = transition.sourceSectorId;
       state.players[0]!.character.currentSpaceId = transition.sourceSectorId;
-      state.movementRolls = { "seat-1": 1 };
+      state.movementRolls = {};
+      const option = buildTierTransitionOptions(state, "seat-1")
+        .find((entry) => entry.sectorId === transition.destinationSectorId);
+      expect(option, transition.edgeId).toMatchObject({
+        sectorId: transition.destinationSectorId,
+        route: [transition.sourceSectorId, transition.destinationSectorId],
+        direction: transition.direction,
+        fromRing: transition.sourceRing,
+        toRing: transition.destinationRing,
+        label: transition.uiLabel,
+        disabledReason: null
+      });
+    }
+  });
+
+  it("keeps ordinary exact-distance movement within the current tier for values one through six", () => {
+    const state = createInitialSessionState("topology-normal-movement-test");
+    state.status = "active";
+    state.phase = "navigation";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Route Tester", characterId: "void-marshal" };
+    state.players[0]!.sectorId = "outer_ember_sanctum";
+    state.players[0]!.character.currentSpaceId = "outer_ember_sanctum";
+
+    for (let movement = 1; movement <= 6; movement += 1) {
+      state.movementRolls = { "seat-1": movement };
       const plan = buildMovementRoutePlan(state, "seat-1");
-      expect(plan?.routes.some((route) => route.sectorId === transition.destinationSectorId), transition.edgeId).toBe(true);
+      expect(plan?.movementValue).toBe(movement);
+      expect(plan?.routes.length).toBeGreaterThan(0);
+      expect(plan?.routes.some((route) => route.sectorId === "middle_red_march_outpost")).toBe(false);
+      expect(plan?.routes.every((route) => BOARD_SPACES.find((space) => space.id === route.sectorId)?.tier === "outer")).toBe(true);
     }
   });
 

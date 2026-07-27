@@ -949,7 +949,7 @@ export interface PublicMoveDestination {
     fromRing: "outer" | "middle" | "inner" | "core";
     toRing: "outer" | "middle" | "inner" | "core";
     label: string;
-    exactMovementRequired: 1;
+    activationTiming: "beforeRoll";
     endsMovement: true;
   };
   disabledReason?: string;
@@ -974,6 +974,22 @@ export interface PublicMovementPlannerState {
   routeStarCommitted?: boolean;
   movementRevision?: number;
   destinations: PublicMoveDestination[];
+}
+
+export interface PhoneTierTransitionOption {
+  sectorId: string;
+  name: string;
+  direction: "inward" | "outward";
+  fromRing: "outer" | "middle" | "inner" | "core";
+  toRing: "outer" | "middle" | "inner" | "core";
+  label: string;
+  disabledReason: string | null;
+  voidKeyPrompt?: {
+    instanceId: string;
+    currentCharges: number;
+    maxCharges: number;
+    chargeCost: 1;
+  };
 }
 
 export interface PublicSectorExplorationThreat {
@@ -1512,6 +1528,10 @@ export interface RequiredActionProjection {
 export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
+  tierTransitions?: {
+    revision: number;
+    options: PhoneTierTransitionOption[];
+  } | null;
   ownerPrivateResult?: OwnerPrivateMatchResult | null;
   lateJoinPending?: boolean;
   selfIsSetupHost?: boolean;
@@ -1788,6 +1808,13 @@ export type ClientIntent =
       voidKeyInstanceId?: string;
       routeId?: string;
       movementRevision?: number;
+    }
+  | {
+      type: "TIER_TRANSITION_REQUESTED";
+      seatId: string;
+      destinationSectorId: string;
+      movementRevision: number;
+      voidKeyInstanceId?: string;
     }
   | {
       type: "USE_TRANSITION_ROUTE_AID";

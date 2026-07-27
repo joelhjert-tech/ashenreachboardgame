@@ -5529,12 +5529,11 @@ describe("escalation flow", () => {
       createContracts()
     );
 
-    server.getState().movementRolls = { "seat-1": 1 };
-
     server.handleIntent(client as never, {
-      type: "MOVE_REQUESTED",
+      type: "TIER_TRANSITION_REQUESTED",
       seatId: "seat-1",
-      toSectorId: "center_cinder_gate"
+      destinationSectorId: "center_cinder_gate",
+      movementRevision: server.getState().movementRouteRevisions?.["seat-1"] ?? 0
     });
 
     expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain("Breach the Gate of Cinders first");
@@ -5594,12 +5593,12 @@ describe("escalation flow", () => {
     );
 
     endBroadcastTurn(server);
-    server.getState().movementRolls = { "seat-1": 1 };
 
     runIntent(server, {
-      type: "MOVE_REQUESTED",
+      type: "TIER_TRANSITION_REQUESTED",
       seatId: "seat-1",
-      toSectorId: "inner_veil_rift"
+      destinationSectorId: "inner_veil_rift",
+      movementRevision: server.getState().movementRouteRevisions?.["seat-1"] ?? 0
     });
 
     expect(server.getState().players[0]?.sectorId).toBe("inner_veil_rift");
@@ -5663,11 +5662,11 @@ describe("escalation flow", () => {
     );
 
     endBroadcastTurn(server);
-    server.getState().movementRolls = { "seat-1": 1 };
     runIntent(server, {
-      type: "MOVE_REQUESTED",
+      type: "TIER_TRANSITION_REQUESTED",
       seatId: "seat-1",
-      toSectorId: "center_cinder_gate"
+      destinationSectorId: "center_cinder_gate",
+      movementRevision: server.getState().movementRouteRevisions?.["seat-1"] ?? 0
     });
 
     expect(server.getState().players[0]?.character.currentSpaceId).toBe("center_cinder_gate");

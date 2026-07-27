@@ -1260,13 +1260,12 @@ describe("canonical sector graph", () => {
     ).toBe(false);
   });
 
-  it("allows cross-region movement only through authored transition sectors", () => {
+  it("offers cross-region movement only through authored pre-roll transition sectors", () => {
     const state = createInitialSessionState("session-alpha");
     state.status = "active";
     state.phase = "navigation";
     state.turnOrder = ["seat-1"];
     state.activeSeatIndex = 0;
-    state.movementRolls = { "seat-1": 1 };
     state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
     state.players[0] = {
       ...state.players[0]!,
@@ -1278,22 +1277,22 @@ describe("canonical sector graph", () => {
     };
 
     const phoneProjection = createPhoneProjection(state, "seat-1") as {
-      movementPlanner: {
-        destinations: Array<{ sectorId: string; distance: number; route: string[]; disabledReason?: string }>;
+      tierTransitions?: {
+        options: Array<{ sectorId: string; direction: string; name: string; disabledReason?: string }>;
       } | null;
     };
-    const middleTransition = phoneProjection.movementPlanner?.destinations.find(
+    const middleTransition = phoneProjection.tierTransitions?.options.find(
       (destination) => destination.sectorId === "middle_red_march_outpost"
     );
 
     expect(middleTransition).toMatchObject({
-      distance: 1,
-      route: ["outer_ember_sanctum", "middle_red_march_outpost"]
+      direction: "inward",
+      name: "Choir Bastion"
     });
-    expect(middleTransition?.disabledReason).toBeUndefined();
+    expect(middleTransition?.disabledReason).toBeNull();
   });
 
-  it("blocks direct cross-region neighbors that are not authored transition links", () => {
+  it("does not offer fabricated cross-region neighbors that are not authored transition links", () => {
     const state = createInitialSessionState("session-alpha");
     state.status = "active";
     state.phase = "navigation";
@@ -1330,8 +1329,7 @@ describe("canonical sector graph", () => {
       (destination) => destination.sectorId === "middle_relic_cache"
     );
 
-    expect(fakeCrossRing?.disabledReason).toContain("requires a transition tile");
-    expect(fakeCrossRing?.route).toEqual(["outer_waymarket", "middle_relic_cache"]);
+    expect(fakeCrossRing).toBeUndefined();
   });
 
   it("allows reducer movement only to destinations in the rolled-distance planner", () => {
@@ -1369,13 +1367,13 @@ describe("canonical sector graph", () => {
     expect(illegal.ok ? null : illegal.rejection.reason).toContain("current movement value");
   });
 
-  it("marks gated movement destinations with disabled reasons", () => {
+  it("projects gated tier transitions before rolling and removes them after a roll", () => {
     const state = createInitialSessionState("session-alpha");
     state.status = "active";
     state.phase = "navigation";
     state.turnOrder = ["seat-1"];
     state.activeSeatIndex = 0;
-    state.movementRolls = { "seat-1": 1 };
+    state.movementRouteRevisions = { "seat-1": 8 };
     state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
     state.players[0] = {
       ...state.players[0]!,
@@ -1393,22 +1391,31 @@ describe("canonical sector graph", () => {
     };
 
     const phoneProjection = createPhoneProjection(state, "seat-1") as {
-      movementPlanner: {
-        destinations: Array<{ sectorId: string; disabledReason?: string; strategicTags: string[]; voidKeyPrompt?: { instanceId: string; currentCharges: number; maxCharges: number } }>;
+      tierTransitions?: {
+        revision: number;
+        options: Array<{
+          sectorId: string;
+          disabledReason?: string;
+          voidKeyPrompt?: { instanceId: string; currentCharges: number; maxCharges: number };
+        }>;
       } | null;
     };
-    const innerGate = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "inner_veil_rift");
+    const innerGate = phoneProjection.tierTransitions?.options.find((destination) => destination.sectorId === "inner_veil_rift");
 
+    expect(phoneProjection.tierTransitions?.revision).toBe(8);
     expect(innerGate?.disabledReason).toBe("Requires Guardian Span Clearance");
-    expect(innerGate?.strategicTags).toContain("gate");
     expect(innerGate?.voidKeyPrompt).toMatchObject({ instanceId: "void-key:test", currentCharges: 2, maxCharges: 2 });
+    expect(
+      (createPhoneProjection(structuredClone(state), "seat-1") as typeof phoneProjection).tierTransitions
+    ).toEqual(phoneProjection.tierTransitions);
 
-    const used = reduceGameState(state, { type: "MOVE_REQUESTED", seatId: "seat-1", toSectorId: "inner_veil_rift", voidKeyInstanceId: "void-key:test", createdAt: "2026-07-11T00:00:00.000Z" });
-    expect(used.ok).toBe(true);
-    if (used.ok) expect(used.state.players[0]?.character.heldGear[0]?.currentCharges).toBe(1);
-
-    const ordinary = reduceGameState(state, { type: "MOVE_REQUESTED", seatId: "seat-1", toSectorId: "inner_veil_rift", createdAt: "2026-07-11T00:00:01.000Z" });
-    expect(ordinary.ok).toBe(false);
+    state.movementRolls = { "seat-1": 1 };
+    const afterRoll = createPhoneProjection(state, "seat-1") as {
+      tierTransitions?: unknown;
+      movementPlanner?: { destinations: Array<{ sectorId: string }> } | null;
+    };
+    expect(afterRoll.tierTransitions).toBeNull();
+    expect(afterRoll.movementPlanner?.destinations.some((destination) => destination.sectorId === "inner_veil_rift")).toBe(false);
   });
 
   it("includes the linked nemesis block in TV and phone projections", () => {

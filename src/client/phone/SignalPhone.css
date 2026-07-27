@@ -926,6 +926,92 @@
   text-transform: uppercase;
 }
 
+.signal-phone-shell .phone-tier-transition {
+  display: grid;
+  gap: 0.48rem;
+  border: 1px solid rgba(94, 181, 213, 0.5);
+  border-left: 3px solid #63bdd8;
+  border-radius: 0.4rem;
+  padding: 0.58rem;
+  background:
+    linear-gradient(108deg, rgba(30, 83, 99, 0.35), rgba(8, 13, 16, 0.96) 68%),
+    #0a1013;
+  box-shadow: inset 0 0 1.2rem rgba(71, 170, 203, 0.08);
+}
+
+.signal-phone-shell .phone-tier-transition > header {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.signal-phone-shell .phone-tier-transition > header span {
+  color: #78cbe2;
+  font: 800 0.58rem/1 var(--font-body, sans-serif);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.signal-phone-shell .phone-tier-transition > header strong {
+  color: #f2e6d0;
+  font: 800 0.9rem/1.15 var(--font-display, Georgia, serif);
+}
+
+.signal-phone-shell .phone-tier-transition > header p {
+  margin: 0;
+  color: #aabac0;
+  font: 600 0.66rem/1.35 var(--font-body, sans-serif);
+}
+
+.signal-phone-shell .phone-tier-transition__options {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.signal-phone-shell .phone-tier-transition__options button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.1rem 0.5rem;
+  width: 100%;
+  min-height: 3.35rem;
+  border: 1px solid rgba(122, 190, 211, 0.48);
+  border-radius: 0.3rem;
+  padding: 0.46rem 0.58rem;
+  color: #f2e6d0;
+  background: linear-gradient(100deg, rgba(64, 145, 169, 0.23), rgba(10, 15, 18, 0.95));
+  text-align: left;
+}
+
+.signal-phone-shell .phone-tier-transition__options button > span {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: #8bd5e7;
+  font: 800 0.58rem/1 var(--font-body, sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.signal-phone-shell .phone-tier-transition__options button > strong {
+  font: 800 0.8rem/1.15 var(--font-display, Georgia, serif);
+}
+
+.signal-phone-shell .phone-tier-transition__options button > small,
+.signal-phone-shell .phone-tier-transition__options button > em {
+  grid-column: 1;
+  color: #a8b8bd;
+  font: 600 0.59rem/1.25 var(--font-body, sans-serif);
+}
+
+.signal-phone-shell .phone-tier-transition__options button > em {
+  color: #d4b36d;
+  font-style: normal;
+}
+
+.signal-phone-shell .phone-tier-transition__options button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .signal-phone-shell .phone-move-option-a__list {
   gap: 0.48rem;
   padding-left: 1.48rem;

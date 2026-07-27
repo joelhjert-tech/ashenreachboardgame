@@ -1,7 +1,13 @@
 import { RIFTFALL_BOARD_NODES, type BoardNode } from "../../../data/riftfallBoardNodes.js";
 import { createCanonicalSectorGraph } from "../../../game/data/canonicalSectorGraph.js";
 import { getBoardSpace, type BoardSpaceDefinition } from "../../../game/data/boardSpaces.js";
-import { getMovementStepBlockReason, buildMovementRoutePlan, type MovementRoutePlan } from "../../../game/rules/movementPlanner.js";
+import {
+  getMovementStepBlockReason,
+  buildMovementRoutePlan,
+  buildTierTransitionOptions,
+  type MovementRoutePlan,
+  type TierTransitionOption
+} from "../../../game/rules/movementPlanner.js";
 import type { GameState, PlayerState } from "../../../game/schema/session.schema.js";
 import type { SectorNode } from "../../../game/schema/sector.schema.js";
 import { BOARD_TILE_LAYOUT, type BoardTileLayoutEntry } from "../boardTileLayout.js";
@@ -79,6 +85,7 @@ export interface AdminMapAudit {
 
 export interface AdminMovementSimulation {
   plan: MovementRoutePlan | null;
+  tierTransitions: TierTransitionOption[];
   stateFingerprintBefore: string;
   stateFingerprintAfter: string;
 }
@@ -283,7 +290,8 @@ export function buildAdminMovementSimulation(startTileId: string, movementDistan
   const state = createSimulationState(startTileId, movementDistance, notes);
   const before = JSON.stringify(state);
   const plan = buildMovementRoutePlan(state, "admin-map-simulation");
-  return { plan, stateFingerprintBefore: before, stateFingerprintAfter: JSON.stringify(state) };
+  const tierTransitions = buildTierTransitionOptions(state, "admin-map-simulation");
+  return { plan, tierTransitions, stateFingerprintBefore: before, stateFingerprintAfter: JSON.stringify(state) };
 }
 
 export function checkAdminReachability(startTileId: string, notes: string[] = []): string[] {

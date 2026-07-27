@@ -13,15 +13,16 @@
 
 ## Movement sequence
 
-1. Use **Roll Movement**.
-2. Review server-provided exact-distance destinations.
-3. Select a destination to preview it.
-4. Review the ordered route and block reasons.
-5. Confirm once.
-6. Wait for authoritative acceptance.
-7. Resolve arrival in this order: sector brief -> recurring challenges -> every printed lane draw from its shared global bag -> other sector action.
+1. On an authored transition sector, choose a legal tier crossing or continue to **Roll Movement**.
+2. A tier crossing traverses one canonical edge, ends movement, and uses no die.
+3. Otherwise, review server-provided exact-distance destinations.
+4. Select a destination to preview it.
+5. Review the ordered route and block reasons.
+6. Confirm once.
+7. Wait for authoritative acceptance.
+8. Resolve arrival in this order: sector brief -> recurring challenges -> every printed lane draw from its shared global bag -> other sector action.
 
-Only authored transitions cross regions. Gates and scenario locks still apply. Preview is not movement.
+Only authored pre-roll transitions cross regions. They disappear after rolling. Gates, Crown-Key requirements, blockers, and scenario locks still apply. Preview is not movement.
 
 ## Encounter sequence
 
