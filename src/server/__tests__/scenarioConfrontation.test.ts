@@ -306,10 +306,10 @@ describe("scenario confrontation flow", () => {
     const player = roomServer.getState().players.find((entry) => entry.seatId === "seat-1");
     const plan = (roomServer as any).buildScenarioPlan(player!);
 
-    expect(plan.checks).toEqual([{ stat: "signal", difficulty: 12, label: "Outlast The Glass Prophet" }]);
+    expect(plan.checks).toEqual([{ stat: "signal", difficulty: 12, label: "Outlast The False Hero" }]);
   });
 
-  it("keeps the Broken Seal on the tutorial confrontation plan when no nemesis is linked", () => {
+  it("keeps the Broken Seal on its authored tutorial plan while presenting its linked boss", () => {
     const roomServer = new GameRoomServer(createScenarioState(), [], createSequenceRandomSource([0, 0, 0, 0, 0, 0]));
     const player = roomServer.getState().players.find((entry) => entry.seatId === "seat-1");
     const plan = (roomServer as any).buildScenarioPlan(player!);

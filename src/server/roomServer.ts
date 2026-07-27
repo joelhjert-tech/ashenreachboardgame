@@ -364,7 +364,8 @@ function getLinkedNemesis(scenarioId: string | null | undefined): NemesisDefinit
 }
 
 function getScenarioProgressThreshold(scenarioId: string | null | undefined, defaultThreshold: number): number {
-  return getLinkedNemesis(scenarioId)?.stats.life ?? defaultThreshold;
+  const nemesis = getLinkedNemesis(scenarioId);
+  return nemesis?.scenarioProgressLife ?? nemesis?.stats.life ?? defaultThreshold;
 }
 
 function collectArtifactGearLinks(effect: AuthoredEncounterEffect): Array<{ gearId: string; artifactCardId: string }> {
@@ -8214,7 +8215,7 @@ export class GameRoomServer {
     const scenario = getScenarioDefinition(this.state.activeScenarioId);
     const nemesis = this.getActiveNemesis();
 
-    if (nemesis) {
+    if (nemesis && nemesis.scenarioConfrontationMode !== "authored-plan") {
       const checks: ScenarioCheck[] = (["strength", "willpower", "cunning"] as const)
         .filter((statKey) => nemesis.stats[statKey] != null)
         .map((statKey) => {
@@ -9988,6 +9989,7 @@ export class GameRoomServer {
 
     const plan = this.buildScenarioPlan(player);
     const nemesis = this.getActiveNemesis();
+    const usesNemesisStats = Boolean(nemesis && nemesis.scenarioConfrontationMode !== "authored-plan");
     const confrontationModifier = getEscalationModifier(this.state.escalationLevel);
 
     const cinderOathBonus = player.character.id === "cinder-monk" && this.hasAbilityTriggeredThisRound(intent.seatId, "cinder-oath") ? 2 : 0;
@@ -10019,7 +10021,7 @@ export class GameRoomServer {
       ? 0
       : this.state.scenarioProgress[progressKey] ?? 0;
     const nextProgress = currentProgress + marksEarned;
-    const effectiveThreshold = nemesis?.stats.life ?? scenario.victoryThreshold;
+    const effectiveThreshold = getScenarioProgressThreshold(scenario.id, scenario.victoryThreshold);
     const willWin = nextProgress >= effectiveThreshold;
     const effectParts: EncounterEffect[] = [];
 
@@ -10027,11 +10029,11 @@ export class GameRoomServer {
       effectParts.push(plan.effect);
     }
 
-    if (nemesis && failedChecks > 0) {
+    if (usesNemesisStats && failedChecks > 0) {
       effectParts.push({ type: "take_wound", amount: failedChecks });
     }
 
-    switch (nemesis ? null : scenario.id) {
+    switch (usesNemesisStats ? null : scenario.id) {
       case "scenario_broken_seal":
         if (failedChecks > 0) {
           effectParts.push({ type: "take_wound", amount: failedChecks });
@@ -10068,7 +10070,7 @@ export class GameRoomServer {
         : effectParts.length === 1
           ? effectParts[0]!
           : ({ type: "sequence", effects: effectParts } satisfies EncounterEffect);
-    const rawAppliedEffect = nemesis && willWin ? plan.effect : combinedEffect;
+    const rawAppliedEffect = usesNemesisStats && willWin ? plan.effect : combinedEffect;
     const appliedEffect = scenario.id === "scenario_broken_seal" && rawAppliedEffect
       ? this.maybeApplyKerWoundPrevention(
           intent.seatId,
@@ -10076,7 +10078,7 @@ export class GameRoomServer {
         )
       : rawAppliedEffect;
     const backlashSummary =
-      nemesis && willWin && failedChecks > 0
+      usesNemesisStats && willWin && failedChecks > 0
         ? `Backlash ${failedChecks} denied by the killing blow.`
         : failedChecks > 0
           ? `Backlash ${failedChecks}.`
@@ -15137,7 +15139,7 @@ export function createTvProjection(
         name: activeNemesis.name,
         title: activeNemesis.title,
         faction: activeNemesis.faction,
-        life: activeNemesis.stats.life,
+        life: activeScenarioThreshold,
         damageDealt: activeScenarioProgress,
         abilities: activeNemesis.abilities.map((ability) => ({
           timing: ability.timing,

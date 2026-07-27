@@ -86,6 +86,10 @@ Remaining legacy files:
 - Phone-visible raster assets use a sibling \`*.phone.webp\` derivative generated at a maximum 960px long edge with WebP quality 72, no upscaling, and stripped metadata. Normal phone views use the derivative; explicit art inspection may request the full source.
 - Promote legacy art only by creating real content, copying art to `public/assets/cards/<category>/`, updating the resolver/catalog, validating it, and archiving the promoted legacy source after the active copy is verified.
 - Runtime character portraits use character IDs where possible.
+- Runtime scenario-boss portraits use the canonical nemesis ID as
+  `public/assets/riftfall/nemeses/<nemesis-id>.png`. Every production scenario
+  must resolve to exactly one registered nemesis portrait and one generated
+  portrait prompt.
 - Avoid adding mockups, prompt sheets, or contact sheets to runtime asset folders.
 
 ## Validation

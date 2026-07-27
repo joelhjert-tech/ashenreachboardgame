@@ -11,6 +11,13 @@ export interface NemesisDefinition {
   title: string;
   faction: string;
   scenarioId?: string;
+  /**
+   * Some finales use bespoke staged checks while still presenting a named boss.
+   * Omit this field to derive confrontation checks from the nemesis stat block.
+   */
+  scenarioConfrontationMode?: "nemesis-stats" | "authored-plan";
+  /** Public boss-track length when it differs from the reusable Nemesis Relay life value. */
+  scenarioProgressLife?: number;
   bounty: string;
   loreRole: string;
   gameplayRole: string;
@@ -28,6 +35,113 @@ export interface NemesisDefinition {
 }
 
 export const nemeses: NemesisDefinition[] = [
+  {
+    id: "nemesis_unnamed_prisoner",
+    name: "The Unnamed Prisoner",
+    title: "Mind Behind the Broken Seal",
+    faction: "The Sealed Deep",
+    scenarioId: "scenario_broken_seal",
+    scenarioConfrontationMode: "authored-plan",
+    scenarioProgressLife: 2,
+    bounty: "Reseal the prison and secure the expedition.",
+    loreRole: "An ancient breach-intelligence pressing its unfinished body through every crack in the ward.",
+    gameplayRole: "Tutorial finale presented through the authored three-check sealing ritual.",
+    linkedMechanic: "Seal Integrity, restoration marks, and the final ward ritual.",
+    stats: { strength: 4, willpower: 5, cunning: 6, life: 5 },
+    abilities: [
+      { timing: "start_of_confrontation", text: "The Prisoner tests the ward with a shape assembled from broken names and signal residue." },
+      { timing: "after_character_fail", text: "A failed seal check lets the buried mind force another fracture through the chamber." },
+      { timing: "passive", text: "The Prisoner remains bound to the authored Broken Seal confrontation stages." }
+    ],
+    imagePrompt:
+      "Original colossal breach prisoner emerging only halfway through a cracked black-stone containment seal, elongated mineral limbs, a crown-like ring of broken ward pylons, no human face, cold blue-white signal light leaking from a deep featureless head, scorched bronze runes and drifting ash, ominous sealed-core chamber.",
+    negativePrompt: baseNegativePrompt,
+    uiNotes: "Keep the creature clearly nonhuman and partly imprisoned. The broken circular ward silhouette must read at phone scale."
+  },
+  {
+    id: "nemesis_ash_regent",
+    name: "The Ash Regent",
+    title: "Hunger of the Empty Throne",
+    faction: "Cinder Court",
+    scenarioId: "scenario_throne_of_ash",
+    bounty: "Claim the throne and end Crown Hunger.",
+    loreRole: "A furnace-boned sovereign grown around the empty throne's appetite for claimants.",
+    gameplayRole: "Command and Guile confrontation boss.",
+    linkedMechanic: "Crown claims and throne progress.",
+    stats: { willpower: 5, cunning: 5, life: 6 },
+    abilities: [
+      { timing: "start_of_confrontation", text: "The Regent weighs every Crown against the ash left by its previous bearer." },
+      { timing: "after_character_fail", text: "The throne strips certainty from the claimant and feeds it to the Regent." },
+      { timing: "passive", text: "Every successful confrontation claim weakens the Regent's hold on the throne." }
+    ],
+    imagePrompt:
+      "Original ash-court monster sovereign fused to an empty black-iron throne, tall skeletal furnace body under layered soot robes, crown made of hovering scorched brass teeth, ember light inside a hollow ribcage, long ceremonial claws, ash cyclone in a ruined command chamber.",
+    negativePrompt: baseNegativePrompt,
+    uiNotes: "The throne and predatory crown must be visible. Avoid a normal armored human silhouette."
+  },
+  {
+    id: "nemesis_false_hero",
+    name: "The False Hero",
+    title: "The Operative Who Never Was",
+    faction: "Mirror Wake",
+    scenarioId: "scenario_mirror_of_false_heroes",
+    bounty: "Shatter the false reflection and preserve the true expedition.",
+    loreRole: "A composite reflection assembled from every heroic choice the Reach wishes the operatives had made.",
+    gameplayRole: "Signal confrontation boss.",
+    linkedMechanic: "Mirror breaks and Reflection pressure.",
+    stats: { willpower: 6, life: 4 },
+    abilities: [
+      { timing: "start_of_confrontation", text: "The False Hero arrives wearing a perfected silhouette stolen from the active operative." },
+      { timing: "after_character_fail", text: "The mirror records the failure as proof that the copy deserves the name." },
+      { timing: "passive", text: "Its body changes between fractured operative archetypes but never reveals a true face." }
+    ],
+    imagePrompt:
+      "Original faceless mirror-born champion made from overlapping fractured operative silhouettes, asymmetrical black expedition armor, one arm resolving into blue-white glass echoes, mirrored halo shards, reflections showing several different impossible faces, dark obsidian chamber, elegant but predatory.",
+    negativePrompt: baseNegativePrompt,
+    uiNotes: "Show a single readable combatant whose fractured reflections imply many identities. No recognizable existing operative portrait."
+  },
+  {
+    id: "nemesis_devourer_beneath",
+    name: "The Devourer Beneath",
+    title: "Route-Eater of the Lower Dark",
+    faction: "Buried Maw",
+    scenarioId: "scenario_devourer_beneath",
+    bounty: "Silence the moving maw and reclaim the consumed routes.",
+    loreRole: "A continent-scale burrowing organism that digests roads, shrines, and the memories used to navigate them.",
+    gameplayRole: "Guile confrontation boss with a persistent shared wound track.",
+    linkedMechanic: "Doom, roaming consumption, and maw strikes.",
+    stats: { cunning: 5, life: 5 },
+    abilities: [
+      { timing: "start_of_confrontation", text: "The route folds inward as the Devourer's sensory crown rises around the operative." },
+      { timing: "after_character_fail", text: "A failed strike teaches the creature which path to consume next." },
+      { timing: "passive", text: "Damage remains on the shared maw track between confrontations." }
+    ],
+    imagePrompt:
+      "Original colossal subterranean route-eater erupting through concentric black-metal roads, radial jaw made of basalt plates and industrial teeth, pale sensory tendrils surrounding a furnace-red throat, shrine fragments embedded in its armored hide, immense scale, no humanoid anatomy.",
+    negativePrompt: baseNegativePrompt,
+    uiNotes: "Keep one central maw and a strong radial silhouette. It must read as a creature, not merely a collapsing hole."
+  },
+  {
+    id: "nemesis_dying_star_core",
+    name: "The Dying Star Core",
+    title: "The Starved Ignition Heart",
+    faction: "Last Light Engine",
+    scenarioId: "scenario_dying_star",
+    bounty: "Restore the ignition cycle before the final light is consumed.",
+    loreRole: "A failed artificial star that has grown predatory organs from its own shattered containment machinery.",
+    gameplayRole: "Grit confrontation boss.",
+    linkedMechanic: "Starfire, ignition marks, and reactor collapse.",
+    stats: { strength: 5, life: 4 },
+    abilities: [
+      { timing: "start_of_confrontation", text: "The Core opens its containment vanes like a hunting flower and draws heat from the chamber." },
+      { timing: "after_character_fail", text: "The failed ignition feeds the dark shell growing around the star." },
+      { timing: "passive", text: "Each successful ignition mark tears away part of the predatory containment body." }
+    ],
+    imagePrompt:
+      "Original predatory artificial star-core suspended in a ruined reactor, blue-white stellar heart encased by six black iron jaw-like containment vanes, molten brass tendons, grasping cable limbs and a dark corona, immense mechanical-organic boss silhouette, ash and sparks, no humanoid face.",
+    negativePrompt: baseNegativePrompt,
+    uiNotes: "Show the stellar heart as a monster through its jaw-like vanes and cable limbs, while keeping it unmistakably a reactor entity."
+  },
   {
     id: "nemesis_fary_lord",
     name: "The Fary Lord",
@@ -62,7 +176,6 @@ export const nemeses: NemesisDefinition[] = [
     name: "Kharvox",
     title: "The Red Maw",
     faction: "Red Maw Raiders",
-    scenarioId: "scenario_dying_star",
     bounty: "Gain 2 trophies.",
     loreRole: "A war-chief who turns boarded freight lanes into moving kill arenas.",
     gameplayRole: "Grit-based snowball bruiser.",
@@ -82,7 +195,6 @@ export const nemeses: NemesisDefinition[] = [
     name: "Specimen Null-X",
     title: "The Brood Memory",
     faction: "Shardborn Brood",
-    scenarioId: "scenario_devourer_beneath",
     bounty: "Soothe one active Scar effect and draw 1 contract.",
     loreRole: "A laboratory escape turned colony intelligence nesting through broken decks.",
     gameplayRole: "Board infestation scaler.",
@@ -102,7 +214,6 @@ export const nemeses: NemesisDefinition[] = [
     name: "The Glass Prophet",
     title: "Voice of the Split Choir",
     faction: "Ashen Choir",
-    scenarioId: "scenario_mirror_of_false_heroes",
     bounty: "Record 2 route notes. Keep both.",
     loreRole: "A breakaway oracle who weaponizes prophecy and relay harmonics.",
     gameplayRole: "Scar pressure and route-note manipulator.",
@@ -172,7 +283,9 @@ export const nemeses: NemesisDefinition[] = [
     name: "The Hollow Regent",
     title: "Custodian of the Core Court",
     faction: "Rift Court",
-    scenarioId: "scenario_throne_of_ash",
+    scenarioId: "scenario_broken_concordance",
+    scenarioConfrontationMode: "authored-plan",
+    scenarioProgressLife: 3,
     bounty: "Win the scenario.",
     loreRole: "A regal shell that keeps the breach court in motion by wearing the memory of dead rulers.",
     gameplayRole: "Final scenario controller.",

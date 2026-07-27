@@ -8,10 +8,10 @@
     "metadata": "stripped"
   },
   "totals": {
-    "sources": 380,
-    "sourceBytes": 875674731,
-    "derivativeBytes": 41412412,
-    "reductionPercent": 95.27
+    "sources": 385,
+    "sourceBytes": 890263555,
+    "derivativeBytes": 41852804,
+    "reductionPercent": 95.3
   },
   "entries": [
     {
@@ -3939,6 +3939,18 @@
       "derivativeBytes": 94052
     },
     {
+      "sourcePath": "/assets/riftfall/nemeses/nemesis_ash_regent.png",
+      "sourceHash": "cf27bec100572fb7fd797d106693e994f7162eb0959b9e5893ead0c8afab8776",
+      "sourceWidth": 1024,
+      "sourceHeight": 1536,
+      "sourceBytes": 2921575,
+      "derivativePath": "/assets/riftfall/nemeses/nemesis_ash_regent.phone.webp",
+      "derivativeHash": "2ea88012397bea10867450056ff09f118167e2d9733e36e584dea3aa7d8dd94e",
+      "derivativeWidth": 640,
+      "derivativeHeight": 960,
+      "derivativeBytes": 86262
+    },
+    {
       "sourcePath": "/assets/riftfall/nemeses/nemesis_choir_of_static.png",
       "sourceHash": "6a3ac0d12d16aeece482bd6ad8d5788ac3a5863d4a16579d9b54d47ca38f93ac",
       "sourceWidth": 1086,
@@ -3949,6 +3961,42 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 143860
+    },
+    {
+      "sourcePath": "/assets/riftfall/nemeses/nemesis_devourer_beneath.png",
+      "sourceHash": "9b3528550e6b0b0f24b153b1f9736845f00ffe80fed80bfa0dde5f1d6b80a30a",
+      "sourceWidth": 1024,
+      "sourceHeight": 1536,
+      "sourceBytes": 2809314,
+      "derivativePath": "/assets/riftfall/nemeses/nemesis_devourer_beneath.phone.webp",
+      "derivativeHash": "2c88a258c4078d165f877d3bd6a35d2d3a3c8359cfd5de2cc85d0f2656271972",
+      "derivativeWidth": 640,
+      "derivativeHeight": 960,
+      "derivativeBytes": 74504
+    },
+    {
+      "sourcePath": "/assets/riftfall/nemeses/nemesis_dying_star_core.png",
+      "sourceHash": "88c00747aa4a14e120df378edbcb9157fa89e9c48efea3b4806b5afc25b686c7",
+      "sourceWidth": 1024,
+      "sourceHeight": 1536,
+      "sourceBytes": 3218475,
+      "derivativePath": "/assets/riftfall/nemeses/nemesis_dying_star_core.phone.webp",
+      "derivativeHash": "957db7c654f2aae91db62528f8f9a554f95a74b4727615fdfb967075ec251fb4",
+      "derivativeWidth": 640,
+      "derivativeHeight": 960,
+      "derivativeBytes": 120836
+    },
+    {
+      "sourcePath": "/assets/riftfall/nemeses/nemesis_false_hero.png",
+      "sourceHash": "2607d509c6ed5d89b3679e1895f33816a8c7fafc3e07010aee0996f1b04cd887",
+      "sourceWidth": 1024,
+      "sourceHeight": 1536,
+      "sourceBytes": 2772616,
+      "derivativePath": "/assets/riftfall/nemeses/nemesis_false_hero.phone.webp",
+      "derivativeHash": "4b3024bcd6e1fa101afd6183fb6440ea60bfbe6f3925962779cc5b0b975de95e",
+      "derivativeWidth": 640,
+      "derivativeHeight": 960,
+      "derivativeBytes": 80398
     },
     {
       "sourcePath": "/assets/riftfall/nemeses/nemesis_fary_lord.png",
@@ -4069,6 +4117,18 @@
       "derivativeWidth": 640,
       "derivativeHeight": 960,
       "derivativeBytes": 93384
+    },
+    {
+      "sourcePath": "/assets/riftfall/nemeses/nemesis_unnamed_prisoner.png",
+      "sourceHash": "acba7043c1762228701659589743cae37dc65dfad05fb4dcf8828fe5ed73d78f",
+      "sourceWidth": 1024,
+      "sourceHeight": 1536,
+      "sourceBytes": 2866844,
+      "derivativePath": "/assets/riftfall/nemeses/nemesis_unnamed_prisoner.phone.webp",
+      "derivativeHash": "d28cb33a215e14235ccf2cbc96429709bbc0dff775bf01155ce9dd527f72c300",
+      "derivativeWidth": 640,
+      "derivativeHeight": 960,
+      "derivativeBytes": 78392
     },
     {
       "sourcePath": "/assets/riftfall/ui/ashen-reach-lobby-stage.png",

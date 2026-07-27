@@ -205,6 +205,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
         text: "When the ward drops to 2 or less, place a Blue threat on the nearest anomaly sector."
       }
     ],
+    nemesis: "The Unnamed Prisoner",
     shopInteractions: [
       "Pilgrim Lock may heal 1 wound or restore 1 Seal Integrity if the sector is clear.",
       "A shop can convert 2 Salvage into 1 Seal Integrity once per round.",
@@ -343,7 +344,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
         text: "When a Crowned player enters a Crown sector, they must clear the local threat or drop 1 Crown."
       }
     ],
-    nemesis: "Ash Regent",
+    nemesis: "The Ash Regent",
     shopInteractions: [
       "Contract Spire may sell 1 Crown for 4 Salvage if a Crown remains unclaimed.",
       "Black Vault may sell Crown abilities only to Crowned players.",
@@ -485,7 +486,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
         text: "At Mirror Barracks, choose humble reward or gain 2 Salvage and 1 Reflection."
       }
     ],
-    nemesis: "False Hero",
+    nemesis: "The False Hero",
     shopInteractions: [
       "Forbidden abilities cost 1 less Salvage while Mirror Pressure is 4+, then add 1 Reflection.",
       "Black Vault may sell a Mirror-Knife technique once per player.",
@@ -608,7 +609,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
         text: "When Doom erupts, place a Red threat marker on each shop sector."
       }
     ],
-    nemesis: "The Devourer token",
+    nemesis: "The Devourer Beneath",
     shopInteractions: [
       "Kettleward Foundry can craft Maw Spike for 3 Salvage.",
       "Locked shops cannot sell Gear until the local Red threat is cleared.",
@@ -738,7 +739,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
         text: "When a matching-mode check fails, draw 1 threat matching the failed mode."
       }
     ],
-    nemesis: "Iron Saint",
+    nemesis: "Iron Saint Malrec",
     shopInteractions: [
       "Command mode makes shop actions cost +1 Salvage unless the player has a Contract.",
       "Forge mode makes Gear repairs and upgrades cost 1 less Salvage.",
@@ -880,7 +881,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
         text: "At 0 Starfire, each player tests Signal 12, then the track resets to 5."
       }
     ],
-    nemesis: "Dying Star Core",
+    nemesis: "The Dying Star Core",
     shopInteractions: [
       "Kettleward Foundry may test Forge 8 to restore 1 Starfire.",
       "Votive Engine Room may spend a Gear charge to restore 2 Starfire.",

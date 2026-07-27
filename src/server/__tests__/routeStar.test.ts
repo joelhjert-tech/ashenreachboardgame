@@ -27,7 +27,8 @@ function createState() {
   state.players[0]!.character.heldGear = [{ ...star, instanceId: "star-a", currentCharges: 1 }];
   state.players[0]!.character.equippedGear.utility = "route-star";
   state.players[0]!.character.equippedGearInstances = {
-    ...state.players[0]!.character.equippedGearInstances,
+    weapon: state.players[0]!.character.equippedGearInstances?.weapon ?? null,
+    armor: state.players[0]!.character.equippedGearInstances?.armor ?? null,
     utility: "star-a"
   };
   state.movementRolls = { [seatId]: 2 }; state.movementRouteRevisions = { [seatId]: 7 };

@@ -35,7 +35,11 @@ const characterPortraitById: Record<string, string> = {
 };
 
 const nemesisPortraitById: Record<string, string> = {
+  nemesis_ash_regent: "/assets/riftfall/nemeses/nemesis_ash_regent.png",
+  nemesis_devourer_beneath: "/assets/riftfall/nemeses/nemesis_devourer_beneath.png",
+  nemesis_dying_star_core: "/assets/riftfall/nemeses/nemesis_dying_star_core.png",
   nemesis_fary_lord: "/assets/riftfall/nemeses/nemesis_fary_lord.png",
+  nemesis_false_hero: "/assets/riftfall/nemeses/nemesis_false_hero.png",
   nemesis_glass_prophet: "/assets/riftfall/nemeses/nemesis_glass_prophet.png",
   nemesis_hollow_regent: "/assets/riftfall/nemeses/nemesis_hollow_regent.png",
   nemesis_choir_of_static: "/assets/riftfall/nemeses/nemesis_choir_of_static.png",
@@ -44,6 +48,8 @@ const nemesisPortraitById: Record<string, string> = {
   nemesis_iron_vicar_orm: "/assets/riftfall/nemeses/nemesis_iron_vicar_orm.png",
   nemesis_kharvox_red_maw: "/assets/riftfall/nemeses/nemesis_kharvox_red_maw.png",
   nemesis_pale_huntress: "/assets/riftfall/nemeses/nemesis_pale_huntress.png",
+  nemesis_pallid_curator: "/assets/riftfall/nemeses/nemesis_pallid_curator.png",
+  nemesis_unnamed_prisoner: "/assets/riftfall/nemeses/nemesis_unnamed_prisoner.png",
   nemesis_specimen_null_x: "/assets/riftfall/nemeses/nemesis_specimen_null_x.png"
 };
 

@@ -119,7 +119,8 @@ describe("canonical sector graph", () => {
     state.players[0]!.character.heldGear.push(lantern);
     state.players[0]!.character.equippedGear.utility = "choir-lantern";
     state.players[0]!.character.equippedGearInstances = {
-      ...state.players[0]!.character.equippedGearInstances,
+      weapon: state.players[0]!.character.equippedGearInstances?.weapon ?? null,
+      armor: state.players[0]!.character.equippedGearInstances?.armor ?? null,
       utility: "choir-instance"
     };
     const server = new GameRoomServer(state);
@@ -190,7 +191,8 @@ describe("canonical sector graph", () => {
     );
     state.players[0]!.character.equippedGear.utility = "choir-static-censer";
     state.players[0]!.character.equippedGearInstances = {
-      ...state.players[0]!.character.equippedGearInstances,
+      weapon: state.players[0]!.character.equippedGearInstances?.weapon ?? null,
+      armor: state.players[0]!.character.equippedGearInstances?.armor ?? null,
       utility: "censer-a"
     };
     const server = new GameRoomServer(state);
@@ -836,8 +838,16 @@ describe("canonical sector graph", () => {
     expect(phoneProjection.scenarioProgress).toEqual({});
     expect(tvProjection.scenarioState.preparation.resources).toEqual({ sealIntegrity: 6 });
     expect(phoneProjection.scenarioState.preparation.resources).toEqual({ sealIntegrity: 6 });
-    expect(tvProjection.nemesis).toBeNull();
-    expect(phoneProjection.nemesis).toBeNull();
+    expect(tvProjection.nemesis).toMatchObject({
+      id: "nemesis_unnamed_prisoner",
+      life: 2,
+      damageDealt: 0
+    });
+    expect(phoneProjection.nemesis).toMatchObject({
+      id: "nemesis_unnamed_prisoner",
+      life: 2,
+      damageDealt: 0
+    });
   });
 
   it("adds private rivalry objectives only to phone projections", () => {
@@ -1451,12 +1461,12 @@ describe("canonical sector graph", () => {
 
     expect(tvProjection.activeScenario?.threshold).toBe(6);
     expect(tvProjection.nemesis).toMatchObject({
-      id: "nemesis_hollow_regent",
+      id: "nemesis_ash_regent",
       life: 6,
       damageDealt: 2
     });
     expect(phoneProjection.nemesis).toMatchObject({
-      id: "nemesis_hollow_regent",
+      id: "nemesis_ash_regent",
       life: 6,
       damageDealt: 2
     });

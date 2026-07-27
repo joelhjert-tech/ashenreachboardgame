@@ -39,7 +39,11 @@ describe("/api/scenarios", () => {
       expect(scenario.expectedDuration).toMatch(/min/i);
     }
 
-    expect(payload.scenarios.find((scenario) => scenario.id === "scenario_broken_seal")?.nemesis).toBeNull();
+    expect(payload.scenarios.find((scenario) => scenario.id === "scenario_broken_seal")?.nemesis).toEqual({
+      name: "The Unnamed Prisoner",
+      title: "Mind Behind the Broken Seal",
+      faction: "The Sealed Deep"
+    });
     expect(payload.scenarios.find((scenario) => scenario.id === "scenario_broken_seal")?.sheetArtPath).toBe(
       "/assets/scenarios/broken-seal.png"
     );
@@ -47,9 +51,9 @@ describe("/api/scenarios", () => {
       "/assets/scenarios/mirror-of-false-heroes.png"
     );
     expect(payload.scenarios.find((scenario) => scenario.id === "scenario_dying_star")?.nemesis).toEqual({
-      name: "Kharvox",
-      title: "The Red Maw",
-      faction: "Red Maw Raiders"
+      name: "The Dying Star Core",
+      title: "The Starved Ignition Heart",
+      faction: "Last Light Engine"
     });
   });
 });
