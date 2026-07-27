@@ -7,11 +7,27 @@ import {
 import { getScenarioSheetArtPath } from "../../game/data/scenarioSheetArt.js";
 import { createSequenceRandomSource } from "../../game/engine/dice.js";
 import type { ClientIntent } from "../../game/engine/actions.js";
+import { loadThreatCards } from "../../game/content/threats.js";
 import { buildScenarioPressureState } from "../../game/rules/scenarioPressure.js";
+import type { ThreatCard } from "../../game/schema/card.schema.js";
 import type { GameState } from "../../game/schema/session.schema.js";
 import { buildSharedMissionPresentation } from "../../client/shared/objectivePresentation.js";
 import { createPhoneProjection, createTvProjection, GameRoomServer } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
+
+const cooperativeHazard: ThreatCard = {
+  id: "grinning-tithe-cooperative-hazard",
+  type: "threat",
+  cardType: "hazard",
+  title: "Tithe-Lock Static",
+  text: "The collector's signal clamps shut around the tribute road.",
+  flavor: "The lock counts every hand that reaches for it.",
+  severity: 1,
+  stat: "signal",
+  difficulty: 10,
+  successEffect: { type: "legacy_compatibility_noop" },
+  failEffect: { type: "legacy_compatibility_noop" }
+};
 
 function activeHuntState(overrides: Partial<GameState> = {}): GameState {
   const base = createInitialSessionState("grinning-tithe-test", "single-player", "scenario_grinning_tithe");
@@ -35,6 +51,43 @@ function activeHuntState(overrides: Partial<GameState> = {}): GameState {
       }
     })),
     ...overrides
+  };
+}
+
+function activeCooperativeEncounterState(encounter: ThreatCard): GameState {
+  const base = createInitialSessionState(
+    "grinning-tithe-coop-test",
+    "multiplayer",
+    "scenario_grinning_tithe",
+    "co-op",
+    "standard",
+    3
+  );
+  return {
+    ...base,
+    status: "active",
+    phase: "action",
+    activeSeatIndex: 0,
+    seats: base.seats.map((seat, index) => ({
+      ...seat,
+      displayName: `Hunter ${index + 1}`,
+      connected: true,
+      characterSelected: true
+    })),
+    currentEncounter: encounter,
+    activeResolution: {
+      id: `grinning-tithe-assist:${encounter.id}`,
+      playerId: "seat-1",
+      source: "threat",
+      stage: "battle_setup",
+      card: { id: encounter.id, title: encounter.title, type: encounter.cardType },
+      battle: {
+        ...(encounter.cardType === "enemy" ? { enemyName: encounter.enemyName } : {}),
+        stat: encounter.stat,
+        difficulty: encounter.difficulty,
+        modifiers: []
+      }
+    }
   };
 }
 
@@ -70,6 +123,69 @@ describe("The Grinning Tithe", () => {
     expect(isScenarioEligibleForSession(scenario!, "multiplayer", "co-op", "standard", 6)).toBe(true);
     expect(isScenarioEligibleForSession(scenario!, "multiplayer", "rivalry", "standard", 2)).toBe(false);
     expect(isScenarioEligibleForSession(scenario!, "multiplayer", "co-op", "nemesis_relay", 2)).toBe(false);
+  });
+
+  it("offers optional assistance for Grinning Tithe hazards and Pallid Retinue enemies in co-op only", () => {
+    const minion = loadThreatCards().get(GRINNING_TITHE_MINION_IDS[0]);
+    if (!minion || minion.cardType !== "enemy") throw new Error("Expected a Pallid Retinue enemy fixture");
+
+    for (const encounter of [cooperativeHazard, minion]) {
+      const cooperativeState = activeCooperativeEncounterState(encounter);
+      const phone = createPhoneProjection(cooperativeState, "seat-1") as ReturnType<typeof createPhoneProjection> & {
+        cooperativeAssistanceEligibility?: {
+          sourceId: string;
+          testedStat: string;
+          helpers: Array<{ seatId: string }>;
+        } | null;
+      };
+
+      expect(phone.cooperativeAssistanceEligibility).toMatchObject({
+        sourceId: encounter.id,
+        testedStat: encounter.stat
+      });
+      expect(phone.cooperativeAssistanceEligibility?.helpers.map((helper) => helper.seatId)).toEqual([
+        "seat-2",
+        "seat-3"
+      ]);
+
+      const server = new GameRoomServer(cooperativeState);
+      server.handleIntent(createPhoneClient("seat-1") as never, {
+        type: "COOPERATIVE_ASSISTANCE_REQUESTED",
+        seatId: "seat-1",
+        sourceId: encounter.id,
+        stat: encounter.stat,
+        helperSeatIds: ["seat-2"]
+      });
+      expect(server.getState().cooperativeAssistance).toMatchObject({
+        activeSeatId: "seat-1",
+        requestedSeatIds: ["seat-2"],
+        sourceId: encounter.id
+      });
+    }
+
+    const soloState = activeHuntState({
+      currentEncounter: cooperativeHazard,
+      activeResolution: {
+        id: "grinning-tithe-solo-hazard",
+        playerId: "seat-1",
+        source: "threat",
+        stage: "battle_setup",
+        card: {
+          id: cooperativeHazard.id,
+          title: cooperativeHazard.title,
+          type: cooperativeHazard.cardType
+        },
+        battle: {
+          stat: cooperativeHazard.stat,
+          difficulty: cooperativeHazard.difficulty,
+          modifiers: []
+        }
+      }
+    });
+    const soloPhone = createPhoneProjection(soloState, "seat-1") as ReturnType<typeof createPhoneProjection> & {
+      cooperativeAssistanceEligibility?: unknown;
+    };
+    expect(soloPhone.cooperativeAssistanceEligibility).toBeNull();
   });
 
   it("suppresses round, card, and wound pressure without creating a defeat threshold", () => {

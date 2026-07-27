@@ -1021,7 +1021,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
     ],
     modeScaling: {
       singlePlayer: "One operative can damage the boss across repeated visits; no pressure clock shortens the hunt.",
-      multiplayer: "All operatives share the same six-wound boss track and shuffled retinue bag."
+      multiplayer:
+        "All operatives share the same six-wound boss track and shuffled retinue bag. In standard co-op, the active operative may ask up to two other operatives to assist eligible challenges and enemy battles."
     },
     setup: [
       "Set Global Escalation to 0 and disable all positive loss-pressure gains.",
@@ -1033,6 +1034,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Every Red Threat draw comes from the shuffled Pallid Retinue bag.",
       "Retinue cards resolve as normal public enemy battles and keep their printed rewards and wounds.",
       "The Pallid Retinue bag is shared, draws without replacement, and reshuffles only after all three minions have appeared.",
+      "In standard multiplayer co-op only, the active operative may ask up to two connected operatives to add their intrinsic base stat to an eligible challenge or enemy battle before dice are rolled. Helpers add no dice.",
       "The Cinder Gate confrontation is always unlocked. Each passed boss check deals 1 wound to the Pallid Curator.",
       "The session ends in shared victory immediately when the Pallid Curator takes its sixth wound."
     ],

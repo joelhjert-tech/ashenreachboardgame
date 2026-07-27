@@ -59,7 +59,7 @@ Safe permanent or conditional starting Gear is equipped automatically when its s
 
 The game supports eight authored scenarios currently listed by the host: The Broken Seal, The Throne of Ash, The Mirror of False Heroes, The Devourer Beneath, The Labyrinth Engine, The Dying Star, The Broken Concordance, and The Grinning Tithe. Read the active scenario panel; do not transfer special rules between scenarios.
 
-The Grinning Tithe is a solo/co-op boss hunt with no Loss Pressure. Its Red Threat lane is a shared shuffled three-card Pallid Retinue bag. The bag draws without replacement, reshuffles only after exhaustion, and remains private until a card is revealed. Boss wounds persist across operatives and visits; six wounds defeat the Pallid Curator.
+The Grinning Tithe is a solo/co-op boss hunt with no Loss Pressure. Its Red Threat lane is a shared shuffled three-card Pallid Retinue bag. The bag draws without replacement, reshuffles only after exhaustion, and remains private until a card is revealed. Boss wounds persist across operatives and visits; six wounds defeat the Pallid Curator. In standard multiplayer co-op, its eligible challenges and enemy battles use the normal optional assistance window described in section 32. Solo play never offers assistance.
 
 ## 7. Attributes and resources
 
