@@ -74,6 +74,9 @@ const signalTheatreResultCrestByOutcome = {
   defeat: "/assets/riftfall/ui/signal-theatre/results/defeat.png"
 } as const;
 
+const signalTheatreDieFacePath =
+  "/assets/riftfall/ui/signal-theatre/dice/ashenreach-die-face.webp";
+
 export type InventoryCategoryIcon = "artifacts" | "equipment" | "followers" | "missions" | "status" | "progression";
 export type ObjectiveCategoryIcon = "shared-mission" | "contract" | "rivalry" | "completed";
 
@@ -104,6 +107,7 @@ const uiAssetPaths = [
   ...SIGNAL_PIECE_IDS.map(getSignalPieceAssetPath),
   ...Object.values(signalTheatreStatSealByStat),
   ...Object.values(signalTheatreResultCrestByOutcome),
+  signalTheatreDieFacePath,
   ...Object.values(inventoryCategoryIconByCategory),
   ...Object.values(objectiveCategoryIconByCategory),
   resultReadyGatePath,
@@ -193,6 +197,10 @@ export function getSignalTheatreStatSealPath(stat: Stat): string {
 
 export function getSignalTheatreResultCrestPath(outcome: "success" | "defeat"): string {
   return signalTheatreResultCrestByOutcome[outcome];
+}
+
+export function getSignalTheatreDieFacePath(): string {
+  return signalTheatreDieFacePath;
 }
 
 export function getInventoryCategoryIconPath(category: InventoryCategoryIcon): string {

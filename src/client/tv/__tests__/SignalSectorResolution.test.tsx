@@ -79,6 +79,53 @@ describe("SignalSectorResolution", () => {
     );
   });
 
+  it("flies authoritative dice into a CSS cube reveal without Canvas or WebGL", () => {
+    const rendered = render(<SignalSectorResolution model={model({
+      operative: {
+        name: "Bjornis",
+        secondaryName: null,
+        baseValue: 4,
+        modifiers: [{ label: "Relic blade", value: 1 }],
+        rawDice: [3, 4],
+        diceTotal: 7,
+        finalTotal: 12
+      }
+    })} />);
+
+    expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-dice-cinema", "playing");
+    expect(screen.getByRole("img", { name: "Authoritative roll 3 and 4. Grit total 12." })).toBeVisible();
+    expect(rendered.container.querySelectorAll("[data-die-value]")).toHaveLength(2);
+    expect(rendered.container.querySelector("[data-die-value='3']")).toHaveStyle({
+      "--signal-die-texture": "url(\"/assets/riftfall/ui/signal-theatre/dice/ashenreach-die-face.webp\")"
+    });
+    expect(rendered.container.querySelectorAll(".signal-sector-resolution__die-face")).toHaveLength(12);
+    expect(rendered.container.querySelectorAll("canvas")).toHaveLength(0);
+    expect(rendered.container.querySelectorAll("model-viewer")).toHaveLength(0);
+  });
+
+  it("does not invent dice cinema before an authoritative battle roll", () => {
+    const rendered = render(<SignalSectorResolution model={model({
+      stage: "battle_ready",
+      tone: "neutral",
+      operative: {
+        name: "Bjornis",
+        secondaryName: null,
+        baseValue: 4,
+        modifiers: [],
+        rawDice: [],
+        diceTotal: null,
+        finalTotal: null
+      },
+      outcomeLabel: "RESOLVING",
+      outcomeCopy: "Roll when ready.",
+      publicConsequence: null,
+      publicReward: null
+    })} />);
+
+    expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-dice-cinema", "settled");
+    expect(rendered.container.querySelector(".signal-sector-resolution__dice-cinema")).not.toBeInTheDocument();
+  });
+
   it("uses the selected crest-and-text result treatment for success and defeat", () => {
     const first = render(<SignalSectorResolution model={model()} />);
     expect(screen.getByRole("status")).toHaveAttribute("data-result-visual", "crest");
@@ -202,6 +249,8 @@ describe("SignalSectorResolution", () => {
 
     render(<SignalSectorResolution model={model()} />);
     expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-resolution-restored", "true");
+    expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-dice-cinema", "settled");
+    expect(document.querySelector(".signal-sector-resolution__dice-cinema")).not.toBeInTheDocument();
   });
 
   it("orchestrates a cinematic reveal and removes it for reduced motion", () => {
@@ -212,11 +261,15 @@ describe("SignalSectorResolution", () => {
     expect(css).toContain("@keyframes signal-duel-fracture");
     expect(css).toContain("@keyframes signal-trial-seal-activate");
     expect(css).toContain("@keyframes signal-duel-total");
+    expect(css).toContain("@keyframes signal-die-flight");
+    expect(css).toContain("@keyframes signal-die-tumble");
+    expect(css).toContain("@keyframes signal-die-number-reveal");
+    expect(css).toContain(".signal-sector-resolution__dice-cinema");
     expect(css).toContain("--rift-accent: var(--challenge-color");
     expect(css).toContain("drop-shadow(-.22rem 0 .35rem var(--rift-accent))");
     expect(css).toContain("@media (prefers-reduced-motion: reduce)");
     expect(css).toContain("animation: none !important");
-    expect(css).toContain("--resolution-context-width");
-    expect(css).toContain("inset: 0 0 0 var(--resolution-context-width)");
+    expect(css).toContain("inset: 0;");
+    expect(css).toContain("display: none;");
   });
 });

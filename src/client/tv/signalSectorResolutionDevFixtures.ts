@@ -67,7 +67,7 @@ export function getSignalSectorResolutionDevFixture(
       : outcome
         ? "result"
         : "battle_ready";
-  const operativeTotal = rolling ? null : battle ? 10 : hazard ? 12 : 9;
+  const operativeTotal = rolling ? null : battle ? 12 : hazard ? 12 : 9;
   const oppositionTotal = battle ? 8 : hazard ? 11 : 8;
   const publicConsequence = success
     ? battle
@@ -102,7 +102,7 @@ export function getSignalSectorResolutionDevFixture(
     operative: side(
       operativeName,
       battle ? 4 : hazard ? 5 : 3,
-      rolling ? [] : [5],
+      rolling ? [] : battle ? [3, 4] : [5],
       operativeTotal,
       battle ? "Relic blade" : hazard ? "Operative instinct" : "Field tools"
     ),
