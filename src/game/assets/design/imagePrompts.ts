@@ -4,6 +4,7 @@ import { cardTemplatePrompts } from "./cardTemplatePrompts.js";
 import { characterPortraitPrompts } from "./characterPortraitPrompts.js";
 import { generatedCardImagePrompts } from "./generatedCardImagePrompts.js";
 import { inventoryCategoryIconPrompts } from "./inventoryCategoryIconPrompts.js";
+import { loreBibleVisualPrompts } from "./loreBibleVisualPrompts.js";
 import { objectiveCategoryIconPrompts } from "./objectiveCategoryIconPrompts.js";
 import { resultReadyVisualPrompts } from "./resultReadyVisualPrompts.js";
 import { baseNegativePrompt } from "./negativePrompt.js";
@@ -67,6 +68,7 @@ export const requiredImageGenerationChecklist = [
   "5 private inventory category emblems",
   "4 private objective category emblems",
   "1 private result-ready verdict gate",
+  "1 admin Lore Bible event overview",
   "6 printable scenario sheet illustrations"
 ] as const;
 
@@ -91,6 +93,7 @@ export const imagePrompts: ImagePromptSpec[] = [
   ...inventoryCategoryIconPrompts,
   ...objectiveCategoryIconPrompts,
   ...resultReadyVisualPrompts,
+  ...loreBibleVisualPrompts,
   ...uiPrompts
 ];
 

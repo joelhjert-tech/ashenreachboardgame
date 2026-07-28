@@ -16,6 +16,7 @@ const sourceRoots = [
 ] as const;
 
 const excludedFragments = [
+  "/lore-bible/",
   "/signal-cartography/",
   "/signal-theatre/card-reveal/",
   "/signal-theatre/dice/",

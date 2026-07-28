@@ -102,6 +102,7 @@ const objectiveCategoryIconByCategory: Record<ObjectiveCategoryIcon, string> = {
 };
 
 const resultReadyGatePath = "/assets/riftfall/ui/result-ready/verdict-gate.webp";
+const loreBibleEventsOverviewPath = "/assets/riftfall/ui/lore-bible/events-overview.png";
 
 const uiAssetPaths = [
   "/assets/riftfall/ui/ashen-reach-lobby-stage.png",
@@ -117,6 +118,7 @@ const uiAssetPaths = [
   ...Object.values(inventoryCategoryIconByCategory),
   ...Object.values(objectiveCategoryIconByCategory),
   resultReadyGatePath,
+  loreBibleEventsOverviewPath,
   "/assets/riftfall/ui/ui_scenario_frame.png",
   "/assets/riftfall/ui/ui_card_frame_red.png",
   "/assets/riftfall/ui/ui_card_frame_blue.png",
@@ -223,6 +225,10 @@ export function getObjectiveCategoryIconPath(category: ObjectiveCategoryIcon): s
 
 export function getResultReadyGatePath(): string {
   return resultReadyGatePath;
+}
+
+export function getLoreBibleEventsOverviewPath(): string {
+  return loreBibleEventsOverviewPath;
 }
 
 export function getCharacterPortraitPath(characterId: string): string {

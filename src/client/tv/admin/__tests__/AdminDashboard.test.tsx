@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AdminDashboard from "../AdminDashboard.js";
+import { adminLibraryCards } from "../adminLibraryRegistry.js";
 
 const { fetchStatus, fetchReports } = vi.hoisted(() => ({
   fetchStatus: vi.fn(),
@@ -53,10 +54,14 @@ describe("Host Admin Dashboard", () => {
 
     expect(screen.getByRole("main", { name: /host admin dashboard/i })).toBeInTheDocument();
     expect(screen.getByText(/authoring spoilers visible/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /422 records under inspection/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: new RegExp(`${adminLibraryCards.length} records under inspection`, "i") })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText(/lifecycle report is stale/i)).toBeInTheDocument());
     expect(screen.queryByText("ROOM9")).not.toBeInTheDocument();
     expect(screen.queryByText("host:ROOM9:secret")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /lore bible/i }));
+    expect(screen.getByRole("heading", { name: /ashen reach lore bible/i })).toBeInTheDocument();
+    expect(screen.getByText(/authored canon only/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /reports & codex/i }));
     expect(screen.getByRole("heading", { name: /reports & codex/i })).toBeInTheDocument();

@@ -101,7 +101,7 @@ npm run generate:phone-images
 npm run audit:assets
 ```
 
-The asset audit validates the generated phone manifest, source and derivative hashes, byte counts, dimensions, maximum edge, no-upscale rule, and no-growth rule. SVG, animation, TV-only Signal Theatre environments, shop interiors, and cartography assets are excluded.
+The asset audit validates the generated phone manifest, source and derivative hashes, byte counts, dimensions, maximum edge, no-upscale rule, and no-growth rule. SVG, animation, TV-only Signal Theatre environments, shop interiors, cartography assets, and admin-only Lore Bible art are excluded.
 
 The asset audit is the source of truth for the current expected count. Signal Theatre adds 49 distinct sector environments and 6 selectable player-piece renders. The phone inventory adds 5 original category emblems.
 
