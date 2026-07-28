@@ -2,6 +2,7 @@
   "id": "choir-bulwark",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Ashen Choir",
   "title": "Choir Bulwark",
   "enemyName": "Choir Bulwark",
   "text": "An oath-bound shield bearer advances in lockstep, bell-iron tower shield first. Armored: its first clean defeat is harder to force.",

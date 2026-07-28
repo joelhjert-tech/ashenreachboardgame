@@ -8,10 +8,10 @@
     "metadata": "stripped"
   },
   "totals": {
-    "sources": 385,
-    "sourceBytes": 890263555,
-    "derivativeBytes": 41852804,
-    "reductionPercent": 95.3
+    "sources": 389,
+    "sourceBytes": 901356239,
+    "derivativeBytes": 42254130,
+    "reductionPercent": 95.31
   },
   "entries": [
     {
@@ -2343,6 +2343,18 @@
       "derivativeBytes": 166104
     },
     {
+      "sourcePath": "/assets/cards/threats/red/broodglass-hatchfall.png",
+      "sourceHash": "d342c9cece227da637d2d5c38ef172d56ccfa609dd2190cf61580e27c5b27de3",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2909067,
+      "derivativePath": "/assets/cards/threats/red/broodglass-hatchfall.phone.webp",
+      "derivativeHash": "2ea0950eab293a8bbb9def8e6337ad821b8413f45c7bcd5abf1078e186b4bbcc",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 109976
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/chain-maul-salvager.png",
       "sourceHash": "6adfb8eeb71d9b9e13f84d9fbb73f9406c410a0ba4724e490c4233aa5834dab5",
       "sourceWidth": 1086,
@@ -2401,6 +2413,18 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 120490
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/courtline-fold.png",
+      "sourceHash": "4a43149efa4979fd622bddc0704cf900856e729f0063bb331fa22836daf458a3",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2892407,
+      "derivativePath": "/assets/cards/threats/red/courtline-fold.phone.webp",
+      "derivativeHash": "bd5a9206549eb6f5c883d7852484a55793dce9d523f9675b2427f733d388199f",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 103842
     },
     {
       "sourcePath": "/assets/cards/threats/red/furnace-ditch-collapse.png",
@@ -2787,6 +2811,18 @@
       "derivativeBytes": 127274
     },
     {
+      "sourcePath": "/assets/cards/threats/yellow/grinning-ledger-seizure.png",
+      "sourceHash": "e3b016350ba511a89af966fe8c4cb1f25292a4744d6963f4f6d4d7582e9518c9",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2687656,
+      "derivativePath": "/assets/cards/threats/yellow/grinning-ledger-seizure.phone.webp",
+      "derivativeHash": "86d55ba3813cd056ae83f818290419c2c2d9d38437ba6832967934ef5c65203b",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 95754
+    },
+    {
       "sourcePath": "/assets/cards/threats/yellow/grothak-gorged-king.png",
       "sourceHash": "d22bf47be6885312e7f08e2aa60427365541510c4000e784a31b96feca2215ee",
       "sourceWidth": 1086,
@@ -3169,6 +3205,18 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 121312
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/violet-thorn-toll.png",
+      "sourceHash": "03d4d59e9502c222747d90cd94509ca65b6ebdae59bbfed15d28a07072932308",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2603554,
+      "derivativePath": "/assets/cards/threats/yellow/violet-thorn-toll.phone.webp",
+      "derivativeHash": "b52983d8367f4a2ac020c37918c8a6e6f1f0a4335c29e4fe601ae6911fcb878d",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 91754
     },
     {
       "sourcePath": "/assets/cards/threats/yellow/wire-chewer-pack.png",

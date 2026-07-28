@@ -2,6 +2,7 @@
   "id": "ash-lane-cutters",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Red Maw Raiders",
   "title": "Ash-Lane Cutters",
   "enemyName": "Ash-Lane Cutters",
   "text": "Road knives wait in the soot where the lane narrows. They strike fast, then vanish into toll smoke.",

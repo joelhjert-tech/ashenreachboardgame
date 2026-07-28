@@ -2,6 +2,7 @@
   "id": "pale-cartel-shakedown",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Pallid Retinue",
   "title": "Pale Cartel Shakedown",
   "enemyName": "Pale Cartel Shakedown",
   "text": "Cartel collectors step from the smoke with polite smiles and loaded sleeve pistols.",

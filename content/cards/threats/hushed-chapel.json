@@ -2,6 +2,7 @@
   "id": "hushed-chapel",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Ashen Choir",
   "title": "Hushed Chapel",
   "text": "The chapel takes sound as an offering, leaving orders, prayers, and screams equally empty.",
   "flavor": "Silence is easier to worship when it answers back.",

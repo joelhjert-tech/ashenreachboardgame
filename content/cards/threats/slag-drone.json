@@ -2,6 +2,7 @@
   "id": "slag-drone",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Last Light Engine",
   "title": "Slag Drone",
   "text": "A limping salvage automaton swings a furnace arm in broad, clumsy arcs.",
   "flavor": "Its cracked core still believes this yard belongs to it.",

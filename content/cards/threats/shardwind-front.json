@@ -2,6 +2,7 @@
   "id": "shardwind-front",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Violet Court",
   "title": "Shardwind Front",
   "text": "A glass storm cuts sideways across the Red March and turns every breath into a wager.",
   "flavor": "The wind has edges here.",

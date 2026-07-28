@@ -2,6 +2,7 @@
   "id": "copper-snout-bailiff",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Pallid Retinue",
   "title": "Copper-Snout Bailiff",
   "enemyName": "Copper-Snout Bailiff",
   "text": "The Curator's broad enforcer blocks the route with a collection hook and a muzzle built to break sealed doors.",

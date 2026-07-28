@@ -2,6 +2,7 @@
   "id": "rust-choir-peddlers",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Violet Court",
   "title": "Rust Choir Peddlers",
   "enemyName": "Rust Choir Peddlers",
   "text": "Singing peddlers offer blessed scrap, then draw knives when you hear the missing harmony.",

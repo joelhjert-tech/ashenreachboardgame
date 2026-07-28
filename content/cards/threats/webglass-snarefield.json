@@ -2,6 +2,7 @@
   "id": "webglass-snarefield",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Violet Court",
   "title": "Webglass Snarefield",
   "text": "Invisible threads map every step, tightening whenever the route is remembered wrong.",
   "flavor": "The trap does not catch bodies. It catches decisions.",

@@ -2,6 +2,7 @@
   "id": "sanctifier-beads",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Ashen Choir",
   "title": "Sanctifier Beads",
   "text": "Prayer beads circle a sealed relay lantern, tightening whenever anyone lies nearby. Tune the shard and the reliquary opens.",
   "flavor": "Each bead has heard enough confessions to become judgmental.",

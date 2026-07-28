@@ -2,6 +2,7 @@
   "id": "saint-of-ashes-echo",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Cinder Court",
   "title": "Saint of Ashes Echo",
   "text": "A Gate-Saint acolyte is trapped inside the echo of a dead saint. Prove you deserve the next step inward and the echo releases its keeper.",
   "flavor": "Mercy is not refusal. Mercy is a harder test.",

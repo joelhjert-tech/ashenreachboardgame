@@ -2,6 +2,7 @@
   "id": "yard-ghoul-welders",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Iron Synod",
   "title": "Yard Ghoul Welders",
   "enemyName": "Yard Ghoul Welders",
   "text": "Yard ghouls in cracked welding masks crawl from the hull stacks with hot rivet guns.",

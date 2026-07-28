@@ -2,6 +2,7 @@
   "id": "bridge-toll-runt",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Rift Court",
   "title": "Bridge-Toll Runt",
   "enemyName": "Bridge-Toll Runt",
   "text": "A junior collector cuts loose your salvage straps. On a loss, lose up to 1 Salvage.",

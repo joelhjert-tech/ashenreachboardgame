@@ -2,6 +2,7 @@
   "id": "rust-mote-drone",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Last Light Engine",
   "title": "Rust-Mote Drone",
   "enemyName": "Rust-Mote Drone",
   "text": "A maintenance mote consumes loose parts. On a loss, lose up to 1 Salvage.",

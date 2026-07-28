@@ -2,6 +2,7 @@
   "id": "cinder-gate-backlash",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "The Sealed Deep",
   "title": "Cinder Gate Backlash",
   "text": "The final gate rejects the approach and throws a red pulse back through every carried artifact.",
   "flavor": "The gate does not close. It answers.",

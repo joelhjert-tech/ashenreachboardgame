@@ -2,6 +2,7 @@
   "id": "tithe-gnawer",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Pallid Retinue",
   "title": "Tithe Gnawer",
   "enemyName": "Tithe Gnawer",
   "text": "A quick pale scavenger spills from the tribute ducts, clutching tithe tags stolen for the Pallid Curator.",

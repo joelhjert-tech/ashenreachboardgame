@@ -2,6 +2,7 @@
   "id": "relay-husk",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Last Light Engine",
   "title": "Relay Husk",
   "text": "If you fail, choose one equipped normal Equipment. It provides no effects through your next Threat.",
   "flavor": "Its voice is all static courtesy and buried malice.",

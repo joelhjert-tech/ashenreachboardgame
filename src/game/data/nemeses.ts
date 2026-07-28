@@ -1,4 +1,5 @@
 import { baseNegativePrompt } from "../assets/design/negativePrompt.js";
+import type { ThreatFactionName } from "./threatFactions.js";
 
 export interface NemesisAbility {
   timing: string;
@@ -9,7 +10,7 @@ export interface NemesisDefinition {
   id: string;
   name: string;
   title: string;
-  faction: string;
+  faction: ThreatFactionName;
   scenarioId?: string;
   /**
    * Some finales use bespoke staged checks while still presenting a named boss.

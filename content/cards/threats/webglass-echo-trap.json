@@ -2,6 +2,7 @@
   "id": "webglass-echo-trap",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Mirror Wake",
   "title": "Webglass Echo Trap",
   "text": "A webglass arch repeats your last decision until the wrong version of you steps out.",
   "flavor": "It knows what you almost did.",

@@ -2,6 +2,7 @@
   "id": "bone-rivet-brute",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "The Sealed Deep",
   "title": "Bone-Rivet Brute",
   "enemyName": "Bone-Rivet Brute",
   "text": "A heavy enemy stitched in brass restraints drags a rivet hammer through the ash.",

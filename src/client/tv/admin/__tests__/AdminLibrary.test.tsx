@@ -21,13 +21,13 @@ describe("AdminLibrary", () => {
   it("combines card-type, difficulty, skill, and folder filters", () => {
     render(<AdminLibrary onClose={vi.fn()} />);
     const filters = screen.getByRole("navigation", { name: /library filters/i });
-    fireEvent.click(within(filters).getByRole("button", { name: /Threat116/i }));
+    fireEvent.click(within(filters).getByRole("button", { name: /Threat120/i }));
     fireEvent.change(screen.getByLabelText(/^difficulty$/i), { target: { value: "8" } });
     fireEvent.change(screen.getByLabelText(/^skill$/i), { target: { value: "signal" } });
     fireEvent.change(screen.getByLabelText(/^folder$/i), { target: { value: "content/cards/threats/" } });
     const count = Number(screen.getAllByText(/\d+ of 417 cards/i)[0]?.textContent?.split(" ")[0]);
     expect(count).toBeGreaterThan(0);
-    expect(count).toBeLessThan(116);
+    expect(count).toBeLessThan(120);
   });
 
   it("opens an inspector with lore and canonical source and art locations", () => {

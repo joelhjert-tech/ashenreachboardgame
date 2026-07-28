@@ -2,6 +2,7 @@
   "id": "siren-relay-echo",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Last Light Engine",
   "title": "Siren Relay Echo",
   "text": "If you succeed, gain +1 on your next non-battle Command test. If you fail, suffer -1 on your next non-battle Command test.",
   "flavor": "The route lies most beautifully when it uses your own call signs.",

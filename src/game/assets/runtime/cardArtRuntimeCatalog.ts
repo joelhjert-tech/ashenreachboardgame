@@ -1341,6 +1341,26 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "escalation-webglass-afterimage",
     "cardType": "escalation",
     "outputPath": "/assets/cards/escalations/escalation-webglass-afterimage.png"
+  },
+  {
+    "cardId": "broodglass-hatchfall",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/broodglass-hatchfall.png"
+  },
+  {
+    "cardId": "courtline-fold",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/courtline-fold.png"
+  },
+  {
+    "cardId": "grinning-ledger-seizure",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/grinning-ledger-seizure.png"
+  },
+  {
+    "cardId": "violet-thorn-toll",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/violet-thorn-toll.png"
   }
 ] as RuntimeCardArtCatalogEntry[];
 

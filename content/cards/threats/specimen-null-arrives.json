@@ -2,6 +2,7 @@
   "id": "specimen-null-arrives",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Shardborn Brood",
   "title": "Specimen Null Arrives",
   "enemyName": "Specimen Null Arrives",
   "text": "A containment siren bends into a roar as Specimen Null steps through the wrong wall.",

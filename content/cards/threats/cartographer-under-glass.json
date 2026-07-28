@@ -2,6 +2,7 @@
   "id": "cartographer-under-glass",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Mirror Wake",
   "title": "Cartographer Under Glass",
   "text": "A living map chamber holds Mara Vell inside a loop of false corridors. Break the command pattern and she joins the expedition.",
   "flavor": "Every exit returns to the same ash mark.",

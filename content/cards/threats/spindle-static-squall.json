@@ -2,6 +2,7 @@
   "id": "spindle-static-squall",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Rift Court",
   "title": "Spindle Static Squall",
   "text": "The squall corrupts your bearing. On failure, reduce your next movement roll by 1, to a minimum of 1.",
   "flavor": "Even the silence points north.",

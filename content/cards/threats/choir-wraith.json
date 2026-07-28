@@ -2,6 +2,7 @@
   "id": "choir-wraith",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Ashen Choir",
   "title": "Choir Wraith",
   "enemyName": "Choir Wraith",
   "text": "A signal-wraith drifts forward carrying the note that killed it.",

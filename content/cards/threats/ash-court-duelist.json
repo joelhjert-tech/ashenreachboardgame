@@ -2,6 +2,7 @@
   "id": "ash-court-duelist",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Cinder Court",
   "title": "Ash-Court Duelist",
   "enemyName": "Ash-Court Duelist",
   "text": "A ritual challenger steps from a ruined gallery and demands recognition before steel.",

@@ -2,6 +2,7 @@
   "id": "redglass-stray",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Shardborn Brood",
   "title": "Redglass Stray",
   "enemyName": "Redglass Stray",
   "text": "A warped hunting beast noses through the ash with antlers grown from red glass.",

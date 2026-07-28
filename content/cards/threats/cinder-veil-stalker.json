@@ -2,6 +2,7 @@
   "id": "cinder-veil-stalker",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Cinder Court",
   "title": "Cinder-Veil Stalker",
   "enemyName": "Cinder-Veil Stalker",
   "text": "A wavering shape slips between pylons, then breaks cover with a hooked furnace blade.",

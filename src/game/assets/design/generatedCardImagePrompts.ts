@@ -3471,5 +3471,57 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, global disaster event, breach widening, collapsing routes, corrupted signal storm, burning shrine, sector-wide panic, escalation step 3, pressure shift -1, Your last route repeats behind you with too many shadows and one of them knows the way forward, Never trust a footprint that arrives before you do, Pinned the afterimage to a false route and cut the real signal free, wider, high-drama composition that still works in portrait framing",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Webglass Afterimage escalation card art."
+  },
+  {
+    "assetId": "threat_art_broodglass-hatchfall",
+    "assetType": "threatCardArt",
+    "cardId": "broodglass-hatchfall",
+    "cardType": "threat",
+    "title": "Broodglass Hatchfall",
+    "fileName": "broodglass-hatchfall.png",
+    "outputPath": "/assets/cards/threats/red/broodglass-hatchfall.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is the hazard itself, Shardborn Brood faction affiliation, a ruined ceiling of clear nursery husks splits and drops shard-wet larvae like violent rain into a black-metal route, red hazard light, cracked transparent broodglass, no humanoid figure",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Broodglass Hatchfall threat card art."
+  },
+  {
+    "assetId": "threat_art_courtline-fold",
+    "assetType": "threatCardArt",
+    "cardId": "courtline-fold",
+    "cardType": "threat",
+    "title": "Courtline Fold",
+    "fileName": "courtline-fold.png",
+    "outputPath": "/assets/cards/threats/red/courtline-fold.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is the hazard itself, Rift Court faction affiliation, a razor-thin red jurisdiction line hangs through a blue-black glass court corridor while both sides fold together like closing pages, impossible crushing geometry, no humanoid ruler",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Courtline Fold threat card art."
+  },
+  {
+    "assetId": "threat_art_grinning-ledger-seizure",
+    "assetType": "threatCardArt",
+    "cardId": "grinning-ledger-seizure",
+    "cardType": "threat",
+    "title": "Grinning Ledger Seizure",
+    "fileName": "grinning-ledger-seizure.png",
+    "outputPath": "/assets/cards/threats/yellow/grinning-ledger-seizure.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, yellow signal light, restrained magenta lens glow, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is the hazard itself, Pallid Retinue faction affiliation, a huge pale mechanical ledger unfolds across a salt archive road, ivory jointed plates, six-spoke collector halo, grasping brass tally limbs seizing a red future-wound thread, no humanoid clerk",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Grinning Ledger Seizure threat card art."
+  },
+  {
+    "assetId": "threat_art_violet-thorn-toll",
+    "assetType": "threatCardArt",
+    "cardId": "violet-thorn-toll",
+    "cardType": "threat",
+    "title": "Violet Thorn Toll",
+    "fileName": "violet-thorn-toll.png",
+    "outputPath": "/assets/cards/threats/yellow/violet-thorn-toll.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, yellow salvage light, violet anomaly glow, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is the hazard itself, Violet Court faction affiliation, an elegant flowering arch of black-violet metal thorns conceals a second predatory mouth collecting a glowing salvage coin and one bead of blood, dangerous glass petals, no fairy figure",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Violet Thorn Toll threat card art."
   }
 ] as CardImagePromptCatalogEntry[];

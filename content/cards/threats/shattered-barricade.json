@@ -2,6 +2,7 @@
   "id": "shattered-barricade",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Red Maw Raiders",
   "title": "Shattered Barricade",
   "text": "The breach broadcasts your position. Advance Global Escalation by 1.",
   "flavor": "Someone built it to keep danger out. The danger learned carpentry.",

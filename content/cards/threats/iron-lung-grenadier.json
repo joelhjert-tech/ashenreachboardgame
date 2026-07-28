@@ -2,6 +2,7 @@
   "id": "iron-lung-grenadier",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Iron Synod",
   "title": "Iron Lung Grenadier",
   "enemyName": "Iron Lung Grenadier",
   "text": "A pressure-armored grenadier exhales furnace gas before closing. The first breath is the real attack.",

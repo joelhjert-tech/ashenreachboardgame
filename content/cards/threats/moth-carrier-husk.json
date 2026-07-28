@@ -2,6 +2,7 @@
   "id": "moth-carrier-husk",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Shardborn Brood",
   "title": "Moth-Carrier Husk",
   "enemyName": "Moth-Carrier Husk",
   "text": "A hollow body walks under a lantern-cloud of black signal moths. If it survives the encounter, the swarm calls more trouble.",

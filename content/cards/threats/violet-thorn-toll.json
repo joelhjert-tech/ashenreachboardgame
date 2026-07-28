@@ -1,0 +1,30 @@
+{
+  "id": "violet-thorn-toll",
+  "type": "threat",
+  "cardType": "hazard",
+  "faction": "Violet Court",
+  "title": "Violet Thorn Toll",
+  "text": "A flowering arch offers safe passage for one honest coin, then grows a second mouth to collect the difference in blood.",
+  "flavor": "The road is free. The thorns charge for leaving it.",
+  "severity": 2,
+  "stat": "guile",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "yellow",
+  "resolutionType": "event",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "salvage",
+    "wound"
+  ]
+}

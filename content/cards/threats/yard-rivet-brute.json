@@ -2,6 +2,7 @@
   "id": "yard-rivet-brute",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Iron Synod",
   "title": "Yard-Rivet Brute",
   "enemyName": "Yard-Rivet Brute",
   "text": "A hulking yard fighter wrapped in riveted scrap blocks the forge road, dragging a heated anchor chain.",

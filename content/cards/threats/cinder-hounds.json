@@ -2,6 +2,7 @@
   "id": "cinder-hounds",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Cinder Court",
   "title": "Cinder Hounds",
   "enemyName": "Cinder Hounds",
   "text": "Furnace hounds nose through the ash, hunting the warm breath between armor plates.",

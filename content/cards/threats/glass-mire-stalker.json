@@ -2,6 +2,7 @@
   "id": "glass-mire-stalker",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Mirror Wake",
   "title": "Glass-Mire Stalker",
   "enemyName": "Glass-Mire Stalker",
   "text": "Something tall and translucent waits where mirror slag has become a marsh, bending your route-light toward its mouth.",

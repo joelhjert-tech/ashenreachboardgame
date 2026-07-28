@@ -1,0 +1,30 @@
+{
+  "id": "courtline-fold",
+  "type": "threat",
+  "cardType": "hazard",
+  "faction": "Rift Court",
+  "title": "Courtline Fold",
+  "text": "The Rift Court draws a boundary through open air, then folds both sides together with the operative caught between jurisdictions.",
+  "flavor": "The border moves. The sentence remains.",
+  "severity": 3,
+  "stat": "signal",
+  "difficulty": 8,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You mapped the moving jurisdiction and marked where the next fold must break."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "red",
+  "resolutionType": "event",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "movement",
+    "wound"
+  ]
+}

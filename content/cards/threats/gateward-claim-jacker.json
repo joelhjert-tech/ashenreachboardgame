@@ -2,6 +2,7 @@
   "id": "gateward-claim-jacker",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Rift Court",
   "title": "Gateward Claim-Jacker",
   "enemyName": "Gateward Claim-Jacker",
   "text": "A plated route thief winds a stolen spindle into its chest and charges anyone approaching a depth gate.",

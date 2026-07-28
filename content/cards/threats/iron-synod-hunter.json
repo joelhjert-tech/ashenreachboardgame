@@ -2,6 +2,7 @@
   "id": "iron-synod-hunter",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Iron Synod",
   "title": "Iron Synod Hunter",
   "enemyName": "Iron Synod Hunter",
   "text": "The Synod hunter names your equipment illegal and begins confiscation by force.",

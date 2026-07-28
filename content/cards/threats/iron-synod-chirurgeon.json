@@ -2,6 +2,7 @@
   "id": "iron-synod-chirurgeon",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Iron Synod",
   "title": "Iron Synod Chirurgeon",
   "enemyName": "Iron Synod Chirurgeon",
   "text": "A butcher-priest opens its arms in benediction while the operating table begins to sing.",

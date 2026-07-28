@@ -2,6 +2,7 @@
   "id": "mirror-lord-envoy",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Mirror Wake",
   "title": "Mirror-Lord Envoy",
   "enemyName": "Mirror-Lord Envoy",
   "text": "A polite emissary in a mirrored veil studies your best stance and answers with a better one.",

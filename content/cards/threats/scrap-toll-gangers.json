@@ -2,6 +2,7 @@
   "id": "scrap-toll-gangers",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Violet Court",
   "title": "Scrap-Toll Gangers",
   "enemyName": "Scrap-Toll Gangers",
   "text": "Three masked toll-takers drag a chain across the road and ask for payment in bullets or blood.",

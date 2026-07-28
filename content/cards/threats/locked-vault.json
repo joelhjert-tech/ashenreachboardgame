@@ -2,6 +2,7 @@
   "id": "locked-vault",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Iron Synod",
   "title": "Locked Vault",
   "text": "The vault ruins part of your stores before sealing. Lose up to 1 Salvage.",
   "flavor": "Every safe wants to be a shrine.",

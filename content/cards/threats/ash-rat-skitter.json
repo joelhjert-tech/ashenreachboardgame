@@ -2,6 +2,7 @@
   "id": "ash-rat-skitter",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Red Maw Raiders",
   "title": "Ash-Rat Skitter",
   "text": "A rib-high rush of ash rats pours across the lane. On a failure, lose up to 1 Salvage.",
   "flavor": "Small teeth make a large sound in the dark.",

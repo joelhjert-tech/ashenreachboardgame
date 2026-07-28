@@ -2,6 +2,7 @@
   "id": "shardvine-ambushers",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Shardborn Brood",
   "title": "Shardvine Ambushers",
   "enemyName": "Shardvine Ambushers",
   "text": "Shardvine scouts drop from the gantries with glass knives and bright route masks.",

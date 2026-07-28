@@ -2,6 +2,7 @@
   "id": "ashen-doppelganger",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Mirror Wake",
   "title": "Ashen Doppelganger",
   "enemyName": "Ashen Doppelganger",
   "text": "A false version of the active operative steps from the ash and smiles with borrowed scars. If you lose this battle, suffer 2 Wounds.",

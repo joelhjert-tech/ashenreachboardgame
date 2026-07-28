@@ -2,6 +2,7 @@
   "id": "wireghost-key",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Iron Synod",
   "title": "Wireghost Key",
   "text": "A wireghost key clicks through a forgotten manufactorum locker. Match its turning rhythm and the sealed tools are yours.",
   "flavor": "It remembers every lock as a wound.",

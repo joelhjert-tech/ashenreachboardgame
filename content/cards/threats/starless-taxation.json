@@ -2,6 +2,7 @@
   "id": "starless-taxation",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Pallid Retinue",
   "title": "Starless Taxation",
   "text": "A rare office of the old void bureaucracy opens above the table and invoices your future.",
   "flavor": "The stamp falls before the hand appears.",

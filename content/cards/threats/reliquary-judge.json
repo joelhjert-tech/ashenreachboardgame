@@ -2,6 +2,7 @@
   "id": "reliquary-judge",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "The Sealed Deep",
   "title": "Reliquary Judge",
   "enemyName": "Reliquary Judge",
   "text": "A masked adjudicator weighs your kit against a dead saint's inventory. Gear-heavy operatives draw its sentence first.",

@@ -2,6 +2,7 @@
   "id": "shiv-market-crew",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Violet Court",
   "title": "Shiv-Market Crew",
   "enemyName": "Shiv-Market Crew",
   "text": "Market cutters circle with polite offers, prewritten receipts, and knives already priced for resale.",

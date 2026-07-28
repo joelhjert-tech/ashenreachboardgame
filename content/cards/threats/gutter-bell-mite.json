@@ -2,6 +2,7 @@
   "id": "gutter-bell-mite",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Buried Maw",
   "title": "Gutter-Bell Mite",
   "enemyName": "Gutter-Bell Mite",
   "text": "A palm-sized brass mite ruins exposed salvage. On a loss, lose up to 1 Salvage.",

@@ -2,6 +2,7 @@
   "id": "broken-mast-collapse",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Red Maw Raiders",
   "title": "Broken Mast Collapse",
   "text": "A relay mast shears loose and falls across the lane in a storm of hot rivets.",
   "flavor": "The old network still knows how to reach down.",

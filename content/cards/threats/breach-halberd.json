@@ -2,6 +2,7 @@
   "id": "breach-halberd",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "The Sealed Deep",
   "title": "Breach Halberd",
   "text": "A breach halberd hangs inside a collapsed militia reliquary. Prove you can disarm its live counterweight and the weapon cache is yours.",
   "flavor": "It remembers the last charge better than the soldier did.",

@@ -2,6 +2,7 @@
   "id": "grave-lattice-reclaimer",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Iron Synod",
   "title": "Grave-Lattice Reclaimer",
   "enemyName": "Grave-Lattice Reclaimer",
   "text": "The Grave-Lattice Reclaimer appears when the dead refuse to stay useful. Battle 10. Before rolling, spend a route note or add +2 to this enemy's difficulty. If you lose, it remains on your space for the next operative.",

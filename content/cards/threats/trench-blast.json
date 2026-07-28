@@ -2,6 +2,7 @@
   "id": "trench-blast",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Red Maw Raiders",
   "title": "Trench Blast",
   "text": "The trench inhales, then spits fire through every old firing step at once.",
   "flavor": "Some wars end. Their trenches keep practicing.",

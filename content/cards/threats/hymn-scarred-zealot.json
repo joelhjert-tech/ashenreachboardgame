@@ -2,6 +2,7 @@
   "id": "hymn-scarred-zealot",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Ashen Choir",
   "title": "Hymn-Scarred Zealot",
   "enemyName": "Hymn-Scarred Zealot",
   "text": "A burned Choir footsoldier drags a warbell through the dust, broadcasting the hymn until its body breaks. If you lose this battle, suffer 1 Wound.",

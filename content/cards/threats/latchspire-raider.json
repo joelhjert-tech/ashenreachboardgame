@@ -2,6 +2,7 @@
   "id": "latchspire-raider",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Red Maw Raiders",
   "title": "Latchspire Raider",
   "enemyName": "Latchspire Raider",
   "text": "A scavenger duelist swings down on a tether line, trying to pin your path with a barbed spar.",

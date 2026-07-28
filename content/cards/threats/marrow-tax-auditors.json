@@ -2,6 +2,7 @@
   "id": "marrow-tax-auditors",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Pallid Retinue",
   "title": "Marrow-Tax Auditors",
   "text": "An echo-market fixer is pinned beneath the ledgers of a dead checkpoint. Expose the false tariff and they join you; fail and the auditors collect up to 1 Salvage.",
   "flavor": "The best loopholes know when to walk away.",

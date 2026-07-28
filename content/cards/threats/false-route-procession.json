@@ -2,6 +2,7 @@
   "id": "false-route-procession",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Mirror Wake",
   "title": "False-Route Procession",
   "text": "A route-runner is caught inside a procession marching the wrong road. Break its cadence and the survivor joins you; fail and the procession carries you one legal sector along this ring.",
   "flavor": "They wave for you to follow with hands turned backward.",

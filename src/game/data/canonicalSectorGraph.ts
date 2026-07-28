@@ -107,7 +107,8 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "shiv-market-crew",
       "rust-choir-peddlers",
       "pale-cartel-shakedown",
-      "pale-contract-collector"
+      "pale-contract-collector",
+      "violet-thorn-toll"
     ],
     anomaly: [],
     contract: ["cartel-quiet-route", "clan-salvage-tithe", "compact-ember-courier", "cartel-ledger-skim"],
@@ -295,7 +296,8 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "false-route-procession",
       "glass-mire-stalker",
       "bone-rivet-brute",
-      "red-march-cannoneer"
+      "red-march-cannoneer",
+      "courtline-fold"
     ],
     anomaly: ["anomaly-warbell-parallax"],
     contract: ["cartel-ledger-skim"],
@@ -460,7 +462,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-choir-feedback", "escalation-webglass-afterimage"]
   },
   "the-salt-archive": {
-    threat: ["marrow-tax-auditors", "memory-tax-gate", "crown-bell-baron", "route-splice", "false-route-procession", "starless-taxation"],
+    threat: ["marrow-tax-auditors", "memory-tax-gate", "crown-bell-baron", "route-splice", "false-route-procession", "starless-taxation", "grinning-ledger-seizure"],
     anomaly: ["anomaly-saltglass-fata-morgana", "anomaly-table-fire-writ"],
     contract: ["cartel-ledger-skim", "choir-hush-census", "dominion-gate-tithe"],
     artifact: ["artifact-oath-chain-ledger", "artifact-pale-ledger-token"],
@@ -474,7 +476,8 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "red-maw-raiders",
       "trench-blast",
       "ash-choir-crusader",
-      "shardvine-ambushers"
+      "shardvine-ambushers",
+      "broodglass-hatchfall"
     ],
     anomaly: ["anomaly-red-suture-field", "anomaly-warbell-parallax"],
     contract: ["warden-span-vigil", "dominion-warbell-recovery"],

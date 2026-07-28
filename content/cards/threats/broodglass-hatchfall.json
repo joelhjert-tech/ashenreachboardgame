@@ -1,0 +1,29 @@
+{
+  "id": "broodglass-hatchfall",
+  "type": "threat",
+  "cardType": "hazard",
+  "faction": "Shardborn Brood",
+  "title": "Broodglass Hatchfall",
+  "text": "A ceiling of clear nursery husks splits at once, dropping shard-wet larvae into every warm seam of the route.",
+  "flavor": "The first sound is rain. The second is feeding.",
+  "severity": 3,
+  "stat": "grit",
+  "difficulty": 7,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You burned the hatch pattern into a route warning before the brood could adapt."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "red",
+  "resolutionType": "event",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound"
+  ]
+}

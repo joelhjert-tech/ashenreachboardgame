@@ -2,6 +2,7 @@
   "id": "crown-bell-baron",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Cinder Court",
   "title": "Crown-Bell Baron",
   "enemyName": "Crown-Bell Baron",
   "text": "A velvet-coated sector magnate arrives with brass writ-drones, fake civic authority, and a private mob that calls every route fee a public service. If you lose, lose up to 1 Salvage.",

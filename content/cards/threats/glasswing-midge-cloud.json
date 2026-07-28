@@ -2,6 +2,7 @@
   "id": "glasswing-midge-cloud",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Shardborn Brood",
   "title": "Glasswing Midge Cloud",
   "enemyName": "Glasswing Midge Cloud",
   "text": "A glittering cloud of glasswing midges gathers around signal lenses, scattering false reflections across the route.",

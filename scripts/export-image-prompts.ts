@@ -201,6 +201,7 @@ function buildThreatPrompt(card: {
   severity: number;
   difficulty: number;
   stat: string;
+  faction?: string;
   enemyFamily?: string;
   region?: string;
 }): string {
@@ -213,6 +214,7 @@ function buildThreatPrompt(card: {
     promptPrefix,
     subject,
     severityPrompt[card.severity] ?? "dangerous Ashen Reach threat",
+    `faction affiliation ${card.faction ?? "unaffiliated"}`,
     `threat family ${formatThreatFamily(card.enemyFamily)}`,
     `threat difficulty ${card.difficulty} driven by ${card.stat}`,
     region,

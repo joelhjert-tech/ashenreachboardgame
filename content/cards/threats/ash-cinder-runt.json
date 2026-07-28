@@ -2,6 +2,7 @@
   "id": "ash-cinder-runt",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Cinder Court",
   "title": "Ash-Cinder Runt",
   "enemyName": "Ash-Cinder Runt",
   "text": "A half-starved furnace beast noses through warm slag and snaps at anything carrying food, blood, or lamp oil.",

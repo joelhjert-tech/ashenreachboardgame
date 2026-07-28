@@ -2,6 +2,7 @@
   "id": "cinder-bone-marauder",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Cinder Court",
   "title": "Cinder-Bone Marauder",
   "enemyName": "Cinder-Bone Marauder",
   "text": "A soot-armored raider with bone rivets and a furnace axe charges from a collapsed shrine road.",

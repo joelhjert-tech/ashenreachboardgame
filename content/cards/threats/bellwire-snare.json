@@ -2,6 +2,7 @@
   "id": "bellwire-snare",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Ashen Choir",
   "title": "Bellwire Snare",
   "text": "A nearly invisible wire trembles underfoot, ringing a dead shrine bell somewhere ahead.",
   "flavor": "In Ashen Reach, even traps know how to pray.",

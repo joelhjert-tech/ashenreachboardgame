@@ -2,6 +2,7 @@
   "id": "breach-lens-overload",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Last Light Engine",
   "title": "Breach-Lens Overload",
   "text": "A cracked survey lens catches the breach and pours the image straight through your tools.",
   "flavor": "The machine sees too much and makes you share.",

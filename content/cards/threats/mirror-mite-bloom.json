@@ -2,6 +2,7 @@
   "id": "mirror-mite-bloom",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Mirror Wake",
   "title": "Mirror-Mite Bloom",
   "enemyName": "Mirror-Mite Bloom",
   "text": "A cloud of reflective mites rises from a broken shrine and copies your outline in glittering hunger.",

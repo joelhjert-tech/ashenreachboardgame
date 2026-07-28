@@ -2,6 +2,7 @@
   "id": "rust-plate-strider",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Last Light Engine",
   "title": "Rust-Plate Strider",
   "enemyName": "Rust-Plate Strider",
   "text": "A four-jointed salvage walker picks through the lane on blade legs, boiler plates glowing dull orange.",

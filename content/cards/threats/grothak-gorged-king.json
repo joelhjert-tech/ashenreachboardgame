@@ -2,6 +2,7 @@
   "id": "grothak-gorged-king",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Buried Maw",
   "title": "Grothak, the Gorged King",
   "enemyName": "Grothak, the Gorged King",
   "text": "Grothak's debtbound court drags his tithe-throne between the Inner Reach vaults. If you lose, suffer 2 Wounds. If you win, tear 2 Salvage from the throne's tribute chains.",

@@ -2,6 +2,7 @@
   "id": "smoke-leech-clutch",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Buried Maw",
   "title": "Smoke-Leech Clutch",
   "text": "A clutch of soot-fed leeches spills from a vent seam and lunges for exposed seals.",
   "flavor": "They move like spilled ink with teeth.",

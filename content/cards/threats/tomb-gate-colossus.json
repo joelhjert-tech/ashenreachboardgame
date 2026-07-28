@@ -2,6 +2,7 @@
   "id": "tomb-gate-colossus",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "The Sealed Deep",
   "title": "Tomb-Gate Colossus",
   "enemyName": "Tomb-Gate Colossus",
   "text": "A tomb-gate colossus wakes with grave soil falling from its shoulders and a keyhole for a heart.",

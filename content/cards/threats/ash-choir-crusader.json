@@ -2,6 +2,7 @@
   "id": "ash-choir-crusader",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Ashen Choir",
   "title": "Ash Choir Crusader",
   "enemyName": "Ash Choir Crusader",
   "text": "A crusader of the Ash Choir mistakes your pulse for a forbidden cadence and advances behind a bell shield.",

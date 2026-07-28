@@ -2,6 +2,7 @@
   "id": "route-splice",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Rift Court",
   "title": "Route Splice",
   "text": "Two wrong streets join at the cut, each insisting the other one led you here.",
   "flavor": "The road is lying, but at least it is specific.",

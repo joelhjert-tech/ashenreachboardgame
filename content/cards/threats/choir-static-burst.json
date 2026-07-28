@@ -2,6 +2,7 @@
   "id": "choir-static-burst",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Ashen Choir",
   "title": "Choir-Static Burst",
   "text": "Signal feedback from broken singers crashes through the route channel.",
   "flavor": "A choir can scream even after the throats are gone.",

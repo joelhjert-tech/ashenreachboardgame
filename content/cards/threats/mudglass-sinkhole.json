@@ -2,6 +2,7 @@
   "id": "mudglass-sinkhole",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Buried Maw",
   "title": "Mudglass Sinkhole",
   "text": "The mudglass carries you off route. Move 1 sector counterclockwise on this ring. If no legal sector is available, suffer 1 Wound.",
   "flavor": "The surface reflects a sky that is not above you.",

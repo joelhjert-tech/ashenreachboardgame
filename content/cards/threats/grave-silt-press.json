@@ -2,6 +2,7 @@
   "id": "grave-silt-press",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "The Sealed Deep",
   "title": "Grave-Silt Press",
   "text": "The floor buckles into a grinding plate of wet ash and buried iron teeth.",
   "flavor": "The yard wants to close around your ankles and keep you there.",

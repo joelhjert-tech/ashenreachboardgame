@@ -2,6 +2,7 @@
   "id": "wire-chewer-pack",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Buried Maw",
   "title": "Wire-Chewer Pack",
   "enemyName": "Wire-Chewer Pack",
   "text": "A pack of cable-fed tunnel beasts gnaws at live conduit, twitching with stolen charge and bad decisions.",

@@ -2,6 +2,7 @@
   "id": "mourning-engine-pup",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Last Light Engine",
   "title": "Mourning Engine Pup",
   "enemyName": "Mourning Engine Pup",
   "text": "A small war-machine prowls the road, still searching for the dead master it was built to guard.",

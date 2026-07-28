@@ -2,6 +2,7 @@
   "id": "breachline-survey-vault",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Iron Synod",
   "title": "Breachline Survey Vault",
   "text": "A dead survey chamber wakes and demands a clean signal bearing before releasing its last instrument.",
   "flavor": "The route exists. The machine only wants proof.",

@@ -2,6 +2,7 @@
   "id": "pale-contract-collector",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Pallid Retinue",
   "title": "Pale Contract Collector",
   "enemyName": "Pale Contract Collector",
   "text": "A debt enforcer mistakes your crew for the names written in a burning ledger. If you lose, lose up to 1 Salvage.",

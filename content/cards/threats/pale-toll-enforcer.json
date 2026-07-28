@@ -2,6 +2,7 @@
   "id": "pale-toll-enforcer",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Pallid Retinue",
   "title": "Pale Toll Enforcer",
   "enemyName": "Pale Toll Enforcer",
   "text": "A ledger-armored collector confiscates loose salvage. On a loss, lose up to 1 Salvage.",

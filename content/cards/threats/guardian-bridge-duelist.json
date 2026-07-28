@@ -2,6 +2,7 @@
   "id": "guardian-bridge-duelist",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Rift Court",
   "title": "Guardian Bridge Duelist",
   "enemyName": "Guardian Bridge Duelist",
   "text": "A bridge guardian lowers a ritual blade and permits passage only through formal challenge.",

@@ -2,6 +2,7 @@
   "id": "void-salt-sickness",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Buried Maw",
   "title": "Void-Salt Sickness",
   "text": "White salt blooms across your gloves and starts pulling warmth from the blood beneath. If the fever breaks, heal 1 Wound; if it takes hold, draw 1 Affliction.",
   "flavor": "It tastes like a memory you never had.",

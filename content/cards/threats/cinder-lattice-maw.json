@@ -2,6 +2,7 @@
   "id": "cinder-lattice-maw",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Buried Maw",
   "title": "Cinder Lattice Maw",
   "text": "The lattice opens like a mouth beneath the path, each tooth a hot mathematical line.",
   "flavor": "It bites in angles.",

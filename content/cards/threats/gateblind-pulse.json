@@ -2,6 +2,7 @@
   "id": "gateblind-pulse",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "The Sealed Deep",
   "title": "Gateblind Pulse",
   "text": "On failure, if Global Escalation is not already one step from collapse, advance Global Escalation by 1.",
   "flavor": "Blindness is a command when the gate gives it.",

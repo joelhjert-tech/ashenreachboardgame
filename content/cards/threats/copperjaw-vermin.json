@@ -2,6 +2,7 @@
   "id": "copperjaw-vermin",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Buried Maw",
   "title": "Copperjaw Vermin",
   "enemyName": "Copperjaw Vermin",
   "text": "Metal-toothed carrion things gnaw through the dead machinery under the path.",

@@ -1,0 +1,29 @@
+{
+  "id": "grinning-ledger-seizure",
+  "type": "threat",
+  "cardType": "hazard",
+  "faction": "Pallid Retinue",
+  "title": "Grinning Ledger Seizure",
+  "text": "A pale ledger unfolds across the lane and lists one future wound as collateral for a debt nobody remembers making.",
+  "flavor": "The signature is yours. The handwriting is not.",
+  "severity": 3,
+  "stat": "command",
+  "difficulty": 8,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You forced the ledger to record a disputed claim and kept the Retinue from collecting."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "yellow",
+  "resolutionType": "event",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound"
+  ]
+}

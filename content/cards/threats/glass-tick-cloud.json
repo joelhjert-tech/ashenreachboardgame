@@ -2,6 +2,7 @@
   "id": "glass-tick-cloud",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Shardborn Brood",
   "title": "Glass Tick Cloud",
   "text": "The glass ticks strip useful material from your pack. Lose up to 1 Salvage.",
   "flavor": "They sound like rain until the straps begin to part.",

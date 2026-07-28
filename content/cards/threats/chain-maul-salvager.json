@@ -2,6 +2,7 @@
   "id": "chain-maul-salvager",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Red Maw Raiders",
   "title": "Chain-Maul Salvager",
   "enemyName": "Chain-Maul Salvager",
   "text": "A Rusted Host breaker drags a chained maul through shell grit, trading tactics for brutal reach.",

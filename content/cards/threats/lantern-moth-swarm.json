@@ -2,6 +2,7 @@
   "id": "lantern-moth-swarm",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Shardborn Brood",
   "title": "Lantern-Moth Swarm",
   "text": "Soft gold insects gather around every warm surface until their wings begin to spark.",
   "flavor": "They are beautiful right up until the air catches fire.",

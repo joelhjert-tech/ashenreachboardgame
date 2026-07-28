@@ -2,6 +2,7 @@
   "id": "cracked-censer-novice",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Violet Court",
   "title": "Cracked-Censer Novice",
   "enemyName": "Cracked-Censer Novice",
   "text": "A lost Choir novice swings a broken censer in uneven circles, broadcasting a hymn too weak to guide anyone home.",

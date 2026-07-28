@@ -2,6 +2,7 @@
   "id": "relay-pilgrim-riot",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "The Sealed Deep",
   "title": "Relay Pilgrim Riot",
   "enemyName": "Relay Pilgrim Riot",
   "text": "Fevered pilgrims surge toward the beacon, convinced your gear carries the answer they need.",

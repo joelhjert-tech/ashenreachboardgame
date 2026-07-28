@@ -2,6 +2,7 @@
   "id": "roadside-bone-oracle",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Violet Court",
   "title": "Roadside Bone Oracle",
   "text": "A stranded bone-reader speaks through wired jawbones while the roadside shrine closes around them. Answer the shrine and they will travel with you.",
   "flavor": "Every right word opens one more road.",

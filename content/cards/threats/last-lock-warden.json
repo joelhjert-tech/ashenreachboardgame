@@ -2,6 +2,7 @@
   "id": "last-lock-warden",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "The Sealed Deep",
   "title": "Last Lock Warden",
   "enemyName": "Last Lock Warden",
   "text": "A mechanical guardian fused into the final lock turns its key-blade toward the living.",

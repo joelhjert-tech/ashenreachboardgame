@@ -2,6 +2,7 @@
   "id": "rift-whispers",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Rift Court",
   "title": "Rift Whispers",
   "text": "Whispering routes argue over which one is real, and every answer points somewhere hungry.",
   "flavor": "A map is just a rumor with better posture.",

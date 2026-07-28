@@ -9,6 +9,7 @@ import {
   CANONICAL_THREAT_EFFECT_KEYS,
   LEGACY_HEAT_THREAT_EFFECT_KEYS
 } from "../cards/threatEffectKeys.js";
+import { THREAT_FACTION_NAMES } from "../data/threatFactions.js";
 
 const followerGrantSchema = followerSchema;
 const legacyCompatibleFollowerGrantSchema = legacyCompatibleFollowerSchema;
@@ -415,6 +416,7 @@ export const threatFamilySchema = z.enum([
   "hazard"
 ]);
 
+export const threatFactionSchema = z.enum(THREAT_FACTION_NAMES);
 export const threatLaneSchema = z.enum(["red", "blue", "yellow"]);
 export const threatResolutionTypeSchema = z.enum(["event", "enemy", "encounter", "asset", "nemesis"]);
 export const cardRaritySchema = z.enum(["common", "uncommon", "rare"]);
@@ -443,6 +445,7 @@ export const legacyCompatibleThreatEffectKeySchema = z.enum([
 
 const threatBaseSchema = cardBaseSchema.extend({
   type: z.literal("threat"),
+  faction: threatFactionSchema.optional(),
   severity: z.number().int().min(1).max(5),
   enemyFamily: threatFamilySchema.optional(),
   threatLane: threatLaneSchema.optional(),
@@ -482,6 +485,7 @@ const hazardSuccessEffectRetirementIds = new Set<string>(HAZARD_SUCCESS_EFFECT_R
 
 export const authoredHazardThreatCardSchema = threatBaseSchema.extend({
   cardType: z.literal("hazard"),
+  faction: threatFactionSchema,
   successEffect: authoredEffectSchema.optional(),
   failEffect: authoredEffectSchema
 }).superRefine((card, context) => {
@@ -524,6 +528,7 @@ export const authoredHazardThreatCardSchema = threatBaseSchema.extend({
 
 export const authoredEnemyThreatCardSchema = threatBaseSchema.extend({
   cardType: z.literal("enemy"),
+  faction: threatFactionSchema,
   enemyName: z.string().min(1),
   trophyValue: z.number().int().min(0),
   missionReward: z.boolean().optional(),
@@ -681,6 +686,7 @@ export type ThreatCard = z.infer<typeof runtimeThreatCardSchema>;
 export type AuthoredThreatCard = z.infer<typeof authoredThreatCardSchema>;
 export type LegacyCompatibleThreatCard = z.infer<typeof legacyCompatibleThreatCardSchema>;
 export type ThreatFamily = z.infer<typeof threatFamilySchema>;
+export type ThreatFaction = z.infer<typeof threatFactionSchema>;
 export type ThreatLane = z.infer<typeof threatLaneSchema>;
 export type ThreatResolutionType = z.infer<typeof threatResolutionTypeSchema>;
 export type CardRarity = z.infer<typeof cardRaritySchema>;

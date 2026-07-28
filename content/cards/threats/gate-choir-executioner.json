@@ -2,6 +2,7 @@
   "id": "gate-choir-executioner",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Ashen Choir",
   "title": "Gate Choir Executioner",
   "enemyName": "Gate Choir Executioner",
   "text": "The Gate Choir sends an executioner whose axe hums with a verdict meant for someone else.",

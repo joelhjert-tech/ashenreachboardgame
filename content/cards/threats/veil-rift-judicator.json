@@ -2,6 +2,7 @@
   "id": "veil-rift-judicator",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Rift Court",
   "title": "Veil-Rift Judicator",
   "enemyName": "Veil-Rift Judicator",
   "text": "A hovering judge-engine descends from the veil with a sentence already burning in its throat.",

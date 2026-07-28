@@ -2,6 +2,7 @@
   "id": "static-larva-swarm",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Shardborn Brood",
   "title": "Static Larva Swarm",
   "enemyName": "Static Larva Swarm",
   "text": "Thumb-sized signal larvae flood from a cracked relay nest. Easy to crush, disastrous to let under your seals.",

@@ -2,6 +2,7 @@
   "id": "signal-rotted-engineer",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Last Light Engine",
   "title": "Signal-Rotted Engineer",
   "enemyName": "Signal-Rotted Engineer",
   "text": "If you lose, choose one equipped normal Equipment. It provides no effects during your next battle.",

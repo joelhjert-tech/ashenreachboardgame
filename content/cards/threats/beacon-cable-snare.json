@@ -2,6 +2,7 @@
   "id": "beacon-cable-snare",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Iron Synod",
   "title": "Beacon Cable Snare",
   "text": "Live beacon cable lashes out of the mire and knots itself around your boots and pack frame.",
   "flavor": "It wants to complete a circuit through bone.",

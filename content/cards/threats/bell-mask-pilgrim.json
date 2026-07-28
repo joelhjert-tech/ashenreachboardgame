@@ -2,6 +2,7 @@
   "id": "bell-mask-pilgrim",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Mirror Wake",
   "title": "Bell-Mask Pilgrim",
   "enemyName": "Bell-Mask Pilgrim",
   "text": "A lone pilgrim rings a cracked brass mask until the signal in your teeth begins ringing back.",

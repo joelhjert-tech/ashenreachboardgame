@@ -2,6 +2,7 @@
   "id": "emberwatch-sparkfall",
   "type": "threat",
   "cardType": "hazard",
+  "faction": "Cinder Court",
   "title": "Emberwatch Sparkfall",
   "text": "The watch ridge sheds a rain of white sparks that hunts movement and exposed metal.",
   "flavor": "Every spark lands like a verdict.",

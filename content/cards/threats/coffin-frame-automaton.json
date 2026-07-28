@@ -2,6 +2,7 @@
   "id": "coffin-frame-automaton",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Last Light Engine",
   "title": "Coffin-Frame Automaton",
   "enemyName": "Coffin-Frame Automaton",
   "text": "A funeral-grade automaton unfolds from its own transport coffin. Armor Break: only an overcommitted strike puts it down cleanly.",

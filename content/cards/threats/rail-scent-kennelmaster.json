@@ -2,6 +2,7 @@
   "id": "rail-scent-kennelmaster",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Red Maw Raiders",
   "title": "Rail-Scent Kennelmaster",
   "enemyName": "Rail-Scent Kennelmaster",
   "text": "A masked handler drags the captured route hound Knuckle through a furnace rail yard.",

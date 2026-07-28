@@ -2,6 +2,7 @@
   "id": "pale-marshal",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Pallid Retinue",
   "title": "The Pale Marshal",
   "enemyName": "The Pale Marshal",
   "text": "A named Hollow Court commander steps through the route smoke. If you lose, it marks the sector and remains in play.",

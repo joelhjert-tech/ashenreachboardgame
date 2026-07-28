@@ -2,6 +2,7 @@
   "id": "velvet-knife-confessor",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Violet Court",
   "title": "Velvet Knife Confessor",
   "enemyName": "Velvet Knife Confessor",
   "text": "A Hollow Court interrogator bows with a soft blade in each sleeve. This duel is decided by lies, not muscle.",

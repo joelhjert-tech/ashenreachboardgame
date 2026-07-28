@@ -2,6 +2,7 @@
   "id": "soot-stained-cutpurse",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Mirror Wake",
   "title": "Soot-Stained Cutpurse",
   "enemyName": "Soot-Stained Cutpurse",
   "text": "A lone market thief trails you through lantern smoke, more hungry than brave and far too quick with a strap knife. If you lose, lose up to 1 Salvage.",

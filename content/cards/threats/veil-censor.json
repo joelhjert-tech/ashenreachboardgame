@@ -2,6 +2,7 @@
   "id": "veil-censor",
   "type": "threat",
   "cardType": "enemy",
+  "faction": "Rift Court",
   "title": "Veil Censor",
   "enemyName": "Veil Censor",
   "text": "The censor edits witnesses from the room and leaves their shadows to sign the report.",
