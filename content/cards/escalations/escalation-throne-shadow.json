@@ -6,9 +6,5 @@
   "flavor": "The throne does not need a ruler to cast judgment.",
   "step": 5,
   "resolutionSummary": "The throne shadow deepened the final approach and fed collapse pressure.",
-  "resolveEffect": {
-    "type": "advance_escalation",
-    "amount": 1
-  },
   "escalationDelta": 1
 }

@@ -245,7 +245,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     anomaly: ["anomaly-red-suture-field"],
     contract: [],
     artifact: [],
-    escalation: ["escalation-emberwatch", "escalation-ridge-suture", "escalation-ashfall-curfew", "escalation-saltwind-lockdown"]
+    escalation: ["escalation-emberwatch", "escalation-ridge-suture"]
   },
   outer_oathpost: {
     threat: [
@@ -275,7 +275,14 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     anomaly: [],
     contract: [],
     artifact: [],
-    escalation: ["escalation-ridge-suture", "escalation-bellglass-riot", "escalation-gate-tax-mandate"]
+    escalation: [
+      "escalation-ashfall-curfew",
+      "escalation-bellglass-riot",
+      "escalation-choir-feedback",
+      "escalation-gate-tax-mandate",
+      "escalation-red-march-levy",
+      "escalation-saltwind-lockdown"
+    ]
   },
   middle_shard_sprawl: {
     threat: [
@@ -341,7 +348,16 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     anomaly: ["anomaly-marrow-clock-drift", "anomaly-scar-tide-lattice"],
     contract: ["compact-surgery-bond"],
     artifact: ["artifact-cinder-suture-kit", "artifact-void-salt-poultice"],
-    escalation: ["escalation-emberwatch", "escalation-red-march-levy", "escalation-marrow-surgery-debt"]
+    escalation: [
+      "escalation-crownfall-writ",
+      "escalation-marrow-surgery-debt",
+      "escalation-pit-blood-claim",
+      "escalation-webglass-afterimage",
+      "escalation-artifact-wake",
+      "escalation-blackstar-hunger",
+      "escalation-gate-saint-wake",
+      "escalation-throne-shadow"
+    ]
   },
   middle_guardian_span: {
     threat: [
