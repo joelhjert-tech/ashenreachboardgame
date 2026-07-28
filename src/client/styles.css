@@ -9781,22 +9781,12 @@ select {
   text-transform: uppercase;
 }
 
-.phone-result-gate__title > span {
-  color: #78d1dc;
-  font: 900 0.62rem/1.15 var(--font-sans);
-  letter-spacing: 0.18em;
-}
-
 .phone-result-gate__title h2 {
   margin: 0;
   color: #f2dfbf;
   font: 800 clamp(1.75rem, 8vw, 2.45rem)/0.98 var(--font-display, Georgia, serif);
   letter-spacing: 0.045em;
   text-shadow: 0 0.15rem 0 #07090b, 0 0 1rem rgba(96, 204, 215, 0.12);
-}
-
-.phone-result-gate[data-outcome="defeat"] .phone-result-gate__title > span {
-  color: #e59475;
 }
 
 .phone-result-gate__title p {
@@ -28161,10 +28151,10 @@ body {
 }
 
 .phone-battle-duel__header {
-  min-height: 2.6rem;
+  min-height: 2.2rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 0.75rem;
   padding: 0.38rem 0.62rem;
   border-block: 1px solid color-mix(in srgb, var(--challenge-color, #d84a32) 44%, transparent);
@@ -28179,21 +28169,6 @@ body {
   font-weight: 850;
   letter-spacing: 0.11em;
   text-transform: uppercase;
-}
-
-.phone-battle-duel__header strong {
-  color: #f4e5c8;
-  font: 850 1rem/1 Georgia, "Times New Roman", serif;
-}
-
-.phone-battle-duel__prompt {
-  min-height: 1.35rem;
-  margin: 0;
-  color: #aebac0;
-  font-size: 0.8rem;
-  font-weight: 750;
-  letter-spacing: 0.025em;
-  text-align: center;
 }
 
 .phone-battle-duel-stage {

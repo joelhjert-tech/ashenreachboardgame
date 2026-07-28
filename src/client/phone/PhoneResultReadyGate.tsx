@@ -90,7 +90,6 @@ export function PhoneResultReadyGate({
       <div className="phone-result-gate__shade" aria-hidden="true" />
 
       <header className="phone-result-gate__title">
-        <span>Result ready · waits for your choice</span>
         <h2>{verdictTitle(success)}</h2>
         <p>{challengeTitle} · {sourceLabel}</p>
       </header>

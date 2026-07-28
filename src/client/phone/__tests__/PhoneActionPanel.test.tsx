@@ -2823,7 +2823,7 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByRole("button", { name: /roll for enemy/i })).toBeInTheDocument();
-    expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/enemy roll/i);
+    expect(screen.getByTestId("phone-battle-shell")).not.toHaveTextContent(/enemy roll/i);
   });
 
   it("shows a waiting state for seats that are neither the fighter nor the assigned roller", () => {
@@ -3100,6 +3100,7 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByTestId("phone-resolution-card")).toHaveAttribute("data-result-ready-gate", "true");
+    expect(screen.getByTestId("phone-resolution-card")).not.toHaveTextContent(/result ready.*waits for your choice/i);
     expect(screen.getAllByRole("button", { name: /^continue$/i })).toHaveLength(1);
   });
 
@@ -3291,7 +3292,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/roll required/i);
+    expect(screen.getByTestId("phone-battle-shell")).not.toHaveTextContent(/roll required|roll grit when ready/i);
+    expect(screen.getAllByRole("button", { name: /^roll grit$/i })).toHaveLength(1);
     expect(screen.getByLabelText(/lane versus cinder-veil stalker/i)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /cinder-veil stalker/i })).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//));
     expect(screen.getByTestId("phone-battle-cinematic-stage")).toHaveTextContent(/difficulty\s*8/i);

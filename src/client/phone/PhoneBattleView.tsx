@@ -571,7 +571,6 @@ export function PhoneBattleView({
               operativeValue={operativeValue}
               opponentTotal={opponentTotal}
               finalTotal={finalTotal}
-              resultLabel={resultLabel}
             />
             {usableGearCount > 0 && !roll ? (
               <button

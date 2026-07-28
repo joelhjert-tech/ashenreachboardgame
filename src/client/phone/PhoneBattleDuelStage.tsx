@@ -14,7 +14,6 @@ interface PhoneBattleDuelStageProps {
   operativeValue: number;
   opponentTotal: number;
   finalTotal: number | null;
-  resultLabel: string;
 }
 
 function scoreLabel(finalTotal: number | null, statLabel: string): string {
@@ -31,8 +30,7 @@ export function PhoneBattleDuelStage({
   statLabel,
   operativeValue,
   opponentTotal,
-  finalTotal,
-  resultLabel
+  finalTotal
 }: PhoneBattleDuelStageProps): ReactElement {
   const operativeScore = finalTotal ?? operativeValue;
   const phase = finalTotal === null ? "ready" : "result";
@@ -49,7 +47,6 @@ export function PhoneBattleDuelStage({
     >
       <header className="phone-battle-duel__header">
         <span>Battle · {statLabel}</span>
-        <strong>{resultLabel}</strong>
       </header>
       <div className="phone-battle-duel-stage">
         <figure className="phone-battle-duel-card phone-battle-duel-card--operative">
@@ -81,9 +78,6 @@ export function PhoneBattleDuelStage({
           </div>
         </figure>
       </div>
-      <p className="phone-battle-duel__prompt">
-        {finalTotal === null ? `Roll ${statLabel} when ready.` : "Authoritative totals locked."}
-      </p>
     </section>
   );
 }
