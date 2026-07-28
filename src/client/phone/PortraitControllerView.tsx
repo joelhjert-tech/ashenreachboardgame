@@ -168,7 +168,11 @@ function getPhoneActionGuidance(patch: PhonePatchPayload | null, self: PhoneSelf
     };
   }
 
-  if (patch.shopEncounter) {
+  if (
+    patch.shopEncounter &&
+    patch.shopEncounter.status !== "locked" &&
+    patch.shopEncounter.blocked !== true
+  ) {
     return { requiredTab: "shop", title: "Shop", detail: "Browse Equipment or choose a service.", canAct: true };
   }
 
@@ -1174,6 +1178,8 @@ export function PortraitControllerView({
     patch?.requiredAction?.id,
     patch?.requiredAction?.requiredTab,
     patch?.shopEncounter?.shopId,
+    patch?.shopEncounter?.status,
+    patch?.shopEncounter?.blocked,
     patch?.status,
     patchSequence,
     self?.seatId

@@ -17,6 +17,7 @@ const mockCreateSession = vi.fn();
 const mockFetchCharacters = vi.fn();
 const mockFetchScenarios = vi.fn();
 const mockFetchSessionSummary = vi.fn();
+const mockClaimPrePlayerHost = vi.fn();
 const mockStartSession = vi.fn();
 
 vi.mock("../../shared/useRoomSubscription.js", () => ({
@@ -24,6 +25,7 @@ vi.mock("../../shared/useRoomSubscription.js", () => ({
 }));
 
 vi.mock("../../shared/network.js", () => ({
+  claimPrePlayerHost: (...args: unknown[]) => mockClaimPrePlayerHost(...args),
   createSession: (...args: unknown[]) => mockCreateSession(...args),
   fetchCharacters: (...args: unknown[]) => mockFetchCharacters(...args),
   fetchScenarios: (...args: unknown[]) => mockFetchScenarios(...args),
@@ -307,6 +309,20 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
   };
 }
 
+function createPrePlayerLobbyPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
+  const patch = createPatch(roomCode);
+  patch.payload.status = "lobby";
+  patch.payload.setupHostSeatId = null;
+  patch.payload.hostPhoneConnected = false;
+  patch.payload.seats = patch.payload.seats.map((seat) => ({
+    ...seat,
+    displayName: null,
+    connected: false,
+    ready: false
+  }));
+  return patch;
+}
+
 describe("TvApp", () => {
   afterEach(() => {
     cleanup();
@@ -326,7 +342,12 @@ describe("TvApp", () => {
       playerCount: 6,
       seats: [],
       status: "lobby",
-      phase: "start"
+      phase: "start",
+      setupHostSeatId: null
+    });
+    mockClaimPrePlayerHost.mockResolvedValue({
+      roomCode: "RT7P4",
+      hostToken: "host:RT7P4:claimed"
     });
     mockCreateSession.mockResolvedValue({
       roomCode: "RT7P4",
@@ -974,8 +995,7 @@ describe("TvApp", () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const sendIntent = vi.fn();
-    const patch = createPatch();
-    patch.payload.status = "lobby";
+    const patch = createPrePlayerLobbyPatch();
     mockUseRoomSubscription.mockReturnValue({
       patch,
       error: null,
@@ -999,8 +1019,7 @@ describe("TvApp", () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const sendIntent = vi.fn();
-    const patch = createPatch();
-    patch.payload.status = "lobby";
+    const patch = createPrePlayerLobbyPatch();
     mockUseRoomSubscription.mockReturnValue({
       patch,
       error: null,
@@ -1018,10 +1037,10 @@ describe("TvApp", () => {
   });
 
   it("rejects a forged direct dashboard link without the restored host token", async () => {
+    mockClaimPrePlayerHost.mockRejectedValueOnce(new Error("Not authorized"));
     window.history.replaceState({}, "", "/tv?admin=library");
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
-    const patch = createPatch();
-    patch.payload.status = "lobby";
+    const patch = createPrePlayerLobbyPatch();
     mockUseRoomSubscription.mockReturnValue({
       patch,
       error: null,
@@ -1067,24 +1086,22 @@ describe("TvApp", () => {
     expect(sendIntent).toHaveBeenCalledWith({ type: "RETURN_TO_LOBBY" });
   });
 
-  it("auto-attaches the TV display to the server room without storing a host token", async () => {
+  it("auto-attaches the TV display and reclaims pre-player host administration", async () => {
     render(<TvApp />);
 
     expect(await screen.findByTestId("mock-join-qr")).toHaveAttribute("data-room-code", "RT7P4");
     expect(mockFetchSessionSummary).toHaveBeenCalled();
-    expect(mockUseRoomSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({
-        enabled: true,
-        hostToken: null
-      })
-    );
+    expect(mockClaimPrePlayerHost).toHaveBeenCalledWith("RT7P4");
+    await waitFor(() => expect(mockClaimPrePlayerHost).toHaveBeenCalledWith("RT7P4"));
     await waitFor(() => {
       expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBe("RT7P4");
     });
-    expect(window.localStorage.getItem("ashen-reach-tv-host-token")).toBeNull();
+    await waitFor(() => {
+      expect(window.localStorage.getItem("ashen-reach-tv-host-token")).toBe("host:RT7P4:claimed");
+    });
   });
 
-  it("drops stale restored host storage and reconnects as a public TV display", async () => {
+  it("drops stale restored host storage and reclaims the current pre-player host", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "OLD99");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:OLD99:secret");
 
@@ -1094,15 +1111,38 @@ describe("TvApp", () => {
       expect(mockUseRoomSubscription).toHaveBeenLastCalledWith(
         expect.objectContaining({
           enabled: true,
-          hostToken: null
+          hostToken: "host:RT7P4:claimed"
         })
       );
     });
     await waitFor(() => {
       expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBe("RT7P4");
     });
-    expect(window.localStorage.getItem("ashen-reach-tv-host-token")).toBeNull();
+    expect(window.localStorage.getItem("ashen-reach-tv-host-token")).toBe("host:RT7P4:claimed");
     expect(screen.queryByText(/previous session ended/i)).not.toBeInTheDocument();
+  });
+
+  it("hides pre-player administration after the first phone has joined", async () => {
+    window.history.replaceState({}, "", "/tv");
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.status = "lobby";
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      synchronized: true,
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByTestId("signal-theatre-host")).toHaveAttribute("data-signal-state", "lobby");
+    expect(screen.queryByRole("button", { name: /^admin dashboard$/i })).not.toBeInTheDocument();
+    expect(mockClaimPrePlayerHost).not.toHaveBeenCalled();
   });
 
   it("does not expose TV-side room creation or mode controls", async () => {
@@ -1328,6 +1368,9 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
+    const endgame = await screen.findByLabelText("Session end state");
+    expect(endgame).toHaveTextContent(/mission accomplished/i);
+    expect(endgame).toHaveTextContent(/joel completed the final restoration/i);
     expect((await screen.findAllByText(/mission accomplished/i)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/joel completed the final restoration/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/most wounds|most scars|most threats defeated/i)).not.toBeInTheDocument();

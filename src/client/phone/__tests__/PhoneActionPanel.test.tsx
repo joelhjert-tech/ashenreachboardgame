@@ -4,7 +4,8 @@ import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhoneActionPanel } from "../PhoneActionPanel.js";
-import type { CharacterCatalogEntry, ClientIntent, PhonePatchPayload } from "../../shared/types.js";
+import { getChallengeThemeStyle } from "../../../game/ui/challengeTheme.js";
+import type { CharacterCatalogEntry, ClientIntent, PhonePatchPayload, Stat } from "../../shared/types.js";
 
 const characters: CharacterCatalogEntry[] = [
   {
@@ -133,6 +134,68 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
 }
 
 describe("PhoneActionPanel", () => {
+  it.each([
+    {
+      label: "hazard",
+      encounter: {
+        id: "glass-chime-swarm",
+        title: "Glass Chime Swarm",
+        cardType: "hazard" as const,
+        flavor: "A ringing tide skates over the broken rails.",
+        difficulty: 6,
+        stat: "signal" as const
+      },
+      actionPattern: /face the hazard|attempt signal check|roll check dice/i
+    },
+    {
+      label: "enemy",
+      encounter: {
+        id: "cinder-veil-stalker",
+        title: "Cinder-Veil Stalker",
+        cardType: "enemy" as const,
+        enemyName: "Cinder-Veil Stalker",
+        flavor: "A hooked silhouette advances.",
+        difficulty: 6,
+        stat: "grit" as const
+      },
+      actionPattern: /begin encounter|enter combat|roll combat dice/i
+    }
+  ])("hides duplicate $label actions while the authoritative dice are rolling", ({ encounter, actionPattern }) => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter,
+          activeResolution: {
+            id: `seat-1:threat:${encounter.id}:rolling`,
+            playerId: "seat-1",
+            source: "threat",
+            stage: "dice_roll",
+            card: {
+              id: encounter.id,
+              title: encounter.title,
+              type: encounter.cardType
+            },
+            battle: {
+              enemyName: encounter.cardType === "enemy" ? encounter.enemyName : undefined,
+              stat: encounter.stat,
+              difficulty: encounter.difficulty,
+              modifiers: []
+            },
+            outcome: {
+              title: "Dice rolling",
+              text: `${encounter.title} dice are rolling.`,
+              effects: []
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: actionPattern })).not.toBeInTheDocument();
+  });
+
   it("submits the focused production Scar through the authoritative choice intent", () => {
     const onIntent = vi.fn<(intent: ClientIntent) => void>();
     render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={createPatch({
@@ -1746,10 +1809,12 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/shop blocked/i);
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/shop blocked by threat/i);
-    expect(screen.getAllByText(/shop blocked by threat/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/market stalker/i).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--action");
+    expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute(
+      "aria-label",
+      expect.stringMatching(/shop locked: shop blocked by threat/i)
+    );
+    expect(screen.queryByRole("button", { name: /leave shop/i })).not.toBeInTheDocument();
   });
 
   it("allows the shop tab to show a no-shop state", () => {
@@ -2860,6 +2925,88 @@ describe("PhoneActionPanel", () => {
     });
   });
 
+  it("restores Continue after a successful reroll even when an optional Scar action is disabled", () => {
+    const onIntent = vi.fn();
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          phase: "resolution",
+          activeResolution: {
+            id: "seat-1:threat:emberwatch-sparkfall:reroll",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "roll_result",
+            card: {
+              id: "emberwatch-sparkfall",
+              title: "Emberwatch Sparkfall",
+              type: "hazard",
+              artType: "threat"
+            },
+            battle: {
+              stat: "signal",
+              difficulty: 10,
+              modifiers: [{ label: "Signal", value: 2 }]
+            },
+            roll: {
+              dice: [4, 4],
+              baseTotal: 8,
+              modifierTotal: 2,
+              finalTotal: 10,
+              target: 10,
+              success: true
+            },
+            outcome: {
+              title: "Solo reroll passed",
+              text: "The sparkfall clears.",
+              effects: []
+            }
+          },
+          requiredAction: {
+            id: "test:emberwatch-sparkfall:roll_result",
+            kind: "test",
+            actorSeatId: "seat-1",
+            actorDisplayName: "Lane",
+            requiredTab: "action",
+            label: "Solo reroll passed",
+            detail: "Review the result.",
+            canAct: true,
+            waiting: false,
+            privacy: "owner",
+            transitionStage: "continue-available",
+            allowedCommand: "continue"
+          },
+          scarAdaptationControls: [{
+            activationId: "ash-lanced:invalid",
+            scarId: "scar-ash-lanced",
+            scarName: "Ash-Lanced",
+            ruleKey: "prevent-displacement",
+            timing: "afterTest",
+            effectText: "Prevent forced displacement.",
+            limit: "oncePerRound",
+            remainingUses: 1,
+            enabled: false,
+            disabledReason: "Not valid for the current signal window.",
+            targets: []
+          }]
+        })}
+      />
+    );
+
+    const continueButton = screen.getByTestId("phone-resolution-continue");
+    expect(continueButton).toHaveTextContent(/^continue$/i);
+    expect(continueButton).toBeEnabled();
+    expect(screen.getByRole("button", { name: /use ash-lanced/i })).toBeDisabled();
+
+    fireEvent.click(continueButton);
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "CONTINUE_RESOLUTION",
+      seatId: "seat-1"
+    });
+  });
+
   it("shows one final verdict after the server has applied the consequence", () => {
     const resolution = {
       id: "seat-1:threat:signal-static:stable-verdict",
@@ -3215,6 +3362,44 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByTestId("phone-battle-total-comparison")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /view details/i })).toBeInTheDocument();
   });
+
+  it.each<Stat>(["command", "grit", "signal", "guile", "forge"])(
+    "matches the phone battle frame to the authoritative %s challenge theme",
+    (stat) => {
+      render(
+        <PhoneActionPanel
+          characters={characters}
+          onIntent={vi.fn()}
+          patch={createPatch({
+            activeResolution: {
+              id: `seat-1:threat:theme-${stat}`,
+              playerId: "seat-1",
+              source: "threat",
+              stage: "battle_setup",
+              card: {
+                id: `theme-${stat}-enemy`,
+                title: `${stat} enemy`,
+                type: "enemy",
+                artType: "threat"
+              },
+              battle: {
+                enemyName: `${stat} enemy`,
+                stat,
+                difficulty: 8,
+                modifiers: []
+              }
+            }
+          })}
+        />
+      );
+
+      const shell = screen.getByTestId("phone-battle-shell");
+      const theme = getChallengeThemeStyle(stat);
+      expect(shell).toHaveAttribute("data-challenge-stat", stat);
+      expect(shell.style.getPropertyValue("--challenge-color")).toBe(theme["--challenge-color"]);
+      expect(shell.style.getPropertyValue("--challenge-border")).toBe(theme["--challenge-border"]);
+    }
+  );
 
   it("uses the focused battle shell when live battle data has a generic projected card type", () => {
     render(

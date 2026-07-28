@@ -619,6 +619,7 @@ export function chooseCampaignAction(snapshot: DomSnapshot): ChosenAction | null
     /^face the /i,
     /^begin /i,
     /^engage /i,
+    /^reveal /i,
     /^resolve /i,
     /^attempt /i,
     /^start (tile|hazard|anomaly|encounter|challenge)/i,
@@ -1104,7 +1105,11 @@ async function setupPhone(
   await waitForText(surface, /choose starting mission/i);
   await onCheckpoint?.("mission-selection");
   await clickMatching(surface, [/^select mission$/i]);
-  await sleep(250);
+  for (let pick = 1; pick <= 2; pick += 1) {
+    await waitForText(surface, new RegExp(`provision · pick ${pick} of 2`, "i"));
+    await clickMatching(surface, [/^choose (?:follower|equipment)$/i]);
+    await sleep(350);
+  }
   await clickMatching(surface, [/^ready$/i]);
 }
 
@@ -1474,6 +1479,10 @@ async function runCase(browser: Browser, campaignCase: CampaignCase): Promise<Ca
 
     terminal = await api<SessionSummary>("/api/session");
     if (terminal.status === "ended") {
+      await tv.page.locator('[aria-label="Session end state"]').waitFor({
+        state: "visible",
+        timeout: 5_000
+      });
       await captureEvidence(caseDirectory, "endgame", s21, tv.page, screenshots, typography);
     }
     const completedAt = new Date();
@@ -1554,7 +1563,11 @@ async function main(): Promise<void> {
   await mkdir(outputRoot, { recursive: true });
   const physicalDevice = await verifyPhysicalDevice();
   const startedAt = new Date();
-  const browser = await chromium.launch({ headless: true });
+  const chromiumExecutablePath = process.env.ASHEN_REACH_CHROMIUM_EXECUTABLE?.trim();
+  const browser = await chromium.launch({
+    headless: true,
+    ...(chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : {}),
+  });
   const results: CampaignCaseResult[] = [];
   try {
     for (const campaignCase of requestedCases) {

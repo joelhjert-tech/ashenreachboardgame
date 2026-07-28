@@ -2,10 +2,11 @@
 
 ## Delivered
 
-- Added one authenticated `Admin Dashboard` action to the Signal Theatre lobby.
+- Added one authenticated `Admin Dashboard` action to the Signal Theatre lobby before the first player connects.
 - Removed unauthenticated startup access to the old standalone Library and Map surfaces.
 - Added guarded legacy-link routing for `?admin=library` and `?admin=map`.
 - Added immediate closure on active status, ended status, or synchronization loss.
+- Added guarded host-token reclaim after local server restart and immediate closure on the first player join.
 - Consolidated Overview, Content Archive, Map Inspector, Test Lab, and Reports & Codex Tools in one TV command-console shell.
 - Expanded the archive from 372 gameplay JSON records to 417 current canonical and compatibility records.
 - Added operatives, Missions, scenarios, and nemeses to the archive.

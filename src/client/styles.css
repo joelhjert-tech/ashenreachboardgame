@@ -11803,15 +11803,26 @@ select {
   --battle-danger: #d8583f;
   --battle-bone: #e4c98f;
   --battle-signal: #8499aa;
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
   min-height: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto auto;
   overflow: hidden;
+  border: 1px solid var(--challenge-border, rgba(216, 74, 50, 0.68));
   background:
-    linear-gradient(90deg, rgba(104, 28, 20, 0.11), transparent 22%, transparent 78%, rgba(104, 28, 20, 0.11)),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--challenge-color, #d84a32) 11%, transparent),
+      transparent 22%,
+      transparent 78%,
+      color-mix(in srgb, var(--challenge-color, #d84a32) 11%, transparent)
+    ),
     #07090c;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--challenge-color, #d84a32) 18%, transparent),
+    inset 0.2rem 0 0 color-mix(in srgb, var(--challenge-color, #d84a32) 48%, transparent);
 }
 
 .phone-battle-shell__scroll {
@@ -12362,9 +12373,10 @@ select {
 
 .phone-battle-shell--cinematic .phone-battle-state {
   min-height: 1.9rem;
-  border: 1px solid rgba(211, 169, 91, 0.32);
+  border: 1px solid color-mix(in srgb, var(--challenge-color, #d84a32) 42%, transparent);
   border-inline-width: 0;
-  background: linear-gradient(90deg, rgba(30, 18, 13, 0.84), rgba(8, 11, 14, 0.62));
+  background:
+    linear-gradient(90deg, var(--challenge-soft, rgba(216, 74, 50, 0.16)), rgba(8, 11, 14, 0.62));
 }
 
 .phone-battle-shell--cinematic .phone-battle-arena {
@@ -17274,18 +17286,28 @@ body {
 }
 
 .tv-endgame-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
   display: grid;
   grid-template-columns: minmax(22rem, 0.8fr) minmax(0, 1.2fr);
+  grid-template-rows: auto auto;
   gap: 1rem;
-  align-items: stretch;
-  padding: 1.2rem;
+  align-content: center;
+  align-items: center;
+  min-height: 100dvh;
+  padding: clamp(1.2rem, 3vw, 3.6rem);
+  overflow: hidden;
   border: 1px solid rgba(239, 215, 166, 0.28);
-  background: linear-gradient(135deg, rgba(26, 30, 24, 0.94), rgba(13, 17, 19, 0.96));
+  background:
+    radial-gradient(circle at 18% 42%, rgba(126, 62, 39, 0.22), transparent 38%),
+    linear-gradient(135deg, rgba(26, 30, 24, 0.99), rgba(7, 10, 12, 0.995));
 }
 
 .tv-endgame-copy {
   display: grid;
   align-content: center;
+  align-self: stretch;
   gap: 0.5rem;
 }
 
@@ -17310,6 +17332,7 @@ body {
 
 .tv-endgame-grid {
   display: grid;
+  align-self: stretch;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.55rem;
 }
@@ -28076,13 +28099,14 @@ body {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.38rem 0.62rem;
-  border-block: 1px solid rgba(205, 167, 96, 0.28);
-  background: linear-gradient(90deg, rgba(38, 24, 16, 0.74), rgba(7, 12, 16, 0.92));
+  border-block: 1px solid color-mix(in srgb, var(--challenge-color, #d84a32) 44%, transparent);
+  background:
+    linear-gradient(90deg, var(--challenge-soft, rgba(216, 74, 50, 0.16)), rgba(7, 12, 16, 0.92));
   animation: phone-battle-duel-header 260ms var(--motion-ease-standard, ease-out) both;
 }
 
 .phone-battle-duel__header span {
-  color: #d8ae6b;
+  color: color-mix(in srgb, var(--challenge-color, #d84a32) 72%, #f3e6cf);
   font-size: 0.72rem;
   font-weight: 850;
   letter-spacing: 0.11em;
@@ -28111,10 +28135,13 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.26rem;
   overflow: hidden;
-  border: 1px solid rgba(151, 158, 159, 0.32);
+  border: 1px solid var(--challenge-border, rgba(216, 74, 50, 0.68));
   background:
-    radial-gradient(circle at 50% 45%, rgba(97, 166, 173, 0.1), transparent 28%),
+    radial-gradient(circle at 50% 45%, var(--challenge-soft, rgba(216, 74, 50, 0.16)), transparent 32%),
     #05080a;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--challenge-color, #d84a32) 18%, transparent),
+    0 0 1rem color-mix(in srgb, var(--challenge-color, #d84a32) 13%, transparent);
   clip-path: polygon(0.45rem 0, 100% 0, 100% calc(100% - 0.45rem), calc(100% - 0.45rem) 100%, 0 100%, 0 0.45rem);
 }
 
@@ -28134,7 +28161,7 @@ body {
 }
 
 .phone-battle-duel-card--enemy {
-  border-left: 1px solid rgba(202, 103, 67, 0.28);
+  border-left: 1px solid color-mix(in srgb, var(--challenge-color, #d84a32) 38%, transparent);
   animation: phone-battle-duel-right 520ms var(--motion-ease-focus, cubic-bezier(0.2, 0.8, 0.2, 1)) 60ms both;
 }
 
@@ -28246,6 +28273,14 @@ body {
   filter: drop-shadow(0 0 0.38rem rgba(110, 205, 211, 0.72));
   transform-origin: top;
   animation: phone-battle-rift-draw 520ms var(--motion-ease-focus, cubic-bezier(0.2, 0.8, 0.2, 1)) 180ms both;
+}
+
+.phone-battle-shell--result-gate .phone-result-gate {
+  border-color: var(--challenge-border, rgba(216, 74, 50, 0.68));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--challenge-color, #d84a32) 18%, transparent),
+    0 0 1.4rem color-mix(in srgb, var(--challenge-color, #d84a32) 16%, transparent),
+    0 1.1rem 2.5rem rgba(0, 0, 0, 0.48);
 }
 
 .phone-battle-duel-stage__rift span {

@@ -27,6 +27,66 @@ describe("admin content API authority", () => {
     root = null;
   });
 
+  it("allows host reclaim only before the first player joins and then locks administration", async () => {
+    root = await mkdtemp(path.join(os.tmpdir(), "ashen-admin-claim-api-"));
+    await mkdir(path.join(root, "content"), { recursive: true });
+    await writeFile(path.join(root, "content/card-artwork-overrides.json"), "{}\n");
+    harness = await startAshenReachServer({
+      port: 18980 + Math.floor(Math.random() * 500),
+      maxPortAttempts: 20,
+      logUrls: false,
+      adminContentEditingEnabled: false,
+      projectRoot: root
+    });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
+    const sessionResponse = await fetch(`${baseUrl}/api/session`);
+    const session = await sessionResponse.json() as { roomCode: string };
+
+    const claimed = await post<{ roomCode: string; hostToken: string }>(baseUrl, "/api/session/claim-host", {
+      roomCode: session.roomCode
+    });
+    expect(claimed.status).toBe(200);
+    expect(claimed.payload).toMatchObject({
+      roomCode: session.roomCode,
+      hostToken: expect.any(String)
+    });
+
+    const beforeJoin = await post<{ dashboardAllowed: boolean; mode: string }>(baseUrl, "/api/admin/content/status", {
+      roomCode: session.roomCode,
+      hostToken: claimed.payload.hostToken
+    });
+    expect(beforeJoin).toEqual({
+      status: 200,
+      payload: expect.objectContaining({ dashboardAllowed: true, mode: "lobby-view" })
+    });
+
+    const joined = await post<{ seatId: string }>(baseUrl, "/api/session/join", {
+      roomCode: session.roomCode,
+      displayName: "First"
+    });
+    expect(joined.status).toBe(200);
+
+    const afterJoin = await post<{ dashboardAllowed: boolean; mode: string }>(baseUrl, "/api/admin/content/status", {
+      roomCode: session.roomCode,
+      hostToken: claimed.payload.hostToken
+    });
+    expect(afterJoin).toEqual({
+      status: 200,
+      payload: expect.objectContaining({ dashboardAllowed: false, mode: "player-connected-locked" })
+    });
+
+    const secondClaim = await post<{ error: string }>(baseUrl, "/api/session/claim-host", {
+      roomCode: session.roomCode
+    });
+    expect(secondClaim.status).toBe(423);
+
+    const lockedReports = await post<{ error: string }>(baseUrl, "/api/admin/content/reports", {
+      roomCode: session.roomCode,
+      hostToken: claimed.payload.hostToken
+    });
+    expect(lockedReports.status).toBe(423);
+  });
+
   it("requires both the development flag and the canonical host token", async () => {
     root = await mkdtemp(path.join(os.tmpdir(), "ashen-admin-api-"));
     await mkdir(path.join(root, path.dirname(SOURCE)), { recursive: true });

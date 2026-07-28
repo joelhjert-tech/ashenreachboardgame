@@ -2479,6 +2479,14 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         );
       }
 
+      if (
+        state.activeResolution &&
+        state.activeResolution.stage !== "card_reveal" &&
+        state.activeResolution.stage !== "battle_setup"
+      ) {
+        return reject(state, action, "This encounter roll is already in progress or resolved");
+      }
+
       return succeed({
         ...state,
         sequence: state.sequence + 1,
@@ -2529,6 +2537,14 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           action,
           `Encounter requires ${state.currentEncounter.stat}, not ${combatRequest.stat}`
         );
+      }
+
+      if (
+        state.activeResolution &&
+        state.activeResolution.stage !== "card_reveal" &&
+        state.activeResolution.stage !== "battle_setup"
+      ) {
+        return reject(state, action, "This encounter roll is already in progress or resolved");
       }
 
       const battleResolutionId = state.activeResolution?.id ?? createResolutionId(combatRequest.seatId, "threat", combatRequest.createdAt, state.currentEncounter.id);
@@ -3972,11 +3988,19 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Unknown replacement character ${recruitAction.replacementCharacterId}`);
       }
 
+      const unresolvedArrivalLifecycle = Boolean(
+        state.currentEncounter ||
+        state.activeResolution ||
+        state.pendingEffect ||
+        state.pendingTileChallenge ||
+        state.pendingEnemyRoll
+      );
+
       return succeed(clearNextNormalMovementRollModifierForSeat(clearNextNonBattleTestModifierForSeat({
         ...state,
         sequence: state.sequence + 1,
-        phase: "broadcast",
-        resolutionSource: null,
+        phase: unresolvedArrivalLifecycle ? state.phase : "broadcast",
+        resolutionSource: unresolvedArrivalLifecycle ? state.resolutionSource : null,
         pendingEnemyRoll: null,
         seats: state.seats.map((entry) =>
           entry.seatId === recruitAction.seatId
@@ -5325,6 +5349,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       const hasUnresolvedBlocker = Boolean(state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect);
+      if (!hasUnresolvedBlocker && !getServiceThreatGate(state, skipAction.seatId, skipAction.sectorId).allowed) {
+        return reject(state, action, SHOP_FAILURE_REASONS.shopBlockedByThreat);
+      }
 
       return succeed({
         ...state,

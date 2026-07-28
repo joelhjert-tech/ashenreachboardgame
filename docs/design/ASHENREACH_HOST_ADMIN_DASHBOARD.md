@@ -2,16 +2,17 @@
 
 ## Purpose
 
-The Host Admin Dashboard is an authenticated, lobby-only authoring surface inside Signal Theatre. It consolidates content inspection, topology review, detached simulations, report summaries, and sanitized Codex handoffs without becoming part of gameplay state.
+The Host Admin Dashboard is an authenticated, pre-player-lobby authoring surface inside Signal Theatre. It consolidates content inspection, topology review, detached simulations, report summaries, and sanitized Codex handoffs without becoming part of gameplay state.
 
 The dashboard is deliberately unavailable:
 
 - Before the TV has a valid room and host token.
 - While the room subscription is unsynchronized.
+- After the first player phone has joined the room.
 - During an active game.
 - After victory or defeat.
 
-Opening the dashboard keeps the public room subscription alive. Any loss of synchronization or authoritative lobby status closes the surface immediately.
+Opening the dashboard keeps the public room subscription alive. Any loss of synchronization, authoritative lobby status, or first-player join closes the surface immediately.
 
 ## Access model
 
@@ -22,6 +23,9 @@ Every server operation independently verifies:
 1. The current room code.
 2. The canonical host token.
 3. Authoritative room status `lobby`.
+4. No setup-host seat has been claimed by a player phone.
+
+After a local server restart, the TV may reclaim the canonical host token through the guarded pre-player endpoint. Reclaim is rejected after the first player joins and never resets the room.
 
 Repository writes additionally require the local `--admin-content-editor` capability. Detached simulations do not require that write capability.
 

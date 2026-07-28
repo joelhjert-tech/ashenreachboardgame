@@ -2260,7 +2260,14 @@ function PhoneShopPanel({
       )}
 
       <div className="phone-shop-skip">
-        <GameButton type="button" tone="secondary" className="phone-shop-skip-button" disabled={pendingActionId === "leave"} onClick={skipShop}>
+        <GameButton
+          type="button"
+          tone="secondary"
+          className="phone-shop-skip-button"
+          disabled={isLocked || pendingActionId === "leave"}
+          disabledReason={isLocked ? blockedReasonText : undefined}
+          onClick={skipShop}
+        >
           {pendingActionId === "leave" ? "Leaving..." : "Leave Shop"}
         </GameButton>
       </div>
@@ -3269,7 +3276,13 @@ export function PhoneActionPanel({
     !patch.pendingAfflictionReactionPrivate &&
     !patch.pendingForcedDestinationChoicePrivate &&
     !patch.pendingDisplacementPrivate &&
-    ["outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
+    (
+      ["outcome_summary", "awaiting_continue"].includes(activeResolution.stage) ||
+      (
+        activeResolution.stage === "roll_result" &&
+        patch.requiredAction?.allowedCommand === "continue"
+      )
+    );
   const continueResolution = () =>
     onIntent({
       type: "CONTINUE_RESOLUTION",
@@ -4038,7 +4051,12 @@ export function PhoneActionPanel({
     });
   }
 
-  if (patch.phase === "action" && patch.encounter?.cardType === "hazard") {
+  const encounterResolutionCanAdvance =
+    !activeResolution ||
+    activeResolution.stage === "card_reveal" ||
+    activeResolution.stage === "battle_setup";
+
+  if (patch.phase === "action" && patch.encounter?.cardType === "hazard" && encounterResolutionCanAdvance) {
     const pendingTileChallenge = patch.pendingTileChallengePrivate;
     const choirLantern = self.character.heldGear.find((item) => item.id === "choir-lantern");
     if (pendingTileChallenge?.challengeType === "anomaly" && pendingTileChallenge.testStat === "signal" && !pendingTileChallenge.rolled) {
@@ -4109,7 +4127,7 @@ export function PhoneActionPanel({
     });
   }
 
-  if (patch.phase === "action" && patch.encounter?.cardType === "enemy") {
+  if (patch.phase === "action" && patch.encounter?.cardType === "enemy" && encounterResolutionCanAdvance) {
     const combatIsStaged =
       activeResolution?.stage === "battle_setup" &&
       activeResolution.playerId === self.seatId;
@@ -4574,13 +4592,15 @@ export function PhoneActionPanel({
       blockedReason: actionBlockedReason
     }
   ];
-  const canShowSelectedTab = (tab: TurnActionTabDefinition) =>
-    !hasEncounterContent || tab.id === "action" || tab.enabled || tab.locked === true;
+  const canShowSelectedTab = (tab: TurnActionTabDefinition) => {
+    if (tab.id === "shop" && shopLocked && hasActionContent) return false;
+    return !hasEncounterContent || tab.id === "action" || tab.enabled || tab.locked === true;
+  };
   const fallbackTab = movementPlanner?.active || movementApproachResolution || movementApproachOutcome
     ? "move"
     : hasEncounterContent
       ? "action"
-      : hasShopContent
+      : hasShopContent && !shopLocked
         ? "shop"
         : tabDefinitions.find((tab) => tab.id === "action" && (tab.enabled || tab.locked))?.id ??
           tabDefinitions.find((tab) => tab.enabled || tab.locked)?.id ??

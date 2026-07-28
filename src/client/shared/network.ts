@@ -157,6 +157,23 @@ export async function createSession(
   return payload;
 }
 
+export async function claimPrePlayerHost(roomCode: string): Promise<{ roomCode: string; hostToken: string }> {
+  const response = await fetch(`${apiOrigin}/api/session/claim-host`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ roomCode })
+  });
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Could not restore host administration");
+  }
+
+  return payload as { roomCode: string; hostToken: string };
+}
+
 export async function fetchSessionSummary(): Promise<{
   roomCode: string;
   sessionMode: SessionMode;

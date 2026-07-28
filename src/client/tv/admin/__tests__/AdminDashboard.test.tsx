@@ -47,13 +47,13 @@ describe("Host Admin Dashboard", () => {
     vi.clearAllMocks();
   });
 
-  it("shows the unified lobby-only command console and current canonical union", async () => {
+  it("shows the unified pre-player lobby command console and current canonical union", async () => {
     const close = vi.fn();
     render(<AdminDashboard roomCode="ROOM9" hostToken="host:ROOM9:secret" onClose={close} />);
 
     expect(screen.getByRole("main", { name: /host admin dashboard/i })).toBeInTheDocument();
     expect(screen.getByText(/authoring spoilers visible/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /417 records under inspection/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /422 records under inspection/i })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText(/lifecycle report is stale/i)).toBeInTheDocument());
     expect(screen.queryByText("ROOM9")).not.toBeInTheDocument();
     expect(screen.queryByText("host:ROOM9:secret")).not.toBeInTheDocument();
@@ -75,6 +75,22 @@ describe("Host Admin Dashboard", () => {
       roomStatus: "active",
       mode: "active-session-locked",
       reason: "Host administration is available only while the room is in the lobby."
+    });
+    const close = vi.fn();
+    render(<AdminDashboard roomCode="ROOM9" hostToken="host:ROOM9:secret" onClose={close} />);
+    await waitFor(() => expect(close).toHaveBeenCalledTimes(1));
+  });
+
+  it("closes immediately after the first player connects", async () => {
+    fetchStatus.mockResolvedValue({
+      enabled: false,
+      dashboardAllowed: false,
+      simulationAllowed: false,
+      qaFixturesAllowed: false,
+      editingAllowed: false,
+      roomStatus: "lobby",
+      mode: "player-connected-locked",
+      reason: "Host administration closes after the first player connects."
     });
     const close = vi.fn();
     render(<AdminDashboard roomCode="ROOM9" hostToken="host:ROOM9:secret" onClose={close} />);

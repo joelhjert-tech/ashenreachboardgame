@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactElement } from "react";
 import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { OperativePortraitImage } from "../shared/OperativePortraitImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { formatResultDelta } from "../shared/resultDeltas.js";
@@ -300,6 +301,7 @@ export function PhoneBattleView({
     patch.seats.find((seat) => seat.seatId === pendingRoll?.assignedRollerSeatId)?.displayName ??
     "another operative";
   const stat: Stat = presentation?.test.stat ?? battle?.stat ?? encounter?.stat ?? pendingRoll?.stat ?? "grit";
+  const challengeThemeStyle = getChallengeThemeStyle(stat) as CSSProperties;
   const statLabel = statLabelById[stat].toUpperCase();
   const enemyName =
     presentation?.encounter.name ??
@@ -406,6 +408,13 @@ export function PhoneBattleView({
           }
         : { label: "Waiting for active operative", disabled: true, action: null };
     }
+    if (resolution?.stage === "dice_roll") {
+      return {
+        label: "Dice rolling…",
+        disabled: true,
+        action: null
+      };
+    }
     if (!isActiveSeat) {
       return { label: "Waiting for active operative", disabled: true, action: null };
     }
@@ -451,6 +460,8 @@ export function PhoneBattleView({
         data-battle-ui="unified-verdict"
         data-battle-restored={restored ? "true" : "false"}
         data-battle-result="true"
+        data-challenge-stat={stat}
+        style={challengeThemeStyle}
       >
         <PhoneResultReadyGate
           actorName={playerName}
@@ -483,6 +494,8 @@ export function PhoneBattleView({
       data-battle-ui="duel-aperture"
       data-battle-restored={restored ? "true" : "false"}
       data-battle-result={result ? "true" : "false"}
+      data-challenge-stat={stat}
+      style={challengeThemeStyle}
     >
       <div className="phone-battle-shell__backdrop" aria-hidden="true" />
       <div className="phone-battle-shell__scroll" data-testid="phone-battle-scroll-region">

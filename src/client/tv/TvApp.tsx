@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSPropertie
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { getSessionStartReadiness } from "../../game/rules/sessionStart.js";
 import { getChallengeTheme, getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
-import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
+import { claimPrePlayerHost, createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import { ChallengeBadge, ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import { DebugPanel } from "../shared/DebugPanel.js";
@@ -2962,11 +2962,16 @@ export function TvApp(): ReactElement {
     previousMovementPresentationRef.current = movementPresentation;
   }, [movementPresentation, publicPatch?.payload.movementPresentationGate, sendIntent]);
   const effectiveRoomCode = roomCode ?? publicPatch?.sessionId ?? null;
+  const firstPlayerHasJoined = Boolean(
+    publicPatch?.payload.setupHostSeatId ||
+    publicPatch?.payload.seats.some((seat) => Boolean(seat.displayName))
+  );
   const adminAccessAllowed = Boolean(
     effectiveRoomCode &&
     hostToken &&
     authoritativePresentationReady &&
-    publicPatch?.payload.status === "lobby"
+    publicPatch?.payload.status === "lobby" &&
+    !firstPlayerHasJoined
   );
   useEffect(() => {
     if (adminSurface && !adminAccessAllowed) {
@@ -3073,13 +3078,19 @@ export function TvApp(): ReactElement {
       let cancelled = false;
 
       void fetchSessionSummary()
-        .then((summary) => {
+        .then(async (summary) => {
           if (cancelled) {
             return;
           }
 
+          const claimedHost = summary.status === "lobby" && !summary.setupHostSeatId
+            ? await claimPrePlayerHost(summary.roomCode).catch(() => null)
+            : null;
+          if (cancelled) {
+            return;
+          }
           setRoomCode(summary.roomCode);
-          setHostToken(null);
+          setHostToken(claimedHost?.hostToken ?? null);
           setSessionMode(summary.sessionMode);
           setGameMode(summary.gameMode ?? "standard");
           setInteractionMode(summary.interactionMode);
@@ -3110,29 +3121,27 @@ export function TvApp(): ReactElement {
     let cancelled = false;
 
     void fetchSessionSummary()
-      .then((summary) => {
+      .then(async (summary) => {
         if (cancelled) {
           return;
         }
 
-        if (!roomCode || !hostToken) {
+        if (summary.roomCode !== roomCode || !hostToken) {
+          const claimedHost = summary.status === "lobby" && !summary.setupHostSeatId
+            ? await claimPrePlayerHost(summary.roomCode).catch(() => null)
+            : null;
+          if (cancelled) {
+            return;
+          }
           setRoomCode(summary.roomCode);
-          setHostToken(null);
+          setHostToken(claimedHost?.hostToken ?? null);
           setSessionMode(summary.sessionMode);
           setGameMode(summary.gameMode ?? "standard");
           setInteractionMode(summary.interactionMode);
           setPlayerCount(summary.playerCount ?? summary.seats?.length ?? 6);
-          return;
-        }
-
-        if (summary.roomCode !== roomCode) {
-          setRoomCode(summary.roomCode);
-          setHostToken(null);
-          setSessionNotice(null);
-          setSessionMode(summary.sessionMode);
-          setGameMode(summary.gameMode ?? "standard");
-          setInteractionMode(summary.interactionMode);
-          setPlayerCount(summary.playerCount ?? summary.seats?.length ?? 6);
+          if (summary.roomCode !== roomCode) {
+            setSessionNotice(null);
+          }
           return;
         }
 
@@ -3349,24 +3358,38 @@ export function TvApp(): ReactElement {
   }
   if (signalTheatreMode) {
     return (
-      <SignalTheatreHost
-        patch={publicPatch}
-        previousPatch={previousPatchRef.current}
-        roomCode={effectiveRoomCode}
-        activeSeat={activeSeat}
-        activePlayer={activePlayer}
-        currentStepCopy={currentStepCopy}
-        synchronized={authoritativePresentationReady}
-        connectionStatus={status}
-        adminDashboardAvailable={adminAccessAllowed}
-        onOpenAdminDashboard={() => { setAdminInitialTab("overview"); setAdminSurface("dashboard"); }}
-        onMovementPresentationCompleted={(eventId) => {
-          const gate = publicPatch?.payload.movementPresentationGate;
-          if (gate?.eventId) {
-            sendIntent({ type: "MOVEMENT_PRESENTATION_COMPLETED", eventId: gate.eventId });
-          }
-        }}
-      />
+      <>
+        <SignalTheatreHost
+          patch={publicPatch}
+          previousPatch={previousPatchRef.current}
+          roomCode={effectiveRoomCode}
+          activeSeat={activeSeat}
+          activePlayer={activePlayer}
+          currentStepCopy={currentStepCopy}
+          synchronized={authoritativePresentationReady}
+          connectionStatus={status}
+          adminDashboardAvailable={adminAccessAllowed}
+          onOpenAdminDashboard={() => { setAdminInitialTab("overview"); setAdminSurface("dashboard"); }}
+          onMovementPresentationCompleted={(eventId) => {
+            const gate = publicPatch?.payload.movementPresentationGate;
+            if (gate?.eventId) {
+              sendIntent({ type: "MOVEMENT_PRESENTATION_COMPLETED", eventId: gate.eventId });
+            }
+          }}
+        />
+        <EndgameOverlay
+          patch={publicPatch}
+          onReturnToLobby={hostToken
+            ? () => {
+                if (publicPatch?.payload.matchProgress?.publicResult?.outcome === "defeat") {
+                  sendIntent({ type: "RETURN_TO_LOBBY" });
+                  return;
+                }
+                setReturnLobbyConfirmOpen(true);
+              }
+            : undefined}
+        />
+      </>
     );
   }
 

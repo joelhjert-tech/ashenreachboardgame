@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { loadThreatCards } from "../../game/content/threats.js";
 import type { ConnectedClient } from "../roomServer.js";
 import { GameRoomServer } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
@@ -67,5 +68,37 @@ describe("Popelord display-name rule", () => {
     const updated = server.getState().players.find((entry) => entry.seatId === joined.seatId)!;
     expect(updated.character.equippedGear[startingGear.slot]).toBe(startingGear.id);
     expect(updated.character.equippedGearInstances?.[startingGear.slot]).toBe(startingGear.instanceId ?? null);
+  });
+
+  it("can stage the next queued enemy after recruiting a replacement", () => {
+    const server = new GameRoomServer(createInitialSessionState("replacement-queued-enemy", "single-player"));
+    const joined = server.joinSeat("Lane");
+    server.selectSeatCharacter(joined.seatId, "char_deepdale");
+    const state = server.getState();
+    const enemy = [...loadThreatCards().values()].find((card) => card.cardType === "enemy")!;
+    state.status = "active";
+    state.phase = "action";
+    state.turnOrder = [joined.seatId];
+    state.activeSeatIndex = 0;
+    state.currentEncounter = enemy;
+    state.activeResolution = null;
+    state.players.find((entry) => entry.seatId === joined.seatId)!.character.status = "recalled";
+    const sent: Array<Record<string, unknown>> = [];
+    const client = clientFor(joined.seatId, sent);
+
+    server.handleIntent(client, {
+      type: "RECRUIT_REPLACEMENT",
+      seatId: joined.seatId,
+      replacementCharacterId: "black-ledger-agent"
+    });
+    server.handleIntent(client, {
+      type: "COMBAT_REQUESTED",
+      seatId: joined.seatId,
+      stat: enemy.stat
+    });
+
+    expect(sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
+    expect(server.getState().activeResolution?.stage).toBe("battle_setup");
+    expect(server.getState().activeResolution?.card?.id).toBe(enemy.id);
   });
 });

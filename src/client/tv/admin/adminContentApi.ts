@@ -13,7 +13,7 @@ export interface AdminContentStatus {
   qaFixturesAllowed?: boolean;
   editingAllowed: boolean;
   roomStatus?: "lobby" | "active" | "ended";
-  mode: "view-only" | "lobby-view" | "active-session-locked" | "edit-enabled";
+  mode: "view-only" | "lobby-view" | "player-connected-locked" | "active-session-locked" | "edit-enabled";
   reason: string | null;
 }
 

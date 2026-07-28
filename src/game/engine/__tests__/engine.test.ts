@@ -8728,3 +8728,54 @@ describe("opposed combat", () => {
     expect(player?.character.heldGear.some((item) => item.id === "tuning-spines")).toBe(true);
   });
 });
+
+describe("encounter dice replay suppression", () => {
+  it.each([
+    { id: "signal-static", intentType: "CHECK_REQUESTED" as const, stat: "signal" as const },
+    { id: "cinder-veil-stalker", intentType: "COMBAT_REQUESTED" as const, stat: "grit" as const }
+  ])("rejects another $intentType after the $id dice animation has started", ({ id, intentType, stat }) => {
+    const encounter = createThreats().get(id);
+    if (!encounter) throw new Error(`Missing ${id} test fixture`);
+
+    const state = withOnlyConnectedSeat(
+      createState({
+        phase: "action",
+        currentEncounter: encounter,
+        activeResolution: {
+          id: `seat-1:threat:${id}:rolling`,
+          playerId: "seat-1",
+          source: "threat",
+          stage: "dice_roll",
+          card: {
+            id: encounter.id,
+            title: encounter.title,
+            type: encounter.cardType
+          },
+          battle: {
+            enemyName: encounter.cardType === "enemy" ? encounter.enemyName : undefined,
+            stat: encounter.stat,
+            difficulty: encounter.difficulty,
+            modifiers: []
+          },
+          outcome: {
+            title: "Dice rolling",
+            text: `${encounter.title} dice are rolling.`,
+            effects: []
+          }
+        }
+      }),
+      "seat-1"
+    );
+
+    const result = reduceGameState(state, {
+      type: intentType,
+      seatId: "seat-1",
+      stat,
+      createdAt: "2026-07-27T22:00:00.000Z"
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.rejection.reason).toMatch(/already in progress or resolved/i);
+  });
+});

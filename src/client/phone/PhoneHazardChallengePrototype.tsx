@@ -235,12 +235,19 @@ export function PhoneHazardChallengeView({
   );
   const identity = trialIdentity(patch, resolution, title);
   const [restored, setRestored] = useState(() => wasPhoneTrialSeen(identity));
-  const promptAction = actions.find((action) => !action.disabled) ?? actions[0] ?? null;
-  const primary: HazardChallengeAction | null = promptAction ?? (canContinue
+  const enabledPromptAction = actions.find((action) => !action.disabled) ?? null;
+  const primary: HazardChallengeAction | null = enabledPromptAction ?? (canContinue
     ? { key: "continue", label: "Continue", disabled: false, onClick: onContinue }
-    : null);
+    : actions[0] ?? null);
+  const promptAction = enabledPromptAction ?? (canContinue ? null : actions[0] ?? null);
   const secondaryActions = actions.filter((action) => action.key !== primary?.key);
-  const actionLabel = primary?.label ?? (result ? resultLabel : defaultActionLabel(kind));
+  const actionLabel =
+    primary?.label ??
+    (resolution?.stage === "dice_roll"
+      ? "Dice rolling…"
+      : result
+        ? resultLabel
+        : defaultActionLabel(kind));
   const resultCrest = result ? getSignalTheatreResultCrestPath(result === "success" ? "success" : "defeat") : null;
   const diceModel: AuthoritativeDiceModel = {
     id: identity,

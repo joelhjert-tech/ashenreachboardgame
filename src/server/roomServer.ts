@@ -4157,6 +4157,18 @@ export class GameRoomServer {
       throw new Error(SHOP_FAILURE_REASONS.notAtShop);
     }
 
+    const hasVisibleBlocker = Boolean(
+      this.state.currentEncounter ||
+      this.state.pendingEnemyRoll ||
+      this.state.pendingEffect
+    );
+    if (
+      !hasVisibleBlocker &&
+      !getServiceThreatGate(this.state, intent.seatId, player.character.currentSpaceId).allowed
+    ) {
+      throw new Error(SHOP_FAILURE_REASONS.shopBlockedByThreat);
+    }
+
     return {
       type: "SHOP_SKIPPED",
       seatId: intent.seatId,
@@ -15161,7 +15173,11 @@ export function createTvProjection(
         !state.movementRolls?.[activeSeatId] &&
         buildTierTransitionOptions(state, activeSeatId).some((transition) => !transition.disabledReason)
       ),
-      shopActive: Boolean(shopEncounter)
+      shopActive: Boolean(
+        shopEncounter &&
+        shopEncounter.status !== "locked" &&
+        shopEncounter.blocked !== true
+      )
     }),
     cooperativeAssistance: buildCooperativeAssistanceProjection(state),
     pendingCooperativeTest: state.pendingCooperativeTest ? {
@@ -15762,7 +15778,11 @@ export function createPhoneProjection(
       tierTransitionAvailable: Boolean(
         tierTransitions?.options.some((transition) => !transition.disabledReason || transition.voidKeyPrompt)
       ),
-      shopActive: Boolean(phoneShopEncounter)
+      shopActive: Boolean(
+        phoneShopEncounter &&
+        phoneShopEncounter.status !== "locked" &&
+        phoneShopEncounter.blocked !== true
+      )
     }),
     sessionMode: state.sessionMode,
     gameMode: state.gameMode,

@@ -145,6 +145,29 @@ function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminC
     const url = new URL(request.url, `http://${request.headers.host ?? "localhost"}`);
 
     try {
+      if (request.method === "POST" && url.pathname === "/api/session/claim-host") {
+        const body = (await readJsonBody(request)) as { roomCode?: string };
+        const state = roomServer.getState();
+        if (body.roomCode !== state.sessionId) {
+          sendJson(response, 404, { error: "Unknown room code" });
+          return;
+        }
+        const playerHasJoined = Boolean(state.setupHostSeatId) || state.seats.some((seat) => Boolean(seat.displayName));
+        if (state.status !== "lobby" || playerHasJoined) {
+          sendJson(response, 423, {
+            error: playerHasJoined
+              ? "Host administration closes after the first player connects."
+              : "Host administration is available only before play begins."
+          });
+          return;
+        }
+        sendJson(response, 200, {
+          roomCode: state.sessionId,
+          hostToken: createHostToken({ sessionId: roomCode, secret: hostToken })
+        });
+        return;
+      }
+
       if (request.method === "POST" && url.pathname.startsWith("/api/admin/content/")) {
         const body = (await readJsonBody(request, 12 * 1024 * 1024)) as {
           roomCode?: string;
@@ -167,28 +190,42 @@ function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminC
         }
         const roomStatus = roomServer.getState().status;
         const lobbySession = roomStatus === "lobby";
+        const playerHasJoined = Boolean(roomServer.getState().setupHostSeatId) ||
+          roomServer.getState().seats.some((seat) => Boolean(seat.displayName));
+        const prePlayerLobby = lobbySession && !playerHasJoined;
         if (url.pathname === "/api/admin/content/status") {
           sendJson(response, 200, {
             enabled: adminContentEditor.enabled,
-            dashboardAllowed: lobbySession,
-            simulationAllowed: lobbySession,
+            dashboardAllowed: prePlayerLobby,
+            simulationAllowed: prePlayerLobby,
             qaFixturesAllowed: qaFixturesEnabled,
-            editingAllowed: adminContentEditor.enabled && lobbySession,
+            editingAllowed: adminContentEditor.enabled && prePlayerLobby,
             roomStatus,
             mode: !lobbySession
               ? "active-session-locked"
+              : playerHasJoined
+                ? "player-connected-locked"
               : adminContentEditor.enabled
                 ? "edit-enabled"
                 : "lobby-view",
             reason: !lobbySession
               ? "Host administration is available only while the room is in the lobby."
+              : playerHasJoined
+                ? "Host administration closes after the first player connects."
               : !adminContentEditor.enabled
                 ? "Repository editing is disabled. Start the local server with --admin-content-editor to enable writes."
                 : null
           });
           return;
         }
-        if (!lobbySession) throw new AdminContentError("Host administration is available only while the room is in the lobby", 423);
+        if (!prePlayerLobby) {
+          throw new AdminContentError(
+            playerHasJoined
+              ? "Host administration closes after the first player connects."
+              : "Host administration is available only while the room is in the lobby",
+            423
+          );
+        }
         if (url.pathname === "/api/admin/content/reports") {
           sendJson(response, 200, { reports: await readAdminReportSummaries(adminContentEditor.projectRoot) });
           return;

@@ -322,6 +322,51 @@ describe("Phase 2A shop mechanics foundation", () => {
     expect(getRejectedReason(blocked.sent)).toBe(SHOP_FAILURE_REASONS.shopBlockedByThreat);
   });
 
+  it("rejects shop skip while the current arrival still has Threats pending", () => {
+    const pending = createShopServer({
+      sectorId: "outer_waymarket",
+      salvage: 6
+    });
+    pending.server.getState().tileArrivalThreatProgress = {
+      arrivalId: "arrival:seat-1:outer_waymarket:test",
+      seatId: "seat-1",
+      sectorId: "outer_waymarket",
+      threatLanes: ["red", "blue"],
+      threatRuleIds: ["threat:0:red", "threat:1:blue"],
+      nextThreatIconIndex: 1,
+      resolvedThreatOutcomes: [
+        {
+          ruleId: "threat:0:red",
+          lane: "red",
+          cardId: "gate-tax-collectors",
+          success: true
+        }
+      ],
+      allThreatsSuccessful: null
+    };
+
+    const projection = createPhoneProjection(pending.server.getState(), "seat-1") as {
+      requiredAction?: { requiredTab?: string | null; kind?: string } | null;
+    };
+    expect(projection.requiredAction).toMatchObject({
+      requiredTab: "action",
+      kind: "action"
+    });
+
+    pending.server.handleIntent(pending.client, {
+      type: "SHOP_SKIP_REQUESTED",
+      seatId: "seat-1"
+    });
+
+    expect(getRejectedReason(pending.sent)).toBe(SHOP_FAILURE_REASONS.shopBlockedByThreat);
+    expect(pending.server.getState().phase).toBe("action");
+    expect(
+      pending.server.getState().eventLog.some(
+        (entry) => (entry as { type?: string }).type === "SHOP_SKIPPED"
+      )
+    ).toBe(false);
+  });
+
   it("rejects a purchase when salvage is insufficient", () => {
     const insufficient = createShopServer({ sectorId: "outer_waymarket", salvage: 0 });
     insufficient.server.handleIntent(insufficient.client, {

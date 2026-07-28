@@ -183,7 +183,7 @@ function Overview({
         </section>
         <section className="admin-dashboard__status-board">
           <header><span>Capability interlocks</span></header>
-          <p><b className={capabilities?.dashboardAllowed ? "is-ready" : "is-locked"} />Dashboard <strong>{capabilities?.dashboardAllowed ? "Lobby authorized" : "Locked"}</strong></p>
+          <p><b className={capabilities?.dashboardAllowed ? "is-ready" : "is-locked"} />Dashboard <strong>{capabilities?.dashboardAllowed ? "Pre-player authorized" : "Locked"}</strong></p>
           <p><b className={capabilities?.simulationAllowed ? "is-ready" : "is-locked"} />Simulation <strong>{capabilities?.simulationAllowed ? "Isolated resolver ready" : "Unavailable"}</strong></p>
           <p><b className={capabilities?.qaFixturesAllowed ? "is-ready" : "is-idle"} />QA fixtures <strong>{capabilities?.qaFixturesAllowed ? "Enabled" : "Development flag off"}</strong></p>
           <p><b className={capabilities?.editingAllowed ? "is-ready" : "is-idle"} />Content editor <strong>{capabilities?.editingAllowed ? "Writes enabled" : "Guarded off"}</strong></p>
@@ -359,7 +359,7 @@ export default function AdminDashboard({
         <header>
           <span>ASHENREACH</span>
           <strong>Host Admin</strong>
-          <small>Lobby-only authoring relay</small>
+          <small>Pre-player authoring relay</small>
         </header>
         <nav aria-label="Admin dashboard sections">
           {tabDefinitions.map(({ id, label, icon: Icon }) => <button type="button" key={id} className={tab === id ? "is-active" : ""} onClick={() => setTab(id)}><Icon aria-hidden="true" weight={tab === id ? "fill" : "regular"} /><span>{label}</span></button>)}
@@ -370,7 +370,7 @@ export default function AdminDashboard({
           <span>Hidden-card definitions are shown. Live private assignments are never loaded.</span>
         </section>
         <footer>
-          <span className={capabilities?.dashboardAllowed ? "is-ready" : "is-restoring"}>{capabilities?.dashboardAllowed ? "Lobby authorized" : "Checking interlock"}</span>
+          <span className={capabilities?.dashboardAllowed ? "is-ready" : "is-restoring"}>{capabilities?.dashboardAllowed ? "Pre-player authorized" : "Checking interlock"}</span>
           <button type="button" onClick={onClose}><XIcon aria-hidden="true" />Return to lobby</button>
         </footer>
       </aside>
