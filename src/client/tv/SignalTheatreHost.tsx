@@ -17,6 +17,11 @@ import { HostShopOverlay } from "./HostShopOverlay.js";
 import { buildHostMotionCueModel, type HostMotionCueKind } from "./HostMotionCue.js";
 import { OperativeChessPiece } from "./OperativeChessPiece.js";
 import { SignalActionCoin, type SignalActionCoinKind } from "./SignalActionCoin.js";
+import {
+  buildSignalCardRevealModel,
+  isSignalCardRevealStage,
+  SignalCardReveal
+} from "./SignalCardReveal.js";
 import { SignalSectorResolution } from "./SignalSectorResolution.js";
 import { SignalJourneyTrack } from "./SignalJourneyTrack.js";
 import {
@@ -314,6 +319,9 @@ export function SignalTheatreHost({
       ? null
     : getSignalSectorResolutionDevFixture(search, payload)
       ?? buildSignalSectorResolutionModel(payload);
+  const cardReveal = isSignalCardRevealStage(sectorResolution)
+    ? buildSignalCardRevealModel(sectorResolution)
+    : null;
   const missionSelectionActive = !youtubeLayoutFixture && payload.pendingMissionSelectionStatus?.status === "awaitingSelection";
   const missionOwner = missionSelectionActive
     ? payload.seats.find((seat) => seat.seatId === payload.pendingMissionSelectionStatus?.ownerSeatId) ?? null
@@ -598,6 +606,8 @@ export function SignalTheatreHost({
         <HostShopOverlay patch={patch} activePlayer={activePlayer} />
       ) : missionSelectionActive ? (
         <SignalMissionSelection ownerName={missionOwner?.displayName ?? "The operative"} />
+      ) : cardReveal ? (
+        <SignalCardReveal model={cardReveal} />
       ) : sectorResolution ? (
         <SignalSectorResolution model={sectorResolution} />
       ) : null}

@@ -17,6 +17,7 @@ const sourceRoots = [
 
 const excludedFragments = [
   "/signal-cartography/",
+  "/signal-theatre/card-reveal/",
   "/signal-theatre/dice/",
   "/signal-theatre/shops/",
   "/signal-theatre/shopkeeper-establishment."
