@@ -55,6 +55,8 @@ export function getSignalSectorResolutionDevFixture(
     payload.seats.find((seat) => seat.seatId === actorSeatId)?.displayName
     ?? payload.players[0]?.character.name
     ?? "Active operative";
+  const actorSectorId = payload.players.find((player) => player.seatId === actorSeatId)?.sectorId ?? null;
+  const locationName = payload.sectors.find((sector) => sector.id === actorSectorId)?.name ?? "Unknown sector";
   const operativeName = payload.players.find((player) => player.seatId === actorSeatId)?.character.name
     ?? actorDisplayName;
   const outcome = success ? "success" : failure ? "failure" : null;
@@ -87,6 +89,7 @@ export function getSignalSectorResolutionDevFixture(
     tone: success ? "success" : failure ? "failure" : "neutral",
     actorSeatId,
     actorDisplayName,
+    locationName,
     title: battle ? "Latchspire Raider" : hazard ? "Mirror-Rot Interference" : "Rift Whispers",
     eyebrow: battle ? "Hostile contact" : hazard ? "Hazard trial" : "Recurring anomaly challenge",
     publicSummary: battle

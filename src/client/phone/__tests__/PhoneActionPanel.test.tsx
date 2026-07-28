@@ -3042,6 +3042,101 @@ describe("PhoneActionPanel", () => {
     expect(screen.getAllByRole("button", { name: /continue/i })).toHaveLength(1);
   });
 
+  it("keeps a transient opposed roll result non-actionable until its consequence settles", () => {
+    const resolution = {
+      id: "seat-1:threat:lantern-ash-ghoul:transient-result",
+      playerId: "seat-1",
+      source: "threat" as const,
+      stage: "roll_result" as const,
+      card: {
+        id: "lantern-ash-ghoul",
+        title: "Lantern-Ash Ghoul",
+        type: "enemy" as const,
+        artType: "threat" as const
+      },
+      battle: {
+        enemyName: "Lantern-Ash Ghoul",
+        stat: "grit" as const,
+        difficulty: 12,
+        modifiers: []
+      },
+      roll: {
+        dice: [6, 4],
+        baseTotal: 10,
+        modifierTotal: 2,
+        finalTotal: 12,
+        target: 12,
+        success: true
+      },
+      outcome: {
+        title: "Threat defeated",
+        text: "The ghoul falls.",
+        effects: ["Add the enemy to the Trophy Pile."]
+      }
+    };
+    const view = render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({ activeResolution: resolution })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-battle-resolution-wait")).toHaveTextContent(/applying battle consequence/i);
+    expect(screen.queryByRole("button", { name: /^continue$/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/threat defeated|the gate yields/i)).not.toBeInTheDocument();
+
+    view.rerender(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          activeResolution: {
+            ...resolution,
+            stage: "outcome_summary"
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-resolution-card")).toHaveAttribute("data-result-ready-gate", "true");
+    expect(screen.getAllByRole("button", { name: /^continue$/i })).toHaveLength(1);
+  });
+
+  it("keeps battle evidence and its primary action in the same phone scroll region", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          activeResolution: {
+            id: "seat-1:threat:cinder-veil-stalker:action-cluster",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "battle_setup",
+            card: {
+              id: "cinder-veil-stalker",
+              title: "Cinder-Veil Stalker",
+              type: "enemy",
+              artType: "threat"
+            },
+            battle: {
+              enemyName: "Cinder-Veil Stalker",
+              stat: "grit",
+              difficulty: 8,
+              modifiers: []
+            }
+          }
+        })}
+      />
+    );
+
+    const scrollRegion = screen.getByTestId("phone-battle-scroll-region");
+    const actionDock = screen.getByTestId("phone-battle-action-dock");
+    expect(scrollRegion).toContainElement(actionDock);
+    expect(actionDock).toHaveTextContent(/roll grit/i);
+  });
+
   it("renders a zero-Threat draw as an inline completed queue entry, not a verdict", () => {
     render(
       <PhoneActionPanel
@@ -3314,7 +3409,7 @@ describe("PhoneActionPanel", () => {
     expect(onIntent).toHaveBeenCalledWith({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: "grit" });
   });
 
-  it("renders resolved Duel Aperture totals once without repeating battle arithmetic", () => {
+  it("holds transient Duel Aperture totals until the authoritative consequence settles", () => {
     render(
       <PhoneActionPanel
         characters={characters}
@@ -3351,16 +3446,14 @@ describe("PhoneActionPanel", () => {
     );
 
     const shell = screen.getByTestId("phone-battle-shell");
-    const stage = screen.getByTestId("phone-battle-cinematic-stage");
-    expect(shell).toHaveAttribute("data-battle-ui", "duel-aperture");
-    expect(stage).toHaveAttribute("data-battle-presentation", "duel-aperture");
-    expect(stage).toHaveAttribute("data-battle-phase", "result");
-    expect(stage).toHaveTextContent(/operative total\s*9/i);
-    expect(stage).toHaveTextContent(/difficulty\s*8/i);
+    expect(shell).toHaveAttribute("data-battle-ui", "resolution-wait");
+    expect(screen.getByTestId("phone-battle-resolution-wait")).toHaveTextContent(/applying battle consequence/i);
+    expect(screen.queryByTestId("phone-battle-cinematic-stage")).not.toBeInTheDocument();
+    expect(shell).not.toHaveTextContent(/operative total\s*9|difficulty\s*8/i);
     expect(screen.queryByLabelText(/^battle totals$/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-dice-disclosure")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-total-comparison")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /view details/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^continue$/i })).not.toBeInTheDocument();
   });
 
   it.each<Stat>(["command", "grit", "signal", "guile", "forge"])(

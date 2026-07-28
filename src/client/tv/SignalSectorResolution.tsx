@@ -85,6 +85,7 @@ export function SignalSectorResolution({
         <span>{model.eyebrow}</span>
         <h2>{model.title}</h2>
         <p>{model.publicSummary}</p>
+        <small>{model.locationName} · {model.actorDisplayName}</small>
       </header>
 
       <section className="signal-sector-resolution__duel" aria-label="Authoritative total comparison">

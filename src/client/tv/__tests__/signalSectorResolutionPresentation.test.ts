@@ -96,6 +96,7 @@ describe("buildSignalSectorResolutionModel", () => {
     expect(model).toMatchObject({
       mode: "battle",
       actorSeatId: "seat-1",
+      locationName: "Scorched Road",
       stat: "grit",
       outcomeLabel: "SUCCESS",
       operativeImageKey: "char_bjornis",
@@ -286,6 +287,7 @@ describe("buildSignalSectorResolutionModel", () => {
     }));
 
     expect(model?.waitingCopy).toBe("Awaiting Nera's private decision.");
+    expect(model?.locationName).toBe("Scorched Road");
     expect(JSON.stringify(model)).not.toContain("Secret Alpha");
     expect(JSON.stringify(model)).not.toContain("Secret Beta");
   });

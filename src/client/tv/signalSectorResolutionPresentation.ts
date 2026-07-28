@@ -29,6 +29,7 @@ export interface SignalSectorResolutionModel {
   tone: SignalSectorResolutionTone;
   actorSeatId: string | null;
   actorDisplayName: string;
+  locationName: string;
   title: string;
   eyebrow: string;
   publicSummary: string;
@@ -143,6 +144,9 @@ export function buildSignalSectorResolutionModel(
     ?? payload.seats.find((seat) => seat.seatId === actorSeatId)?.displayName
     ?? actorPlayer?.character.name
     ?? "Active operative";
+  const locationName =
+    payload.sectors.find((sector) => sector.id === actorPlayer?.sectorId)?.name
+    ?? "Unknown sector";
   const title = challenge?.name ?? presentation?.encounter.name ?? "Sector trial";
   const stat = presentation?.test.stat ?? pending?.testStat ?? "grit";
   const stage = presentation?.stage ?? (pending?.rolled ? "resolving" : "battle_ready");
@@ -188,6 +192,7 @@ export function buildSignalSectorResolutionModel(
     tone,
     actorSeatId,
     actorDisplayName,
+    locationName,
     title,
     eyebrow: mode === "battle"
       ? "Hostile contact"

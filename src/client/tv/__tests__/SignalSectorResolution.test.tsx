@@ -17,6 +17,7 @@ function model(overrides: Partial<SignalSectorResolutionModel> = {}): SignalSect
     tone: "success",
     actorSeatId: "seat-1",
     actorDisplayName: "Nera",
+    locationName: "Scorched Road",
     title: "Latchspire Raider",
     eyebrow: "Hostile contact",
     publicSummary: "A raider bars the crossing.",
@@ -129,6 +130,24 @@ describe("SignalSectorResolution", () => {
     expect(screen.queryByText(/Relic blade|No public modifiers/)).not.toBeInTheDocument();
   });
 
+  it("keeps public location context while private reaction details stay off the host", () => {
+    const rendered = render(<SignalSectorResolution model={model({
+      id: "resolution-private-reaction",
+      stage: "reaction_available",
+      tone: "neutral",
+      outcomeLabel: "RESOLVING",
+      outcomeCopy: "Awaiting Nera's private decision.",
+      publicConsequence: null,
+      publicReward: null,
+      waitingCopy: "Awaiting Nera's private decision."
+    })} />);
+
+    expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-resolution-stage", "reaction_available");
+    expect(screen.getByText(/Scorched Road/)).toBeVisible();
+    expect(screen.getAllByText("Awaiting Nera's private decision.").length).toBeGreaterThan(0);
+    expect(rendered.container).not.toHaveTextContent(/Hollow Reflection|remaining use|reroll die/i);
+  });
+
   it("presents a Hazard as a total-only Trial Theatre confrontation", () => {
     const rendered = render(<SignalSectorResolution model={model({
       id: "hazard-review",
@@ -197,5 +216,7 @@ describe("SignalSectorResolution", () => {
     expect(css).toContain("drop-shadow(-.22rem 0 .35rem var(--rift-accent))");
     expect(css).toContain("@media (prefers-reduced-motion: reduce)");
     expect(css).toContain("animation: none !important");
+    expect(css).toContain("--resolution-context-width");
+    expect(css).toContain("inset: 0 0 0 var(--resolution-context-width)");
   });
 });

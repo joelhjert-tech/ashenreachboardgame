@@ -11808,7 +11808,7 @@ select {
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   overflow: hidden;
   border: 1px solid var(--challenge-border, rgba(216, 74, 50, 0.68));
   background:
@@ -12338,6 +12338,74 @@ select {
 
 .phone-battle-details--log {
   border-top: 1px solid rgba(126, 147, 162, 0.24);
+}
+
+.phone-battle-shell--cinematic > .phone-battle-shell__scroll > .phone-battle-shell__action {
+  position: sticky;
+  bottom: -0.65rem;
+  z-index: 6;
+  margin: 0.42rem -0.52rem -0.65rem;
+}
+
+.phone-battle-resolution-wait {
+  min-height: 100%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.7rem;
+  padding: 1.4rem;
+  text-align: center;
+}
+
+.phone-battle-resolution-wait > span {
+  color: color-mix(in srgb, var(--challenge-color, #d84a32) 72%, #f3e6cf);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.phone-battle-resolution-wait > strong {
+  max-width: 18ch;
+  color: #f2dfbd;
+  font: 850 clamp(1.5rem, 7vw, 2.15rem)/1 var(--font-display, Georgia, serif);
+  text-transform: uppercase;
+}
+
+.phone-battle-resolution-wait > p {
+  max-width: 31ch;
+  margin: 0;
+  color: #aebbc0;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.phone-battle-resolution-wait__signal {
+  display: flex;
+  gap: 0.42rem;
+  padding-top: 0.45rem;
+}
+
+.phone-battle-resolution-wait__signal i {
+  width: 0.46rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--challenge-color, #d84a32);
+  box-shadow: 0 0 0.65rem color-mix(in srgb, var(--challenge-color, #d84a32) 72%, transparent);
+  animation: phone-battle-resolution-signal 980ms ease-in-out infinite alternate;
+}
+
+.phone-battle-resolution-wait__signal i:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.phone-battle-resolution-wait__signal i:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+@keyframes phone-battle-resolution-signal {
+  from { opacity: 0.3; transform: translateY(0); }
+  to { opacity: 1; transform: translateY(-0.24rem); }
 }
 
 /* Production phone battle engagement: a shared stage split by the Reach's breach seam. */

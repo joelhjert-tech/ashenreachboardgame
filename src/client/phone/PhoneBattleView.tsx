@@ -290,6 +290,10 @@ export function PhoneBattleView({
     resolution &&
     ["roll_result", "outcome_summary", "awaiting_continue"].includes(resolution.stage)
   );
+  const finalResultStage = Boolean(
+    resolution &&
+    ["outcome_summary", "awaiting_continue"].includes(resolution.stage)
+  );
   const roll = resultStage ? resolution?.roll : undefined;
   const outcome = resultStage ? resolution?.outcome : undefined;
   const assist = getBattleAssistViewModel(patch);
@@ -399,7 +403,22 @@ export function PhoneBattleView({
           }
         : { label: `Waiting on ${assignedRollerName}`, disabled: true, action: null };
     }
-    if (roll && resolution && ["roll_result", "outcome_summary", "awaiting_continue"].includes(resolution.stage)) {
+    if (roll && resolution?.stage === "roll_result") {
+      const canKeepCurrentResult = optionalActions.some((action) => !action.disabled)
+        && patch.requiredAction?.allowedCommand === "continue";
+      return canKeepCurrentResult
+        ? {
+            label: "Keep current result",
+            disabled: false,
+            action: () => onIntent({ type: "CONTINUE_RESOLUTION", seatId: self.seatId })
+          }
+        : {
+            label: "Applying consequence…",
+            disabled: true,
+            action: null
+          };
+    }
+    if (roll && resolution && ["outcome_summary", "awaiting_continue"].includes(resolution.stage)) {
       return isActiveSeat
         ? {
             label: "Continue",
@@ -436,7 +455,9 @@ export function PhoneBattleView({
     isActiveSeat,
     isAssignedEnemyRoller,
     onIntent,
+    optionalActions,
     pendingRoll,
+    patch.requiredAction?.allowedCommand,
     resolution,
     roll,
     self.seatId,
@@ -446,10 +467,47 @@ export function PhoneBattleView({
 
   const settledResult =
     Boolean(result && outcome)
+    && finalResultStage
     && primaryAction.label === "Continue"
     && !primaryAction.disabled
     && choiceActions.length === 0
     && optionalActions.length === 0;
+
+  const transientRollResult =
+    resolution?.stage === "roll_result"
+    && choiceActions.length === 0
+    && optionalActions.length === 0;
+
+  if (transientRollResult) {
+    return (
+      <section
+        className="phone-battle-shell phone-battle-shell--cinematic phone-battle-shell--resolving"
+        data-testid="phone-battle-shell"
+        data-battle-identity={identity ?? undefined}
+        data-battle-ui="resolution-wait"
+        data-battle-stage="roll_result"
+        data-battle-restored={restored ? "true" : "false"}
+        data-challenge-stat={stat}
+        style={challengeThemeStyle}
+      >
+        <div className="phone-battle-shell__backdrop" aria-hidden="true" />
+        <div className="phone-battle-shell__scroll" data-testid="phone-battle-scroll-region">
+          <section
+            className="phone-battle-resolution-wait"
+            data-testid="phone-battle-resolution-wait"
+            role="status"
+            aria-live="polite"
+          >
+            <span>Battle · {statLabel}</span>
+            <strong>Applying battle consequence</strong>
+            <p>The authoritative roll is complete. The final verdict appears after every effect is settled.</p>
+            <div className="phone-battle-resolution-wait__signal" aria-hidden="true"><i /><i /><i /></div>
+          </section>
+        </div>
+        <BattleContextNavigation onSelect={setContext} />
+      </section>
+    );
+  }
 
   if (settledResult) {
     return (
@@ -492,6 +550,7 @@ export function PhoneBattleView({
       data-testid="phone-battle-shell"
       data-battle-identity={identity ?? undefined}
       data-battle-ui="duel-aperture"
+      data-battle-stage={resolution?.stage ?? "encounter"}
       data-battle-restored={restored ? "true" : "false"}
       data-battle-result={result ? "true" : "false"}
       data-challenge-stat={stat}
@@ -584,6 +643,21 @@ export function PhoneBattleView({
                 {patch.outcomeSummary?.summary ? <p>{patch.outcomeSummary.summary}</p> : null}
               </section>
             ) : null}
+            <div className="phone-battle-shell__action" data-testid="phone-battle-action-dock">
+              <GameButton
+                type="button"
+                tone={result === "defeat" ? "primary" : "battle"}
+                disabled={primaryAction.disabled || rollSubmitting}
+                disabledReason={primaryAction.disabled ? primaryAction.label : undefined}
+                onClick={() => {
+                  if (rollSubmitting || !primaryAction.action) return;
+                  if (/^Roll\b|^Enter combat\b|^Roll for enemy\b/i.test(primaryAction.label)) setRollSubmitting(true);
+                  primaryAction.action();
+                }}
+              >
+                {rollSubmitting ? "Submitting roll…" : primaryAction.label}
+              </GameButton>
+            </div>
           </>
         ) : (
           <section className="phone-battle-context" aria-label={`${titleCase(context)} battle context`}>
@@ -630,21 +704,6 @@ export function PhoneBattleView({
             )}
           </section>
         )}
-      </div>
-      <div className="phone-battle-shell__action" data-testid="phone-battle-action-dock">
-        <GameButton
-          type="button"
-          tone={result === "defeat" ? "primary" : "battle"}
-          disabled={primaryAction.disabled || rollSubmitting}
-          disabledReason={primaryAction.disabled ? primaryAction.label : undefined}
-          onClick={() => {
-            if (rollSubmitting || !primaryAction.action) return;
-            if (/^Roll\b|^Enter combat\b|^Roll for enemy\b/i.test(primaryAction.label)) setRollSubmitting(true);
-            primaryAction.action();
-          }}
-        >
-          {rollSubmitting ? "Submitting roll…" : primaryAction.label}
-        </GameButton>
       </div>
       <BattleContextNavigation onSelect={setContext} />
     </section>

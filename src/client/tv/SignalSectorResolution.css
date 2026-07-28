@@ -1,10 +1,11 @@
 .signal-sector-resolution {
+  --resolution-context-width: clamp(28rem, 34vw, 40rem);
   --resolution-accent: #e15a43;
   --resolution-accent-soft: #ffd0b9;
   --rift-accent: var(--challenge-color, #e15a43);
   position: absolute;
   z-index: 18;
-  inset: 0;
+  inset: 0 0 0 var(--resolution-context-width);
   display: grid;
   grid-template-rows: minmax(7.5rem, 20%) minmax(0, 61%) minmax(6.5rem, 19%);
   color: #eee5d5;
@@ -58,7 +59,7 @@
   grid-row: 1;
   align-self: start;
   justify-self: center;
-  width: min(62vw, 72rem);
+  width: min(92%, 72rem);
   padding: clamp(.9rem, 2svh, 1.6rem) 1.5rem 0;
   text-align: center;
   text-shadow: 0 .18rem .7rem #000;
@@ -95,6 +96,16 @@
   text-transform: none;
 }
 
+.signal-sector-resolution__heading > small {
+  display: block;
+  margin-top: .38rem;
+  color: var(--resolution-accent-soft);
+  font-size: clamp(.58rem, .7vw, .78rem);
+  font-weight: 850;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
 .signal-sector-resolution__duel {
   position: relative;
   z-index: 2;
@@ -103,7 +114,7 @@
   justify-self: center;
   display: grid;
   grid-template-columns: minmax(0, 1fr) clamp(6.5rem, 10vw, 11.5rem) minmax(0, 1fr);
-  width: min(91vw, 112rem);
+  width: min(94%, 80rem);
   min-height: 0;
 }
 
@@ -212,25 +223,22 @@
 }
 
 .signal-sector-resolution__identity > strong {
-  display: block;
+  display: -webkit-box;
   margin-top: .32rem;
   overflow: hidden;
   color: #f4ead8;
   font-family: var(--font-display);
   font-size: clamp(1.35rem, 2.2vw, 2.65rem);
   line-height: .9;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   text-transform: uppercase;
-  white-space: nowrap;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .signal-sector-resolution--tile-challenge .signal-sector-resolution__portrait--opposition .signal-sector-resolution__identity > strong,
 .signal-sector-resolution--sector-test .signal-sector-resolution__portrait--opposition .signal-sector-resolution__identity > strong {
-  display: -webkit-box;
-  overflow: hidden;
-  text-overflow: clip;
-  white-space: normal;
-  -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
@@ -420,7 +428,7 @@
   justify-self: center;
   display: grid;
   justify-items: center;
-  width: min(64vw, 58rem);
+  width: min(82%, 58rem);
   gap: .18rem;
   padding: .6rem 2rem;
   border-top: 1px solid color-mix(in srgb, var(--resolution-accent) 38%, transparent);
@@ -625,7 +633,7 @@
 
   .signal-sector-resolution__duel {
     grid-template-columns: minmax(0, 1fr) clamp(5.6rem, 8.5vw, 7.5rem) minmax(0, 1fr);
-    width: 94vw;
+    width: 96%;
   }
 
   .signal-sector-resolution__identity {
@@ -655,7 +663,7 @@
   }
 
   .signal-sector-resolution__outcome {
-    width: 70vw;
+    width: min(88%, 58rem);
     padding-top: .45rem;
   }
 

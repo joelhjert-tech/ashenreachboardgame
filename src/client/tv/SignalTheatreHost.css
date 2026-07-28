@@ -956,10 +956,13 @@
 }
 
 .signal-theatre--sector-resolution .signal-theatre__pieces {
-  z-index: 19;
-  inset: 0;
-  height: 100%;
-  opacity: 0;
+  z-index: 12;
+  top: 25svh;
+  right: 66vw;
+  bottom: 20svh;
+  left: 1vw;
+  height: auto;
+  opacity: .62;
   pointer-events: none;
 }
 
@@ -970,25 +973,32 @@
 
 .signal-theatre--sector-resolution .signal-theatre__scenario,
 .signal-theatre--sector-resolution .signal-theatre__roster,
-.signal-theatre--sector-resolution .signal-theatre__brand,
-.signal-theatre--sector-resolution .signal-theatre__operative,
 .signal-theatre--sector-resolution .signal-theatre__destination-ring {
   opacity: 0;
 }
 
 .signal-theatre--sector-resolution .signal-theatre__signal {
-  z-index: 24;
-  top: clamp(.75rem, 1.5svh, 1.2rem);
-  right: clamp(.75rem, 1.4vw, 1.6rem);
-  width: clamp(7.5rem, 10vw, 10.5rem);
+  opacity: 0;
 }
 
-.signal-theatre--sector-resolution .signal-theatre__signal .signal-action-coin__disc {
-  width: min(100%, 7.8rem);
+.signal-theatre--sector-resolution .signal-theatre__brand {
+  max-width: 29vw;
 }
 
-.signal-theatre--sector-resolution .signal-theatre__signal .signal-action-coin figcaption {
-  display: none;
+.signal-theatre--sector-resolution .signal-theatre__operative {
+  width: min(29vw, 31rem);
+  background: linear-gradient(90deg, rgb(3 5 9 / .9), rgb(3 5 9 / .28));
+}
+
+.signal-theatre--sector-resolution .signal-theatre__operative h1 {
+  font-size: clamp(1.8rem, 2.65vw, 3.15rem);
+}
+
+.signal-theatre--sector-resolution .signal-journey-track {
+  z-index: 13;
+  right: 66vw;
+  bottom: clamp(4.8rem, 9svh, 7rem);
+  left: clamp(1rem, 2vw, 2.2rem);
 }
 
 .signal-theatre--mission-selection .signal-theatre__environment-image {
