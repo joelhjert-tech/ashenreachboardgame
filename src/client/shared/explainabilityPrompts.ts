@@ -330,9 +330,9 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
     );
     const readyText =
       waitingForMission
-        ? `Waiting for ${waitingForMission.displayName ?? waitingForMission.seatId} to choose a starting mission.`
+        ? `Waiting for ${waitingForMission.displayName ?? waitingForMission.seatId} to choose a starting Contract.`
         : joined > 0 && missionReady < joined
-          ? `Waiting for starting missions. Missions ${missionReady}/${Math.max(joined, 1)}.`
+          ? `Waiting for starting Contracts. Contracts ${missionReady}/${Math.max(joined, 1)}.`
           : waitingForProvisions
             ? `Waiting for ${waitingForProvisions.displayName ?? waitingForProvisions.seatId} to choose two starting provisions.`
             : joined > 0 && ready >= joined
@@ -345,9 +345,9 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
       requiredActorSeatId: null,
       requiredActorName: null,
       phaseReason: "The expedition has not started.",
-      availableActionSummary: "Players join, choose operatives, choose starting missions and provisions, then ready from phones.",
+      availableActionSummary: "Players join, choose operatives, choose starting Contracts and provisions, then ready from phones.",
       lockedReason: waitingForMission
-        ? "Start is locked until joined players choose starting missions."
+        ? "Start is locked until joined players choose starting Contracts."
         : waitingForProvisions
           ? "Start is locked until joined players choose two starting provisions."
           : joined > 0 && ready < joined

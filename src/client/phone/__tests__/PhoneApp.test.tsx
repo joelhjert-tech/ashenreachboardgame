@@ -256,7 +256,7 @@ function createConfirmedCharacterPatch(characterId: string): StatePatch<PhonePat
     ],
     selectedStartingContract: null,
     canReady: false,
-    readyDisabledReason: "Choose a starting mission before Ready",
+    readyDisabledReason: "Choose a starting Contract before Ready",
     self: {
       seatId: "seat-1",
       sectorId: character.currentSpaceId,
@@ -703,7 +703,7 @@ describe("PhoneApp", () => {
     });
   });
 
-  it("keeps a confirmed late join in setup until its starting mission is confirmed", async () => {
+  it("keeps a confirmed late join in setup until its starting Contract is confirmed", async () => {
     storeControllerAuth();
     const sendIntent = vi.fn();
     const unselected = createLateJoinPatch("char_deepdale");
@@ -718,10 +718,10 @@ describe("PhoneApp", () => {
 
     const view = render(<PhoneApp />);
 
-    expect(await screen.findByText(/mission · step 3 of 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Contract · step 3 of 4/i)).toBeInTheDocument();
     expect(screen.getByText(/^deepdale$/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /join game/i })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: /select mission/i }));
+    fireEvent.click(screen.getByRole("button", { name: /select Contract/i }));
     expect(sendIntent).toHaveBeenCalledWith({
       type: "SELECT_STARTING_CONTRACT",
       seatId: "seat-1",
@@ -778,7 +778,7 @@ describe("PhoneApp", () => {
 
     render(<PhoneApp />);
 
-    const selectButtons = await screen.findAllByRole("button", { name: /select mission/i });
+    const selectButtons = await screen.findAllByRole("button", { name: /select Contract/i });
     fireEvent.click(selectButtons[0]!);
     expect(sendIntent).toHaveBeenLastCalledWith({
       type: "SELECT_STARTING_CONTRACT",
@@ -796,10 +796,10 @@ describe("PhoneApp", () => {
     fireEvent.click(screen.getByRole("button", { name: /close quietus ledger inspection/i }));
     expect(screen.queryByRole("dialog", { name: /quietus ledger/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /selecting/i })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /select mission/i })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /select Contract/i })).toHaveLength(1);
   });
 
-  it("changes a confirmed starting mission without leaving the joined room", async () => {
+  it("changes a confirmed starting Contract without leaving the joined room", async () => {
     storeControllerAuth();
     const sendIntent = vi.fn();
     const patch = createLateJoinPatch("char_deepdale");
@@ -828,11 +828,11 @@ describe("PhoneApp", () => {
 
     render(<PhoneApp />);
 
-    fireEvent.click(await screen.findByRole("button", { name: /change mission/i }));
-    expect(screen.getAllByRole("button", { name: /select mission|selected/i })).toHaveLength(2);
+    fireEvent.click(await screen.findByRole("button", { name: /change Contract/i }));
+    expect(screen.getAllByRole("button", { name: /select Contract|selected/i })).toHaveLength(2);
     expect(screen.queryByRole("button", { name: /leave room/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /select mission/i }));
+    fireEvent.click(screen.getByRole("button", { name: /select Contract/i }));
     expect(sendIntent).toHaveBeenCalledWith({
       type: "SELECT_STARTING_CONTRACT",
       seatId: "seat-1",
@@ -870,7 +870,7 @@ describe("PhoneApp", () => {
     expect(screen.getByRole("heading", { name: /choose operative/i })).toBeInTheDocument();
     expect(screen.queryByText(/^choose character$/i)).not.toBeInTheDocument();
     expect(picker.querySelector(".phone-character-option-selected")).toBeNull();
-    expect(screen.queryByText(/selected starting mission/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/selected starting Contract/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
   });
 
@@ -915,7 +915,7 @@ describe("PhoneApp", () => {
     });
     view.rerender(<PhoneApp />);
 
-    expect(await screen.findByRole("heading", { name: /choose starting mission/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /choose starting Contract/i })).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/deepdale/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/quietus ledger/i)).toBeInTheDocument();
@@ -983,7 +983,7 @@ describe("PhoneApp", () => {
     expect(await screen.findByText(/room confirmed a different operative/i)).toBeInTheDocument();
     expect(screen.getByRole("list", { name: /character/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /deepdale.*deep route delver/i })).toBeEnabled();
-    expect(screen.queryByRole("heading", { name: /choose starting mission/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /choose starting Contract/i })).not.toBeInTheDocument();
   });
 
   it("shows actionable connection guidance when the phone cannot reach the host", async () => {

@@ -23,8 +23,7 @@ export const cardLifecycleAuditRecordSchema = z.object({
     "Follower",
     "Tile Challenge",
     "Character",
-    "Scenario",
-    "Legacy Mission"
+    "Scenario"
   ]),
   scope: z.enum(["gameplay", "appendix"]),
   id: z.string().min(1),
@@ -45,11 +44,26 @@ export const cardLifecycleAuditRecordSchema = z.object({
 
 export const cardLifecycleAuditSchema = z.object({
   generatedAt: z.string().datetime(),
-  recordCount: z.literal(398),
-  gameplayRecordCount: z.literal(361),
-  appendixRecordCount: z.literal(37),
-  records: z.array(cardLifecycleAuditRecordSchema).length(398)
-}).strict();
+  recordCount: z.number().int().nonnegative(),
+  gameplayRecordCount: z.number().int().nonnegative(),
+  appendixRecordCount: z.number().int().nonnegative(),
+  records: z.array(cardLifecycleAuditRecordSchema)
+}).strict().superRefine((audit, context) => {
+  if (audit.records.length !== audit.recordCount) {
+    context.addIssue({
+      code: "custom",
+      path: ["records"],
+      message: `Expected ${audit.recordCount} lifecycle records, received ${audit.records.length}`
+    });
+  }
+  if (audit.gameplayRecordCount + audit.appendixRecordCount !== audit.recordCount) {
+    context.addIssue({
+      code: "custom",
+      path: ["recordCount"],
+      message: "Gameplay and appendix counts must equal the total lifecycle count"
+    });
+  }
+});
 
 export type CardLifecycleAuditRecord = z.infer<typeof cardLifecycleAuditRecordSchema>;
 export type CardLifecycleAudit = z.infer<typeof cardLifecycleAuditSchema>;

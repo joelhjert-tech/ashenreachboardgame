@@ -95,11 +95,11 @@ describe("Spindle Static Squall Heat retirement", () => {
       failEffect: { type: "next_normal_movement_roll_modifier", amount: -1, minimumResult: 1, sourceCardId: "spindle-static-squall" }
     });
     expect(JSON.stringify(spindle)).not.toMatch(/gain_heat|\bHeat\b/);
-    expect(threats.size).toBe(116);
+    expect(threats.size).toBe(120);
     expect([...threats.values()].reduce<Record<string, number>>((counts, card) => {
       counts[card.threatLane ?? "missing"] = (counts[card.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
-    }, {})).toEqual({ red: 30, blue: 36, yellow: 50 });
+    }, {})).toEqual({ red: 32, blue: 36, yellow: 52 });
     expect(glassChime.failEffect).toEqual({ type: "next_non_battle_test_modifier", amount: -1, sourceCardId: "glass-chime-swarm" });
   });
 

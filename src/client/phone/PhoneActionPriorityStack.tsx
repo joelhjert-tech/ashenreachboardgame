@@ -190,7 +190,7 @@ export function buildPhoneActionViewModel(
             : kind ?? "free-action";
 
   const headline = context === "scar-choice" ? "Scar choice required"
-    : context === "mission-completion" ? "Choose your next Mission"
+    : context === "mission-completion" ? "Choose your next Contract"
     : context === "payment" ? "Payment required"
     : context === "other-prompt" ? "Affliction choice required"
     : context === "forced-destination" ? "Destination required"

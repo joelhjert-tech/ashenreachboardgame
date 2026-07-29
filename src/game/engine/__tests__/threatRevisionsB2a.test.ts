@@ -102,8 +102,8 @@ describe("Phase B2A threat revision content", () => {
       counts[card.threatLane ?? "missing"] = (counts[card.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
     }, {});
-    expect(threats.size).toBe(116);
-    expect(laneCounts).toEqual({ red: 30, blue: 36, yellow: 50 });
+    expect(threats.size).toBe(120);
+    expect(laneCounts).toEqual({ red: 32, blue: 36, yellow: 52 });
   });
 
   it("pins the implemented Glass-Chime and Spindle definitions", () => {

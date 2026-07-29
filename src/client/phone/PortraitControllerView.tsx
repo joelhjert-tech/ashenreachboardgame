@@ -459,7 +459,6 @@ function isCommittingRequiredActionIntent(intent: ClientIntent): boolean {
 
 function ContractMissionCard({
   contract,
-  terminology = "mission",
   recommended,
   selected,
   pending,
@@ -467,7 +466,6 @@ function ContractMissionCard({
   onSelect
 }: {
   contract: ContractCard;
-  terminology?: "mission" | "contract";
   recommended?: boolean;
   selected?: boolean;
   pending?: boolean;
@@ -492,7 +490,7 @@ function ContractMissionCard({
         />
       </div>
       <div className="phone-starting-mission-card-top">
-        <span>{recommended ? "Recommended Mission" : contract.factionGiver}</span>
+        <span>{recommended ? "Recommended Contract" : contract.factionGiver}</span>
         <strong>{contract.name}</strong>
       </div>
       <div className="phone-starting-mission-footer">
@@ -508,7 +506,7 @@ function ContractMissionCard({
               onSelect();
             }}
           >
-            {pending ? "Selecting..." : selected ? "Selected" : `Select ${terminology === "contract" ? "Contract" : "Mission"}`}
+            {pending ? "Selecting..." : selected ? "Selected" : "Select Contract"}
           </button>
         ) : null}
       </div>
@@ -621,7 +619,7 @@ function PhoneMissionReplacementView({
             <span>{displayName}</span>
             <strong>{operativeName}</strong>
           </div>
-          <small>Private mission relay</small>
+          <small>Private contract relay</small>
         </header>
 
         <section className="phone-mission-replacement__completion">
@@ -633,19 +631,19 @@ function PhoneMissionReplacementView({
           </div>
           <div>
             <span>Reward resolved · Contract archived</span>
-            <h1 id="phone-mission-replacement-title">Mission complete</h1>
+            <h1 id="phone-mission-replacement-title">Contract complete</h1>
             <p id="phone-mission-replacement-detail">
-              Choose one new private mission. Only these sealed offers and your selection appear on this phone.
+              Choose one new private Contract. Only these sealed offers and your selection appear on this phone.
             </p>
           </div>
         </section>
 
-        <div className="phone-mission-replacement__count" aria-label={`${visibleOptions.length} mission offers available`}>
-          <span>Choose next mission</span>
+        <div className="phone-mission-replacement__count" aria-label={`${visibleOptions.length} Contract offers available`}>
+          <span>Choose next Contract</span>
           <strong>{visibleOptions.length} sealed offer{visibleOptions.length === 1 ? "" : "s"}</strong>
         </div>
 
-        <section className="phone-mission-offers" aria-label="Choose new mission">
+        <section className="phone-mission-offers" aria-label="Choose new Contract">
           {visibleOptions.map((contract, index) => (
             <article
               key={contract.id}
@@ -683,7 +681,7 @@ function PhoneMissionReplacementView({
                   disabled={pendingContractId !== null}
                   onClick={() => onSelect(contract.id)}
                 >
-                  {pendingContractId === contract.id ? "Accepting mission..." : `Choose ${contract.name}`}
+                  {pendingContractId === contract.id ? "Accepting Contract..." : `Choose ${contract.name}`}
                 </button>
               </div>
             </article>
@@ -692,7 +690,7 @@ function PhoneMissionReplacementView({
 
         {recoveryMessage ? <p className="phone-submission-recovery" role="status">{recoveryMessage}</p> : null}
         <p className="phone-mission-replacement__privacy">
-          Mission details remain private until the rules reveal a public result.
+          Contract details remain private until the rules reveal a public result.
         </p>
       </main>
     </section>
@@ -1485,12 +1483,12 @@ export function PortraitControllerView({
     );
     const readyDisabledReason =
       patch?.readyDisabledReason ??
-      (selectedStartingContract ? "Waiting for room sync" : "Choose a starting mission before Ready");
+      (selectedStartingContract ? "Waiting for room sync" : "Choose a starting Contract before Ready");
 
     return (
       <section className="phone-portrait-controller">
         <div className="phone-portrait-panel phone-portrait-lobby-panel">
-          <main ref={lobbyScrollRef} className="phone-portrait-scroll phone-lobby-waiting-scroll phone-mission-setup-scroll" aria-label={startingBonusSelection ? "Choose starting provisions" : "Choose mission"}>
+          <main ref={lobbyScrollRef} className="phone-portrait-scroll phone-lobby-waiting-scroll phone-mission-setup-scroll" aria-label={startingBonusSelection ? "Choose starting provisions" : "Choose Contract"}>
               <section ref={setupStageRef} className="phone-lobby-ready-panel phone-character-waiting-panel phone-mission-setup-surface">
               <header className="phone-mission-setup-header">
                 <div>
@@ -1500,7 +1498,7 @@ export function PortraitControllerView({
                 <small>
                   {startingBonusSelection
                     ? `Provision · Pick ${startingBonusSelection.pickNumber} of ${startingBonusSelection.totalPicks}`
-                    : "Mission · Step 3 of 4"}
+                    : "Contract · Step 3 of 4"}
                 </small>
               </header>
 
@@ -1510,7 +1508,7 @@ export function PortraitControllerView({
                   aria-labelledby="phone-starting-bonus-title"
                 >
                   <div className="phone-starting-bonus-heading">
-                    <span>Mission secured · Final setup step</span>
+                    <span>Contract secured · Final setup step</span>
                     <h1 id="phone-starting-bonus-title">Choose one provision</h1>
                     <p>The server prepared two random options. Choose one now; a second pair follows.</p>
                   </div>
@@ -1554,10 +1552,10 @@ export function PortraitControllerView({
                 <section
                   ref={startingMissionSectionRef}
                   className="phone-character-waiting-section phone-starting-mission-section"
-                  aria-label="Starting Mission"
+                  aria-label="Starting Contract"
                 >
                 <h1 className="phone-mission-setup-title">
-                  {selectedStartingContract && !choosingStartingMission ? "Selected Starting Mission" : "Choose Starting Mission"}
+                  {selectedStartingContract && !choosingStartingMission ? "Selected Starting Contract" : "Choose Starting Contract"}
                 </h1>
                 {selectedStartingContract && !choosingStartingMission ? (
                   <ContractMissionCard contract={selectedStartingContract} selected />
@@ -1583,14 +1581,14 @@ export function PortraitControllerView({
                           if (sent === false) {
                             setPendingStartingContract(null);
                             setPendingSetupSubmission(null);
-                            setSetupSubmissionRecovery("Restoring latest state. Review the mission before trying again.");
+                            setSetupSubmissionRecovery("Restoring latest state. Review the Contract before trying again.");
                           }
                         }}
                       />
                     ))}
                   </div>
                 ) : (
-                  <p className="phone-muted-copy">Waiting for starting mission options from the room.</p>
+                  <p className="phone-muted-copy">Waiting for starting Contract options from the room.</p>
                 )}
                 </section>
               )}
@@ -1601,7 +1599,7 @@ export function PortraitControllerView({
                   : startingBonusSelection
                     ? `Choose provision ${startingBonusSelection.pickNumber} of ${startingBonusSelection.totalPicks}.`
                   : selectedStartingContract
-                    ? "Mission locked. Press Ready when set."
+                    ? "Contract locked. Press Ready when set."
                     : setup?.actorSeatId === self.seatId ? setup.activeInstruction : readyDisabledReason}
               </p>
 
@@ -1635,7 +1633,7 @@ export function PortraitControllerView({
                       }
                     }}
                   >
-                    {choosingStartingMission ? "Keep Current Mission" : "Change Mission"}
+                    {choosingStartingMission ? "Keep Current Contract" : "Change Contract"}
                   </button>
                 ) : onLobbyBack ? (
                   <button type="button" className="phone-button phone-button-secondary phone-lobby-ready-button" onClick={onLobbyBack}>
@@ -1672,10 +1670,10 @@ export function PortraitControllerView({
                   {isReady
                     ? "Ready for host"
                     : startingBonusSelection
-                      ? `Mission reserved. Choose one option from provision pair ${startingBonusSelection.pickNumber} of ${startingBonusSelection.totalPicks}.`
+                      ? `Contract reserved. Choose one option from provision pair ${startingBonusSelection.pickNumber} of ${startingBonusSelection.totalPicks}.`
                     : selectedStartingContract
-                      ? "Character, mission, and starting provisions reserved."
-                      : "Character reserved. Choose a starting mission."}
+                      ? "Character, Contract, and starting provisions reserved."
+                      : "Character reserved. Choose a starting Contract."}
                 </span>
               ) : (
                 <span className="phone-character-waiting-status">Waiting for room sync</span>
@@ -1710,7 +1708,7 @@ export function PortraitControllerView({
           if (sent === false) {
             setPendingActiveContract(null);
             setPendingSetupSubmission(null);
-            setSetupSubmissionRecovery("Restoring latest state. Review the mission before trying again.");
+            setSetupSubmissionRecovery("Restoring latest state. Review the Contract before trying again.");
           }
         }}
       />

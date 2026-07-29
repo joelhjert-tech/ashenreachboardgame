@@ -17,9 +17,9 @@ function openInventoryCategory(label: RegExp): HTMLElement {
 }
 
 function openMissionInventoryCategory(): HTMLElement {
-  const label = screen.getByText("Missions", { selector: ".phone-inventory-group-label" });
+  const label = screen.getByText("Contracts", { selector: ".phone-inventory-group-label" });
   const toggle = label.closest("button");
-  if (!toggle) throw new Error("Expected Missions inventory disclosure.");
+  if (!toggle) throw new Error("Expected Contracts inventory disclosure.");
   if (toggle.getAttribute("aria-expanded") !== "true") fireEvent.click(toggle);
   return toggle;
 }
@@ -2284,7 +2284,7 @@ describe("PhoneInventoryPanel", () => {
     expect(within(mission).getByText("Gain 1 Salvage")).toBeInTheDocument();
   });
 
-  it("shows up to three active Missions together on the Objectives tab", () => {
+  it("shows up to three active Contracts together on the Objectives tab", () => {
     const basePatch = createPatch({ encounter: null });
     const baseSelf = basePatch.self!;
     const contracts = ["choir-hush-census", "compact-ember-courier", "relay-witness"].map(
@@ -2395,9 +2395,9 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByTestId("signal-phone-identity")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: /more phone controls/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /^inventory$/i })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText(/select three completed missions/i)).toBeInTheDocument();
+    expect(screen.getByText(/select three completed Contracts/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /offer 3 mission seals/i }));
+    fireEvent.click(screen.getByRole("button", { name: /offer 3 Contract seals/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "OPEN_MISSION_RELIC_EXCHANGE",
       seatId: "seat-1",
@@ -2444,7 +2444,7 @@ describe("PhoneInventoryPanel", () => {
     });
   });
 
-  it("archives a completed mission and immediately opens a focused replacement window", () => {
+  it("archives a completed Contract and immediately opens a focused replacement window", () => {
     const completedContract = {
       id: "choir-hush-census",
       name: "Choir Hush Census",
@@ -2504,9 +2504,9 @@ describe("PhoneInventoryPanel", () => {
         onLeave={vi.fn()}
       />
     );
-    const dialog = screen.getByRole("dialog", { name: /mission complete/i });
+    const dialog = screen.getByRole("dialog", { name: /Contract complete/i });
     expect(screen.queryByRole("navigation", { name: /phone controls/i })).not.toBeInTheDocument();
-    const chooser = within(dialog).getByRole("region", { name: /choose new mission/i });
+    const chooser = within(dialog).getByRole("region", { name: /choose new Contract/i });
     expect(within(chooser).getAllByRole("button", { name: /^choose /i })).toHaveLength(3);
     expect(within(chooser).queryByText("Hidden Fourth Offer")).not.toBeInTheDocument();
     expect(within(chooser).queryByText("Choir Hush Census")).not.toBeInTheDocument();
@@ -2574,7 +2574,7 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    const dialog = await screen.findByRole("dialog", { name: /mission complete/i });
+    const dialog = await screen.findByRole("dialog", { name: /Contract complete/i });
     expect(dialog).toBeInTheDocument();
     await waitFor(() => expect(within(dialog).getByRole("button", { name: /choose ember courier/i })).toHaveFocus());
   });
@@ -2713,7 +2713,7 @@ describe("PhoneInventoryPanel", () => {
         }
       ],
       canReady: false,
-      readyDisabledReason: "Choose a starting mission before Ready"
+      readyDisabledReason: "Choose a starting Contract before Ready"
     });
 
     render(
@@ -2732,9 +2732,9 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    expect(screen.getByText(/mission · step 3 of 4/i)).toBeInTheDocument();
+    expect(screen.getByText(/Contract · step 3 of 4/i)).toBeInTheDocument();
     expect(screen.getByText(/^sable vey$/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/choose starting mission/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/choose starting Contract/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/quietus ledger/i)).toBeInTheDocument();
     expect(screen.getByTestId("phone-starting-mission-art")).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(contracts|fallbacks)\//));
     expect(screen.getByText(/silence one hunter/i)).toBeInTheDocument();
@@ -2746,7 +2746,7 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByTestId("phone-starting-mission-art").closest(".artwork-frame")).toHaveClass("artwork-frame--contain");
     expect(screen.queryByRole("tab", { name: /inventory/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /select mission/i }));
+    fireEvent.click(screen.getByRole("button", { name: /select Contract/i }));
     expect(onIntent).toHaveBeenCalledWith({ type: "SELECT_STARTING_CONTRACT", seatId: "seat-1", contractId: "choir-quietus" });
 
     fireEvent.click(screen.getByRole("button", { name: /^ready$/i }));
@@ -2758,7 +2758,7 @@ describe("PhoneInventoryPanel", () => {
     expect(onLobbyBack).toHaveBeenCalledOnce();
   });
 
-  it("keeps starting mission inspection separate from selecting either mission", async () => {
+  it("keeps starting Contract inspection separate from selecting either Contract", async () => {
     const onIntent = vi.fn();
     const firstMission = {
       id: "choir-quietus",
@@ -2795,7 +2795,7 @@ describe("PhoneInventoryPanel", () => {
       startingContractOptions: [firstMission, secondMission],
       selectedStartingContract: null,
       canReady: false,
-      readyDisabledReason: "Choose a starting mission before Ready"
+      readyDisabledReason: "Choose a starting Contract before Ready"
     });
 
     const renderMissionPicker = (patchSequence: number) => (
@@ -2819,7 +2819,7 @@ describe("PhoneInventoryPanel", () => {
     const missionCards = document.querySelectorAll(".phone-starting-mission-card");
     expect(missionCards).toHaveLength(2);
 
-    fireEvent.click(within(missionCards[0] as HTMLElement).getByRole("button", { name: /^select mission$/i }));
+    fireEvent.click(within(missionCards[0] as HTMLElement).getByRole("button", { name: /^select Contract$/i }));
     expect(onIntent).toHaveBeenCalledTimes(1);
     expect(onIntent).toHaveBeenLastCalledWith({
       type: "SELECT_STARTING_CONTRACT",
@@ -2829,9 +2829,9 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     rerender(renderMissionPicker(2));
-    await waitFor(() => expect(screen.getAllByRole("button", { name: /^select mission$/i })).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByRole("button", { name: /^select Contract$/i })).toHaveLength(2));
 
-    fireEvent.click(within(missionCards[1] as HTMLElement).getByRole("button", { name: /^select mission$/i }));
+    fireEvent.click(within(missionCards[1] as HTMLElement).getByRole("button", { name: /^select Contract$/i }));
     expect(onIntent).toHaveBeenCalledTimes(2);
     expect(onIntent).toHaveBeenLastCalledWith({
       type: "SELECT_STARTING_CONTRACT",
@@ -2848,7 +2848,7 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: `Inspect ${firstMission.name}` })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: `Inspect ${secondMission.name}` })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /^select mission$/i })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /^select Contract$/i })).toHaveLength(1);
     expect(screen.getByRole("button", { name: /^selecting/i })).toBeDisabled();
   });
 
@@ -3016,7 +3016,7 @@ describe("PhoneInventoryPanel", () => {
         onLeave={vi.fn()} onLobbyBack={vi.fn()} />
     );
     const view = render(renderView(true));
-    const select = screen.getByRole("button", { name: /^select mission$/i });
+    const select = screen.getByRole("button", { name: /^select Contract$/i });
 
     vi.useFakeTimers();
     fireEvent.click(select);
@@ -3032,7 +3032,7 @@ describe("PhoneInventoryPanel", () => {
     act(() => vi.runOnlyPendingTimers());
 
     expect(onIntent).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("button", { name: /^select mission$/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /^select Contract$/i })).toBeEnabled();
     expect(screen.getByRole("status")).toHaveTextContent(/authoritative setup state restored/i);
   });
 

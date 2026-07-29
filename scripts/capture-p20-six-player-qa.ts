@@ -32,8 +32,8 @@ async function joinPlayer(context: BrowserContext, session: Session, name: strin
   await page.getByRole("button", { name: "Join Game" }).click();
   await page.getByRole("heading", { name: "Select operative" }).waitFor();
   await page.getByRole("button", { name: new RegExp(operative, "i") }).click();
-  await page.getByRole("heading", { name: "Choose Starting Mission" }).waitFor();
-  await page.getByRole("button", { name: "Select Mission" }).first().click();
+  await page.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
+  await page.getByRole("button", { name: "Select Contract" }).first().click();
   await page.getByRole("button", { name: "Ready" }).click();
   return page;
 }

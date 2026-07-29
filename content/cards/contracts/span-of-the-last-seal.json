@@ -1,0 +1,33 @@
+{
+  "id": "span-of-the-last-seal",
+  "name": "Span of the Last Seal",
+  "factionGiver": "Kaldr Dominion",
+  "text": "Carry an Artifact through the final measured span and leave a route-mark beyond the inner threshold.",
+  "objective": {
+    "type": "multiStopRoute",
+    "ordered": true,
+    "targets": [
+      {
+        "id": "guardian-span",
+        "type": "spaceId",
+        "value": "middle_guardian_span",
+        "label": "Guardian Span"
+      },
+      {
+        "id": "veil-rift",
+        "type": "spaceId",
+        "value": "inner_veil_rift",
+        "label": "Veil Rift"
+      }
+    ]
+  },
+  "reward": {
+    "effects": [
+      {
+        "type": "gain_trophy",
+        "amount": 1
+      }
+    ],
+    "completionText": "The last seal accepted the crossing and kept your route-mark on its inner face."
+  }
+}

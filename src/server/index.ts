@@ -626,7 +626,7 @@ function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminC
         }
 
         if (!body.contractId) {
-          sendJson(response, 400, { error: "Starting mission is required" });
+          sendJson(response, 400, { error: "Starting Contract is required" });
           return;
         }
 

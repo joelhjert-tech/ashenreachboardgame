@@ -18,7 +18,6 @@ import { FOLLOWER_ACQUISITION_SOURCES, QA_FOLLOWER_IDS } from "../src/game/data/
 import { BOARD_SPACES } from "../src/game/data/boardSpaces.js";
 import { BOARD_TEXT_EFFECTS, validateBoardTextEffectCoverage } from "../src/game/data/boardTextEffects.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../src/game/data/canonicalSectorGraph.js";
-import { missions } from "../src/game/data/missions.js";
 import { nemeses } from "../src/game/data/nemeses.js";
 import { SCENARIOS } from "../src/game/data/scenarios.js";
 import { allThreatCards } from "../src/game/data/threatDecks.js";
@@ -401,7 +400,7 @@ function validateContentFloors(): void {
     ["anomalies", anomalies.size, 20, 30],
     ["artifacts", artifacts.size, 12, 30],
     ["escalations", escalations.size, 15, 25],
-    ["contracts", contracts.size, 20, 36],
+    ["contracts", contracts.size, 20, 39],
     ["followers", followers.size, 15, 26],
     ["scars", scars.size, 24, 24],
     ["afflictions", afflictions.size, 30, 30]
@@ -501,10 +500,6 @@ function validateLoreLanguage(): void {
 
   for (const scenario of SCENARIOS) {
     validateLoreObject(scenario, `scenario:${scenario.id}`);
-  }
-
-  for (const mission of missions) {
-    validateLoreObject(mission, `mission:${mission.id}`);
   }
 
   for (const threat of allThreatCards) {

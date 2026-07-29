@@ -224,9 +224,9 @@ describe("SignalTheatreHost", () => {
     }, 15));
 
     const mission = screen.getByTestId("signal-mission-selection");
-    expect(mission).toHaveTextContent("Mission complete");
-    expect(mission).toHaveTextContent("Nera is choosing a new private mission");
-    expect(mission).toHaveTextContent("Mission details remain private");
+    expect(mission).toHaveTextContent("Contract complete");
+    expect(mission).toHaveTextContent("Nera is choosing a new private Contract");
+    expect(mission).toHaveTextContent("Contract details remain private");
     expect(rendered.container.querySelectorAll(".signal-theatre__mission-dossiers article")).toHaveLength(3);
     expect(rendered.container.querySelector(".signal-theatre__base")).toHaveAttribute("aria-hidden", "true");
     expect(rendered.container.querySelector("[data-signal-action-coin]")).toHaveAttribute(

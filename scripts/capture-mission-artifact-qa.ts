@@ -31,7 +31,7 @@ async function startPhone(page: Page, api: string, client: string): Promise<{ se
   await page.getByLabel("Player name").fill("Missioner");
   await page.getByRole("button", { name: "Join Game" }).click();
   await page.getByRole("button", { name: /Bjornis/i }).click();
-  await page.getByRole("button", { name: "Select Mission" }).first().click();
+  await page.getByRole("button", { name: "Select Contract" }).first().click();
   await page.getByRole("button", { name: "Ready" }).click();
   await page.getByRole("button", { name: "Start Game" }).click();
   await page.getByRole("button", { name: /Roll movement/i }).waitFor({ state: "visible" });

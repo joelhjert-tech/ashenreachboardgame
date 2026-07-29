@@ -1,0 +1,21 @@
+{
+  "id": "lattice-witness",
+  "name": "Lattice Witness",
+  "factionGiver": "Glass Choir",
+  "text": "Carry a living account through the Cinder Lattice and return with a path the Choir cannot rewrite.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "inner_cinderLatticeTrial",
+    "label": "Cinder Lattice witnessed",
+    "target": 1
+  },
+  "reward": {
+    "effects": [
+      {
+        "type": "heal_wound",
+        "amount": 1
+      }
+    ],
+    "completionText": "The witness returned intact enough to prove the lattice can be crossed by the living."
+  }
+}

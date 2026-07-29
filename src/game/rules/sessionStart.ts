@@ -82,7 +82,7 @@ export function getSessionStartReadiness(input: {
     if (!seat.characterId || seat.characterSelected === false) {
       blockers.push(`${name} must choose an operative`);
     } else if (!seat.selectedStartingContractId && seat.startingMissionSelected !== true) {
-      blockers.push(`${name} must choose a starting mission`);
+      blockers.push(`${name} must choose a starting Contract`);
     } else if (!hasCompletedStartingBonusSelection(seat)) {
       blockers.push(`${name} must choose two starting bonuses`);
     } else if (!seat.ready) {
@@ -156,7 +156,7 @@ export function getSessionStartReadiness(input: {
     return {
       ...base,
       canStart: false,
-      reason: `Waiting for ${waitingName} to choose a starting mission`,
+      reason: `Waiting for ${waitingName} to choose a starting Contract`,
       blockers
     };
   }

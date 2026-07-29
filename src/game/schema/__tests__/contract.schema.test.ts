@@ -45,7 +45,7 @@ describe("contract schema and completability", () => {
     const effectKeys = new Set(Object.keys(BOARD_TEXT_EFFECTS));
     const reachableShopActions = new Set(["buyEquipment", "sellGear", "repairGear", "trade"]);
 
-    expect(contracts).toHaveLength(36);
+    expect(contracts).toHaveLength(39);
     for (const contract of contracts) {
       expect(contractCardSchema.safeParse(contract).success, contract.id).toBe(true);
       expect(formatContractObjectiveStatus(contract, 0), contract.id).toContain("(");
@@ -74,10 +74,10 @@ describe("contract schema and completability", () => {
           const item = gear.get(effect.gearId);
           expect(item, `${contract.id}:${effect.gearId}`).toBeDefined();
           expect(["starter", "standard", "advanced", "artifact", undefined], `${contract.id}:${effect.gearId}`).toContain(item?.tier);
-          expect(item?.tier, `${contract.id}: ordinary Missions cannot directly grant Artifacts`).not.toBe("artifact");
+          expect(item?.tier, `${contract.id}: ordinary Contracts cannot directly grant Artifacts`).not.toBe("artifact");
         }
       }
-      expect(contract.reward.effects.some((effect) => effect.type === "gain_note"), `${contract.id}: gain_note is display prose, not a Mission mechanic`).toBe(false);
+      expect(contract.reward.effects.some((effect) => effect.type === "gain_note"), `${contract.id}: gain_note is display prose, not a Contract mechanic`).toBe(false);
     }
   });
 });

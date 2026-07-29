@@ -15,7 +15,7 @@ The rule-spine and card-economy-spine documents referenced by local skills are n
 | Quest | No active schema, reducer, projection, catalog, assignment, progress, or completion lifecycle | None | Do not create a Quest section; rename the visible `Quest` navigation label to **Objectives** while retaining the internal tab key for compatibility |
 | Agenda | Rivalry/Ruthless owner-private objective with authoritative reveal, progress, completion, and scoring state | `rivalryAgenda` private player state and rivalry agenda trigger rules | Present as **Private Agenda** only to the owner; locked payloads and UI conceal protected objective fields |
 
-`src/game/data/missions.ts` contains twelve legacy/reference `MissionDefinition` records, but no runtime module imports them and no reducer resolves their `objectiveKey` or `rewardKey`. They are not an active Mission system and must not be projected as live objectives.
+Historical note: P12 found twelve unused legacy `MissionDefinition` records in `src/game/data/missions.ts`. The later Contract category consolidation reviewed all twelve, retained nine existing promotions, promoted the final three through canonical Contract objectives, and removed that duplicate catalog. Mission-named save and protocol fields remain compatibility boundaries only.
 
 The current client frequently calls a canonical Contract a "Mission" (`ActiveMissionQuestCard`, replacement Mission picker, setup Mission selection, TV Active Missions). That historical language obscures the distinction between the shared Scenario objective and a personal Contract. P12 corrects active-play presentation without renaming stable IDs, events, save fields, or setup commands.
 

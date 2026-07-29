@@ -2,7 +2,7 @@
 
 ## Result
 
-P23 classifies 398 card-like records: 361 in ten gameplay families and 37 appendix records. The generated matrix reports 373 complete records, 12 development-only records, 12 compatibility-only legacy Missions, and one superseded presentation-only Threat record. No record is silently omitted, partial, unreachable, or ambiguously unused.
+The regenerated lifecycle matrix classifies the current 401 card-like records: 375 gameplay records and 26 appendix records. It reports 388 complete records, 12 development-only records, and one superseded presentation-only Threat. The former twelve-record Mission appendix has been reviewed and consolidated into the canonical 39-card Contract family, so it is no longer counted as a separate category.
 
 ## Implemented gaps
 
@@ -34,7 +34,7 @@ P23 classifies 398 card-like records: 361 in ten gameplay families and 37 append
 
 ### Remaining families
 
-The generated individual matrix records each Threat, Anomaly, Escalation, Contract, Scar, Follower, and Tile Challenge's real trigger, resolver, outcome, cleanup, visibility, reconnect behavior, and tests. Rift Whispers is explicitly superseded as a drawable Threat and retained as the recurring challenge's presentation source. QA Equipment, Followers, and the QA character are development-only. Legacy Missions are compatibility-only.
+The generated individual matrix records each Threat, Anomaly, Escalation, Contract, Scar, Follower, and Tile Challenge's real trigger, resolver, outcome, cleanup, visibility, reconnect behavior, and tests. Rift Whispers is explicitly superseded as a drawable Threat and retained as the recurring challenge's presentation source. QA Equipment, Followers, and the QA character are development-only. Legacy Mission records are no longer a separate family; mission-named save-version-2 fields remain accepted only at compatibility boundaries.
 
 ## State and protocol
 

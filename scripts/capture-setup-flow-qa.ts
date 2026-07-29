@@ -111,13 +111,13 @@ async function main(): Promise<void> {
   await phone.screenshot({ path: join(output, "phone-character-selection-390x844.png"), fullPage: false });
 
   await phone.getByRole("button", { name: /Bjornis/i }).click();
-  await phone.getByRole("heading", { name: "Choose Starting Mission" }).waitFor();
-  const missionButton = phone.getByRole("button", { name: "Select Mission" }).first();
+  await phone.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
+  const missionButton = phone.getByRole("button", { name: "Select Contract" }).first();
   await missionButton.click();
   const readyButton = phone.getByRole("button", { name: "Ready" });
   await readyButton.waitFor({ state: "visible" });
   if (await readyButton.isDisabled()) {
-    throw new Error("Starting mission was not confirmed after one click");
+    throw new Error("Starting Contract was not confirmed after one click");
   }
   await readyButton.scrollIntoViewIfNeeded();
   await phone.screenshot({ path: join(output, "phone-mission-selected-one-click-390x844.png"), fullPage: false });

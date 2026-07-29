@@ -187,10 +187,10 @@ function SignalMissionSelection({ ownerName }: { ownerName: string }): ReactElem
         </svg>
       </div>
       <header>
-        <span>Private mission relay</span>
-        <h1 id="signal-mission-selection-title">Mission complete</h1>
+        <span>Private contract relay</span>
+        <h1 id="signal-mission-selection-title">Contract complete</h1>
         <p>
-          The reward is resolved. {ownerName} is choosing a new private mission on their phone.
+          The reward is resolved. {ownerName} is choosing a new private Contract on their phone.
         </p>
       </header>
       <div className="signal-theatre__mission-dossiers" aria-hidden="true">
@@ -208,7 +208,7 @@ function SignalMissionSelection({ ownerName }: { ownerName: string }): ReactElem
       </div>
       <footer>
         <span>Up to three offers</span>
-        <strong>Mission details remain private</strong>
+        <strong>Contract details remain private</strong>
       </footer>
     </section>
   );
@@ -416,7 +416,7 @@ export function SignalTheatreHost({
       ? "arrival"
       : kind;
   const actionCoinLabel = missionSelectionActive
-    ? "Mission relay"
+    ? "Contract relay"
     : sectorResolution
     ? `${sectorResolution.statLabel} ${sectorResolution.mode === "battle" ? "battle" : "challenge"}`
     : routeLabel;

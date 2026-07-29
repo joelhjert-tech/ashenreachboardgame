@@ -2,7 +2,6 @@ import {
   cardArtRuntimeCatalog,
   type RuntimeCardArtCatalogEntry
 } from "../../../game/assets/runtime/cardArtRuntimeCatalog.js";
-import { missions } from "../../../game/data/missions.js";
 import { nemeses } from "../../../game/data/nemeses.js";
 import { SCENARIOS } from "../../../game/data/scenarios.js";
 import { getScenarioSheetArtPath } from "../../../game/data/scenarioSheetArt.js";
@@ -100,13 +99,6 @@ const sourceEntries: AdminLibrarySourceEntry[] = Object.entries(authoredModules)
 }));
 
 const auxiliarySourceEntries: AdminLibrarySourceEntry[] = [
-  ...missions.map((mission) => ({
-    sourcePath: `src/game/data/missions.ts#${mission.id}`,
-    value: mission,
-    cardType: "mission",
-    status: "compatibility-only" as const,
-    artworkUrl: cardArtRuntimeCatalog.find((entry) => entry.cardType === "contract" && entry.cardId === mission.id)?.outputPath
-  })),
   ...SCENARIOS.map((scenario) => ({
     sourcePath: `src/game/data/scenarios.ts#${scenario.id}`,
     value: scenario,

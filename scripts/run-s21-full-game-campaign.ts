@@ -1102,7 +1102,7 @@ async function setupPhone(
   await onCheckpoint?.("operative-selection");
   await clickMatching(surface, [new RegExp(`^${operativeNames[playerIndex]}`, "i")]);
   await sleep(350);
-  await waitForText(surface, /choose starting mission/i);
+  await waitForText(surface, /choose starting Contract/i);
   await onCheckpoint?.("mission-selection");
   await clickMatching(surface, [/^select mission$/i]);
   for (let pick = 1; pick <= 2; pick += 1) {

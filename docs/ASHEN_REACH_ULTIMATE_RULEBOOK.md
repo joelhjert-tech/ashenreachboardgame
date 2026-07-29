@@ -42,7 +42,7 @@ In Rivalry, the session still uses the public scenario. Private agenda scoring a
 3. Display the room code or QR join path.
 4. Each player joins an open seat from a phone.
 5. The first authorized setup phone may receive host setup controls. This does not expose another seat's private game information.
-6. Each occupied seat enters a display name, selects an operative and starting mission, then completes two private provision picks. Each provision pick presents two server-randomized choices from eligible standard Equipment and Followers; the player claims one from each pair.
+6. Each occupied seat enters a display name, selects an operative and starting Contract, then completes two private provision picks. Each provision pick presents two server-randomized choices from eligible standard Equipment and Followers; the player claims one from each pair.
 7. Safe permanent Equipment may auto-equip into an empty slot. Followers remain owned separately. The selected provisions are authoritative, persist through reconnect, and cannot be claimed twice.
 8. Each occupied seat marks Ready only after both provision picks are complete.
 9. The host starts only after the server accepts the setup.

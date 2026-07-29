@@ -261,7 +261,7 @@ function pendingChoiceReason(state: GameState, seatId: string): string | null {
   if (state.pendingScarRemovalChoice?.ownerSeatId === seatId) return "Resolve Scar purification.";
   if (state.pendingScarConsequence?.seatId === seatId) return "Resolve the Scar consequence.";
   if (state.pendingScarThreshold?.seatId === seatId) return "Resolve the Scar threshold.";
-  if (state.pendingMissionSelection?.ownerSeatId === seatId) return "Choose the next Mission.";
+  if (state.pendingMissionSelection?.ownerSeatId === seatId) return "Choose the next Contract.";
   return null;
 }
 

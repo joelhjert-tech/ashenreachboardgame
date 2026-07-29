@@ -18,8 +18,8 @@ async function startPhone(page: Page, apiOrigin: string, clientOrigin: string): 
   await page.getByRole("button", { name: "Join Game" }).click();
   await page.getByRole("heading", { name: "Select operative" }).waitFor();
   await page.getByRole("button", { name: /Bjornis/i }).click();
-  await page.getByRole("heading", { name: "Choose Starting Mission" }).waitFor();
-  await page.getByRole("button", { name: "Select Mission" }).first().click();
+  await page.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
+  await page.getByRole("button", { name: "Select Contract" }).first().click();
   await page.getByRole("button", { name: "Ready" }).click();
   await page.getByRole("button", { name: "Start Game" }).click();
   const auth = await page.evaluate(() => JSON.parse(window.localStorage.getItem("ashenreach.controllerSession") ?? "null")) as StoredControllerAuth | null;

@@ -28,8 +28,8 @@ async function joinPhone(page: Page, clientOrigin: string, roomCode: string, nam
   await page.getByRole("button", { name: "Join Game" }).click();
   await page.getByRole("heading", { name: "Select operative" }).waitFor();
   await page.getByRole("button", { name: character }).click();
-  await page.getByRole("heading", { name: "Choose Starting Mission" }).waitFor();
-  await page.getByRole("button", { name: "Select Mission" }).first().click();
+  await page.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
+  await page.getByRole("button", { name: "Select Contract" }).first().click();
   await page.getByRole("button", { name: activeSession ? "Join Game" : "Ready" }).click();
 }
 
@@ -87,16 +87,16 @@ async function main(): Promise<void> {
   await captureTv(tv, output, "late-join-operative-pending");
   await third.screenshot({ path: join(output, "late-join-private-operative-390x844.png"), fullPage: false });
   await third.getByRole("button", { name: /Dessa Korr/i }).click();
-  await third.getByRole("heading", { name: "Choose Starting Mission" }).waitFor();
+  await third.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
   await captureTv(tv, output, "late-join-mission-pending");
   await third.screenshot({ path: join(output, "late-join-private-mission-390x844.png"), fullPage: false });
 
   const pendingTvText = await tv.locator("body").innerText();
-  if (/Select operative|Choose Starting Mission|Select Mission/i.test(pendingTvText)) {
+  if (/Select operative|Choose Starting Contract|Select Contract/i.test(pendingTvText)) {
     throw new Error("Private late-join setup leaked to the TV");
   }
 
-  await third.getByRole("button", { name: "Select Mission" }).first().click();
+  await third.getByRole("button", { name: "Select Contract" }).first().click();
   await third.getByRole("button", { name: "Join Game" }).click();
   await tv.waitForTimeout(500);
   await captureTv(tv, output, "late-join-completed");

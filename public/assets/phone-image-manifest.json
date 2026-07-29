@@ -8,10 +8,10 @@
     "metadata": "stripped"
   },
   "totals": {
-    "sources": 389,
-    "sourceBytes": 901356239,
-    "derivativeBytes": 42254130,
-    "reductionPercent": 95.31
+    "sources": 392,
+    "sourceBytes": 908267288,
+    "derivativeBytes": 42512894,
+    "reductionPercent": 95.32
   },
   "entries": [
     {
@@ -1119,6 +1119,18 @@
       "derivativeBytes": 107364
     },
     {
+      "sourcePath": "/assets/cards/contracts/hold-the-ridge.png",
+      "sourceHash": "feb266d9cbf217e7df2b25a3bbbfa5786f238e9d633b258f0c0518e2eb27ad31",
+      "sourceWidth": 479,
+      "sourceHeight": 735,
+      "sourceBytes": 574008,
+      "derivativePath": "/assets/cards/contracts/hold-the-ridge.phone.webp",
+      "derivativeHash": "7378ba341fb88f6c6adb0c7dc3b0d021cf605f755d514b6c7e67f4ba482fc3ae",
+      "derivativeWidth": 479,
+      "derivativeHeight": 735,
+      "derivativeBytes": 35198
+    },
+    {
       "sourcePath": "/assets/cards/contracts/hunt-breachborn.png",
       "sourceHash": "8f9ffa63333276af100ee22d4a8d027b2f02ab3a5f630c374c0a82bfb172f22a",
       "sourceWidth": 1024,
@@ -1129,6 +1141,18 @@
       "derivativeWidth": 640,
       "derivativeHeight": 960,
       "derivativeBytes": 104596
+    },
+    {
+      "sourcePath": "/assets/cards/contracts/lattice-witness.png",
+      "sourceHash": "03ceb2cfa868e2d8ddae4cfa6bc100aaf5bb0434e670ecfa0fcbfdb7babdb8e6",
+      "sourceWidth": 1024,
+      "sourceHeight": 1536,
+      "sourceBytes": 3106390,
+      "derivativePath": "/assets/cards/contracts/lattice-witness.phone.webp",
+      "derivativeHash": "e9d0f56f902943b58fe3bd159b19a2b905fa05dda67e4fe84c8bbbe9749b7046",
+      "derivativeWidth": 640,
+      "derivativeHeight": 960,
+      "derivativeBytes": 108644
     },
     {
       "sourcePath": "/assets/cards/contracts/map-broken-paths.png",
@@ -1177,6 +1201,18 @@
       "derivativeWidth": 640,
       "derivativeHeight": 960,
       "derivativeBytes": 119578
+    },
+    {
+      "sourcePath": "/assets/cards/contracts/span-of-the-last-seal.png",
+      "sourceHash": "2f1e97e04e8f3953118b5b219a55be460b4923b70b39dd2858b0a63e3891aebe",
+      "sourceWidth": 1024,
+      "sourceHeight": 1536,
+      "sourceBytes": 3230651,
+      "derivativePath": "/assets/cards/contracts/span-of-the-last-seal.phone.webp",
+      "derivativeHash": "b6b712d2dfe0839cbf6c495c520bd09b2331add7079fd036071c4af0b4d70741",
+      "derivativeWidth": 640,
+      "derivativeHeight": 960,
+      "derivativeBytes": 114922
     },
     {
       "sourcePath": "/assets/cards/contracts/umbral-blackstar-sample.png",

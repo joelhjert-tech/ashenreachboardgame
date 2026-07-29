@@ -30,7 +30,7 @@ Every card-like record is data interpreted by the server. A client may request a
 | Scar | Wound/recall and typed source | Scar choice, burden, adaptation | Persistent until authoritative removal | Public-safe state, private choice |
 | Affliction | Typed `draw_affliction` or chained draw | Persisted server draw queue | Ongoing faceup; immediate facedown; per-operative draw cycle | Owner rule/choice, concise TV result |
 
-Character and Scenario records are audited in the appendix because they are card-like presentation records but not gameplay card families. Legacy Missions are compatibility-only references superseded by Contracts.
+Character and Scenario records are audited in the appendix because they are card-like presentation records but not gameplay card families. The former twelve-card Mission design catalog has been fully consolidated into Contracts; version-2 Mission-named state fields remain compatibility boundaries only.
 
 ## Affliction queue
 

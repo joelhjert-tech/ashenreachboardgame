@@ -531,7 +531,7 @@ describe("server API scenario flow", () => {
     });
 
     expect(missingMissionReady.status).toBe(400);
-    expect(missingMissionReady.payload.error).toContain("Choose a starting mission");
+    expect(missingMissionReady.payload.error).toContain("Choose a starting Contract");
 
     await selectFirstStartingMissionViaApi(baseUrl, created.payload.roomCode, joined.payload.seatToken, harness, joined.payload.seatId);
 

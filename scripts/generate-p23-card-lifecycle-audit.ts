@@ -12,7 +12,6 @@ import { loadScarCards } from "../src/game/content/scars.js";
 import { loadThreatCards } from "../src/game/content/threats.js";
 import { loadTileChallenges } from "../src/game/content/tileChallenges.js";
 import { createCanonicalSectorGraph } from "../src/game/data/canonicalSectorGraph.js";
-import { missions } from "../src/game/data/missions.js";
 import { SCENARIOS } from "../src/game/data/scenarios.js";
 import {
   cardLifecycleAuditSchema,
@@ -69,8 +68,7 @@ const configs: FamilyConfig[] = [
   { family: "Follower", scope: "gameplay", records: [...loadFollowers().values()], sourceRoot: "content/followers" },
   { family: "Tile Challenge", scope: "gameplay", records: [...loadTileChallenges().values()], sourceRoot: "content/tile-challenges" },
   { family: "Character", scope: "appendix", records: [...loadCharacters().values()], sourceRoot: "content/characters" },
-  { family: "Scenario", scope: "appendix", records: SCENARIOS as unknown as RecordLike[] },
-  { family: "Legacy Mission", scope: "appendix", records: missions as unknown as RecordLike[] }
+  { family: "Scenario", scope: "appendix", records: SCENARIOS as unknown as RecordLike[] }
 ];
 
 const sourceIndexes = new Map(
@@ -82,8 +80,9 @@ const sourceIndexes = new Map(
 function effectSummary(effect: unknown): string {
   if (!effect || typeof effect !== "object") return "No additional typed effect.";
   const candidate = effect as { type?: unknown; amount?: unknown; gearId?: unknown; followerId?: unknown; effects?: unknown[] };
-  if (candidate.type === "sequence") {
-    return (candidate.effects ?? []).map(effectSummary).join(" Then ");
+  if (candidate.type === "sequence" || (candidate.type === undefined && Array.isArray(candidate.effects))) {
+    const summaries = (candidate.effects ?? []).map(effectSummary);
+    return summaries.length > 0 ? summaries.join(" Then ") : "No additional typed effect.";
   }
   if (candidate.type === "gain_gear") return `Gain Equipment ${String(candidate.gearId)}.`;
   if (candidate.type === "gain_follower") return `Gain Follower ${String(candidate.followerId)}.`;
@@ -92,12 +91,6 @@ function effectSummary(effect: unknown): string {
 }
 
 function classification(family: CardLifecycleAuditRecord["family"], record: RecordLike): Pick<CardLifecycleAuditRecord, "status" | "notes"> {
-  if (family === "Legacy Mission") {
-    return {
-      status: "compatibility-only",
-      notes: "Legacy design record retained for reference; canonical Contract cards own live mission play."
-    };
-  }
   if (record.qaOnly === true || record.id.startsWith("qa-") || record.id.startsWith("qa_")) {
     return {
       status: "development-only",
@@ -201,10 +194,10 @@ function lifecycleFor(
       };
     case "Contract":
       return {
-        purpose: "Owner-private mission objective and completed-Contract currency.",
+        purpose: "Owner-private Contract objective and completed-Contract currency.",
         acquisitionOrTrigger: "Starting offer, sector Contract offer, or authoritative replacement selection.",
-        authoritativeResolver: `Objective ${String((record.objective as { type?: unknown } | undefined)?.type ?? "typed objective")} advances through contract objective events; completion applies missionReward.`,
-        outcome: effectSummary((record.missionReward as { effects?: unknown[] } | undefined)?.effects ? { type: "sequence", effects: (record.missionReward as { effects: unknown[] }).effects } : undefined),
+        authoritativeResolver: `Objective ${String((record.objective as { type?: unknown } | undefined)?.type ?? "typed objective")} advances through contract objective events; completion applies the authored Contract reward.`,
+        outcome: effectSummary(record.reward),
         repeatability: "One active owner copy; completion reward applies once and replacement is selected once.",
         cleanup: "Moves from active to completed; replacement queue then clears after a legal owner choice.",
         visibility: "Objective and progress are owner-private; TV sees only redacted public status/completion.",
@@ -257,7 +250,7 @@ function lifecycleFor(
         outcome: `Creates operative ${String(record.name)} with canonical stats and abilities.`,
         repeatability: "Selected once per seat identity; replacement follows recall rules.",
         cleanup: "Operative persists for the session; replacement preserves authoritative ownership boundaries.",
-        visibility: "Public identity/stats; private hand, notes, and mission data remain owner-only.",
+        visibility: "Public identity/stats; private hand, notes, and Contract data remain owner-only.",
         reconnect: "Seat-character assignment and operative state persist.",
         tests: ["src/game/rules/__tests__/playerIdentity.test.ts", "src/server/__tests__/privacyProjection.test.ts"]
       };
@@ -273,25 +266,13 @@ function lifecycleFor(
         reconnect: "Progress, preparation, confrontation, result, and processed event IDs persist.",
         tests: ["src/server/__tests__/phaseThreeScenarioObjectiveTriggers.test.ts", "src/server/__tests__/progressionEndgameProjection.test.ts"]
       };
-    case "Legacy Mission":
-      return {
-        purpose: "Historical pre-Contract mission design reference.",
-        acquisitionOrTrigger: "No normal-play trigger.",
-        authoritativeResolver: "No live resolver; canonical Contract cards supersede this data.",
-        outcome: `${String(record.objectiveText)} / ${String(record.rewardText)}`,
-        repeatability: "Not applicable to canonical play.",
-        cleanup: "Static compatibility/reference data only.",
-        visibility: "Not projected by the live TV or phone clients.",
-        reconnect: "Not serialized into live sessions.",
-        tests: ["scripts/validate-content.ts"]
-      };
   }
 }
 
 const records: CardLifecycleAuditRecord[] = configs.flatMap((config) =>
   config.records.map((record) => {
     const sourcePath = sourceIndexes.get(config.family)?.get(record.id)
-      ?? (config.family === "Scenario" ? "src/game/data/scenarios.ts" : "src/game/data/missions.ts");
+      ?? "src/game/data/scenarios.ts";
     const classified = classification(config.family, record);
     return {
       family: config.family,

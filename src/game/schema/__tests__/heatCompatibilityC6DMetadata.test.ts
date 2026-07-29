@@ -75,7 +75,7 @@ describe("Heat Compatibility C6D follower and Threat metadata migration", () => 
   it("keeps canonical follower and Threat catalogs Heat-metadata free and structurally stable", () => {
     const followers = loadFollowers();
     const threats = loadThreatCards();
-    expect(followers).toHaveLength(24);
+    expect(followers).toHaveLength(26);
     expect(threats).toHaveLength(120);
 
     for (const follower of followers.values()) {

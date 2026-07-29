@@ -723,9 +723,19 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/contracts/gatefire-vigil.png"
   },
   {
+    "cardId": "hold-the-ridge",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/hold-the-ridge.png"
+  },
+  {
     "cardId": "hunt-breachborn",
     "cardType": "contract",
     "outputPath": "/assets/cards/contracts/hunt-breachborn.png"
+  },
+  {
+    "cardId": "lattice-witness",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/lattice-witness.png"
   },
   {
     "cardId": "map-broken-paths",
@@ -746,6 +756,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "salvage-the-bellframe",
     "cardType": "contract",
     "outputPath": "/assets/cards/contracts/salvage-the-bellframe.png"
+  },
+  {
+    "cardId": "span-of-the-last-seal",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/span-of-the-last-seal.png"
   },
   {
     "cardId": "umbral-blackstar-sample",

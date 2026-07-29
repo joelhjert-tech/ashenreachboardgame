@@ -70,8 +70,8 @@ def main() -> None:
         phone.get_by_role("heading", name="Select operative").wait_for()
         capture(phone, "02-character-selection-390x844.png")
         phone.get_by_role("button", name="Bjornis").click()
-        phone.get_by_role("heading", name="Choose Starting Mission").wait_for()
-        phone.get_by_role("button", name="Select Mission").first.click()
+        phone.get_by_role("heading", name="Choose Starting Contract").wait_for()
+        phone.get_by_role("button", name="Select Contract").first.click()
         phone.get_by_role("button", name="Ready").click()
 
         tv = browser.new_page(viewport={"width": 1920, "height": 1080})

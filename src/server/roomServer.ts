@@ -1133,7 +1133,7 @@ export class GameRoomServer {
       }
 
       if (intent.type === "ACCEPT_CONTRACT" && this.state.pendingMissionSelection?.ownerSeatId === intent.seatId) {
-        throw new IntentRejectedError(intent.type, "Use the authoritative replacement mission offer");
+        throw new IntentRejectedError(intent.type, "Use the authoritative replacement Contract offer");
       }
 
       if (intent.type === "SELECT_REPLACEMENT_CONTRACT") {
@@ -1873,7 +1873,7 @@ export class GameRoomServer {
       !this.state.turnOrder.includes(seatId);
 
     if (!lobbySelection && !lateJoinSelection) {
-      throw new Error("Starting mission can only be selected before the session starts");
+      throw new Error("Starting Contract can only be selected before the session starts");
     }
 
     if (!seat || seat.kicked) {
@@ -1881,23 +1881,23 @@ export class GameRoomServer {
     }
 
     if (!seat.displayName) {
-      throw new Error("Seat must be joined before choosing a starting mission");
+      throw new Error("Seat must be joined before choosing a starting Contract");
     }
 
     if (!seat.characterId || seat.characterSelected === false) {
-      throw new Error("Choose a character before choosing a starting mission");
+      throw new Error("Choose an operative before choosing a starting Contract");
     }
 
     if (seat.selectedStartingContractId) {
-      throw new Error("Starting mission already selected");
+      throw new Error("Starting Contract already selected");
     }
 
     if (!this.contracts.has(contractId) || !this.state.availableContracts.some((contract) => contract.id === contractId)) {
-      throw new Error("Unknown starting mission");
+      throw new Error("Unknown starting Contract");
     }
 
     if (!seat.startingContractOptions.includes(contractId)) {
-      throw new Error("Starting mission was not offered to this player");
+      throw new Error("Starting Contract was not offered to this player");
     }
 
     const player = this.state.players.find((entry) => entry.seatId === seatId);
@@ -1947,7 +1947,7 @@ export class GameRoomServer {
       throw new Error("Starting bonuses can only be selected before joining the turn order");
     }
     if (!seat || seat.kicked || !player) throw new Error(`Unknown seat ${seatId}`);
-    if (!seat.selectedStartingContractId) throw new Error("Choose a starting mission before choosing bonuses");
+    if (!seat.selectedStartingContractId) throw new Error("Choose a starting Contract before choosing bonuses");
     if (!seat.startingBonusOfferId || seat.startingBonusOfferId !== offerId) {
       throw new Error("Starting bonus offer is stale");
     }
@@ -2031,7 +2031,7 @@ export class GameRoomServer {
     }
 
     if (ready && !seat.selectedStartingContractId) {
-      throw new Error("Choose a starting mission before Ready");
+      throw new Error("Choose a starting Contract before Ready");
     }
 
     if (ready && !hasCompletedStartingBonusSelection(seat)) {
@@ -2502,7 +2502,7 @@ export class GameRoomServer {
           message.missionIds.length !== MISSION_RELIC_EXCHANGE_COST ||
           message.missionIds.some((missionId) => typeof missionId !== "string" || missionId.length === 0)
         ) {
-          throw new IntentRejectedError(type, "Choose exactly three completed Mission IDs");
+          throw new IntentRejectedError(type, "Choose exactly three completed Contract IDs");
         }
         break;
       case "CLAIM_MISSION_RELIC":
@@ -4532,7 +4532,7 @@ export class GameRoomServer {
       case "SET_READY":
         throw new Error("Ready state is handled directly");
       case "SELECT_STARTING_CONTRACT":
-        throw new Error("Starting mission selection is handled directly");
+        throw new Error("Starting Contract selection is handled directly");
       case "SELECT_STARTING_BONUS":
         throw new Error("Starting bonus selection is handled directly");
       case "RECRUIT_REPLACEMENT":
@@ -4895,7 +4895,7 @@ export class GameRoomServer {
       ownerSeatId: seatId,
       sourceKind: "completion",
       sourceId: completedContractId,
-      sourceTitle: contract?.name ?? "Completed Mission",
+      sourceTitle: contract?.name ?? "Completed Contract",
       completedContractId
     });
   }
@@ -5043,13 +5043,13 @@ export class GameRoomServer {
     if (!pending || pending.id !== intent.selectionId || pending.status !== "awaitingSelection") {
       throw new IntentRejectedError(intent.type, "Replacement mission selection is stale");
     }
-    if (pending.ownerSeatId !== intent.seatId) throw new IntentRejectedError(intent.type, "Only the mission owner may select a replacement");
-    if (!pending.optionIds.includes(intent.contractId)) throw new IntentRejectedError(intent.type, "Mission was not offered");
+    if (pending.ownerSeatId !== intent.seatId) throw new IntentRejectedError(intent.type, "Only the Contract owner may select a replacement");
+    if (!pending.optionIds.includes(intent.contractId)) throw new IntentRejectedError(intent.type, "Contract was not offered");
     const contract = this.state.availableContracts.find((entry) => entry.id === intent.contractId);
-    if (!contract) throw new IntentRejectedError(intent.type, "Mission is unavailable");
+    if (!contract) throw new IntentRejectedError(intent.type, "Contract is unavailable");
     const owner = this.state.players.find((entry) => entry.seatId === intent.seatId);
     if (!owner || getActiveMissions(owner.character).length >= MAX_ACTIVE_MISSIONS) {
-      throw new IntentRejectedError(intent.type, `The ${MAX_ACTIVE_MISSIONS}-Mission limit is already full`);
+      throw new IntentRejectedError(intent.type, `The ${MAX_ACTIVE_MISSIONS}-Contract limit is already full`);
     }
     const claimed = this.state.players.some((entry) =>
       getActiveMissions(entry.character).some((mission) => mission.contractId === intent.contractId)
@@ -5081,7 +5081,7 @@ export class GameRoomServer {
     intent: Extract<ClientIntent, { type: "OPEN_MISSION_RELIC_EXCHANGE" }>
   ): void {
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
-    if (!player) throw new IntentRejectedError(intent.type, "Mission owner is unavailable");
+    if (!player) throw new IntentRejectedError(intent.type, "Contract owner is unavailable");
     const options = this.pickRelicDealerArtifactOptions(player).slice(0, MISSION_RELIC_OPTION_COUNT);
     if (options.length !== MISSION_RELIC_OPTION_COUNT) {
       throw new IntentRejectedError(intent.type, "Two distinct Relics are not currently available");
@@ -14996,10 +14996,10 @@ export function buildSetupProjection(state: GameState): import("../client/shared
   } else if (missingMission) {
     stage = "mission-selection";
     actorSeatId = missingMission.seatId;
-    title = "Choose a Starting Mission";
-    publicInstruction = `${missingMission.displayName ?? "A player"} must choose a starting mission.`;
-    activeInstruction = "Choose and confirm your starting mission.";
-    waitingInstruction = `Waiting for ${missingMission.displayName ?? "a player"} to choose a starting mission.`;
+    title = "Choose a Starting Contract";
+    publicInstruction = `${missingMission.displayName ?? "A player"} must choose a starting Contract.`;
+    activeInstruction = "Choose and confirm your starting Contract.";
+    waitingInstruction = `Waiting for ${missingMission.displayName ?? "a player"} to choose a starting Contract.`;
     allowedCommand = "select-mission";
   } else if (missingStartingBonus) {
     stage = "provision-selection";
@@ -16148,7 +16148,7 @@ function getReadyDisabledReasonForSeat(
   if (!eligibility.allowed) return eligibility.reason;
 
   if (!seat.selectedStartingContractId) {
-    return "Choose a starting mission before Ready";
+    return "Choose a starting Contract before Ready";
   }
 
   if (!hasCompletedStartingBonusSelection(seat)) {

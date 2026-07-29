@@ -677,7 +677,7 @@ function getHostStateBannerModel({ patch, roomCode, activePlayer, connectionStat
   if (patch.payload.pendingMissionSelectionStatus?.status === "awaitingSelection") {
     const owner = patch.payload.seats.find((seat) => seat.seatId === patch.payload.pendingMissionSelectionStatus?.ownerSeatId);
     return {
-      label: "Mission complete",
+      label: "Contract complete",
       detail: `Waiting for ${owner?.displayName ?? "the operative"} to choose a new private Contract.`,
       meta: "Private options are on the owner phone",
       tone: "active"
@@ -1232,7 +1232,7 @@ function TvStartupScreen({
                     <span>{player?.character.name ?? (occupied ? "Choosing operative" : "—")}</span>
                     <b>
                       {seat.ready ? "READY" : occupied ? "SETTING UP" : "OPEN"}
-                      {occupied ? <span className="tv-screen-reader-only"> · Mission {seat.startingMissionSelected ? "yes" : "not selected"}</span> : null}
+                      {occupied ? <span className="tv-screen-reader-only"> · Contract {seat.startingMissionSelected ? "yes" : "not selected"}</span> : null}
                     </b>
                   </div>
                 );
@@ -1473,8 +1473,8 @@ function SessionReadout({
             {isSoloSetup ? (
               <section className="tv-lobby-setup-note" aria-label="Solo setup requirements">
                 <span>Solo Run</span>
-                <strong>Character and starting mission happen through the normal setup path.</strong>
-                <p>Create the solo room, join or use the controller flow, choose an operative, choose a starting mission, then start when ready.</p>
+                <strong>Operative and starting Contract selection happen through the normal setup path.</strong>
+                <p>Create the solo room, join or use the controller flow, choose an operative, choose a starting Contract, then start when ready.</p>
               </section>
             ) : (
               <>
@@ -1499,7 +1499,7 @@ function SessionReadout({
                 <section className="tv-lobby-setup-note" aria-label="Multiplayer join note">
                   <span>Room Join</span>
                   <strong>Room code and QR appear after the host creates the multiplayer room.</strong>
-                  <p>Each joined phone then follows Character, Starting Mission, Ready.</p>
+                  <p>Each joined phone then follows Operative, Starting Contract, Ready.</p>
                 </section>
               </>
             )}
@@ -1546,7 +1546,7 @@ function SessionReadout({
           <strong>{readyCount}/{Math.max(joinedCount, 1)}</strong>
         </div>
         <div className="tv-session-stat">
-          <span>Missions</span>
+          <span>Contracts</span>
           <strong>{missionSelectedCount}/{Math.max(joinedCount, 1)}</strong>
         </div>
         <div className="tv-session-stat">
@@ -2001,10 +2001,10 @@ function ActiveMissionsPanel({ patch }: { patch: StatePatch<PublicPatchPayload> 
   const requiredProgress = objectiveProgress?.required ?? scenario?.threshold ?? 0;
 
   return (
-    <section className="tv-card tv-sidebar-card tv-contracts-card" aria-label={isSetup ? "Setup Missions" : "Public Objectives"}>
+    <section className="tv-card tv-sidebar-card tv-contracts-card" aria-label={isSetup ? "Setup Contracts" : "Public Objectives"}>
       <div className="tv-panel-title tv-panel-title-small">
         <span />
-        <h2>{isSetup ? "Setup Missions" : "Public Objectives"}</h2>
+        <h2>{isSetup ? "Setup Contracts" : "Public Objectives"}</h2>
         <span />
       </div>
       {!isSetup ? (
@@ -2044,8 +2044,8 @@ function ActiveMissionsPanel({ patch }: { patch: StatePatch<PublicPatchPayload> 
                 </div>
                 {isSetup ? (
                   <div className="tv-active-mission-copy">
-                    <h3>{seat.startingMissionSelected ? seat.startingMissionTitle ?? "Mission selected" : "Choose mission"}</h3>
-                    <p>{seat.startingMissionSelected ? "Starting mission selected." : "Waiting for phone selection."}</p>
+                    <h3>{seat.startingMissionSelected ? seat.startingMissionTitle ?? "Contract selected" : "Choose Contract"}</h3>
+                    <p>{seat.startingMissionSelected ? "Starting Contract selected." : "Waiting for phone selection."}</p>
                   </div>
                 ) : privateStatus?.hasActiveContract ? (
                   <div className="tv-active-mission-copy">
@@ -2063,7 +2063,7 @@ function ActiveMissionsPanel({ patch }: { patch: StatePatch<PublicPatchPayload> 
             );
           })
         ) : (
-          <p className="tv-empty-copy">{isSetup ? "Players choose starting missions on their phones." : "No active missions assigned."}</p>
+          <p className="tv-empty-copy">{isSetup ? "Players choose starting Contracts on their phones." : "No active Contracts assigned."}</p>
         )}
       </div>
     </section>

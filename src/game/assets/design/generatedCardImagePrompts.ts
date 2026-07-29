@@ -1861,6 +1861,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "usage": "Gatefire Vigil contract card art."
   },
   {
+    "assetId": "contract_art_hold-the-ridge",
+    "assetType": "contractCardArt",
+    "cardId": "hold-the-ridge",
+    "cardType": "contract",
+    "title": "Hold the Ridge",
+    "fileName": "hold-the-ridge.png",
+    "outputPath": "/assets/cards/contracts/hold-the-ridge.png",
+    "fallbackPath": "/assets/cards/fallbacks/contract.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, funeral road shrines, salt-worn caravans, bone-and-brass route markers, contract objective scene focused on Ember Stair held, The clans need the Ember Stair held long enough for the last furnace convoy to cross beneath it, grounded palette, objective-forward composition, no readable orders or signage",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Hold the Ridge contract card art."
+  },
+  {
     "assetId": "contract_art_hunt-breachborn",
     "assetType": "contractCardArt",
     "cardId": "hunt-breachborn",
@@ -1872,6 +1885,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, funeral road shrines, salt-worn caravans, bone-and-brass route markers, contract objective scene showing 2 hostile disruptions to clear, The clans mark a thing born from a split road and pay for proof that it can still die, grounded palette, objective-forward composition, no readable orders or signage",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Hunt the Breachborn contract card art."
+  },
+  {
+    "assetId": "contract_art_lattice-witness",
+    "assetType": "contractCardArt",
+    "cardId": "lattice-witness",
+    "cardType": "contract",
+    "title": "Lattice Witness",
+    "fileName": "lattice-witness.png",
+    "outputPath": "/assets/cards/contracts/lattice-witness.png",
+    "fallbackPath": "/assets/cards/fallbacks/contract.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, ritual chorus hardware, chime lattices, sanctified relay light, contract objective scene focused on Cinder Lattice witnessed, Carry a living account through the Cinder Lattice and return with a path the Choir cannot rewrite, grounded palette, objective-forward composition, no readable orders or signage",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Lattice Witness contract card art."
   },
   {
     "assetId": "contract_art_map-broken-paths",
@@ -1924,6 +1950,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, funeral road shrines, salt-worn caravans, bone-and-brass route markers, contract objective scene focused on Bellframe salvage claimed, Recover the bellframe before the clans melt it down into debt tokens and warning chimes, grounded palette, objective-forward composition, no readable orders or signage",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Salvage the Bellframe contract card art."
+  },
+  {
+    "assetId": "contract_art_span-of-the-last-seal",
+    "assetType": "contractCardArt",
+    "cardId": "span-of-the-last-seal",
+    "cardType": "contract",
+    "title": "Span of the Last Seal",
+    "fileName": "span-of-the-last-seal.png",
+    "outputPath": "/assets/cards/contracts/span-of-the-last-seal.png",
+    "fallbackPath": "/assets/cards/fallbacks/contract.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, martial artifact engines, warbell standards, disciplined shrine armor, contract route scene linking Guardian Span, Veil Rift, Carry an Artifact through the final measured span and leave a route-mark beyond the inner threshold, grounded palette, objective-forward composition, no readable orders or signage",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Span of the Last Seal contract card art."
   },
   {
     "assetId": "contract_art_umbral-blackstar-sample",

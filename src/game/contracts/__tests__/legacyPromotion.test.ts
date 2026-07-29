@@ -14,10 +14,11 @@ const promotedContractIds = [
   "restart-void-relay",
   "pilgrim-convoy",
   "choir-quietus",
-  "cleanse-ember-sanctum"
+  "cleanse-ember-sanctum",
+  "hold-the-ridge",
+  "lattice-witness",
+  "span-of-the-last-seal"
 ] as const;
-
-const deferredContractIds = ["lattice-witness", "hold-the-ridge", "span-of-the-last-seal"] as const;
 
 function effectContainsHeat(effect: EncounterEffect): boolean {
   if (effect.type === "sequence") {
@@ -31,19 +32,15 @@ function effectContainsHeat(effect: EncounterEffect): boolean {
 describe("legacy contract promotion", () => {
   const contracts = loadContracts();
 
-  it("keeps the promoted legacy candidates in the current 36-card contract catalog", () => {
-    expect(contracts.size).toBe(36);
+  it("keeps all twelve promoted legacy candidates in the current 39-card contract catalog", () => {
+    expect(contracts.size).toBe(39);
 
     promotedContractIds.forEach((contractId) => {
       expect(contracts.has(contractId)).toBe(true);
     });
-
-    deferredContractIds.forEach((contractId) => {
-      expect(contracts.has(contractId)).toBe(false);
-    });
   });
 
-  it("keeps promoted contract art active without making card backs or deferred art active", () => {
+  it("keeps promoted contract art active without making card backs active", () => {
     promotedContractIds.forEach((contractId) => {
       const expectedPath = `/assets/cards/contracts/${contractId}.png`;
       expect(getRuntimeCardArtPath("contract", contractId)).toBe(expectedPath);
@@ -51,12 +48,6 @@ describe("legacy contract promotion", () => {
     });
 
     expect(getRuntimeCardArtPath("contract", "card-back-contract")).toBeUndefined();
-    deferredContractIds.forEach((contractId) => {
-      expect(getRuntimeCardArtPath("contract", contractId)).toBeUndefined();
-      expect(existsSync(join(process.cwd(), "public", "assets", "cards", "contracts", `${contractId}.png`))).toBe(
-        false
-      );
-    });
   });
 
   it("does not add Heat rewards to the promoted contracts", () => {
@@ -64,6 +55,27 @@ describe("legacy contract promotion", () => {
       const contract = contracts.get(contractId);
       expect(contract).toBeDefined();
       expect(contract!.reward.effects.some(effectContainsHeat)).toBe(false);
+    });
+  });
+
+  it("uses existing authoritative objective types for the three final promotions", () => {
+    expect(contracts.get("hold-the-ridge")?.objective).toMatchObject({
+      type: "spaceTextResolved",
+      effectKey: "outer_emberwatchBrace",
+      target: 1
+    });
+    expect(contracts.get("lattice-witness")?.objective).toMatchObject({
+      type: "spaceTextResolved",
+      effectKey: "inner_cinderLatticeTrial",
+      target: 1
+    });
+    expect(contracts.get("span-of-the-last-seal")?.objective).toMatchObject({
+      type: "multiStopRoute",
+      ordered: true,
+      targets: [
+        { type: "spaceId", value: "middle_guardian_span" },
+        { type: "spaceId", value: "inner_veil_rift" }
+      ]
     });
   });
 });

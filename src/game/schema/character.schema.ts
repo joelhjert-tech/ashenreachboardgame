@@ -75,8 +75,8 @@ const completedMissionRecordsSchema = z.array(completedMissionRecordSchema).supe
   const missionIds = new Set<string>();
   const sequences = new Set<number>();
   records.forEach((record, index) => {
-    if (missionIds.has(record.missionId)) context.addIssue({ code: "custom", path: [index, "missionId"], message: "Completed Mission IDs must be unique" });
-    if (sequences.has(record.completedAtSequence)) context.addIssue({ code: "custom", path: [index, "completedAtSequence"], message: "Completed Mission sequence values must be unique" });
+    if (missionIds.has(record.missionId)) context.addIssue({ code: "custom", path: [index, "missionId"], message: "Completed Contract IDs must be unique" });
+    if (sequences.has(record.completedAtSequence)) context.addIssue({ code: "custom", path: [index, "completedAtSequence"], message: "Completed Contract sequence values must be unique" });
     if (record.spent !== Boolean(record.spentFor)) context.addIssue({ code: "custom", path: [index, "spentFor"], message: "Spent Missions require a spending purpose; unspent Missions cannot have one" });
     missionIds.add(record.missionId);
     sequences.add(record.completedAtSequence);

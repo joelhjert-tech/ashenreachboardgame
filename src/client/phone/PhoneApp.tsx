@@ -1189,7 +1189,7 @@ export function PhoneApp(): ReactElement {
                 ) : (
                   <>
                     {phonePatch.payload.lateJoinPending ? (
-                      <p className="phone-muted-copy">Choose an available operative, then select a starting mission before joining the turn order.</p>
+                      <p className="phone-muted-copy">Choose an available operative, then select a starting Contract before joining the turn order.</p>
                     ) : (
                       <p className="phone-muted-copy">Choose the operative you will control.</p>
                     )}

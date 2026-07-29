@@ -357,7 +357,7 @@ function TransactionResult({ model }: { model: HostShopDisplayModel }): ReactEle
     <section className="host-shop-transaction" role="status" aria-live="polite" data-testid="host-shop-transaction-focus">
       <span>{artifactChoicePending ? "Private owner choice" : "Authoritative transaction"}</span>
       <h2>{title}</h2>
-      <p>{artifactChoicePending ? "Waiting for the operative to choose privately on their phone. Completed Missions remain unspent until confirmation." : outcome?.summary ?? "The server confirmed the public shop result."}</p>
+      <p>{artifactChoicePending ? "Waiting for the operative to choose privately on their phone. Completed Contracts remain unspent until confirmation." : outcome?.summary ?? "The server confirmed the public shop result."}</p>
       <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-shop-transaction-deltas" />
     </section>
   );

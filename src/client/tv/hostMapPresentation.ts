@@ -179,7 +179,7 @@ export function buildHostMapSectorBrief(
     publicThreat,
     shop,
     service: services.length > 0 ? services.slice(0, 2).join(" · ") : null,
-    objective: publicObjectiveLabels.length > 0 ? `Mission destination · ${publicObjectiveLabels.join(", ")}` : null,
+    objective: publicObjectiveLabels.length > 0 ? `Contract destination · ${publicObjectiveLabels.join(", ")}` : null,
     scenario: scenarioMarker ? `${scenarioMarker.label} · ${scenarioMarker.value}` : null,
     specialConnection: getSpecialConnection(destination, tagKeys),
     routeContext: getRouteContext(destination),

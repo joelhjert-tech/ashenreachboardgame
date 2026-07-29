@@ -126,23 +126,23 @@ export function PhoneMissionRelicExchange({
         <>
           <div className="phone-mission-capacity">
             <div>
-              <span>Active Missions</span>
-              <strong>{activeMissionCount < MAX_ACTIVE_MISSIONS ? "A path remains open" : "Mission capacity full"}</strong>
+              <span>Active Contracts</span>
+              <strong>{activeMissionCount < MAX_ACTIVE_MISSIONS ? "A path remains open" : "Contract capacity full"}</strong>
             </div>
             <em>{activeMissionCount} <small>/ {MAX_ACTIVE_MISSIONS}</small></em>
-            <div className="phone-mission-capacity__slots" aria-label={`${activeMissionCount} of ${MAX_ACTIVE_MISSIONS} Mission slots occupied`}>
+            <div className="phone-mission-capacity__slots" aria-label={`${activeMissionCount} of ${MAX_ACTIVE_MISSIONS} Contract slots occupied`}>
               {Array.from({ length: MAX_ACTIVE_MISSIONS }, (_, index) => (
                 <i key={index} className={index < activeMissionCount ? "is-filled" : ""} />
               ))}
             </div>
             {(patch.heldMissionRewardCount ?? 0) > 0 ? (
-              <p>{patch.heldMissionRewardCount} Mission reward{patch.heldMissionRewardCount === 1 ? " is" : "s are"} held until a slot opens.</p>
+              <p>{patch.heldMissionRewardCount} Contract reward{patch.heldMissionRewardCount === 1 ? " is" : "s are"} held until a slot opens.</p>
             ) : (
-              <p>Mission rewards from secured transit tiles and marked enemy battles fill open slots.</p>
+              <p>Contract rewards from secured transit tiles and marked enemy battles fill open slots.</p>
             )}
           </div>
 
-          <div className="phone-mission-reliquary" aria-label={`${unspentMissionIds.length} completed Missions available`}>
+          <div className="phone-mission-reliquary" aria-label={`${unspentMissionIds.length} completed Contracts available`}>
             <span className="phone-mission-reliquary__socket phone-mission-reliquary__socket--left">I</span>
             <span className="phone-mission-reliquary__socket phone-mission-reliquary__socket--right">II</span>
             <span className="phone-mission-reliquary__socket phone-mission-reliquary__socket--bottom">III</span>
@@ -159,37 +159,37 @@ export function PhoneMissionRelicExchange({
           </div>
 
           <div className="phone-mission-exchange__status">
-            <strong>{unspentMissionIds.length >= MISSION_RELIC_EXCHANGE_COST ? "Relic exchange ready" : "Archive more Missions"}</strong>
+            <strong>{unspentMissionIds.length >= MISSION_RELIC_EXCHANGE_COST ? "Relic exchange ready" : "Archive more Contracts"}</strong>
             <span>{Math.min(unspentMissionIds.length, MISSION_RELIC_EXCHANGE_COST)} / {MISSION_RELIC_EXCHANGE_COST} required · {unspentMissionIds.length} unspent</span>
           </div>
           {unspentMissionIds.length > 0 ? (
-            <ul className="phone-mission-exchange__archive" aria-label="Unspent completed Missions">
+            <ul className="phone-mission-exchange__archive" aria-label="Unspent completed Contracts">
               {unspentMissionIds.map((missionId) => (
                 <li key={missionId}>
                   <span>Completed</span>
-                  <strong>{resolveMission(patch, missionId)?.name ?? "Archived Mission"}</strong>
+                  <strong>{resolveMission(patch, missionId)?.name ?? "Archived Contract"}</strong>
                 </li>
               ))}
             </ul>
           ) : null}
-          <p className="phone-mission-exchange__support">Active Missions are never spent. Exchanged records remain visible in Mission history.</p>
+          <p className="phone-mission-exchange__support">Active Contracts are never spent. Exchanged records remain visible in Contract history.</p>
           <GameButton
             type="button"
             tone="action"
             className="phone-mission-exchange__primary"
             disabled={unspentMissionIds.length < MISSION_RELIC_EXCHANGE_COST || !onIntent}
-            disabledReason={unspentMissionIds.length < MISSION_RELIC_EXCHANGE_COST ? `Complete ${MISSION_RELIC_EXCHANGE_COST - unspentMissionIds.length} more Mission${MISSION_RELIC_EXCHANGE_COST - unspentMissionIds.length === 1 ? "" : "s"}.` : undefined}
+            disabledReason={unspentMissionIds.length < MISSION_RELIC_EXCHANGE_COST ? `Complete ${MISSION_RELIC_EXCHANGE_COST - unspentMissionIds.length} more Contract${MISSION_RELIC_EXCHANGE_COST - unspentMissionIds.length === 1 ? "" : "s"}.` : undefined}
             onClick={startSelection}
           >
             Open Relic Exchange
           </GameButton>
           {spentRecords.length > 0 ? (
             <details className="phone-mission-exchange__history">
-              <summary>Spent Mission history ({spentRecords.length})</summary>
+              <summary>Spent Contract history ({spentRecords.length})</summary>
               <ul>
                 {spentRecords.map((record) => (
                   <li key={`${record.missionId}:${record.completedAtSequence}`}>
-                    {resolveMission(patch, record.missionId)?.name ?? "Archived Mission"}
+                    {resolveMission(patch, record.missionId)?.name ?? "Archived Contract"}
                   </li>
                 ))}
               </ul>
@@ -202,10 +202,10 @@ export function PhoneMissionRelicExchange({
         <>
           <header className="phone-mission-exchange__heading">
             <span>Offer to the Reliquary</span>
-            <h3>Select three completed Missions</h3>
-            <p>Spent Missions stay visible in your history.</p>
+            <h3>Select three completed Contracts</h3>
+            <p>Spent Contracts stay visible in your history.</p>
           </header>
-          <div className="phone-mission-exchange__mission-list" role="group" aria-label="Completed Missions">
+          <div className="phone-mission-exchange__mission-list" role="group" aria-label="Completed Contracts">
             {unspentMissionIds.map((missionId, index) => {
               const mission = resolveMission(patch, missionId);
               const selectedIndex = selectedMissionIds.indexOf(missionId);
@@ -220,8 +220,8 @@ export function PhoneMissionRelicExchange({
                 >
                   <CardArtImage cardType="contract" cardId={missionId} alt="" />
                   <span>
-                    <small>Completed Mission</small>
-                    <strong>{mission?.name ?? `Archived Mission ${index + 1}`}</strong>
+                    <small>Completed Contract</small>
+                    <strong>{mission?.name ?? `Archived Contract ${index + 1}`}</strong>
                     <em>{selected ? `Seal ${["I", "II", "III"][selectedIndex]} selected` : "Remains in archive"}</em>
                   </span>
                   <i aria-hidden="true">{selected ? "✓" : "+"}</i>
@@ -237,7 +237,7 @@ export function PhoneMissionRelicExchange({
               disabled={selectedMissionIds.length !== MISSION_RELIC_EXCHANGE_COST || submitting || !onIntent}
               onClick={offerSelectedMissions}
             >
-              {submitting ? "Holding Relic Offer..." : `Offer ${MISSION_RELIC_EXCHANGE_COST} Mission Seals`}
+              {submitting ? "Holding Relic Offer..." : `Offer ${MISSION_RELIC_EXCHANGE_COST} Contract Seals`}
             </GameButton>
           </div>
         </>
@@ -275,7 +275,7 @@ export function PhoneMissionRelicExchange({
           </div>
           <p className="phone-mission-exchange__warning">
             <b>III</b>
-            <span><strong>Three Mission cards will be marked spent.</strong> This cannot be undone after confirmation.</span>
+            <span><strong>Three Contract cards will be marked spent.</strong> This cannot be undone after confirmation.</span>
           </p>
           <div className="phone-mission-exchange__actions">
             <button type="button" onClick={() => setStep("select")}>Back</button>

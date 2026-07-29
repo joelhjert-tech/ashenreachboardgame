@@ -18,7 +18,7 @@ async function startPhone(page: Page) {
   await page.getByLabel("Player name").fill("Joel");
   await page.getByRole("button", { name: "Join Game" }).click();
   await page.getByRole("button", { name: /Bjornis/i }).click();
-  await page.getByRole("button", { name: "Select Mission" }).first().click();
+  await page.getByRole("button", { name: "Select Contract" }).first().click();
   await page.getByRole("button", { name: "Ready" }).click();
   await page.getByRole("button", { name: "Start Game" }).click();
   const auth = await page.evaluate(() => JSON.parse(localStorage.getItem("ashenreach.controllerSession") ?? "null")) as { roomCode: string; seatId: string; seatToken: string };

@@ -1,0 +1,21 @@
+{
+  "id": "hold-the-ridge",
+  "name": "Hold the Ridge",
+  "factionGiver": "Veyr Clans",
+  "text": "The clans need the Ember Stair held long enough for the last furnace convoy to cross beneath it.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "outer_emberwatchBrace",
+    "label": "Ember Stair held",
+    "target": 1
+  },
+  "reward": {
+    "effects": [
+      {
+        "type": "gain_trophy",
+        "amount": 2
+      }
+    ],
+    "completionText": "The ridge held, and the convoy carried your proof-mark into the safer lanes."
+  }
+}

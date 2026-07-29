@@ -78,7 +78,7 @@ describe("canonical map tile functions", () => {
       continuationPhase: "action",
       createdAt: "2026-07-20T00:00:00.000Z"
     };
-    expect(canEndTurn(state, "seat-1").reason).toMatch(/next Mission/i);
+    expect(canEndTurn(state, "seat-1").reason).toMatch(/next Contract/i);
   });
 
   it("keeps ten consecutive single-player arrival projections finite and stable", () => {

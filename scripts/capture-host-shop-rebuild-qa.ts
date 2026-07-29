@@ -25,8 +25,8 @@ async function joinAndStart(phone: Page, session: SessionResponse): Promise<Auth
   await phone.getByRole("button", { name: "Join Game" }).click();
   await phone.getByRole("heading", { name: "Select operative" }).waitFor();
   await phone.getByRole("button", { name: /Bjornis/i }).click();
-  await phone.getByRole("heading", { name: "Choose Starting Mission" }).waitFor();
-  await phone.getByRole("button", { name: "Select Mission" }).first().click();
+  await phone.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
+  await phone.getByRole("button", { name: "Select Contract" }).first().click();
   await phone.getByRole("button", { name: "Ready" }).click();
   await phone.getByRole("button", { name: "Start Game" }).click();
   const auth = await phone.evaluate(() => JSON.parse(localStorage.getItem("ashenreach.controllerSession") ?? "null")) as Omit<Auth, "hostToken"> | null;

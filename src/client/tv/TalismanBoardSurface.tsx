@@ -258,7 +258,7 @@ export function TalismanBoardSurface({
           isActive ? "current location" : null,
           isLegal ? "legal destination" : null,
           movementDestinationMarker ? `destination ${movementDestinationMarker.label}` : null,
-          isMissionTarget ? "mission target" : null,
+          isMissionTarget ? "Contract target" : null,
           isLockedShop ? "shop locked" : null,
           hasNemesis ? "nemesis present" : null
         ]

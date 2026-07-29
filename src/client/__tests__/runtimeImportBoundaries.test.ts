@@ -77,9 +77,6 @@ describe("runtime import boundaries", () => {
       .filter((entry) => entry.outputPath.includes("/assets/cards/heat"))
       .map((entry) => `${entry.cardId}: ${entry.outputPath}`);
     const deferredLegacyIds = new Set([
-      "lattice-witness",
-      "hold-the-ridge",
-      "span-of-the-last-seal",
       "relic-choir-route-orb",
       "choir-route-orb"
     ]);

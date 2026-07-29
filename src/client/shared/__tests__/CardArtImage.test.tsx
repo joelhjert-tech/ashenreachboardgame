@@ -104,7 +104,7 @@ describe("card art paths", () => {
   it("returns type fallbacks for unknown cards", () => {
     expect(getCardArtPath("anomaly", "missing-card")).toBe(getCardFallbackArtPath("anomaly"));
     expect(getCardArtPath("equipment", "missing-equipment")).toBe(getCardFallbackArtPath("equipment"));
-    expect(getCardArtPath("contract", "lattice-witness")).toBe(getCardFallbackArtPath("contract"));
+    expect(getCardArtPath("contract", "lattice-witness")).toBe("/assets/cards/contracts/lattice-witness.png");
   });
 
   it("returns custom character and Relay nemesis portrait paths", () => {

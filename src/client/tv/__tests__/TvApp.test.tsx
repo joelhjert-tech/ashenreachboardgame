@@ -502,7 +502,7 @@ describe("TvApp", () => {
     expect(qr).not.toHaveTextContent(/scan to join|room rt7p4/i);
   });
 
-  it("shows selected starting mission setup state on the startup screen without treating the contract pool as active missions", async () => {
+  it("shows selected starting Contract setup state without treating the full Contract pool as active objectives", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const patch = createPatch();

@@ -430,7 +430,7 @@ describe("Ashen Reach UI validation stress states", () => {
       />
     );
 
-    expect(screen.getByText(/mission · step 3 of 4/i)).toBeInTheDocument();
+    expect(screen.getByText(/Contract · step 3 of 4/i)).toBeInTheDocument();
     expect(screen.getByText("MASTER ALPHA")).toBeInTheDocument();
     expect(screen.queryByText(/QA ONLY - The Broken Commander/i)).not.toBeInTheDocument();
     expect(screen.queryByText(longGearName)).not.toBeInTheDocument();

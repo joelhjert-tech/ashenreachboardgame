@@ -377,7 +377,7 @@ describe("canonical sector graph", () => {
     )).toHaveLength(1);
   });
 
-  it("exchanges exactly three completed Missions for one owner-selected Relic once", () => {
+  it("exchanges exactly three completed Contracts for one owner-selected Relic once", () => {
     const state = createInitialSessionState("mission-relic-exchange", "single-player");
     const player = state.players[0]!;
     const completedMissionIds = state.availableContracts.slice(0, 3).map((contract) => contract.id);
@@ -462,7 +462,7 @@ describe("canonical sector graph", () => {
     expect(server.getState().players[0]!.character.heldGear.filter((item) => item.id === claimedArtifactId)).toHaveLength(1);
   });
 
-  it("fills three Mission slots from queued tile and battle rewards without replacing active Missions", () => {
+  it("fills three Contract slots from queued tile and battle rewards without replacing active Contracts", () => {
     const state = createInitialSessionState("three-active-missions", "single-player");
     const firstTwo = state.availableContracts.slice(0, 2);
     state.status = "active";

@@ -139,8 +139,8 @@ describe("Phase B2B Shattered Barricade content", () => {
       counts[threat.threatLane ?? "missing"] = (counts[threat.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
     }, {});
-    expect(threats.size).toBe(116);
-    expect(laneCounts).toEqual({ red: 30, blue: 36, yellow: 50 });
+    expect(threats.size).toBe(120);
+    expect(laneCounts).toEqual({ red: 32, blue: 36, yellow: 52 });
 
     expect(requireHazard("glass-tick-cloud").failEffect).toEqual({ type: "lose_salvage", amount: 1 });
     expect(requireHazard("locked-vault").failEffect).toEqual({ type: "lose_salvage", amount: 1 });

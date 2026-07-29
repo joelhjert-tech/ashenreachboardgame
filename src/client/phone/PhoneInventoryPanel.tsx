@@ -702,7 +702,7 @@ export function PhoneInventoryPanel({
     },
     {
       id: "missions" as const,
-      label: "Missions",
+      label: "Contracts",
       count: missionCount,
       summary: `${self.character.activeContracts?.length ?? (self.character.activeContract ? 1 : 0)}/3 active · ${unspentMissionCount} exchange-ready`,
       cards: [] as InventoryCardViewModel[],
@@ -720,7 +720,7 @@ export function PhoneInventoryPanel({
       id: "progression" as const,
       label: "Progression",
       count: progressionCount,
-      summary: `${self.character.trophies ?? 0} Trophies · ${self.character.completedContracts?.length ?? 0} completed Missions`,
+      summary: `${self.character.trophies ?? 0} Trophies · ${self.character.completedContracts?.length ?? 0} completed Contracts`,
       cards: [] as InventoryCardViewModel[],
       actionAvailable: false
     }

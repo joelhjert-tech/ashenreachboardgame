@@ -43,8 +43,8 @@ def join_phone(page: Page, room_code: str, name: str, operative_name: str) -> di
     page.get_by_role("button", name="Join Game").click()
     page.get_by_role("heading", name="Select operative").wait_for()
     page.get_by_role("button", name=operative_name).click()
-    page.get_by_role("heading", name="Choose Starting Mission").wait_for()
-    page.get_by_role("button", name="Select Mission").filter(visible=True).first.click()
+    page.get_by_role("heading", name="Choose Starting Contract").wait_for()
+    page.get_by_role("button", name="Select Contract").filter(visible=True).first.click()
     page.get_by_role("button", name="Ready").click()
     auth = page.evaluate("JSON.parse(localStorage.getItem('ashenreach.controllerSession') || 'null')")
     if not auth:
@@ -181,8 +181,8 @@ def main() -> None:
         owner.get_by_role("heading", name="Select operative").wait_for()
         capture(owner, "phone", "setup-selection")
         owner.get_by_role("button", name="Bjornis", exact=False).click()
-        owner.get_by_role("heading", name="Choose Starting Mission").wait_for()
-        owner.get_by_role("button", name="Select Mission").filter(visible=True).first.click()
+        owner.get_by_role("heading", name="Choose Starting Contract").wait_for()
+        owner.get_by_role("button", name="Select Contract").filter(visible=True).first.click()
         owner.get_by_role("button", name="Ready").click()
         auth = owner.evaluate("JSON.parse(localStorage.getItem('ashenreach.controllerSession') || 'null')")
         if not auth:

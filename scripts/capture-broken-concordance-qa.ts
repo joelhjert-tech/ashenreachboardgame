@@ -35,8 +35,8 @@ async function joinPlayer(
   await page.getByRole("button", { name: /Join Game/i }).click();
   await page.getByRole("heading", { name: "Select operative" }).waitFor();
   await page.getByRole("button", { name: new RegExp(operativeName, "i") }).click();
-  await page.getByRole("heading", { name: "Choose Starting Mission" }).waitFor();
-  await page.getByRole("button", { name: "Select Mission" }).first().click();
+  await page.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
+  await page.getByRole("button", { name: "Select Contract" }).first().click();
   await page.getByRole("button", { name: "Ready" }).click();
   const auth = await page.evaluate(() => JSON.parse(localStorage.getItem("ashenreach.controllerSession") ?? "null")) as Auth | null;
   if (!auth) throw new Error(`Phone auth was not stored for ${displayName}`);

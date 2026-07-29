@@ -22,8 +22,8 @@ async function joinPlayer(context: BrowserContext, session: SessionResponse, ori
   await operativeButton.scrollIntoViewIfNeeded();
   if (capture) await page.screenshot({ path: capture, fullPage: false });
   await operativeButton.click();
-  await page.getByRole("heading", { name: "Choose Starting Mission" }).waitFor();
-  await page.getByRole("button", { name: "Select Mission" }).first().click();
+  await page.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
+  await page.getByRole("button", { name: "Select Contract" }).first().click();
   await page.getByRole("button", { name: "Ready" }).click();
   const auth = await page.evaluate(() => JSON.parse(localStorage.getItem("ashenreach.controllerSession") ?? "null")) as Auth;
   return { page, auth };

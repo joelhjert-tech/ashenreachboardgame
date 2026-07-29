@@ -45,10 +45,6 @@ Remaining legacy files:
 
 - Heat files: deprecated/reference-only. Do not create `/assets/cards/heat/`.
 - Route notes: reference-only until a real route-note card system exists.
-- Deferred contracts:
-  - `mission_lattice_witness.png`
-  - `mission_hold_the_ridge.png`
-  - `mission_span_of_the_last_seal.png`
 - Deferred artifact:
   - `relic_choir_route_orb.png`
 - Card backs: active contract, threat, generated character, and generated artifact backs live under `public/assets/cards/backs/`; legacy artifact and wargear templates remain only under `public/assets/riftfall/cards/`.
@@ -115,7 +111,7 @@ Previous baseline after the July 2026 repository cleanup and contract-art refres
 - 0 invalid assets
 - 0 placeholder violations
 
-Contract card art is 36/36 present. Threat, Equipment, Artifact/Relic, and Contract assets live under active `public/assets/cards/` roots; duplicate promoted archives are recoverable through Git history.
+Contract card art is 39/39 present. Threat, Equipment, Artifact/Relic, and Contract assets live under active `public/assets/cards/` roots; duplicate promoted archives are recoverable through Git history.
 
 ## Cleanup Rules
 

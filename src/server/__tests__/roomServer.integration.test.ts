@@ -1158,7 +1158,7 @@ describe("roomServer websocket integration", () => {
     expect(snapshotSelf?.name).toBe("Deepdale");
   });
 
-  it("stores a selected starting mission and blocks invalid setup timing", async () => {
+  it("stores a selected starting Contract and blocks invalid setup timing", async () => {
     const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "single-player")));
     const joinResult = activeHarness.roomServer.joinSeat("Solo", "signal-witch");
     const seat = activeHarness.roomServer.getState().seats.find((entry) => entry.seatId === joinResult.seatId);
@@ -1172,9 +1172,9 @@ describe("roomServer websocket integration", () => {
     expect(seat?.startingContractOptions).toHaveLength(3);
     expect(offeredContractId).toBeTruthy();
     expect(unofferedContract).toBeTruthy();
-    expect(() => activeHarness.roomServer.setSeatReady(joinResult.seatId, true)).toThrow("Choose a starting mission before Ready");
+    expect(() => activeHarness.roomServer.setSeatReady(joinResult.seatId, true)).toThrow("Choose a starting Contract before Ready");
     expect(() => activeHarness.roomServer.selectStartingContract(joinResult.seatId, unofferedContract!.id)).toThrow(
-      "Starting mission was not offered to this player"
+      "Starting Contract was not offered to this player"
     );
 
     activeHarness.roomServer.selectStartingContract(joinResult.seatId, offeredContractId!);
@@ -1185,7 +1185,7 @@ describe("roomServer websocket integration", () => {
     expect(activeHarness.roomServer.getState().players.find((player) => player.seatId === joinResult.seatId)?.character.activeContract).toBeNull();
   });
 
-  it("rejects spoofed starting mission selection from another phone seat", async () => {
+  it("rejects spoofed starting Contract selection from another phone seat", async () => {
     const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "multiplayer")));
     const firstJoin = activeHarness.roomServer.joinSeat("One", "void-marshal");
     const secondJoin = activeHarness.roomServer.joinSeat("Two", "signal-witch");
@@ -1279,7 +1279,7 @@ describe("roomServer websocket integration", () => {
     activeHarness.roomServer.setSeatReady(joinResult.seatId, false);
 
     expect(activeHarness.roomServer.getState().seats.find((seat) => seat.seatId === joinResult.seatId)?.ready).toBe(false);
-    expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for Solo to choose a starting mission");
+    expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for Solo to choose a starting Contract");
 
     selectFirstStartingContract(activeHarness.roomServer, joinResult.seatId);
     expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for Solo to press Ready");
@@ -1293,7 +1293,7 @@ describe("roomServer websocket integration", () => {
       progress: 0
     });
     expect(() => activeHarness.roomServer.selectStartingContract(joinResult.seatId, "choir-quietus")).toThrow(
-      "Starting mission can only be selected before the session starts"
+      "Starting Contract can only be selected before the session starts"
     );
   });
 
