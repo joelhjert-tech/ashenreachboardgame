@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type ReactElement, type TouchEvent } from "react";
+import { useState, type ReactElement } from "react";
 import type { ScarSummary } from "../shared/types.js";
-import { CardArtImage } from "../shared/CardArtImage.js";
+import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
 
 export type AcceptScarButtonStatus = "available" | "confirming" | "network-pending" | "reconnect-restored" | "submitted";
 
@@ -81,9 +81,9 @@ function ScarSelectorHeader({ source, currentCount, thresholdWarning }: Pick<Pho
     <header className="scar-prototype__header">
       <span>The Wound Did Not Close</span>
       <h2>Choose Your Scar</h2>
-      <p>{source[0]?.toUpperCase()}{source.slice(1)} source · Permanent cursed adaptation</p>
+      <p>Compare both permanent choices. Read the burden and adaptation before accepting one.</p>
       <div className="scar-prototype__threshold">
-        <strong>{currentCount} / 3 Scars</strong>
+        <strong>{source[0]?.toUpperCase()}{source.slice(1)} source · {currentCount} / 3 Scars</strong>
         {thresholdWarning ? <span>Threshold warning · Your next Scar will break this operative.</span> : null}
       </div>
     </header>
@@ -109,90 +109,98 @@ function ScarEffects({ scar }: { scar: ScarSummary }): ReactElement {
 
 function ScarArt({ scar }: { scar: ScarSummary }): ReactElement {
   return (
-    <div className="scar-prototype__art">
-      <CardArtImage cardType="scar" cardId={scar.id} alt={`${scar.title} Scar artwork`} />
-      <span>{sourceSigil(scar.source)}</span>
+    <div className="scar-choice-card__art">
+      <PhoneInspectableCardArt
+        cardType="scar"
+        cardId={scar.id}
+        title={scar.title}
+        lore={scar.origin ?? scar.text}
+        rules={`Burden: ${scar.burdenText ?? scar.penalty} Adaptation: ${scar.adaptationText ?? scar.upside ?? "No adaptation authored."}`}
+        className="scar-choice-card__image"
+        testId={`phone-scar-choice-art-${scar.id}`}
+      />
+      <span aria-hidden="true">{sourceSigil(scar.source)}</span>
     </div>
   );
 }
 
-function ComparePanel({ cards, onClose }: { cards: ScarSummary[]; onClose: () => void }): ReactElement {
+function ScarChoiceCard({
+  scar,
+  optionLabel,
+  thresholdWarning,
+  pendingScarId,
+  onChoose
+}: {
+  scar: ScarSummary;
+  optionLabel: string;
+  thresholdWarning: boolean;
+  pendingScarId: string | null;
+  onChoose: (scarId: string) => void;
+}): ReactElement {
+  const pending = pendingScarId === scar.id;
+  const anotherPending = pendingScarId !== null && !pending;
+
   return (
-    <div className="scar-prototype__compare" role="dialog" aria-modal="true" aria-label="Compare both Scars">
-      <header><strong>Compare Both Scars</strong><button type="button" onClick={onClose}>Close</button></header>
-      <div>
-        {cards.map((scar) => (
-          <article key={scar.id}>
-            <h3>{scar.title}</h3>
-            <ScarEffects scar={scar} />
-            <p className="scar-prototype__compare-lore">{scar.origin ?? scar.text}</p>
-          </article>
-        ))}
+    <article className="scar-choice-card" data-source={scar.source ?? "unbound"}>
+      <div className="scar-choice-card__visual">
+        <span className="scar-choice-card__option">{optionLabel}</span>
+        <ScarArt scar={scar} />
       </div>
-    </div>
+      <div className="scar-choice-card__body">
+        <div className="scar-choice-card__identity">
+          <span>{(scar.source ?? "unbound").toUpperCase()} Scar</span>
+          <h3>{scar.title}</h3>
+        </div>
+        <ScarEffects scar={scar} />
+      </div>
+      <div className="scar-choice-card__accept">
+        <AcceptScarButton
+          scarName={scar.title}
+          scarSource={scar.source}
+          thresholdWarning={thresholdWarning}
+          disabled={anotherPending}
+          disabledReason={anotherPending ? "Another Scar is being bound." : null}
+          status={pending ? "confirming" : "available"}
+          onConfirm={() => onChoose(scar.id)}
+        />
+      </div>
+    </article>
   );
 }
 
 export function PhoneScarSelector({ cards, source, currentCount, thresholdWarning, onChoose }: PhoneScarSelectorProps): ReactElement {
-  const [index, setIndex] = useState(0);
-  const [compareOpen, setCompareOpen] = useState(false);
-  const [status, setStatus] = useState<AcceptScarButtonStatus>("available");
-  const touchStartX = useRef<number | null>(null);
-  const scar = cards[index] ?? cards[0];
+  const [pendingScarId, setPendingScarId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (index >= cards.length) setIndex(0);
-    setStatus("available");
-  }, [cards, index]);
-
-  if (!scar) return <p className="scar-prototype__empty">No Scar candidates are available.</p>;
-  const move = (offset: number): void => setIndex((current) => (current + offset + cards.length) % cards.length);
-  const onTouchEnd = (event: TouchEvent<HTMLElement>): void => {
-    const start = touchStartX.current;
-    touchStartX.current = null;
-    if (start === null) return;
-    const end = event.changedTouches[0]?.clientX ?? start;
-    if (Math.abs(end - start) < 42) return;
-    move(end < start ? 1 : -1);
+  if (cards.length === 0) return <p className="scar-prototype__empty">No Scar candidates are available.</p>;
+  const choose = (scarId: string): void => {
+    if (pendingScarId !== null) return;
+    setPendingScarId(scarId);
+    onChoose(scarId);
   };
 
   return (
     <section
-      className="scar-prototype scar-prototype--carousel"
-      aria-label="Focused Scar carousel"
-      onTouchStart={(event) => { touchStartX.current = event.touches[0]?.clientX ?? null; }}
-      onTouchEnd={onTouchEnd}
+      className="scar-prototype scar-prototype--compare"
+      aria-label="Compare Scar choices"
     >
       <ScarSelectorHeader source={source} currentCount={currentCount} thresholdWarning={thresholdWarning} />
-      <div className="scar-carousel__position">
-        <span>{index + 1} of {cards.length}</span>
-        <div>{cards.map((candidate, cardIndex) => <i key={candidate.id} data-active={cardIndex === index ? "true" : "false"} />)}</div>
+      <div className="scar-choice-guide" role="note">
+        <strong>Compare both</strong>
+        <span>Tap either image to inspect the full artwork.</span>
       </div>
-      <div className="scar-carousel__stage">
-        <button type="button" className="scar-carousel__arrow scar-carousel__arrow--previous" aria-label="Previous Scar" onClick={() => move(-1)}>‹</button>
-        <article className="scar-carousel__card" key={scar.id}>
-          <ScarArt scar={scar} />
-          <div className="scar-carousel__identity"><span>{(scar.source ?? source).toUpperCase()} Scar</span><h3>{scar.title}</h3></div>
-          <ScarEffects scar={scar} />
-        </article>
-        <button type="button" className="scar-carousel__arrow scar-carousel__arrow--next" aria-label="Next Scar" onClick={() => move(1)}>›</button>
+      <div className="scar-choice-grid">
+        {cards.map((scar, index) => (
+          <ScarChoiceCard
+            key={scar.id}
+            scar={scar}
+            optionLabel={`Choice ${String.fromCharCode(65 + index)}`}
+            thresholdWarning={thresholdWarning}
+            pendingScarId={pendingScarId}
+            onChoose={choose}
+          />
+        ))}
       </div>
-      <div className="scar-prototype__action-dock">
-        <AcceptScarButton
-          scarName={scar.title}
-          scarSource={scar.source ?? source}
-          thresholdWarning={thresholdWarning}
-          status={status}
-          onConfirm={() => {
-            if (status !== "available" && status !== "reconnect-restored") return;
-            setStatus("confirming");
-            onChoose(scar.id);
-          }}
-        />
-        <button type="button" className="scar-prototype__compare-action" onClick={() => setCompareOpen(true)}>Compare both</button>
-        <span>Scar choice required</span>
-      </div>
-      {compareOpen ? <ComparePanel cards={cards} onClose={() => setCompareOpen(false)} /> : null}
+      <footer className="scar-prototype__required">Scar choice required</footer>
     </section>
   );
 }

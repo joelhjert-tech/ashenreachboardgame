@@ -196,7 +196,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByRole("button", { name: actionPattern })).not.toBeInTheDocument();
   });
 
-  it("submits the focused production Scar through the authoritative choice intent", () => {
+  it("submits a compared production Scar through the authoritative choice intent", () => {
     const onIntent = vi.fn<(intent: ClientIntent) => void>();
     render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={createPatch({
       phase: "resolution",
@@ -233,8 +233,9 @@ describe("PhoneActionPanel", () => {
       }
     })} />);
 
-    expect(screen.getByRole("region", { name: /focused scar carousel/i })).toBeVisible();
-    expect(screen.getByText(/1 of 2/i)).toBeVisible();
+    expect(screen.getByRole("region", { name: /compare scar choices/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /inspect relay ghost/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /inspect choir static/i })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /accept relay ghost/i }));
 
     expect(onIntent).toHaveBeenCalledTimes(1);

@@ -1,4 +1,5 @@
 import { useEffect, useId, useState, type ReactElement } from "react";
+import { createPortal } from "react-dom";
 import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 
@@ -40,7 +41,7 @@ export function PhoneInspectableCardArt({ cardType, cardId, title, lore = null, 
         <CardArtImage cardType={cardType} cardId={cardId} alt={title} className={className} data-testid={testId} />
         <span className="phone-card-inspect-trigger__hint">Inspect</span>
       </button>
-      {open ? (
+      {open && typeof document !== "undefined" ? createPortal(
         <div className="phone-card-inspect" role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={(event) => event.stopPropagation()}>
           <button type="button" className="phone-card-inspect__backdrop" aria-label={`Close ${title} inspection`} onClick={() => setOpen(false)} />
           <section className="phone-card-inspect__panel">
@@ -49,7 +50,7 @@ export function PhoneInspectableCardArt({ cardType, cardId, title, lore = null, 
               <button type="button" className="phone-card-inspect__close" onClick={() => setOpen(false)}>Close</button>
             </header>
             <div className="phone-card-inspect__art-frame">
-              <CardArtImage cardType={cardType} cardId={cardId} quality="full" alt={`${title} full card artwork`} />
+              <CardArtImage cardType={cardType} cardId={cardId} quality="full" loading="eager" alt={`${title} full card artwork`} />
             </div>
             {(lore || rules) ? (
               <div className="phone-card-inspect__copy">
@@ -58,7 +59,8 @@ export function PhoneInspectableCardArt({ cardType, cardId, title, lore = null, 
               </div>
             ) : null}
           </section>
-        </div>
+        </div>,
+        document.body
       ) : null}
     </>
   );

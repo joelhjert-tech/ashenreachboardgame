@@ -24,10 +24,16 @@ async function startPhone(page: Page): Promise<Auth> {
   await page.goto(`${client}/?room=${session.roomCode}&resetAuth=1`, { waitUntil: "networkidle" });
   await page.getByLabel("Player name").fill("Scar Witness");
   await page.getByRole("button", { name: "Join Game" }).click();
-  await page.getByRole("heading", { name: "Select operative" }).waitFor();
+  await page.getByRole("heading", { name: "Choose Piece" }).waitFor();
+  await page.getByRole("button", { name: "Continue to Operative" }).click();
+  await page.getByRole("heading", { name: "Choose Operative" }).waitFor();
   await page.getByRole("button", { name: /Bjornis/i }).click();
   await page.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
   await page.getByRole("button", { name: "Select Contract" }).first().click();
+  for (let pick = 0; pick < 2; pick += 1) {
+    await page.getByRole("heading", { name: "Choose one provision" }).waitFor();
+    await page.getByRole("button", { name: /Choose (Equipment|Follower)/ }).first().click();
+  }
   await page.getByRole("button", { name: "Ready" }).click();
   await page.getByRole("button", { name: "Start Game" }).click();
   const auth = await page.evaluate(() => JSON.parse(localStorage.getItem("ashenreach.controllerSession") ?? "null")) as Auth | null;
@@ -69,6 +75,10 @@ async function openSelector(page: Page, auth: Auth, width: number, height: numbe
   await page.setViewportSize({ width, height });
   await page.goto(`${client}/?room=${auth.roomCode}&seat=${auth.seatId}`, { waitUntil: "networkidle" });
   await page.getByRole("heading", { name: "Choose Your Scar" }).waitFor();
+  await page.waitForFunction(() => {
+    const frames = Array.from(document.querySelectorAll<HTMLElement>(".scar-choice-card__art [data-artwork-status]"));
+    return frames.length === 2 && frames.every((frame) => frame.dataset.artworkStatus === "ready");
+  });
   await page.waitForTimeout(180);
 }
 
@@ -102,11 +112,16 @@ async function main(): Promise<void> {
   }
 
   await openSelector(phone, auth, 390, 844);
-  await phone.getByRole("button", { name: /compare both/i }).click();
-  await phone.getByRole("dialog", { name: /compare both scars/i }).waitFor();
-  await shot(phone, "scar-selector-compare-390x844.png");
-  await phone.getByRole("button", { name: /close/i }).click();
-  await phone.getByRole("button", { name: /accept /i }).click();
+  await phone.getByRole("button", { name: /inspect /i }).first().click();
+  const inspector = phone.getByRole("dialog");
+  await inspector.waitFor();
+  await inspector.locator('[data-artwork-status="ready"]').waitFor();
+  await inspector.locator("img").evaluateAll(async (images) => {
+    await Promise.all((images as HTMLImageElement[]).map((image) => image.decode()));
+  });
+  await phone.screenshot({ path: join(output, "scar-selector-inspect-390x844.png"), fullPage: false });
+  await phone.getByRole("button", { name: /^close$/i }).click();
+  await phone.getByRole("button", { name: /accept /i }).first().click();
   try {
     await phone.getByRole("heading", { name: "Choose Your Scar" }).waitFor({ state: "detached", timeout: 6_000 });
   } catch {
@@ -115,7 +130,7 @@ async function main(): Promise<void> {
     const received = receivedFrames.slice(-4).join(" | ").slice(-3_000);
     throw new Error(`Authoritative Scar choice did not resolve. Sent: ${scarFrame}. Received: ${received}. Visible: ${visibleText}`);
   }
-  await phone.waitForFunction(() => /1 SCARS?/i.test(document.body.innerText));
+  await phone.waitForTimeout(180);
   await phone.screenshot({ path: join(output, "scar-selector-resolved-390x844.png"), fullPage: false });
 
   await browser.close();
