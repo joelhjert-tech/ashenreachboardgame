@@ -1182,6 +1182,14 @@ function summarizeEffects(effect: EncounterEffect | null, success: boolean | nul
   return [summarizeEffect(effect, success)];
 }
 
+function countTrophyAward(effect: EncounterEffect | null): number {
+  if (!effect) return 0;
+  if (effect.type === "sequence") {
+    return effect.effects.reduce((total, entry) => total + countTrophyAward(entry), 0);
+  }
+  return effect.type === "gain_trophy" ? effect.amount : 0;
+}
+
 function summarizeAppliedEffects(effect: EncounterEffect, success: boolean | null, startingSalvage: number, startingWounds: number): string[] {
   let salvage = Math.max(0, startingSalvage);
   let wounds = Math.max(0, startingWounds);
@@ -2937,7 +2945,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       {
         const player = requirePlayer(state, action.seatId);
         const activeMissions = getActiveMissions(player.character);
-        const trophyAward = action.success ? state.currentEncounter.trophyValue : 0;
+        const explicitTrophyAward = action.success ? countTrophyAward(action.effect) : 0;
+        const trophyAward = action.success && explicitTrophyAward === 0 ? state.currentEncounter.trophyValue : 0;
         const defeatedTrophy = action.success ? createTrophyPileEntry(state.currentEncounter) : null;
         const trophyPileSummary = defeatedTrophy ? `${defeatedTrophy.name} added to Trophy Pile.` : "";
         const nextActiveMissions = activeMissions.map((activeMission) => {

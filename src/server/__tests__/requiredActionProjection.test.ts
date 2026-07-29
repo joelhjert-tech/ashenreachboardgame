@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BattlePresentation, RequiredActionProjection } from "../../client/shared/types.js";
+import { loadThreatCards } from "../../game/content/threats.js";
 import { createInitialSessionState } from "../sessionState.js";
 import {
   buildRequiredActionProjection,
@@ -376,6 +377,29 @@ describe("server required-action projection", () => {
     expect(finalEndTurn).toMatchObject({ transitionStage: "end-turn-available", allowedCommand: "end-turn" });
   });
 
+  it("keeps a transient battle result in resolving state until consequences settle", () => {
+    const state = activateMultiplayer();
+    const ownerSeatId = state.turnOrder[0]!;
+    state.phase = "resolution";
+    state.activeResolution = {
+      id: "p4-transient-battle-result",
+      playerId: ownerSeatId,
+      source: "threat",
+      stage: "roll_result",
+      card: { id: "ash-lane-cutters", title: "Ash-Lane Cutters", type: "enemy" },
+      battle: { enemyName: "Ash-Lane Cutters", stat: "command", difficulty: 6, modifiers: [] },
+      roll: { dice: [3, 4], baseTotal: 7, modifierTotal: 3, finalTotal: 10, target: 6, success: true }
+    };
+
+    expect(requiredAction(createPhoneProjection(state, ownerSeatId))).toMatchObject({
+      label: "Applying battle consequence",
+      transitionStage: "result-visible",
+      allowedCommand: null,
+      canAct: false,
+      inputEnabled: false
+    });
+  });
+
   it("projects a public-safe, stable handoff from the authoritative turn event", () => {
     const state = activateMultiplayer();
     const fromSeatId = state.turnOrder[0]!;
@@ -511,6 +535,29 @@ describe("server required-action projection", () => {
     expect(waiting).toEqual(tv);
     expect(JSON.stringify(tv)).not.toContain("candidateIds");
     expect(JSON.stringify(tv)).not.toContain("pendingScarChoice");
+  });
+
+  it("projects public pre-roll enemy intent without private state", () => {
+    const state = activateMultiplayer();
+    const ownerSeatId = state.turnOrder[0]!;
+    const marshal = loadThreatCards().get("pale-marshal");
+    if (!marshal || marshal.cardType !== "enemy") throw new Error("Missing Pale Marshal fixture");
+    state.phase = "action";
+    state.currentEncounter = marshal;
+    state.activeResolution = {
+      id: "battle-intent-pale-marshal",
+      playerId: ownerSeatId,
+      source: "threat",
+      stage: "battle_setup",
+      card: { id: marshal.id, title: marshal.title, type: "enemy", flavor: marshal.flavor },
+      battle: { enemyName: marshal.enemyName, stat: marshal.stat, difficulty: marshal.difficulty, modifiers: [] }
+    };
+
+    const tv = battlePresentation(createTvProjection(state));
+    const owner = battlePresentation(createPhoneProjection(state, ownerSeatId));
+    expect(tv.encounter.failureStakes).toMatch(/1 Wound suffered.*Threat remains on this space.*Rerolls blocked/i);
+    expect(owner.encounter.failureStakes).toBe(tv.encounter.failureStakes);
+    expect(JSON.stringify(tv.encounter)).not.toMatch(/notes|hand|agenda|message|credential/i);
   });
 
   it("restores the same battle result and keeps a Scar choice private", () => {

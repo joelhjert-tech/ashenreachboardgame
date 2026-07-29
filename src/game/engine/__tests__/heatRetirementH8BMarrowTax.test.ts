@@ -177,22 +177,12 @@ describe("Heat Retirement H8B Marrow Tax Auditors", () => {
     };
     const server = new GameRoomServer(state, [], createSequenceRandomSource([5, 5]));
     server.resolveCheckIntent({ type: "CHECK_REQUESTED", seatId: "seat-1", stat: "guile" });
-    const opened = server.getState();
-    expect(opened.pendingEffect).toMatchObject(card.successEffect!);
-    expect(opened.players[0]!.character.salvage).toBe(3);
-    const result = reduceGameState(opened, {
-      type: "RESOLUTION_APPLIED",
-      seatId: "seat-1",
-      effect: opened.pendingEffect!,
-      sourceCardId: card.id,
-      success: true,
-      createdAt: "h8b-success-applied"
-    });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.state.players[0]!.character.salvage).toBe(3);
-    expect(result.state.players[0]!.character.followers?.filter((follower) => follower.id === "pale-cartel-fixer")).toHaveLength(1);
-    expect(result.state.activeResolution?.outcome?.salvageLoss).toBeUndefined();
+    const resolved = server.getState();
+    expect(resolved.pendingEffect).toBeNull();
+    expect(resolved.players[0]!.character.salvage).toBe(3);
+    expect(resolved.players[0]!.character.followers?.filter((follower) => follower.id === "pale-cartel-fixer")).toHaveLength(1);
+    expect(resolved.activeResolution?.outcome?.salvageLoss).toBeUndefined();
+    expect((resolved.eventLog as Array<{ type?: string }>).filter((event) => event.type === "RESOLUTION_APPLIED")).toHaveLength(1);
   });
 
   it.each([

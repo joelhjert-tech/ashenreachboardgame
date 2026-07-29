@@ -61,7 +61,12 @@ describe("post-audit direct item-effect regressions", () => {
   });
 
   it("artifact-cinder-suture-kit authoritatively grants and auto-equips the normal kit into its empty slot", () => {
-    const state = acquireArtifact("artifact-cinder-suture-kit");
+    const state = acquireArtifact("artifact-cinder-suture-kit", (draft) => {
+      draft.players[0]!.character.equippedGear.utility = null;
+      if (draft.players[0]!.character.equippedGearInstances) {
+        draft.players[0]!.character.equippedGearInstances.utility = null;
+      }
+    });
     const character = state.players[0]!.character;
     expect(character.heldGear.filter((item) => item.id === "cinder-suture-kit")).toHaveLength(1);
     expect(Object.values(character.equippedGear)).toContain("cinder-suture-kit");

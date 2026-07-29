@@ -102,7 +102,10 @@ function continueUntilEscalationResolves(server: GameRoomServer): void {
   for (let index = 0; index < 8; index += 1) {
     if (server.getState().status !== "active") return;
     if ((server.getState().resolvedEscalationSourceEventIds ?? []).length > 0) return;
-    if (server.getState().activeResolution || (server.getState().phase === "resolution" && server.getState().pendingEffect)) {
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases(seatId);
+    if (server.getState().status !== "active") return;
+    if ((server.getState().resolvedEscalationSourceEventIds ?? []).length > 0) return;
+    if (server.getState().activeResolution && !server.getState().pendingEffect) {
       server.handleIntent(client, { type: "CONTINUE_RESOLUTION", seatId });
       continue;
     }
@@ -159,10 +162,7 @@ describe("Heat Retirement H7B Gateblind Pulse content", () => {
   it("keeps success-side scenario progress and creates no escalation", () => {
     const server = new GameRoomServer(createResolutionState({ success: true }));
     const seatId = server.getState().players[0]!.seatId;
-    const client = createClient(seatId);
-    for (let index = 0; index < 4 && server.getState().activeResolution; index += 1) {
-      server.handleIntent(client, { type: "CONTINUE_RESOLUTION", seatId });
-    }
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases(seatId);
     expect(server.getState().scenarioProgress.gateblindPulsesRead).toBe(1);
     expect(server.getState().escalationLevel).toBe(0);
     expect(escalationEvents(server.getState())).toHaveLength(0);

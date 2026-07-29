@@ -75,7 +75,6 @@ function resolveThroughServer(id: string, wounds: number, kerPrevention = false)
     server.resolveCheckIntent({ type: "CHECK_REQUESTED", seatId: "seat-1", stat: target.stat });
   }
   server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
-  server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
   (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
   return server.getState();
 }

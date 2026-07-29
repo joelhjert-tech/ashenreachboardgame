@@ -99,6 +99,31 @@ describe("P23 server-authoritative Affliction lifecycle", () => {
     expect(server.getState().eventLog.filter((event) => (event as { type?: string }).type === "COMBAT_RESOLVED")).toHaveLength(1);
   });
 
+  it("does not open Blood Fury when the active enemy blocks rerolls", () => {
+    const enemy = loadThreatCards().get("pale-marshal");
+    if (!enemy || enemy.cardType !== "enemy") throw new Error("Missing Pale Marshal fixture");
+    const state = createInitialSessionState("p23-blood-fury-blocked", "single-player");
+    state.status = "active";
+    state.phase = "action";
+    state.currentEncounter = enemy;
+    state.players[0]!.character.stats[enemy.stat] = 0;
+    addFaceupAffliction(state, "blood-fury");
+    state.activeResolution = {
+      id: "blood-fury-blocked-battle",
+      playerId: "seat-1",
+      source: "threat",
+      stage: "battle_setup",
+      card: { id: enemy.id, title: enemy.title, type: "enemy" },
+      battle: { enemyName: enemy.enemyName, stat: enemy.stat, difficulty: enemy.difficulty, modifiers: [] }
+    };
+
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0, 0, 5, 5]));
+    server.resolveCombatIntent({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: enemy.stat });
+
+    expect(server.getState().pendingAfflictionReaction).toBeNull();
+    expect(server.getState().eventLog.filter((event) => (event as { type?: string }).type === "COMBAT_RESOLVED")).toHaveLength(1);
+  });
+
   it("keeps owner choices private while exposing only concise public progress", () => {
     const state = createInitialSessionState("p23-affliction-privacy", "multiplayer");
     addFaceupAffliction(state, "future-sickness");

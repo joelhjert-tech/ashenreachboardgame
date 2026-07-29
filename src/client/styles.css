@@ -29519,3 +29519,63 @@ body {
     transform: none;
   }
 }
+
+/* Phone battle audit follow-up: keep intent and secondary controls legible
+   without competing with the single primary battle action. */
+.phone-battle-details-toggle,
+.phone-battle-context__back {
+  font-size: 0.72rem;
+}
+
+.phone-battle-details span,
+.phone-battle-context > span {
+  font-size: 0.66rem;
+}
+
+.phone-battle-details strong {
+  font-size: 0.74rem;
+}
+
+.phone-battle-details p {
+  font-size: 0.72rem;
+}
+
+.phone-battle-shell__nav button {
+  font-size: clamp(0.7rem, 2.5vw, 0.76rem);
+}
+
+.phone-battle-duel-card figcaption span,
+.phone-battle-duel-card figcaption small {
+  font-size: 0.68rem;
+}
+
+.phone-battle-duel-card__seal span {
+  font-size: 0.6rem;
+}
+
+.phone-battle-duel__intent {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.58rem 0.68rem;
+  border: 1px solid color-mix(in srgb, var(--challenge-color, #d84a32) 44%, transparent);
+  background: linear-gradient(90deg, var(--challenge-soft, rgba(216, 74, 50, 0.16)), rgba(7, 11, 14, 0.92));
+}
+
+.phone-battle-duel__intent span {
+  color: color-mix(in srgb, var(--challenge-color, #d84a32) 74%, #f3e6cf);
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.phone-battle-duel__intent strong {
+  min-width: 0;
+  color: #eadfc9;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}

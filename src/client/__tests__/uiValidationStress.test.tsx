@@ -387,6 +387,20 @@ describe("Ashen Reach UI validation stress states", () => {
         publicRewardSummary: "Gain trophies.",
         waiting: { actorDisplayName: "QA", publicAction: "consider a battle effect", privateDecision: true },
         restored: false
+      },
+      requiredAction: {
+        id: "qa-resolution:roll_result",
+        kind: "battle",
+        actorSeatId: "seat-1",
+        actorDisplayName: "QA",
+        requiredTab: "battle",
+        label: "Choose a reroll or keep result",
+        detail: "The authoritative result is ready for a reaction.",
+        canAct: true,
+        waiting: false,
+        privacy: "owner",
+        transitionStage: "result-visible",
+        allowedCommand: "continue"
       }
     });
 
@@ -400,7 +414,7 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(screen.getByText(/modifier sources/i).parentElement).toHaveTextContent(/Void-Cleaver \+3.*Command protocol \+2/i);
     expect(screen.queryByTestId("phone-battle-total-comparison")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /reroll.*spend 1 charge/i })).toHaveTextContent(/1 charge remaining/i);
-    expect(screen.getAllByRole("button", { name: /^continue$/i })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: /^keep current result$/i })).toBeEnabled();
   });
 
   it("keeps the mission step text-only for MASTER ALPHA and hides bottom navigation", () => {

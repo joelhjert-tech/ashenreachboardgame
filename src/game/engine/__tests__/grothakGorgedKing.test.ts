@@ -72,7 +72,8 @@ describe("Grothak, the Gorged King", () => {
   it("applies the two-Wound loss once through the authoritative battle lifecycle", () => {
     const server = createBattleServer(grothak, [0, 0, 5, 5]);
     server.resolveCombatIntent({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: "command" });
-    expect(server.getState().pendingEffect).toEqual({ type: "take_wound", amount: 2 });
+    expect(server.getState().pendingEffect).toBeNull();
+    expect(server.getState().players[0]!.character.wounds).toBe(2);
     finishPendingResolution(server);
     expect(server.getState().players[0]!.character.wounds).toBe(2);
     expect(server.getState().eventLog.filter((event) => (event as { type?: string }).type === "RESOLUTION_APPLIED")).toHaveLength(1);
@@ -83,7 +84,8 @@ describe("Grothak, the Gorged King", () => {
     const server = createBattleServer(grothak, [5, 5, 0, 0]);
     const before = server.getState().players[0]!.character.salvage ?? 0;
     server.resolveCombatIntent({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: "command" });
-    expect(server.getState().pendingEffect).toEqual({ type: "gain_salvage", amount: 2 });
+    expect(server.getState().pendingEffect).toBeNull();
+    expect(server.getState().players[0]!.character.salvage).toBe(before + 2);
     finishPendingResolution(server);
     expect(server.getState().players[0]!.character.salvage).toBe(before + 2);
     expect(server.getState().eventLog.filter((event) => (event as { type?: string }).type === "RESOLUTION_APPLIED")).toHaveLength(1);

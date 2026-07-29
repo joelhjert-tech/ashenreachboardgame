@@ -69,7 +69,6 @@ function resolveFailureThroughServer(wounds: number, kerPrevention = false) {
   const server = new GameRoomServer(state, [], createSequenceRandomSource([0, 0]));
   server.resolveCheckIntent({ type: "CHECK_REQUESTED", seatId: "seat-1", stat: "grit" });
   server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
-  server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
   const pendingScar = server.getState().pendingScarChoice;
   if (pendingScar) {
     server.handleIntent({ seatId: "seat-1", view: "phone", socket: { readyState: 0, send() {} } } as never, {

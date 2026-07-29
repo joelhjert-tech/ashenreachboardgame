@@ -19,6 +19,7 @@ import {
   getThreatEffectTiming,
   isThreatEffectKey,
   resolveThreatEffect,
+  threatBlocksRerolls,
   type ThreatEffectResult,
   type ThreatEffectTiming
 } from "../game/cards/threatEffects.js";
@@ -7170,7 +7171,7 @@ export class GameRoomServer {
       card,
       player,
       spaceId: player.character.currentSpaceId,
-      region: card.region ?? this.getThreatRegionFromSector(sector?.regionTier),
+      region: this.getThreatRegionFromSector(sector?.regionTier) ?? card.region,
       escalationLevel: this.state.escalationLevel
     };
   }
@@ -8717,7 +8718,11 @@ export class GameRoomServer {
     seatId: string,
     pendingResult: CheckRolledAction | CombatResolvedAction
   ): boolean {
-    if (pendingResult.success || this.state.pendingAfflictionReaction) return false;
+    if (
+      pendingResult.success
+      || this.state.pendingAfflictionReaction
+      || (pendingResult.type === "COMBAT_RESOLVED" && threatBlocksRerolls(this.state.currentEncounter))
+    ) return false;
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     if (!player) return false;
     const faceup = new Set((player.faceupAfflictions ?? []).map((entry) => entry.cardId));
@@ -14175,6 +14180,12 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
         : "review the result and continue";
   const effects = resultStage ? resolution?.outcome?.effects ?? [] : [];
   const rewardSummary = effects.find((effect) => /\bgain\b|\btroph|\breward|\bsalvage|\bequipment|\bfollower/i.test(effect)) ?? null;
+  const failureStakes = isBattle && encounter?.cardType === "enemy"
+    ? [
+        summarizePublicHandoffEffect(encounter.woundOnLoss),
+        threatBlocksRerolls(encounter) ? "Rerolls blocked" : null
+      ].filter((entry): entry is string => Boolean(entry)).join(" / ") || null
+    : null;
 
   return {
     id: resolution?.id ?? `encounter:${actorSeatId}:${encounterName}`,
@@ -14186,7 +14197,8 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
       name: encounterName,
       category: isBattle ? "Battle" : state.pendingTileChallenge?.challengeType === "anomaly" ? "Anomaly" : encounter?.cardType === "hazard" ? "Hazard" : "Challenge",
       imageKey: resolution?.card?.id ?? encounter?.id ?? pendingEnemyRoll?.encounterCardId ?? null,
-      publicSummary: resolution?.card?.flavor ?? encounter?.flavor ?? null
+      publicSummary: resolution?.card?.flavor ?? encounter?.flavor ?? null,
+      failureStakes
     },
     test: { stat, label: CHALLENGE_LABELS[stat], opposed: isBattle },
     operative: {
@@ -14370,6 +14382,7 @@ interface RequiredActionDescriptor {
   transitionStage?: import("../client/shared/types.js").RequiredActionTransitionStage;
   allowedCommand?: import("../client/shared/types.js").RequiredActionCommand;
   sourceId?: string;
+  canAct?: boolean;
 }
 
 function summarizePublicHandoffEffect(effect: unknown): string | null {
@@ -14395,6 +14408,11 @@ function summarizePublicHandoffEffect(effect: unknown): string | null {
     case "draw_artifact": return "Artifact recovered";
     case "draw_affliction": return "Affliction drawn";
     case "advance_scenario": return "Mission progress advanced";
+    case "advance_escalation": return `${amount ?? 1} Global Escalation added`;
+    case "return_threat_to_space": return "Threat remains on this space";
+    case "equipment_suppression": return "One equipped item is suppressed for the next battle";
+    case "forcedDisplacement":
+    case "ownerSelectedForcedDisplacement": return "Forced displacement follows";
     default: return null;
   }
 }
@@ -14528,12 +14546,12 @@ export function buildRequiredActionProjection(
       requiredTab: ownsAction ? descriptor.requiredTab : null,
       label: ownsAction ? descriptor.label : descriptor.actorSeatId ? `Waiting for ${actorDisplayName ?? "operative"}` : descriptor.label,
       detail: ownsAction ? descriptor.ownerDetail : publicDetail,
-      canAct: ownsAction,
+      canAct: ownsAction && descriptor.canAct !== false,
       waiting: Boolean(descriptor.actorSeatId && !ownsAction),
       privacy: ownsAction ? "owner" as const : "public" as const,
       transitionStage,
       allowedCommand: descriptor.allowedCommand ?? null,
-      inputEnabled: ownsAction,
+      inputEnabled: ownsAction && descriptor.canAct !== false,
       activeInstruction,
       waitingInstruction,
       hostInstruction: publicDetail,
@@ -14820,7 +14838,20 @@ export function buildRequiredActionProjection(
       || state.currentEncounter?.cardType === "enemy"
       || Boolean(state.pendingEnemyRoll);
     const title = state.activeResolution?.card?.title ?? state.currentEncounter?.title ?? "current test";
-    const resultVisible = state.activeResolution?.stage === "roll_result" || state.activeResolution?.stage === "outcome_summary" || state.activeResolution?.stage === "awaiting_continue";
+    const rollResultPending = state.activeResolution?.stage === "roll_result";
+    const settledResultVisible = state.activeResolution?.stage === "outcome_summary" || state.activeResolution?.stage === "awaiting_continue";
+    const scarRerollAvailable = Boolean(
+      rollResultPending
+      && actorSeatId
+      && getOwnedScarAdaptationControls(state, actorSeatId).some((control) => control.enabled && control.ruleKey.includes("reroll"))
+    );
+    const soloRerollAvailable = Boolean(
+      rollResultPending
+      && actorSeatId
+      && buildSoloRerollProjection(state, actorSeatId).available
+    );
+    const rollReactionAvailable = scarRerollAvailable || soloRerollAvailable;
+    const resultVisible = rollResultPending || settledResultVisible;
     const outcomeTitle = state.activeResolution?.outcome?.title ?? (state.lastOutcomeSummary?.success === false ? "Test failed" : "Test resolved");
     const outcomeDetail = state.activeResolution?.outcome?.text ?? state.lastOutcomeSummary?.summary ?? `Review the ${title} result.`;
     const ownerPrivateResolution = state.activeResolution?.origin?.privacy === "owner";
@@ -14831,15 +14862,28 @@ export function buildRequiredActionProjection(
       requiredTab: isMovementResolution ? "move" : isBattle ? "battle" : "action",
       label: isMovementResolution
         ? resultVisible ? outcomeTitle : "Resolve approach"
-        : resultVisible ? outcomeTitle : isBattle ? "Resolve battle" : "Resolve test",
+        : rollReactionAvailable
+          ? "Choose a reroll or keep the result"
+          : rollResultPending
+            ? isBattle ? "Applying battle consequence" : "Applying challenge consequence"
+            : resultVisible ? outcomeTitle : isBattle ? "Resolve battle" : "Resolve test",
       ownerDetail: isMovementResolution
         ? resultVisible ? outcomeDetail : `Resolve the approach to ${title}.`
-        : resultVisible ? outcomeDetail : `Resolve ${title}.`,
+        : rollReactionAvailable
+          ? "Use an available reroll or keep the authoritative result."
+          : rollResultPending
+            ? "The server is applying the authoritative consequence."
+            : resultVisible ? outcomeDetail : `Resolve ${title}.`,
       publicAction: ownerPrivateResolution
         ? resultVisible ? "review a private objective result" : "resolve a private objective"
-        : resultVisible ? `review the ${title} result` : `resolve ${title}`,
-      transitionStage: resultVisible ? "continue-available" : "required-action",
-      allowedCommand: resultVisible ? "continue" : null,
+        : rollReactionAvailable
+          ? `choose a reroll or keep the ${title} result`
+          : rollResultPending
+            ? `wait while the ${title} consequence is applied`
+            : resultVisible ? `review the ${title} result` : `resolve ${title}`,
+      transitionStage: settledResultVisible ? "continue-available" : rollResultPending ? "result-visible" : "required-action",
+      allowedCommand: settledResultVisible || rollReactionAvailable ? "continue" : null,
+      canAct: !rollResultPending || rollReactionAvailable,
       sourceId: ownerPrivateResolution ? undefined : sourceId
     });
   }

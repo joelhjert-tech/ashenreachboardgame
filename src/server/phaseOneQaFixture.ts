@@ -63,7 +63,7 @@ export type PhaseOneQaFixture =
     }
   | {
       kind: "phone-battle";
-      stage: "encounter" | "battle-setup" | "pending-enemy-roll" | "rolled-result" | "success" | "defeat";
+      stage: "encounter" | "battle-setup" | "pending-enemy-roll" | "rolled-result" | "reroll" | "success" | "defeat";
     }
   | {
       kind: "cooperative-assistance";
@@ -158,30 +158,32 @@ function setPhoneBattleFixture(
   seatId: string,
   stage: Extract<PhaseOneQaFixture, { kind: "phone-battle" }>["stage"]
 ): void {
-  const threat = loadThreatCards().get("lantern-ash-ghoul");
+  const threat = loadThreatCards().get(stage === "reroll" ? "static-larva-swarm" : "lantern-ash-ghoul");
   const player = state.players.find((entry) => entry.seatId === seatId);
   if (!threat || threat.cardType !== "enemy" || !player) throw new Error("QA fixture cannot create phone battle");
   const namedOpposition = getNamedPlayerEnemyModifier({
     displayName: state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? null
   });
 
-  state.phase = stage === "rolled-result" || stage === "success" || stage === "defeat" ? "resolution" : "action";
+  state.phase = stage === "rolled-result" || stage === "reroll" || stage === "success" || stage === "defeat" ? "resolution" : "action";
   state.currentEncounter = threat;
   state.pendingEnemyRoll = null;
   state.lastOutcomeSummary = null;
   state.activeResolution = null;
   state.resolutionSource = "encounter";
   player.character.wounds = stage === "defeat" ? 1 : 0;
+  player.character.scars = player.character.scars.filter((scarId) => scarId !== "scar-hollow-reflection");
+  if (stage === "reroll") player.character.scars.push("scar-hollow-reflection");
 
   if (stage === "encounter") {
     return;
   }
 
   state.activeResolution = {
-    id: `qa-phone-battle:${seatId}:lantern-ash-ghoul`,
+    id: `qa-phone-battle:${seatId}:${threat.id}`,
     playerId: seatId,
     source: "threat",
-    stage: stage === "battle-setup" || stage === "pending-enemy-roll" ? "battle_setup" : stage === "rolled-result" ? "roll_result" : "outcome_summary",
+    stage: stage === "battle-setup" || stage === "pending-enemy-roll" ? "battle_setup" : stage === "rolled-result" || stage === "reroll" ? "roll_result" : "outcome_summary",
     card: {
       id: threat.id,
       title: threat.title,
@@ -192,9 +194,9 @@ function setPhoneBattleFixture(
     battle: {
       enemyName: threat.enemyName ?? threat.title,
       stat: threat.stat,
-      difficulty: 12 + namedOpposition,
+      difficulty: (stage === "reroll" ? 8 : 12) + namedOpposition,
       modifiers: [
-        { label: "Base Grit", value: 5 },
+        { label: `Base ${threat.stat[0]?.toUpperCase()}${threat.stat.slice(1)}`, value: stage === "reroll" ? player.character.stats[threat.stat] : 5 },
         ...(namedOpposition > 0 ? [{ label: CW_ENEMY_MODIFIER_LABEL, value: namedOpposition }] : [])
       ]
     },
@@ -202,12 +204,12 @@ function setPhoneBattleFixture(
       ? {}
       : {
           roll: {
-            dice: stage === "defeat" ? [1, 1] : [3, 4],
-            baseTotal: stage === "defeat" ? 2 : 7,
-            modifierTotal: 5,
-            finalTotal: stage === "defeat" ? 7 : 12,
-            target: 12 + namedOpposition,
-            success: stage !== "defeat"
+            dice: stage === "defeat" || stage === "reroll" ? [1, 1] : [3, 4],
+            baseTotal: stage === "defeat" || stage === "reroll" ? 2 : 7,
+            modifierTotal: stage === "reroll" ? player.character.stats[threat.stat] : 5,
+            finalTotal: stage === "reroll" ? 2 + player.character.stats[threat.stat] : stage === "defeat" ? 7 : 12,
+            target: (stage === "reroll" ? 8 : 12) + namedOpposition,
+            success: stage !== "defeat" && stage !== "reroll"
           }
         }),
     ...(stage === "success"

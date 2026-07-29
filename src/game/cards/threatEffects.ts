@@ -51,6 +51,11 @@ function regionIsInner(ctx: ThreatEffectContext): boolean {
   return ctx.region === "inner" || ctx.region === "center";
 }
 
+export function threatBlocksRerolls(card: ThreatCard | null | undefined): boolean {
+  return card?.cardType === "enemy"
+    && (card.combatEffectKeys ?? []).includes("threat_block_rerolls");
+}
+
 export const THREAT_CARD_EFFECTS = {
   threat_escalate_on_reveal: {
     timing: "onReveal",
@@ -74,7 +79,7 @@ export const THREAT_CARD_EFFECTS = {
   },
   threat_lock_space_until_defeated: {
     timing: "onReveal",
-    resolve: (ctx) => ({ effect: note(`${ctx.spaceId ?? "This space"} is locked until ${ctx.card.title} is cleared.`) })
+    resolve: (ctx) => ({ summary: `${ctx.spaceId ?? "This space"} is locked until ${ctx.card.title} is cleared.` })
   },
 
   threat_combat_plus_one_if_player_has_scar: {
@@ -107,7 +112,7 @@ export const THREAT_CARD_EFFECTS = {
   },
   threat_block_rerolls: {
     timing: "beforeCombat",
-    resolve: () => ({ effect: note("Rerolls are blocked while this threat is active.") })
+    resolve: () => ({ summary: "Rerolls are blocked while this threat is active." })
   },
   threat_ignore_first_success: {
     timing: "beforeCombat",
@@ -128,7 +133,7 @@ export const THREAT_CARD_EFFECTS = {
   },
   threat_fail_drop_gear: {
     timing: "onFailure",
-    resolve: () => ({ effect: note("A held object is exposed for loss or recovery.") })
+    resolve: () => ({ summary: "A held object is exposed for loss or recovery." })
   },
   threat_fail_drop_artifact: {
     timing: "onFailure",
@@ -140,7 +145,7 @@ export const THREAT_CARD_EFFECTS = {
   },
   threat_fail_escalate: {
     timing: "onFailure",
-    resolve: () => ({ effect: note("Threat failure escalates table pressure by 1.") })
+    resolve: () => ({ effect: { type: "advance_escalation", amount: 1 } })
   },
 
   threat_defeat_gain_trophy: {
@@ -153,7 +158,7 @@ export const THREAT_CARD_EFFECTS = {
   },
   threat_defeat_gain_salvage: {
     timing: "onDefeat",
-    resolve: () => ({ effect: note("Salvage claim recorded from a defeated threat.") })
+    resolve: () => ({ effect: { type: "gain_salvage", amount: 1 } })
   },
   threat_defeat_gain_gear: {
     timing: "onDefeat",

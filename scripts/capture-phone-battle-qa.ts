@@ -7,6 +7,7 @@ type BattleStage =
   | "battle-setup"
   | "pending-enemy-roll"
   | "rolled-result"
+  | "reroll"
   | "success"
   | "defeat";
 
@@ -27,6 +28,7 @@ const stages: BattleStage[] = [
   "battle-setup",
   "pending-enemy-roll",
   "rolled-result",
+  "reroll",
   "success",
   "defeat"
 ];
@@ -64,10 +66,16 @@ async function createStartedPhone(page: Page, apiOrigin: string, clientOrigin: s
   await page.waitForLoadState("networkidle");
   await page.getByLabel("Player name").fill("BattleQA");
   await page.getByRole("button", { name: "Join Game" }).click();
-  await page.getByRole("heading", { name: "Select operative" }).waitFor();
+  await page.getByRole("heading", { name: "Choose Piece" }).waitFor();
+  await page.getByRole("button", { name: "Continue to Operative" }).click();
+  await page.getByRole("heading", { name: "Choose Operative" }).waitFor();
   await page.getByRole("button", { name: /Bjornis/i }).click();
   await page.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
   await page.getByRole("button", { name: "Select Contract" }).first().click();
+  for (let pick = 0; pick < 2; pick += 1) {
+    await page.getByRole("heading", { name: "Choose one provision" }).waitFor();
+    await page.getByRole("button", { name: /Choose (Equipment|Follower)/ }).first().click();
+  }
   await page.getByRole("button", { name: "Ready" }).click();
   await page.getByRole("button", { name: "Start Game" }).click();
   await page.getByText("Bjornis").first().waitFor();
@@ -100,47 +108,48 @@ async function openBattle(page: Page): Promise<void> {
     Array.from(document.querySelectorAll<HTMLImageElement>(".phone-battle-shell img"))
       .every((image) => image.complete && image.naturalWidth > 0)
   );
+  await page.waitForFunction(() =>
+    Array.from(document.querySelectorAll<HTMLElement>(".phone-battle-shell [data-artwork-status]"))
+      .every((frame) => frame.dataset.artworkStatus !== "loading")
+  );
+  await page.locator(".phone-battle-shell img").evaluateAll(async (images) => {
+    await Promise.all((images as HTMLImageElement[]).map((image) => image.decode()));
+  });
 }
 
 async function waitForBattleStage(page: Page, stage: BattleStage): Promise<void> {
-  const state = page.locator(".phone-battle-state strong");
-  const expectedState =
-    stage === "encounter"
-      ? "Battle"
-      : stage === "battle-setup"
-        ? "Roll required"
-        : stage === "pending-enemy-roll"
-          ? "Enemy roll"
-          : stage === "defeat"
-            ? "Defeat"
-            : "Success";
-  await state.filter({ hasText: expectedState }).waitFor({ state: "visible" });
-  if (stage === "success") {
+  if (stage === "encounter" || stage === "battle-setup") {
+    await page.getByTestId("phone-battle-cinematic-stage").waitFor({ state: "visible" });
+  } else if (stage === "pending-enemy-roll") {
+    await page.getByRole("button", { name: /roll for enemy/i }).waitFor({ state: "visible" });
+  } else if (stage === "rolled-result") {
+    await page.getByTestId("phone-battle-resolution-wait").waitFor({ state: "visible" });
+  } else if (stage === "reroll") {
+    await page.getByRole("button", { name: /hollow reflection.*die/i }).first().waitFor({ state: "visible" });
+  } else if (stage === "success") {
     await page.getByText("Threat defeated", { exact: true }).waitFor({ state: "visible" });
-  } else if (stage === "defeat") {
-    await page.getByText("Operative defeated", { exact: true }).waitFor({ state: "visible" });
   } else {
-    await page.locator(".phone-battle-outcome").waitFor({ state: "detached" });
+    await page.getByText("Operative defeated", { exact: true }).waitFor({ state: "visible" });
   }
 }
 
 async function assertFocusedBattleLayout(page: Page, viewport: { width: number; height: number }): Promise<void> {
   const measurements = await page.evaluate(() => {
-    const arenaElement = document.querySelector<HTMLElement>(".phone-battle-arena");
-    const totalsElement = document.querySelector<HTMLElement>(".phone-battle-equation");
+    const arenaElement = document.querySelector<HTMLElement>(".phone-battle-duel-stage");
+    const intentElement = document.querySelector<HTMLElement>(".phone-battle-duel__intent");
     const actionElement = document.querySelector<HTMLElement>(".phone-battle-shell__action");
     const navigationElement = document.querySelector<HTMLElement>(".phone-battle-shell__nav");
-    if (!arenaElement || !totalsElement || !actionElement || !navigationElement) {
+    if (!arenaElement || !intentElement || !actionElement || !navigationElement) {
       throw new Error("Focused battle layout is incomplete");
     }
     const arena = arenaElement.getBoundingClientRect();
-    const totals = totalsElement.getBoundingClientRect();
+    const intent = intentElement.getBoundingClientRect();
     const action = actionElement.getBoundingClientRect();
     const navigation = navigationElement.getBoundingClientRect();
     return {
       bodyWidth: document.body.scrollWidth,
       arena: { top: arena.top, bottom: arena.bottom },
-      totals: { top: totals.top, bottom: totals.bottom },
+      intent: { top: intent.top, bottom: intent.bottom },
       action: { top: action.top, bottom: action.bottom },
       navigation: { top: navigation.top, bottom: navigation.bottom }
     };
@@ -149,8 +158,8 @@ async function assertFocusedBattleLayout(page: Page, viewport: { width: number; 
   if (measurements.bodyWidth > viewport.width) {
     throw new Error(`Horizontal overflow: ${measurements.bodyWidth}px > ${viewport.width}px`);
   }
-  if (measurements.arena.bottom > measurements.action.top || measurements.totals.bottom > measurements.action.top) {
-    throw new Error("Combatants or totals are obscured by the primary action dock");
+  if (measurements.arena.bottom > measurements.intent.top || measurements.intent.bottom > measurements.action.top) {
+    throw new Error("Combatants or enemy intent are obscured by the primary action dock");
   }
   if (measurements.action.bottom > measurements.navigation.top + 1) {
     throw new Error("Primary action dock overlaps battle navigation");
@@ -190,7 +199,7 @@ async function main(): Promise<void> {
   await mkdir(outputRoot, { recursive: true });
 
   const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({ viewport });
+  const page = await browser.newPage({ viewport, reducedMotion: "reduce" });
   const consoleErrors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
@@ -207,7 +216,7 @@ async function main(): Promise<void> {
       path: join(outputRoot, `${viewportValue}-${stage}.png`),
       fullPage: false
     });
-    if (mode !== "baseline" && stage === "success") {
+    if (mode !== "baseline" && stage === "battle-setup") {
       await assertFocusedBattleLayout(page, viewport);
       await captureExpandedStates(page, outputRoot, viewportValue);
     }
@@ -227,7 +236,7 @@ async function main(): Promise<void> {
   if (consoleErrors.length > 0) throw new Error(`Console errors:\n${consoleErrors.join("\n")}`);
 
   await browser.close();
-  console.log(JSON.stringify({ outputRoot, viewport, stages: stages.length + 1 }, null, 2));
+  console.log(JSON.stringify({ outputRoot, viewport, stages: stages.length }, null, 2));
 }
 
 await main();

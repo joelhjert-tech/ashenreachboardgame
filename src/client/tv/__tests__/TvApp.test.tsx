@@ -520,7 +520,7 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     expect(await screen.findByRole("main", { name: /ashen reach startup/i })).toHaveTextContent(/multiplayer setup in progress/i);
-    expect(screen.getByRole("generic", { name: /players joined/i })).toHaveTextContent(/mission yes/i);
+    expect(screen.getByRole("generic", { name: /players joined/i })).toHaveTextContent(/contract yes/i);
     expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/exposed object/i)).not.toBeInTheDocument();
   });

@@ -97,7 +97,7 @@ function heatProjectionPaths(value: unknown, path = "root", output: string[] = [
 describe("Heat Compatibility C5B final follower retirements", () => {
   it("authors the exact approved owner-private notes while preserving follower identity", () => {
     const followers = loadFollowers();
-    expect(followers.size).toBe(24);
+    expect(followers.size).toBe(26);
 
     for (const expected of TARGETS) {
       const follower = followers.get(expected.id);

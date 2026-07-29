@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-28T04:09:56.443Z",
-  "recordCount": 401,
-  "gameplayRecordCount": 375,
+  "generatedAt": "2026-07-29T08:17:07.121Z",
+  "recordCount": 405,
+  "gameplayRecordCount": 379,
   "appendixRecordCount": 26,
   "records": [
     {
@@ -343,6 +343,27 @@
     {
       "family": "Threat",
       "scope": "gameplay",
+      "id": "broodglass-hatchfall",
+      "name": "Broodglass Hatchfall",
+      "sourcePath": "content/cards/threats/broodglass-hatchfall.json",
+      "purpose": "Immediate public hazard/event test.",
+      "acquisitionOrTrigger": "Drawn from a canonical sector Threat deck on encounter resolution.",
+      "authoritativeResolver": "GameRoomServer.resolveCheckIntent → CHECK_ROLLED.",
+      "outcome": "Success: gain_note. Failure: take_wound 1.",
+      "repeatability": "One resolution per drawn encounter event; reward and penalty are event-guarded.",
+      "cleanup": "Encounter clears after resolution; authored persistence effects remain.",
+      "visibility": "Identity, roll, totals, and public outcome are TV-visible; no private owner data is projected.",
+      "reconnect": "Current encounter, active resolution, pending effect, and event log restore without redraw or duplicate outcome.",
+      "tests": [
+        "src/game/engine/__tests__/engine.test.ts",
+        "src/game/cards/__tests__/cardCategories.test.ts"
+      ],
+      "status": "complete",
+      "notes": ""
+    },
+    {
+      "family": "Threat",
+      "scope": "gameplay",
       "id": "cartographer-under-glass",
       "name": "Cartographer Under Glass",
       "sourcePath": "content/cards/threats/cartographer-under-glass.json",
@@ -602,6 +623,27 @@
       "acquisitionOrTrigger": "Drawn from a canonical sector Threat deck on encounter resolution.",
       "authoritativeResolver": "GameRoomServer.resolveOpposedCombat → COMBAT_RESOLVED.",
       "outcome": "Victory: gain_trophy 1. Loss: take_wound 1.",
+      "repeatability": "One resolution per drawn encounter event; reward and penalty are event-guarded.",
+      "cleanup": "Encounter clears after resolution; authored persistence effects remain.",
+      "visibility": "Identity, roll, totals, and public outcome are TV-visible; no private owner data is projected.",
+      "reconnect": "Current encounter, active resolution, pending effect, and event log restore without redraw or duplicate outcome.",
+      "tests": [
+        "src/game/engine/__tests__/engine.test.ts",
+        "src/game/cards/__tests__/cardCategories.test.ts"
+      ],
+      "status": "complete",
+      "notes": ""
+    },
+    {
+      "family": "Threat",
+      "scope": "gameplay",
+      "id": "courtline-fold",
+      "name": "Courtline Fold",
+      "sourcePath": "content/cards/threats/courtline-fold.json",
+      "purpose": "Immediate public hazard/event test.",
+      "acquisitionOrTrigger": "Drawn from a canonical sector Threat deck on encounter resolution.",
+      "authoritativeResolver": "GameRoomServer.resolveCheckIntent → CHECK_ROLLED.",
+      "outcome": "Success: gain_note. Failure: take_wound 1.",
       "repeatability": "One resolution per drawn encounter event; reward and penalty are event-guarded.",
       "cleanup": "Encounter clears after resolution; authored persistence effects remain.",
       "visibility": "Identity, roll, totals, and public outcome are TV-visible; no private owner data is projected.",
@@ -913,6 +955,27 @@
       "id": "grave-silt-press",
       "name": "Grave-Silt Press",
       "sourcePath": "content/cards/threats/grave-silt-press.json",
+      "purpose": "Immediate public hazard/event test.",
+      "acquisitionOrTrigger": "Drawn from a canonical sector Threat deck on encounter resolution.",
+      "authoritativeResolver": "GameRoomServer.resolveCheckIntent → CHECK_ROLLED.",
+      "outcome": "Success: gain_note. Failure: take_wound 1.",
+      "repeatability": "One resolution per drawn encounter event; reward and penalty are event-guarded.",
+      "cleanup": "Encounter clears after resolution; authored persistence effects remain.",
+      "visibility": "Identity, roll, totals, and public outcome are TV-visible; no private owner data is projected.",
+      "reconnect": "Current encounter, active resolution, pending effect, and event log restore without redraw or duplicate outcome.",
+      "tests": [
+        "src/game/engine/__tests__/engine.test.ts",
+        "src/game/cards/__tests__/cardCategories.test.ts"
+      ],
+      "status": "complete",
+      "notes": ""
+    },
+    {
+      "family": "Threat",
+      "scope": "gameplay",
+      "id": "grinning-ledger-seizure",
+      "name": "Grinning Ledger Seizure",
+      "sourcePath": "content/cards/threats/grinning-ledger-seizure.json",
       "purpose": "Immediate public hazard/event test.",
       "acquisitionOrTrigger": "Drawn from a canonical sector Threat deck on encounter resolution.",
       "authoritativeResolver": "GameRoomServer.resolveCheckIntent → CHECK_ROLLED.",
@@ -2282,6 +2345,27 @@
       "acquisitionOrTrigger": "Drawn from a canonical sector Threat deck on encounter resolution.",
       "authoritativeResolver": "GameRoomServer.resolveOpposedCombat → COMBAT_RESOLVED.",
       "outcome": "Victory: gain_note. Loss: take_wound 1. Then gain_scar_choice 1.",
+      "repeatability": "One resolution per drawn encounter event; reward and penalty are event-guarded.",
+      "cleanup": "Encounter clears after resolution; authored persistence effects remain.",
+      "visibility": "Identity, roll, totals, and public outcome are TV-visible; no private owner data is projected.",
+      "reconnect": "Current encounter, active resolution, pending effect, and event log restore without redraw or duplicate outcome.",
+      "tests": [
+        "src/game/engine/__tests__/engine.test.ts",
+        "src/game/cards/__tests__/cardCategories.test.ts"
+      ],
+      "status": "complete",
+      "notes": ""
+    },
+    {
+      "family": "Threat",
+      "scope": "gameplay",
+      "id": "violet-thorn-toll",
+      "name": "Violet Thorn Toll",
+      "sourcePath": "content/cards/threats/violet-thorn-toll.json",
+      "purpose": "Immediate public hazard/event test.",
+      "acquisitionOrTrigger": "Drawn from a canonical sector Threat deck on encounter resolution.",
+      "authoritativeResolver": "GameRoomServer.resolveCheckIntent → CHECK_ROLLED.",
+      "outcome": "Success: gain_salvage 1. Failure: take_wound 1.",
       "repeatability": "One resolution per drawn encounter event; reward and penalty are event-guarded.",
       "cleanup": "Encounter clears after resolution; authored persistence effects remain.",
       "visibility": "Identity, roll, totals, and public outcome are TV-visible; no private owner data is projected.",
@@ -3793,7 +3877,7 @@
       "purpose": "Public shared-world pressure event.",
       "acquisitionOrTrigger": "Server draws it from a sector Escalation pool through authored sector text.",
       "authoritativeResolver": "resolveSectorCardResolution → ESCALATION_ADVANCED / RESOLUTION_APPLIED.",
-      "outcome": "advance_escalation 1.",
+      "outcome": "No additional typed effect.",
       "repeatability": "Once per card membership in its sector pool.",
       "cleanup": "Consumed from the sector pool; global escalation state remains.",
       "visibility": "Fully public shared result.",

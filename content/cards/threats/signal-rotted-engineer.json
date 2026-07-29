@@ -15,7 +15,6 @@
   "combatEffectKeys": [
     "threat_disable_weapon_bonus"
   ],
-  "failEffectKey": "threat_fail_drop_gear",
   "defeatReward": {
     "type": "gain_note",
     "text": "You stripped the bad signal out of its tool rig."

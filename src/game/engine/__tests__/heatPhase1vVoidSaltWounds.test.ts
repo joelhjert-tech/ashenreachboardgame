@@ -43,7 +43,6 @@ function resolve(wounds: number, success: boolean, kerPrevention = false): GameR
   const server = new GameRoomServer(state, [], createSequenceRandomSource(random));
   server.resolveCheckIntent({ type: "CHECK_REQUESTED", seatId: "seat-1", stat: "forge" });
   server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
-  server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
   (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
   return server;
 }
@@ -139,7 +138,6 @@ describe("Phase 1V/P23 Void-Salt Sickness lifecycle", () => {
     expect(restored.getState().pendingEffect).toBeNull();
 
     restored.resolveCheckIntent({ type: "CHECK_REQUESTED", seatId: "seat-1", stat: "forge" });
-    restored.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
     restored.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
     (restored as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
     expect(restored.getState().players[0]!.character.wounds).toBe(0);

@@ -721,6 +721,8 @@ export interface BattlePresentation {
     category: string;
     imageKey?: string | null;
     publicSummary?: string | null;
+    /** Public, pre-roll enemy intent. Never contains owner-only choices or text. */
+    failureStakes?: string | null;
   };
   test: {
     stat: Stat;

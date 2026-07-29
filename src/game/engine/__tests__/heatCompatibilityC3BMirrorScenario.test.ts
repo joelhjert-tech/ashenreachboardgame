@@ -17,11 +17,11 @@ import {
 
 const TARGET_ID = "scenario_mirror_of_false_heroes";
 const OTHER_SCENARIO_HASHES = new Map([
-  ["scenario_broken_seal", "2bf67c801579ecad442cccd0a224dee2bc18bea78526ad97f27c5526a2e426de"],
-  ["scenario_throne_of_ash", "31e9db76844bd9d7d9d3f0683ba72d6ff4e40ca0508a807414e3d869b108e27b"],
-  ["scenario_devourer_beneath", "1ff8a9ed1ce88cef98b321c3f39533a098c2bc4c5458c97863aff0d8c125aebc"],
-  ["scenario_labyrinth_engine", "70ebcaca71ac1af3c7ec5bc47a5753655015ddbb55903f968613388d0ebe078a"],
-  ["scenario_dying_star", "e7d2b6a0167dbbaf2a3f4f5e6e651ed1d78ff009d9c559240d2e102fa9abcf4d"]
+  ["scenario_broken_seal", "28bc6f457d7adf04bc93ca8ba3e9a9a421fa12ffeedb398611a79d5074e802f3"],
+  ["scenario_throne_of_ash", "8173b26a7459bc4ba9c788a15dca5dad1a69a962a481ffc1bdfb324b5b14f169"],
+  ["scenario_devourer_beneath", "72fd8472daba008a1b5c90f58bebafc782d3b6c01a23f647ab4cd6012a013d63"],
+  ["scenario_labyrinth_engine", "df77a95c847d0f54960392d22207d706045ddeea1081963950cae6cc608c5d02"],
+  ["scenario_dying_star", "ec10da2c886730da14473eb27e3e7ea7239ea86cb29d6ab1ca05d3914dd8d822"]
 ]);
 
 const HEAT_EFFECT_TYPES = new Set(["gain_heat", "gain_heat_all", "lose_heat"]);
@@ -127,7 +127,7 @@ describe("Heat Compatibility C3B Mirror scenario retirement", () => {
     expect(createCanonicalSectorGraph().find((sector) => sector.id === "center_cinder_gate")).toMatchObject({
       id: "center_cinder_gate",
       regionTier: "cinder_gate",
-      neighbors: ["inner_gate_of_cinders", "inner_blackstar_shortcut"]
+      neighbors: ["inner_gate_of_cinders"]
     });
   });
 

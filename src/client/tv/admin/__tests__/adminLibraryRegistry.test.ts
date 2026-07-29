@@ -12,7 +12,6 @@ describe("admin library registry", () => {
       "escalation",
       "follower",
       "gear",
-      "mission",
       "nemesis",
       "operative",
       "scar",

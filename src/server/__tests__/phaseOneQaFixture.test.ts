@@ -301,6 +301,7 @@ describe("Phase 1 QA fixture", () => {
     "battle-setup",
     "pending-enemy-roll",
     "rolled-result",
+    "reroll",
     "success",
     "defeat"
   ] as const)("seeds deterministic phone battle stage %s", (stage) => {
@@ -310,8 +311,9 @@ describe("Phase 1 QA fixture", () => {
 
     applyPhaseOneQaFixture(state, "seat-1", { kind: "phone-battle", stage });
 
-    expect(state.currentEncounter?.id).toBe("lantern-ash-ghoul");
-    expect(state.phase).toBe(["rolled-result", "success", "defeat"].includes(stage) ? "resolution" : "action");
+    const threatId = stage === "reroll" ? "static-larva-swarm" : "lantern-ash-ghoul";
+    expect(state.currentEncounter?.id).toBe(threatId);
+    expect(state.phase).toBe(["rolled-result", "reroll", "success", "defeat"].includes(stage) ? "resolution" : "action");
 
     if (stage === "encounter") {
       expect(state.activeResolution).toBeNull();
@@ -319,15 +321,29 @@ describe("Phase 1 QA fixture", () => {
     }
 
     expect(state.activeResolution).toMatchObject({
-      id: "qa-phone-battle:seat-1:lantern-ash-ghoul",
+      id: `qa-phone-battle:seat-1:${threatId}`,
       playerId: "seat-1",
       source: "threat",
-      card: { id: "lantern-ash-ghoul", artType: "threat" },
-      battle: { stat: "grit", difficulty: 12 }
+      card: { id: threatId, artType: "threat" },
+      battle: stage === "reroll" ? { stat: "guile", difficulty: 8 } : { stat: "grit", difficulty: 12 }
     });
     expect(Boolean(state.pendingEnemyRoll)).toBe(stage === "pending-enemy-roll");
-    expect(Boolean(state.activeResolution?.roll)).toBe(["rolled-result", "success", "defeat"].includes(stage));
+    expect(Boolean(state.activeResolution?.roll)).toBe(["rolled-result", "reroll", "success", "defeat"].includes(stage));
     expect(state.lastOutcomeSummary?.success ?? null).toBe(stage === "success" ? true : stage === "defeat" ? false : null);
+    if (stage === "reroll") {
+      const projection = createPhoneProjection(state, "seat-1") as {
+        requiredAction?: { canAct?: boolean; allowedCommand?: string; transitionStage?: string } | null;
+        scarAdaptationControls?: Array<{ ruleKey?: string; enabled?: boolean }>;
+      };
+      expect(projection.requiredAction).toMatchObject({
+        canAct: true,
+        allowedCommand: "continue",
+        transitionStage: "result-visible"
+      });
+      expect(projection.scarAdaptationControls).toEqual(expect.arrayContaining([
+        expect.objectContaining({ ruleKey: "guile-reroll", enabled: true })
+      ]));
+    }
   });
 
   it("clears a prior private prompt before projecting a different QA state", () => {

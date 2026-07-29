@@ -250,13 +250,11 @@ describe("Heat Retirement H2 normal Wound Threats", () => {
 
   it("preserves Choir scenario leverage and leaves Lantern success consequence-free", () => {
     const choir = openCheck(requireTarget("choir-static-burst"), false).getState();
-    expect(choir.pendingEffect).toEqual(TARGETS[0].successEffect);
-    const choirApplied = applyPendingEffect(choir, "choir-static-burst");
-    expect(choirApplied.ok).toBe(true);
-    if (!choirApplied.ok) return;
-    const choirState = choirApplied.state;
+    expect(choir.pendingEffect).toBeNull();
+    const choirState = choir;
     expect(choirState.scenarioProgress.choirStaticContained).toBe(1);
     expect(choirState.players[0]!.character.wounds).toBe(0);
+    expect(countEvents(choirState, "RESOLUTION_APPLIED")).toBe(1);
 
     const lantern = openCheck(requireTarget("lantern-moth-swarm"), false);
     expect(lantern.getState().pendingEffect).toBeNull();

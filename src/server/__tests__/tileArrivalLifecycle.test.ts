@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { loadThreatCards } from "../../game/content/threats.js";
+import { GRINNING_TITHE_MINION_IDS } from "../../game/data/scenarios.js";
 import { GameRoomServer } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
 
@@ -73,7 +75,10 @@ describe("canonical tile arrival lifecycle", () => {
     expect(server.getState().currentEncounter).not.toBeNull();
     expect(server.getState().currentEncounter?.threatLane).toBe("red");
     expect(server.getState().tileArrivalThreatProgress?.nextThreatIconIndex).toBe(1);
-    expect(server.getState().threatDrawBags?.red?.remainingCardIds).toHaveLength(26);
+    const redThreatCount = [...loadThreatCards().values()].filter(
+      (card) => card.threatLane === "red" && !GRINNING_TITHE_MINION_IDS.includes(card.id as typeof GRINNING_TITHE_MINION_IDS[number])
+    ).length;
+    expect(server.getState().threatDrawBags?.red?.remainingCardIds).toHaveLength(redThreatCount - 1);
     expect(server.getState().sectors.find((sector) => sector.id === "middle_guardian_span")?.encounterDecks.threat).toEqual([]);
   });
 });

@@ -214,7 +214,6 @@ describe("Heat Retirement H1 removal-only Threats", () => {
     const restored = new GameRoomServer(structuredClone(resolved), [], createSequenceRandomSource([5, 5]));
     expect(restored.getState().pendingEffect).toBeNull();
     restored.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
-    restored.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
     (restored as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
     const state = restored.getState();
     expect(countEvents(state, "CHECK_ROLLED")).toBe(1);
@@ -228,7 +227,7 @@ describe("Heat Retirement H1 removal-only Threats", () => {
   it.each(TARGETS)("$id keeps its approved failure consequence and no other consequence", (target) => {
     const server = resolveCheck(requireTarget(target.id), true);
     expect(server.getState().pendingEffect).toEqual(requireTarget(target.id).failEffect);
-    server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
+    expect(countEvents(server.getState(), "RESOLUTION_APPLIED")).toBe(0);
     server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
     (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
     const state = server.getState();

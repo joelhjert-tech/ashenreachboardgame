@@ -14,10 +14,10 @@ const audit = cardLifecycleAuditSchema.parse(
 
 describe("P23 card lifecycle audit", () => {
   it("classifies the complete consolidated catalog with the approved scope split", () => {
-    expect(audit.recordCount).toBe(401);
-    expect(audit.gameplayRecordCount).toBe(375);
+    expect(audit.recordCount).toBe(405);
+    expect(audit.gameplayRecordCount).toBe(379);
     expect(audit.appendixRecordCount).toBe(26);
-    expect(audit.records).toHaveLength(401);
+    expect(audit.records).toHaveLength(405);
   });
 
   it("contains no duplicate or silently omitted family identities", () => {

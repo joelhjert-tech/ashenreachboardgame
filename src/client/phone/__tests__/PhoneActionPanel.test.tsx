@@ -3085,6 +3085,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-battle-resolution-wait")).toHaveTextContent(/applying battle consequence/i);
     expect(screen.queryByRole("button", { name: /^continue$/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/threat defeated|the gate yields/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: /battle navigation/i })).not.toBeInTheDocument();
 
     view.rerender(
       <PhoneActionPanel
@@ -3363,13 +3364,23 @@ describe("PhoneActionPanel", () => {
 
   it("renders the production Duel Aperture battle layout from canonical state and intents", () => {
     const onIntent = vi.fn();
+    const resolutionId = "seat-1:threat:cinder-veil-stalker:cinematic-layout";
     render(
       <PhoneActionPanel
         characters={characters}
         onIntent={onIntent}
         patch={createPatch({
+          encounter: {
+            id: "cinder-veil-stalker",
+            title: "Cinder-Veil Stalker",
+            cardType: "enemy",
+            enemyName: "Cinder-Veil Stalker",
+            flavor: "A hooked silhouette advances.",
+            difficulty: 8,
+            stat: "grit"
+          },
           activeResolution: {
-            id: "seat-1:threat:cinder-veil-stalker:cinematic-layout",
+            id: resolutionId,
             playerId: "seat-1",
             source: "threat",
             stage: "battle_setup",
@@ -3385,6 +3396,52 @@ describe("PhoneActionPanel", () => {
               difficulty: 8,
               modifiers: []
             }
+          },
+          battlePresentation: {
+            id: resolutionId,
+            revision: 8,
+            stage: "battle_ready",
+            actorSeatId: "seat-1",
+            actorDisplayName: "Lane",
+            encounter: {
+              name: "Cinder-Veil Stalker",
+              category: "Battle",
+              imageKey: "cinder-veil-stalker",
+              publicSummary: "A hooked silhouette advances.",
+              failureStakes: "1 Wound suffered / Threat remains on this space"
+            },
+            test: { stat: "grit", label: "Grit", opposed: true },
+            operative: {
+              name: "Lane",
+              secondaryName: "Sable Vey",
+              imageKey: "void-marshal",
+              baseValue: 2,
+              modifiers: [],
+              rawDice: [],
+              diceCount: 2,
+              diceTotal: null,
+              finalTotal: null
+            },
+            opponent: {
+              name: "Cinder-Veil Stalker",
+              secondaryName: "Opposition",
+              imageKey: "cinder-veil-stalker",
+              baseValue: 8,
+              modifiers: [],
+              rawDice: [],
+              diceCount: 0,
+              diceTotal: null,
+              finalTotal: null
+            },
+            outcome: null,
+            publicConsequence: null,
+            publicRewardSummary: null,
+            waiting: {
+              actorDisplayName: "Lane",
+              publicAction: "roll Grit",
+              privateDecision: false
+            },
+            restored: false
           }
         })}
       />
@@ -3396,19 +3453,112 @@ describe("PhoneActionPanel", () => {
     expect(arena).toHaveAttribute("data-battle-presentation", "duel-aperture");
     expect(arena).toHaveAttribute("data-battle-phase", "ready");
     expect(within(arena).getByText(/operative/i)).toBeInTheDocument();
-    expect(within(arena).getByText(/threat/i)).toBeInTheDocument();
+    expect(within(arena).getByText("Threat", { exact: true })).toBeInTheDocument();
     expect(within(arena).getByText(/grit ready/i)).toBeInTheDocument();
     expect(within(arena).getByText(/difficulty/i)).toBeInTheDocument();
     expect(within(arena).getAllByRole("img")).toHaveLength(2);
+    expect(screen.getByRole("note", { name: /enemy intent/i })).toHaveTextContent(/on defeat.*1 wound suffered.*remains on this space/i);
     expect(screen.queryByLabelText(/^battle totals$/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-dice-disclosure")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-total-comparison")).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/battle details/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /roll grit/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^gear$/i })).toBeEnabled();
     expect(shell).not.toHaveTextContent(/attack|defense|a\/d/i);
 
     fireEvent.click(screen.getByRole("button", { name: /roll grit/i }));
     expect(onIntent).toHaveBeenCalledWith({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: "grit" });
+  });
+
+  it("renders an actionable reroll fixture beside a keep-result action", () => {
+    const onIntent = vi.fn();
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          phase: "resolution",
+          encounter: {
+            id: "static-larva-swarm",
+            title: "Static Larva Swarm",
+            cardType: "enemy",
+            enemyName: "Static Larva Swarm",
+            flavor: "Small mouths make a system-wide prayer.",
+            difficulty: 8,
+            stat: "guile"
+          },
+          activeResolution: {
+            id: "qa-phone-battle:seat-1:static-larva-swarm",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "roll_result",
+            card: {
+              id: "static-larva-swarm",
+              title: "Static Larva Swarm",
+              type: "enemy",
+              artType: "threat"
+            },
+            battle: {
+              enemyName: "Static Larva Swarm",
+              stat: "guile",
+              difficulty: 8,
+              modifiers: []
+            },
+            roll: {
+              dice: [1, 2],
+              baseTotal: 3,
+              modifierTotal: 2,
+              finalTotal: 5,
+              target: 8,
+              success: false
+            }
+          },
+          requiredAction: {
+            id: "battle:qa-phone-battle:seat-1:static-larva-swarm:roll_result",
+            kind: "battle",
+            actorSeatId: "seat-1",
+            actorDisplayName: "Lane",
+            requiredTab: "battle",
+            label: "Choose a reroll or keep the result",
+            detail: "Use an available reroll or keep the authoritative result.",
+            canAct: true,
+            waiting: false,
+            privacy: "owner",
+            transitionStage: "result-visible",
+            allowedCommand: "continue"
+          },
+          scarAdaptationControls: [{
+            activationId: "qa-phone-battle:scar-hollow-reflection:guile-reroll",
+            scarId: "scar-hollow-reflection",
+            scarName: "Hollow Reflection",
+            ruleKey: "guile-reroll",
+            timing: "afterRoll",
+            effectText: "Once per round, reroll one Guile die.",
+            limit: "oncePerRound",
+            remainingUses: 1,
+            enabled: true,
+            disabledReason: null,
+            targets: [
+              { id: "0", label: "Die 1 (1)" },
+              { id: "1", label: "Die 2 (2)" }
+            ]
+          }]
+        })}
+      />
+    );
+
+    const reroll = screen.getByRole("button", { name: /hollow reflection.*die 1/i });
+    expect(reroll).toBeEnabled();
+    expect(screen.getByRole("button", { name: /keep current result/i })).toBeEnabled();
+    fireEvent.click(reroll);
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "USE_SCAR_ADAPTATION",
+      seatId: "seat-1",
+      activationId: "qa-phone-battle:scar-hollow-reflection:guile-reroll",
+      scarId: "scar-hollow-reflection",
+      ruleKey: "guile-reroll",
+      rollIndex: 0
+    });
   });
 
   it("holds transient Duel Aperture totals until the authoritative consequence settles", () => {

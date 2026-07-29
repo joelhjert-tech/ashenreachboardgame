@@ -183,13 +183,13 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
     }, {})).toEqual({ red: 32, blue: 36, yellow: 52 });
   });
 
-  it.each(TARGETS)("$id loss creates one owner-scoped authoritative pending consequence", (target) => {
+  it.each(TARGETS)("$id loss applies one authoritative consequence before presenting the result", (target) => {
     const state = openLoss(requireEnemy(target.id)).getState();
-    expect(state.pendingEffect).toEqual({ type: "take_wound", amount: target.amount });
+    expect(state.pendingEffect).toBeNull();
     expect(state.pendingFailureReaction).toBeNull();
     expect(state.activeResolution?.id).toContain(target.id);
-    expect(state.players[0]!.character.wounds).toBe(0);
-    expect(countEvents(state, "RESOLUTION_APPLIED")).toBe(0);
+    expect(state.players[0]!.character.wounds).toBe(target.amount);
+    expect(countEvents(state, "RESOLUTION_APPLIED")).toBe(1);
     expect(gameStateSchema.safeParse(state).success).toBe(true);
   });
 
@@ -210,15 +210,14 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
   it("uses one Ashen prevention lifecycle for partial and full prevention", () => {
     const card = requireEnemy("ashen-doppelganger");
     const partial = openLoss(card, 0, true);
-    expect(JSON.stringify(partial.getState().pendingEffect)).toContain("Hold the Line prevented 1 Wound.");
-    expect(JSON.stringify(partial.getState().pendingEffect).match(/take_wound/g)).toHaveLength(1);
+    expect(partial.getState().players[0]!.private.notes).toContain("Hold the Line prevented 1 Wound.");
     const partialState = finish(partial);
     expect(partialState.players[0]!.character.wounds).toBe(1);
     expect(countEvents(partialState, "RESOLUTION_APPLIED")).toBe(1);
     expect(countEvents(partialState, "WOUND_THRESHOLD_REACHED")).toBe(0);
 
     const full = openLoss(card, 0, true, true);
-    expect(JSON.stringify(full.getState().pendingEffect)).not.toContain("take_wound");
+    expect(full.getState().pendingEffect).toBeNull();
     const fullState = finish(full);
     expect(fullState.players[0]!.character.wounds).toBe(0);
     expect(fullState.players[0]!.private.notes.join(" ")).toMatch(/Fandiablos Unreasonable Courage rolled 4/);
@@ -290,7 +289,7 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
     expect(gameStateSchema.safeParse(replay.state).success).toBe(true);
   });
 
-  it("preserves Ashen Doppelganger's documented 6-point/3-value reward mismatch exactly once", () => {
+  it("awards Ashen Doppelganger's explicit 3-Trophy reward exactly once", () => {
     const card = requireEnemy("ashen-doppelganger");
     const state = createEncounterState(card);
     state.players[0]!.character.stats.guile = 20;
@@ -298,26 +297,17 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
     state.players[0]!.character.trophyPile = [];
     const server = new GameRoomServer(state, [], createSequenceRandomSource([5, 5, 0, 0]));
     server.resolveCombatIntent({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: "guile" });
-    const opened = server.getState();
-    expect(opened.pendingEffect).toEqual({ type: "gain_trophy", amount: 3 });
-    const applied = reduceGameState(opened, {
-      type: "RESOLUTION_APPLIED",
-      seatId: "seat-1",
-      effect: opened.pendingEffect!,
-      sourceCardId: card.id,
-      success: true,
-      createdAt: "h5b-ashen-reward"
-    });
-    expect(applied.ok).toBe(true);
-    if (!applied.ok) return;
-    expect(applied.state.players[0]!.character.trophies).toBe(6);
-    expect(applied.state.players[0]!.character.trophyPile).toContainEqual(expect.objectContaining({
+    const applied = server.getState();
+    expect(applied.pendingEffect).toBeNull();
+    expect(applied.players[0]!.character.trophies).toBe(3);
+    expect(applied.players[0]!.character.trophyPile).toContainEqual(expect.objectContaining({
       cardId: card.id,
       trophyValue: 3,
       stat: "guile",
       cardType: "enemy"
     }));
-    const replay = reduceGameState(applied.state, {
+    expect(countEvents(applied, "RESOLUTION_APPLIED")).toBe(1);
+    const replay = reduceGameState(applied, {
       type: "RESOLUTION_APPLIED",
       seatId: "seat-1",
       effect: { type: "gain_trophy", amount: 3 },
@@ -326,7 +316,7 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
       createdAt: "h5b-ashen-reward-replay"
     });
     expect(replay.ok).toBe(false);
-    expect(replay.state.players[0]!.character.trophies).toBe(6);
+    expect(replay.state.players[0]!.character.trophies).toBe(3);
     expect(replay.state.players[0]!.character.trophyPile).toHaveLength(1);
   });
 

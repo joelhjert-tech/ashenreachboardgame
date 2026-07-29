@@ -209,6 +209,13 @@ export type AuthoredEncounterEffect =
   | AuthoredSimpleEncounterEffect
   | { type: "sequence"; effects: AuthoredEncounterEffect[] };
 
+function authoredTrophyAward(effect: AuthoredEncounterEffect): number {
+  if (effect.type === "sequence") {
+    return effect.effects.reduce((total, entry) => total + authoredTrophyAward(entry), 0);
+  }
+  return effect.type === "gain_trophy" ? effect.amount : 0;
+}
+
 export type EncounterEffect =
   | AuthoredSimpleEncounterEffect
   | GainScarEffect
@@ -540,6 +547,14 @@ export const authoredEnemyThreatCardSchema = threatBaseSchema.extend({
       code: z.ZodIssueCode.custom,
       message: "Enemy threats require a loss effect unless explicitly retired",
       path: ["woundOnLoss"]
+    });
+  }
+  const explicitTrophyAward = authoredTrophyAward(card.defeatReward);
+  if (explicitTrophyAward > 0 && explicitTrophyAward !== card.trophyValue) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Explicit Trophy reward (${explicitTrophyAward}) must match trophyValue (${card.trophyValue})`,
+      path: ["defeatReward"]
     });
   }
 });

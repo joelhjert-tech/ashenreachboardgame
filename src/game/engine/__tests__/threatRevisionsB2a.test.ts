@@ -31,8 +31,8 @@ const displacementCards = [
 ] as const;
 
 const untouchedHeatLinkedHashes = new Map([
-  ["glass-chime-swarm", "745affe8619bc5c0cae105c60aff8acd8792e27aac3a26b76588ed3893e876f2"],
-  ["spindle-static-squall", "79792aba83a13ca9ac1193ce984919474e02dfca2d05b7c21a40da896032cb33"]
+  ["glass-chime-swarm", "8d41d4145104eafb9a025526447bc0c3c692ad9c4e9ebe20b94bead31a3f5cdf"],
+  ["spindle-static-squall", "78f3f1f21d13dbd2c57eb3b99e9e6e08ec41cb8bc678d648b065df8abeaf9379"]
 ]);
 
 function requireHazard(id: string) {

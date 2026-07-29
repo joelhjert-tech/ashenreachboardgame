@@ -340,6 +340,7 @@ export function PhoneBattleView({
     : null;
   const outcomeFlavor = resultStage ? presentation?.publicConsequence ?? outcome?.text ?? null : null;
   const usableGearCount = assist?.usableCards.length ?? 0;
+  const failureStakes = !roll ? presentation?.encounter.failureStakes ?? null : null;
 
   useEffect(() => {
     setContext("battle");
@@ -504,7 +505,6 @@ export function PhoneBattleView({
             <div className="phone-battle-resolution-wait__signal" aria-hidden="true"><i /><i /><i /></div>
           </section>
         </div>
-        <BattleContextNavigation onSelect={setContext} />
       </section>
     );
   }
@@ -571,6 +571,7 @@ export function PhoneBattleView({
               operativeValue={operativeValue}
               opponentTotal={opponentTotal}
               finalTotal={finalTotal}
+              failureStakes={failureStakes}
             />
             {usableGearCount > 0 && !roll ? (
               <button

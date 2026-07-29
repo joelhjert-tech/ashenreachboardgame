@@ -62,6 +62,31 @@ describe("PhoneRequiredActionShell", () => {
     expect(screen.getByRole("button", { name: /roll movement/i })).toBeDisabled();
   });
 
+  it("shows the owner-facing resolving surface without announcing Result Ready", () => {
+    render(
+      <PhoneRequiredActionShell
+        projection={{
+          ...activeProjection,
+          kind: "battle",
+          requiredTab: "battle",
+          label: "Applying battle consequence",
+          detail: "The server is applying the authoritative consequence.",
+          canAct: false,
+          waiting: false,
+          transitionStage: "result-visible"
+        }}
+        status="resolving"
+        atRequiredTab
+      >
+        <section>Applying battle consequence</section>
+      </PhoneRequiredActionShell>
+    );
+
+    expect(screen.getByTestId("phone-required-action-shell")).toHaveAttribute("data-action-status", "resolving");
+    expect(screen.queryByText("RESULT READY")).not.toBeInTheDocument();
+    expect(screen.getByText("Applying battle consequence")).toBeInTheDocument();
+  });
+
   it("replaces active controls with public-safe waiting copy", () => {
     const waitingProjection: RequiredActionProjection = {
       ...activeProjection,

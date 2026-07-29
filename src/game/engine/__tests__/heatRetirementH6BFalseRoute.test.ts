@@ -109,10 +109,11 @@ describe("Heat retirement H6B: false-route-procession", () => {
   ])("generates deterministic clockwise then counterclockwise %s-ring candidates only", (_ring, origin) => {
     const state = failureState(origin);
     const candidates = getOwnerSelectedForcedDisplacementCandidates(state, "seat-1", origin);
-    expect(candidates).toEqual([
+    const expected = [
       { sectorId: getRingTrackNeighbor(origin, 1), direction: "clockwise" },
       { sectorId: getRingTrackNeighbor(origin, -1), direction: "counterclockwise" }
-    ]);
+    ].filter((entry): entry is { sectorId: string; direction: string } => entry.sectorId !== null);
+    expect(candidates).toEqual(expected);
     expect(new Set(candidates.map((entry) => entry.sectorId)).size).toBe(candidates.length);
     expect(candidates).not.toContainEqual(expect.objectContaining({ sectorId: origin }));
     expect(candidates.map((entry) => entry.sectorId)).not.toContain("ashen-crown-nexus");

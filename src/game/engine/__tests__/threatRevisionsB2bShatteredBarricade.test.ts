@@ -101,10 +101,10 @@ function continueUntilEscalationResolves(server: GameRoomServer): void {
   for (let index = 0; index < 8; index += 1) {
     if (server.getState().status !== "active") return;
     if ((server.getState().resolvedEscalationSourceEventIds ?? []).length > 0) return;
-    if (
-      server.getState().activeResolution ||
-      (server.getState().phase === "resolution" && server.getState().pendingEffect)
-    ) {
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases(seatId);
+    if (server.getState().status !== "active") return;
+    if ((server.getState().resolvedEscalationSourceEventIds ?? []).length > 0) return;
+    if (server.getState().activeResolution && !server.getState().pendingEffect) {
       server.handleIntent(client, { type: "CONTINUE_RESOLUTION", seatId });
       continue;
     }
@@ -208,11 +208,7 @@ describe("Phase B2B Shattered Barricade authority and idempotency", () => {
     const state = createResolutionState({ success: true });
     const actor = state.players[0]!;
     const server = new GameRoomServer(state);
-    const client = createClient(actor.seatId);
-
-    for (let index = 0; index < 4 && server.getState().activeResolution; index += 1) {
-      server.handleIntent(client, { type: "CONTINUE_RESOLUTION", seatId: actor.seatId });
-    }
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases(actor.seatId);
 
     expect(server.getState().escalationLevel).toBe(0);
     expect(server.getState().resolvedEscalationSourceEventIds ?? []).toEqual([]);

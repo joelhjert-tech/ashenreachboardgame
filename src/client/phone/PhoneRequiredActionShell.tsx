@@ -38,7 +38,7 @@ export function PhoneRequiredActionShell({
   children
 }: PhoneRequiredActionShellProps): ReactElement {
   const shellRef = useRef<HTMLElement | null>(null);
-  const waiting = !projection.canAct || projection.waiting;
+  const waiting = projection.waiting;
   const busy = status === "submitting" || status === "resolving";
   const canReturn = Boolean(projection.requiredTab && !atRequiredTab && onReturnToAction);
   const announcedStatus = statusLabel ?? stateLabel(projection, status);
@@ -59,7 +59,7 @@ export function PhoneRequiredActionShell({
         <span className="phone-required-action-shell__state">{stateLabel(projection, status)}</span>
         {!stateOnlyHeader ? <strong>{waiting && projection.actorDisplayName ? `${projection.actorDisplayName} is acting` : projection.label}</strong> : null}
         {!stateOnlyHeader ? <p>{waiting ? (projection.waitingInstruction ?? projection.detail) : (projection.activeInstruction ?? projection.detail)}</p> : null}
-        {busy && !waiting ? <span className="phone-required-action-shell__progress">{announcedStatus}</span> : null}
+        {busy && !waiting && !stateOnlyHeader ? <span className="phone-required-action-shell__progress">{announcedStatus}</span> : null}
       </header>
       <LiveStatus
         message={waiting ? (projection.waitingInstruction ?? projection.detail) : busy ? announcedStatus : null}

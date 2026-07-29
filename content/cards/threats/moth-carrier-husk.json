@@ -12,7 +12,6 @@
   "stat": "grit",
   "difficulty": 4,
   "trophyValue": 2,
-  "failEffectKey": "threat_fail_escalate",
   "defeatReward": {
     "type": "gain_note",
     "text": "You burned the carrier before the moths found a second host."

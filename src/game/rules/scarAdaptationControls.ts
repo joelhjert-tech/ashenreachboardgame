@@ -3,6 +3,7 @@ import type { Stat } from "../schema/character.schema.js";
 import type { GameState, PlayerState } from "../schema/session.schema.js";
 import type { ScarUsageEntry } from "../schema/scarChoice.schema.js";
 import { getBoardSpace } from "../data/boardSpaces.js";
+import { threatBlocksRerolls } from "../cards/threatEffects.js";
 import { evaluateOwnedScarRules, type ScarRuleContext } from "./scarPersistentRules.js";
 import { getScarCard } from "./scarSystem.js";
 
@@ -110,12 +111,15 @@ export function getOwnedScarAdaptationControls(state: GameState, seatId: string)
     const context = currentContext(state, player, scar.adaptation.timing);
     const evaluated = evaluateOwnedScarRules(state, player, "adaptation", context).find((entry) => entry.scarId === scarId);
     const targets = targetsFor(state, player, scar.adaptation.key);
-    const targetRequired = scar.adaptation.key === "forge-charge-restore" || scar.adaptation.key === "choose-displacement-direction" || ["guile-reroll", "grit-hazard-reroll", "rift-signal-reroll", "guile-anomaly-reroll"].includes(scar.adaptation.key);
-    const disabledReason = !evaluated
-      ? `Not valid for the current ${context.stat ?? "game"} window.`
-      : targetRequired && targets.length === 0
-        ? "No legal target is available."
-        : null;
+    const rerollRule = ["guile-reroll", "grit-hazard-reroll", "rift-signal-reroll", "guile-anomaly-reroll"].includes(scar.adaptation.key);
+    const targetRequired = scar.adaptation.key === "forge-charge-restore" || scar.adaptation.key === "choose-displacement-direction" || rerollRule;
+    const disabledReason = rerollRule && threatBlocksRerolls(state.currentEncounter)
+      ? `${state.currentEncounter?.title ?? "This threat"} blocks rerolls.`
+      : !evaluated
+        ? `Not valid for the current ${context.stat ?? "game"} window.`
+        : targetRequired && targets.length === 0
+          ? "No legal target is available."
+          : null;
     const usage = evaluated?.usage;
     if (!usage) {
       const used = (state.scarUsage ?? []).find((entry) => entry.seatId === seatId && entry.scarId === scarId && entry.ruleKey === scar.adaptation.key);

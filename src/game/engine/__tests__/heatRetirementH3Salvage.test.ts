@@ -257,20 +257,9 @@ describe("Heat Retirement H3 floor-zero Salvage Threats", () => {
     };
     const server = new GameRoomServer(state, [], createSequenceRandomSource([5, 5]));
     server.resolveCombatIntent({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: target.stat });
-    const opened = server.getState();
-    expect(opened.pendingEffect).toEqual(target.defeatReward);
-    expect(opened.players[0]!.character.salvage).toBe(3);
-    const applied = reduceGameState(opened, {
-      type: "RESOLUTION_APPLIED",
-      seatId: "seat-1",
-      effect: opened.pendingEffect!,
-      sourceCardId: target.id,
-      success: true,
-      createdAt: `h3-${target.id}-reward`
-    });
-    expect(applied.ok).toBe(true);
-    if (!applied.ok) return;
-    const resolved = applied.state;
+    const resolved = server.getState();
+    expect(resolved.pendingEffect).toBeNull();
+    expect(resolved.eventLog.filter((event) => (event as { type?: string }).type === "RESOLUTION_APPLIED")).toHaveLength(1);
     expect(resolved.players[0]!.character.salvage).toBe(3);
     expect(resolved.pendingEffect).toBeNull();
     expect(resolved.players[0]!.character.trophyPile).toContainEqual(expect.objectContaining({
@@ -279,7 +268,7 @@ describe("Heat Retirement H3 floor-zero Salvage Threats", () => {
       stat: target.stat,
       cardType: "enemy"
     }));
-    expect(resolved.players[0]!.character.trophies).toBe(target.trophyValue + (target.id === "pale-contract-collector" ? 2 : 0));
+    expect(resolved.players[0]!.character.trophies).toBe(target.trophyValue);
     if (target.defeatReward.type === "gain_note") expect(resolved.players[0]!.private.notes).toContain(target.defeatReward.text);
     expect(JSON.stringify(resolved.activeResolution?.outcome)).not.toMatch(/Salvage|lose_salvage|Heat|Risk/i);
   });

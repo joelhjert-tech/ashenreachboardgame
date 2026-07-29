@@ -1,8 +1,18 @@
 # Threat Power Audit
 
-Status: report-only audit of the current server-authoritative Threat set.
+Status: historical report-only snapshot with implementation resolution recorded on 2026-07-29.
 
 Generated from the active canonical sector graph, authored Threat JSON, production operative base statistics, and the current server resolution paths. This report changes no cards, mechanics, probabilities, rewards, or production code.
+
+## Implementation resolution (2026-07-29)
+
+The original measurements below are retained as the evidence snapshot that prompted the review. The identified semantic ambiguities are now resolved in the authoritative implementation:
+
+- Static Larva Swarm, Moth-Carrier Husk, and Signal-Rotted Engineer no longer repeat an already-authored loss through a second effect key. Pale Marshal no longer advertises an unsupported reveal lock.
+- Enemy Trophy rewards are awarded exactly once. An explicit authored `gain_trophy` reward represents the award; the reducer supplies `trophyValue` only when no explicit Trophy reward exists. The content schema rejects mismatched explicit and declared values.
+- Reroll blocking is enforced in both the projected adaptation controls and the server intent handler. Salvage and Escalation keys emit typed state-changing effects. Retired lock/drop compatibility keys return explanatory summaries rather than pretending a note mutates state.
+- A live encounter derives its region from the canonical sector first and uses the card region only as a fallback. Cross-region cards therefore resolve against where the encounter actually occurred.
+- The lifecycle matrix was regenerated with all four new faction hazards: Broodglass Hatchfall, Courtline Fold, Grinning Ledger Seizure, and Violet Thorn Toll. The matrix now contains 120 Threats and 405 total records.
 
 ## Executive summary
 

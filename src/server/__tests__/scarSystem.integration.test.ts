@@ -162,4 +162,55 @@ describe("Scar choice projections and services", () => {
     const restoredControl = (createPhoneProjection(restored.getState(), "seat-1") as { scarAdaptationControls: Array<{ enabled: boolean; remainingUses: number }> }).scarAdaptationControls[0]!;
     expect(restoredControl).toMatchObject({ enabled: false, remainingUses: 0 });
   });
+
+  it("projects a blocked Scar reroll as disabled and rejects activation without changing the dice", () => {
+    const base = createInitialSessionState("scar-reroll-blocked", "single-player");
+    const enemy = loadThreatCards().get("pale-marshal");
+    if (!enemy || enemy.cardType !== "enemy") throw new Error("Missing Pale Marshal fixture");
+    const encounter = { ...enemy, stat: "guile" as const };
+    const state = {
+      ...base,
+      status: "active" as const,
+      phase: "resolution" as const,
+      currentEncounter: encounter,
+      seats: base.seats.map((seat) => ({ ...seat, connected: true, characterSelected: true })),
+      players: base.players.map((player) => ({ ...player, character: { ...player.character, scars: ["scar-hollow-reflection"] } })),
+      activeResolution: {
+        id: "scar-reroll-blocked-window",
+        playerId: "seat-1",
+        source: "threat" as const,
+        stage: "roll_result" as const,
+        card: { id: encounter.id, title: encounter.title, type: "enemy" as const },
+        battle: { stat: "guile" as const, difficulty: encounter.difficulty, modifiers: [] },
+        roll: { dice: [1, 2], baseTotal: 3, modifierTotal: 3, finalTotal: 6, target: encounter.difficulty, success: false }
+      }
+    };
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([5]));
+    const control = (createPhoneProjection(server.getState(), "seat-1") as {
+      scarAdaptationControls: Array<{
+        activationId: string;
+        scarId: string;
+        ruleKey: string;
+        enabled: boolean;
+        disabledReason: string | null;
+      }>;
+    }).scarAdaptationControls[0]!;
+
+    expect(control).toMatchObject({
+      ruleKey: "guile-reroll",
+      enabled: false,
+      disabledReason: "The Pale Marshal blocks rerolls."
+    });
+    const owner = client("seat-1");
+    server.handleIntent(owner, {
+      type: "USE_SCAR_ADAPTATION",
+      seatId: "seat-1",
+      activationId: control.activationId,
+      scarId: control.scarId,
+      ruleKey: control.ruleKey,
+      rollIndex: 0
+    });
+    expect(server.getState().activeResolution?.roll?.dice).toEqual([1, 2]);
+    expect(vi.mocked(owner.socket.send)).toHaveBeenCalled();
+  });
 });

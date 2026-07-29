@@ -12,7 +12,6 @@
   "stat": "guile",
   "difficulty": 2,
   "trophyValue": 1,
-  "failEffectKey": "threat_fail_gain_scar",
   "defeatReward": {
     "type": "gain_note",
     "text": "You sealed the larval nest before it learned your pulse."

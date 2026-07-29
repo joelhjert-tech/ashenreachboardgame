@@ -17,10 +17,10 @@ function grants(effect: EncounterEffect | null | undefined, followerId: string):
 }
 
 describe("completed follower acquisition boundary", () => {
-  it("classifies the 24 definitions as 21 normal followers and three QA-only fixtures", () => {
+  it("classifies the 26 definitions as 23 normal followers and three QA-only fixtures", () => {
     const followers = loadFollowers();
-    expect(followers.size).toBe(24);
-    expect([...followers.values()].filter((follower) => !follower.qaOnly)).toHaveLength(21);
+    expect(followers.size).toBe(26);
+    expect([...followers.values()].filter((follower) => !follower.qaOnly)).toHaveLength(23);
     expect([...followers.values()].filter((follower) => follower.qaOnly).map((follower) => follower.id).sort()).toEqual([...QA_FOLLOWER_IDS].sort());
   });
 

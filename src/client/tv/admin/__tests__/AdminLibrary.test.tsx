@@ -54,8 +54,8 @@ describe("AdminLibrary", () => {
   it("keeps duplicate artwork references out of the missing-artwork filter", () => {
     render(<AdminLibrary onClose={vi.fn()} />);
     const filters = screen.getByRole("navigation", { name: /library filters/i });
-    fireEvent.click(within(filters).getByRole("button", { name: /missing artwork124/i }));
-    expect(screen.getAllByText(/124 of 417 cards/i).length).toBeGreaterThan(0);
+    fireEvent.click(within(filters).getByRole("button", { name: /missing artwork112/i }));
+    expect(screen.getAllByText(/112 of 417 cards/i).length).toBeGreaterThan(0);
     expect(screen.queryByText("Rift Whispers")).not.toBeInTheDocument();
   });
 
