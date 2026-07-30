@@ -544,7 +544,8 @@ export interface ContractCard {
     | { type: "defeatCount"; target: number }
     | { type: "spaceTextResolved"; effectKey: string; label: string; target: number }
     | { type: "multiStopRoute"; ordered: boolean; targets: Array<{ id: string; type: "spaceId" | "tag"; value: string; label: string }> }
-    | { type: "shopTransaction"; action: "buyEquipment" | "sellGear" | "repairGear" | "upgradeGear" | "trade"; requiredShopType?: string; requiredSectorId?: string; requiredCount: number; minimumSalvageSpent?: number; label: string };
+    | { type: "shopTransaction"; action: "buyEquipment" | "sellGear" | "repairGear" | "upgradeGear" | "trade"; requiredShopType?: string; requiredSectorId?: string; requiredCount: number; minimumSalvageSpent?: number; label: string }
+    | { type: "tileChallengeResolved"; challengeId?: string; sectorId?: string; challengeType?: "hazard" | "anomaly"; challengeTag?: string; requireSuccess: boolean; target: number; label: string };
   reward?: {
     effects: Array<{ type: string; amount?: number; [key: string]: unknown }>;
     displayText?: string;

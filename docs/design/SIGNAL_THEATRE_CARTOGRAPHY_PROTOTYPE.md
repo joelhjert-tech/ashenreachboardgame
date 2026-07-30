@@ -54,6 +54,30 @@ No old tile artwork, new raster artwork, Canvas, WebGL, or private projection is
 
 During normal play the TV selects this same schematic when the public `hostView.mode` is `map`. The live route, legal destinations, player locations, printed Threat lanes, recurring challenges, and revealed persistent encounters come only from the public server projection.
 
+## Board-tile approval variant
+
+An isolated development-only design is available for visual approval:
+
+- `/tv?cartographyFixture=route&cartographyDesign=board-tiles`
+- `/tv?cartographyFixture=challenge&cartographyDesign=board-tiles`
+- `/tv?cartographyFixture=dense&cartographyDesign=board-tiles`
+- `/tv?cartographyFixture=inner&cartographyDesign=board-tiles`
+
+The variant arranges the same 49 canonical sectors as a contiguous 24/16/8/1 nested board. Tiles use a 13:10 footprint, making them 30% wider than the initial square prototype without stretching artwork, type, or icons. Tile faces use neutral, desaturated iron-and-stone material so Red, Blue, and Yellow remain confined to the printed Threat band at the bottom edge. Thick material rails, direct reach plaques, and a raised Core frame distinguish the Outer, Middle, Inner, and Core tracks without introducing new gameplay colour meanings. Each tile uses its registered Signal Cartography environment thumbnail, original hazard and challenge symbols, route/gate framing, and the existing public operative state. Ordinary track adjacency follows `RIFTFALL_BOARD_NODES`; non-adjacent authored connections remain visible as restrained etched links.
+
+The active operative's public Contract destinations receive a green mission beacon. Ordered route Contracts mark only the next unfinished stop; other players' destinations are not promoted as the active target. The marker is derived only from public TV fields already used by the legacy board mission markers and does not reveal private rivalry objectives or phone-only choices.
+
+Tile occupants now use six image-generated physical coin identities matching the stable Beacon, Bastion, Lantern, Harrow, Reliquary, and Compass Signal Pieces. A player-colour ring remains separate from the coin artwork. Active public mission targets use image-generated Route, Challenge, Hunt, or Service coins selected from the authoritative public Contract objective type.
+
+This query does not change the normal `SignalCartographyPrototype` default. Production and live map requests continue to use the approved schematic until the board-tile variant receives explicit approval.
+
+Browser captures:
+
+- `.tmp-playtest/signal-cartography-board-tiles/route-1920x1080.png`
+- `.tmp-playtest/signal-cartography-board-tiles/challenge-1366x768.png`
+- `.tmp-playtest/signal-cartography-board-tiles/dense-1600x900.png`
+- `.tmp-playtest/signal-cartography-board-tiles/inner-1920x1080.png`
+
 ## Motion
 
 Normal motion uses a short opacity/transform reveal and route emphasis based on the existing host motion tokens. Reduced motion removes interpolation and presents the final schematic immediately.

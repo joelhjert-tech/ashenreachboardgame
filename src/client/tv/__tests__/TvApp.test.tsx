@@ -387,6 +387,53 @@ describe("TvApp", () => {
     expect(await screen.findByTestId("signal-theatre-host")).toHaveAttribute("data-signal-state", "turn");
     expect(screen.getByRole("heading", { name: "Tarek Voss" })).toBeVisible();
     expect(screen.queryByText("Ashen Reach TV")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("host-game-intro")).not.toBeInTheDocument();
+  });
+
+  it("plays the opening video once between the lobby and active Signal Theatre", async () => {
+    window.history.replaceState({}, "", "/tv");
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const lobbyPatch = createPatch();
+    lobbyPatch.payload.status = "lobby";
+    mockUseRoomSubscription.mockReturnValue({
+      patch: lobbyPatch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      synchronized: true,
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    const rendered = render(<TvApp />);
+
+    expect(await screen.findByTestId("signal-theatre-host")).toHaveAttribute("data-signal-state", "lobby");
+    expect(screen.queryByTestId("host-game-intro")).not.toBeInTheDocument();
+
+    const activePatch = createPatch();
+    activePatch.sequence = 2;
+    activePatch.phase = "navigation";
+    mockUseRoomSubscription.mockReturnValue({
+      patch: activePatch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      synchronized: true,
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    rendered.rerender(<TvApp />);
+
+    const intro = await screen.findByTestId("host-game-intro");
+    expect(intro).toBeVisible();
+    expect(screen.getByTestId("signal-theatre-host").parentElement).toHaveAttribute("aria-hidden", "true");
+
+    fireEvent.ended(screen.getByTestId("host-game-intro-video"));
+
+    await waitFor(() => expect(screen.queryByTestId("host-game-intro")).not.toBeInTheDocument());
+    expect(screen.getByTestId("signal-theatre-host")).toHaveAttribute("data-signal-state", "turn");
+    expect(screen.getByTestId("signal-theatre-host").parentElement).not.toHaveAttribute("aria-hidden");
   });
 
   it("switches the live host to approved Signal Cartography from public server state", async () => {
@@ -413,8 +460,29 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     expect(await screen.findByLabelText("Signal Cartography public map")).toBeVisible();
+    expect(screen.getByTestId("signal-cartography-prototype")).toHaveAttribute("data-design", "schematic");
     expect(screen.getByText("Requested by Joel")).toBeVisible();
     expect(screen.queryByTestId("signal-theatre-host")).not.toBeInTheDocument();
+  });
+
+  it("opens the board-tile Cartography only through the development approval query", async () => {
+    window.history.replaceState({}, "", "/tv?cartographyFixture=route&cartographyDesign=board-tiles");
+    mockUseRoomSubscription.mockReturnValue({
+      patch: createPatch(),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      synchronized: true,
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const prototype = await screen.findByTestId("signal-cartography-prototype");
+    expect(prototype).toHaveAttribute("data-design", "board-tiles");
+    expect(screen.getByLabelText(/board-tile development prototype/i)).toBeVisible();
+    expect(document.querySelectorAll('[data-mission-target="true"]')).toHaveLength(1);
   });
 
   it("enables the restored dashboard when host token and room code are stored", async () => {

@@ -8,6 +8,8 @@ Assets are runtime data. Do not delete an asset just because TypeScript does not
 - Current board base/region/corner assets: `public/assets/map/board/`, `public/assets/map/corners/`
 - Signal Theatre sector environments: `public/assets/riftfall/environments/signal-theatre/sectors/`
 - Signal Theatre selectable player pieces: `public/assets/riftfall/ui/signal-theatre/player-pieces/`
+- Signal Cartography marker coins: `public/assets/riftfall/ui/signal-cartography/markers/`
+- Signal Theatre host intro video: `public/assets/riftfall/ui/signal-theatre/intro/`
 - Host TV shop-category emblems: `public/assets/riftfall/ui/shop/categories/`
 - Current generated card art: `public/assets/cards/`
 - Active card backs: `public/assets/cards/backs/`
@@ -55,11 +57,13 @@ Remaining legacy files:
 - Board tile manifest: `src/client/tv/tileAssetManifest.ts`
 - Board runtime asset list: `src/client/tv/mapAssetRegistry.ts`
 - Signal Theatre environment manifest: `src/client/tv/signalTheatreEnvironmentManifest.ts`
+- Signal Theatre host intro resolver: `getHostGameIntroVideoPath` in `src/client/shared/assetPaths.ts`
 - Runtime portrait/frame lookups: `src/client/shared/assetPaths.ts`
 - Host TV shop-category emblem lookup: `getHostShopCategoryIconPath` in `src/client/shared/assetPaths.ts`
 - Prompt manifest root: `src/game/assets/design/imagePrompts.ts`
 - Signal Theatre prompt catalog: `src/game/assets/design/signalTheatreEnvironmentPrompts.ts`
 - Signal Piece prompt catalog: `src/game/assets/design/signalPiecePrompts.ts`
+- Signal Cartography coin prompt catalog: `src/game/assets/design/signalCartographyCoinPrompts.ts`
 - Inventory category emblem prompt catalog: `src/game/assets/design/inventoryCategoryIconPrompts.ts`
 - Objective category emblem prompt catalog: `src/game/assets/design/objectiveCategoryIconPrompts.ts`
 - Result-ready verdict gate prompt catalog: `src/game/assets/design/resultReadyVisualPrompts.ts`
@@ -73,6 +77,8 @@ Remaining legacy files:
 - Signal Theatre environment PNGs use the canonical sector ID under `public/assets/riftfall/environments/signal-theatre/sectors/`.
 - Signal Theatre environment generation must create original Ashenreach locations and must not use legacy tile art or reference-game imagery as inputs.
 - Signal Piece PNGs use the six stable catalog IDs: `beacon`, `bastion`, `lantern`, `harrow`, `reliquary`, and `compass`.
+- Signal Cartography player coins reuse the six stable Signal Piece IDs under `markers/players/`; public objective coins use `route`, `challenge`, `hunt`, and `service` under `markers/objectives/`.
+- The TV-only opening video uses the stable filename `ashenreach-intro.mp4` under the Signal Theatre intro root. Keep it H.264/AAC MP4 for browser and television compatibility.
 - Private phone inventory category emblems use `artifacts`, `equipment`, `followers`, `status`, and `progression` under `public/assets/riftfall/ui/inventory-categories/`.
 - Public Host TV shop-category emblems use `items`, `equipment`, `artifacts`, `route-aids`, `services`, and `sell` under `public/assets/riftfall/ui/shop/categories/`.
 - Card art generated from content uses the card ID as the PNG filename under `public/assets/cards/<type>/`.
@@ -97,9 +103,9 @@ npm run generate:phone-images
 npm run audit:assets
 ```
 
-The asset audit validates the generated phone manifest, source and derivative hashes, byte counts, dimensions, maximum edge, no-upscale rule, and no-growth rule. SVG, animation, TV-only Signal Theatre environments, shop interiors, cartography assets, and admin-only Lore Bible art are excluded.
+The asset audit validates the generated phone manifest, source and derivative hashes, byte counts, dimensions, maximum edge, no-upscale rule, and no-growth rule. SVG, animation, TV-only Signal Theatre environments, the TV-only intro video, shop interiors, cartography assets, and admin-only Lore Bible art are excluded from phone-image derivative generation. The intro MP4 remains registered and existence-checked through `getRuntimeAssetPaths()`.
 
-The asset audit is the source of truth for the current expected count. Signal Theatre adds 49 distinct sector environments and 6 selectable player-piece renders. The phone inventory adds 5 original category emblems.
+The asset audit is the source of truth for the current expected count. Signal Theatre adds 49 distinct sector environments and 6 selectable player-piece renders. Signal Cartography adds 6 public player coins and 4 public objective coins. The phone inventory adds 5 original category emblems.
 
 The runtime also includes six original SVG shop-category emblems. These are code-native UI vectors rather than card or environment artwork and must remain registered through `getRuntimeAssetPaths()`.
 

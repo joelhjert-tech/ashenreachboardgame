@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { getSessionStartReadiness } from "../../game/rules/sessionStart.js";
 import { getChallengeTheme, getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
@@ -55,6 +55,7 @@ import { HostMotionCue } from "./HostMotionCue.js";
 import { SignalTheatreHost } from "./SignalTheatreHost.js";
 import {
   SignalCartographyPrototype,
+  type SignalCartographyDesign,
   type SignalCartographyFixture
 } from "./SignalCartographyPrototype.js";
 import {
@@ -73,6 +74,7 @@ import { JoinQrCard } from "./JoinQrCard.js";
 import { TacticalMapBoard } from "./TacticalMapBoard.js";
 import { getExpectedTileAssetPath, getTileAssetPath } from "./tileAssetManifest.js";
 import { HostImage } from "./HostImage.js";
+import { HostGameIntro } from "./HostGameIntro.js";
 
 const hostTokenStorageKey = "ashen-reach-tv-host-token";
 const roomCodeStorageKey = "ashen-reach-tv-room-code";
@@ -2925,6 +2927,7 @@ export function TvApp(): ReactElement {
   const adminQueryHandledRef = useRef(false);
   const [returnLobbyConfirmOpen, setReturnLobbyConfirmOpen] = useState(false);
   const [movementPresentation, setMovementPresentation] = useState<MovementArrivalModel | null>(null);
+  const [gameIntroVisible, setGameIntroVisible] = useState(false);
   const restoreValidatedRef = useRef(false);
   const { patch, error, status, synchronized: subscriptionSynchronized, debugEvents, clearDebugEvents, sendIntent } = useRoomSubscription({
     view: "tv",
@@ -2935,6 +2938,8 @@ export function TvApp(): ReactElement {
   const previousMovementPresentationRef = useRef<MovementArrivalModel | null>(null);
   const commandMainRef = useRef<HTMLElement | null>(null);
   const previousBattleModeRef = useRef(false);
+  const introSessionRef = useRef<string | null>(null);
+  const introStatusRef = useRef<string | null>(null);
 
   useEffect(() => {
     fetchCharacters()
@@ -2952,6 +2957,34 @@ export function TvApp(): ReactElement {
   const publicPatch = patch as StatePatch<PublicPatchPayload> | null;
   const synchronized = subscriptionSynchronized ?? status === "open";
   const authoritativePresentationReady = status === "open" && synchronized;
+
+  useLayoutEffect(() => {
+    if (!authoritativePresentationReady || !publicPatch) {
+      return;
+    }
+
+    const nextSessionId = publicPatch.sessionId;
+    const nextStatus = publicPatch.payload.status;
+
+    if (introSessionRef.current !== nextSessionId) {
+      introSessionRef.current = nextSessionId;
+      introStatusRef.current = nextStatus;
+      setGameIntroVisible(false);
+      return;
+    }
+
+    if (introStatusRef.current === "lobby" && nextStatus === "active") {
+      setGameIntroVisible(true);
+    } else if (nextStatus !== "active") {
+      setGameIntroVisible(false);
+    }
+
+    introStatusRef.current = nextStatus;
+  }, [
+    authoritativePresentationReady,
+    publicPatch?.payload.status,
+    publicPatch?.sessionId
+  ]);
 
   useEffect(() => {
     const previous = previousMovementPresentationRef.current;
@@ -3271,6 +3304,9 @@ export function TvApp(): ReactElement {
   const cartographyFixture = import.meta.env.DEV
     ? new URLSearchParams(window.location.search).get("cartographyFixture")
     : null;
+  const cartographyDesign = import.meta.env.DEV
+    ? new URLSearchParams(window.location.search).get("cartographyDesign")
+    : null;
   const approvalPrototype = import.meta.env.DEV
     ? new URLSearchParams(window.location.search).get("tvPrototype")
     : null;
@@ -3345,6 +3381,7 @@ export function TvApp(): ReactElement {
       <SignalCartographyPrototype
         patch={publicPatch}
         fixture={cartographyFixture as SignalCartographyFixture}
+        design={(cartographyDesign === "board-tiles" ? cartographyDesign : "schematic") as SignalCartographyDesign}
       />
     );
   }
@@ -3359,24 +3396,35 @@ export function TvApp(): ReactElement {
   if (signalTheatreMode) {
     return (
       <>
-        <SignalTheatreHost
-          patch={publicPatch}
-          previousPatch={previousPatchRef.current}
-          roomCode={effectiveRoomCode}
-          activeSeat={activeSeat}
-          activePlayer={activePlayer}
-          currentStepCopy={currentStepCopy}
-          synchronized={authoritativePresentationReady}
-          connectionStatus={status}
-          adminDashboardAvailable={adminAccessAllowed}
-          onOpenAdminDashboard={() => { setAdminInitialTab("overview"); setAdminSurface("dashboard"); }}
-          onMovementPresentationCompleted={(eventId) => {
-            const gate = publicPatch?.payload.movementPresentationGate;
-            if (gate?.eventId) {
-              sendIntent({ type: "MOVEMENT_PRESENTATION_COMPLETED", eventId: gate.eventId });
-            }
-          }}
-        />
+        <div
+          aria-hidden={gameIntroVisible || undefined}
+          inert={gameIntroVisible || undefined}
+        >
+          <SignalTheatreHost
+            patch={publicPatch}
+            previousPatch={previousPatchRef.current}
+            roomCode={effectiveRoomCode}
+            activeSeat={activeSeat}
+            activePlayer={activePlayer}
+            currentStepCopy={currentStepCopy}
+            synchronized={authoritativePresentationReady}
+            connectionStatus={status}
+            adminDashboardAvailable={adminAccessAllowed}
+            onOpenAdminDashboard={() => { setAdminInitialTab("overview"); setAdminSurface("dashboard"); }}
+            onMovementPresentationCompleted={(eventId) => {
+              const gate = publicPatch?.payload.movementPresentationGate;
+              if (gate?.eventId) {
+                sendIntent({ type: "MOVEMENT_PRESENTATION_COMPLETED", eventId: gate.eventId });
+              }
+            }}
+          />
+        </div>
+        {gameIntroVisible ? (
+          <HostGameIntro
+            key={publicPatch?.sessionId ?? "pending-session"}
+            onComplete={() => setGameIntroVisible(false)}
+          />
+        ) : null}
         <EndgameOverlay
           patch={publicPatch}
           onReturnToLobby={hostToken

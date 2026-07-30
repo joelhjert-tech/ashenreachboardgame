@@ -9,6 +9,7 @@ import { objectiveCategoryIconPrompts } from "./objectiveCategoryIconPrompts.js"
 import { resultReadyVisualPrompts } from "./resultReadyVisualPrompts.js";
 import { baseNegativePrompt } from "./negativePrompt.js";
 import { scenarioSheetPrompts } from "./scenarioSheetPrompts.js";
+import { signalCartographyCoinPrompts } from "./signalCartographyCoinPrompts.js";
 import { signalTheatreEnvironmentPrompts } from "./signalTheatreEnvironmentPrompts.js";
 import { signalPiecePrompts } from "./signalPiecePrompts.js";
 import { uiPrompts } from "./uiPrompts.js";
@@ -65,6 +66,7 @@ export const requiredImageGenerationChecklist = [
   "4 UI frames/backgrounds",
   "49 Signal Theatre sector environments",
   "6 selectable Signal Theatre player pieces",
+  "10 Signal Cartography player and objective coins",
   "5 private inventory category emblems",
   "4 private objective category emblems",
   "1 private result-ready verdict gate",
@@ -90,6 +92,7 @@ export const imagePrompts: ImagePromptSpec[] = [
   ...scenarioSheetPrompts,
   ...signalTheatreEnvironmentPrompts,
   ...signalPiecePrompts,
+  ...signalCartographyCoinPrompts,
   ...inventoryCategoryIconPrompts,
   ...objectiveCategoryIconPrompts,
   ...resultReadyVisualPrompts,

@@ -9,6 +9,7 @@ Ashen Reach is a digital board game with a host TV presentation surface and priv
 - Keep the active sector environment as the dominant surface, with compact supporting rails.
 - Signal Theatre resolves one original wide environment per canonical sector through `signalTheatreEnvironmentManifest.ts`; it does not render legacy tile art.
 - Authoritative route sectors drive environment changes and operative-piece motion. Visual transitions never generate or delay movement.
+- A synchronized lobby-to-active transition plays the registered Ashen Reach opening video once before revealing Signal Theatre. It does not replay when a TV reconnects to an active game, does not delay authoritative state, and falls through to the map if playback fails or reduced motion is requested.
 - The active-sector brief should show location, operative, required public action, and compact session context.
 - Do not duplicate the phone movement destination list in the host right rail.
 - Command Hub diagnostics belong in a separate host-only debug/diagnostics tab or drawer.

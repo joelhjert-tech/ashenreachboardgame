@@ -3,6 +3,7 @@ import {
   type CardImageType
 } from "../../game/assets/design/cardImageCatalog.js";
 import { getRuntimeCardArtPath } from "../../game/assets/runtime/cardArtRuntimeCatalog.js";
+import { getCartographyCoinAssetPaths } from "../../shared/cartographyCoinCatalog.js";
 import { getSignalTheatreEnvironmentPaths } from "../tv/signalTheatreEnvironmentManifest.js";
 import type { ContractCard, EncounterCard, GearTier, Stat } from "./types.js";
 import { SIGNAL_PIECE_IDS, getSignalPieceAssetPath } from "../../shared/signalPieceCatalog.js";
@@ -82,6 +83,9 @@ const signalTheatreCardRevealPaths = {
   cardBack: "/assets/riftfall/ui/signal-theatre/card-reveal/reliquary-card-back.webp"
 } as const;
 
+const hostGameIntroVideoPath =
+  "/assets/riftfall/ui/signal-theatre/intro/ashenreach-intro.mp4";
+
 export type InventoryCategoryIcon = "artifacts" | "equipment" | "followers" | "missions" | "status" | "progression";
 export type ObjectiveCategoryIcon = "shared-mission" | "contract" | "rivalry" | "completed";
 
@@ -111,10 +115,12 @@ const uiAssetPaths = [
   "/assets/riftfall/ui/signal-theatre/arrival-seal.png",
   "/assets/riftfall/ui/signal-theatre/journey-path.png",
   ...SIGNAL_PIECE_IDS.map(getSignalPieceAssetPath),
+  ...getCartographyCoinAssetPaths(),
   ...Object.values(signalTheatreStatSealByStat),
   ...Object.values(signalTheatreResultCrestByOutcome),
   signalTheatreDieFacePath,
   ...Object.values(signalTheatreCardRevealPaths),
+  hostGameIntroVideoPath,
   ...Object.values(inventoryCategoryIconByCategory),
   ...Object.values(objectiveCategoryIconByCategory),
   resultReadyGatePath,
@@ -213,6 +219,10 @@ export function getSignalTheatreDieFacePath(): string {
 
 export function getSignalTheatreCardRevealPaths(): typeof signalTheatreCardRevealPaths {
   return signalTheatreCardRevealPaths;
+}
+
+export function getHostGameIntroVideoPath(): string {
+  return hostGameIntroVideoPath;
 }
 
 export function getInventoryCategoryIconPath(category: InventoryCategoryIcon): string {
