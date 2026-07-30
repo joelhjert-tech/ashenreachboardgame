@@ -612,11 +612,12 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
   [GRINNING_TITHE_SCENARIO_ID]: {
     initialProgress: { curatorWounds: 0 },
     describePressure: (state) =>
-      `No loss pressure. The Pallid Curator has taken ${state.scenarioProgress.curatorWounds ?? 0}/6 wounds; Red Threats draw from the shared shuffled Pallid Retinue.`,
+      `No loss pressure. The Pallid Curator has taken ${state.scenarioProgress.curatorWounds ?? 0}/6 wounds; one random Retinue assault strikes a random active operative at each round end.`,
     buildTelemetry: (state) => [
       { label: "Pallid Curator", value: `${state.scenarioProgress.curatorWounds ?? 0}/6 wounds` },
       { label: "Loss Pressure", value: "Disabled" },
-      { label: "Red Encounters", value: "Random Pallid Retinue" }
+      { label: "Lane Minions", value: "Red / Blue / Yellow" },
+      { label: "Round Assault", value: "Random card + random operative" }
     ]
   },
   scenario_broken_concordance: {

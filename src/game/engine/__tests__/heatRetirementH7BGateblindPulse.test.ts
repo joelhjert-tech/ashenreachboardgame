@@ -151,12 +151,12 @@ describe("Heat Retirement H7B Gateblind Pulse content", () => {
       }
     });
     expect(JSON.stringify(gateblind)).not.toMatch(/\bHeat\b|gain_heat|lose_heat|take_wound|gain_scar|lose_salvage/i);
-    expect(threats.size).toBe(203);
+    expect(threats.size).toBe(204);
     const laneCounts = [...threats.values()].reduce<Record<string, number>>((counts, threat) => {
       counts[threat.threatLane ?? "missing"] = (counts[threat.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
     }, {});
-    expect(laneCounts).toEqual({ red: 65, blue: 72, yellow: 66 });
+    expect(laneCounts).toEqual({ red: 63, blue: 74, yellow: 67 });
   });
 
   it("keeps success-side scenario progress and creates no escalation", () => {

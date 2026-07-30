@@ -120,8 +120,8 @@ describe("Heat Retirement H4B exact-instance Equipment suppression", () => {
     expect([...threats.values()].reduce<Record<string, number>>((counts, card) => {
       counts[card.threatLane ?? "missing"] = (counts[card.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
-    }, {})).toEqual({ red: 65, blue: 72, yellow: 66 });
-    expect(threats.size).toBe(203);
+    }, {})).toEqual({ red: 63, blue: 74, yellow: 67 });
+    expect(threats.size).toBe(204);
   });
 
   it.each(["relay-husk", "signal-rotted-engineer"] as const)("%s creates one mandatory owner-private exact-instance choice", (id) => {

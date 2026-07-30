@@ -349,7 +349,10 @@ function createPrivateSetupSeed(value: string): number {
 }
 const SCENARIO_OWNED_THREAT_IDS = new Set(
   SCENARIOS.flatMap((scenario) =>
-    Object.values(scenario.threatLaneOverrides ?? {}).flatMap((cardIds) => cardIds ?? [])
+    [
+      ...Object.values(scenario.threatLaneOverrides ?? {}).flatMap((cardIds) => cardIds ?? []),
+      ...(scenario.randomAssault?.cardIds ?? [])
+    ]
   )
 );
 
@@ -5231,6 +5234,209 @@ export class GameRoomServer {
     return shuffled;
   }
 
+  private maybeStartRandomScenarioAssault(): boolean {
+    const scenario = getScenarioDefinition(this.state.activeScenarioId);
+    const assault = scenario?.randomAssault;
+
+    if (
+      !scenario ||
+      !assault ||
+      assault.trigger !== "round-end" ||
+      this.state.status !== "active" ||
+      this.state.currentEncounter ||
+      this.state.activeResolution ||
+      this.state.pendingScenarioAssault
+    ) {
+      return false;
+    }
+
+    const resumeSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? null;
+    const resumePhase = this.state.phase === "action" ? "action" : "navigation";
+    if (!resumeSeatId) {
+      return false;
+    }
+
+    const activePlayers = new Set(
+      this.state.players
+        .filter((player) => player.character.status === "active")
+        .map((player) => player.seatId)
+    );
+    const eligibleSeats = this.state.seats.filter(
+      (seat) => seat.connected && !seat.kicked && activePlayers.has(seat.seatId)
+    );
+    if (eligibleSeats.length === 0) {
+      return false;
+    }
+
+    const existingBag = this.state.scenarioAssaultBag?.scenarioId === scenario.id
+      ? this.state.scenarioAssaultBag
+      : null;
+    const needsShuffle = !existingBag || existingBag.remainingCardIds.length === 0;
+    const cycle = needsShuffle ? (existingBag?.cycle ?? 0) + 1 : existingBag.cycle;
+    const orderedCardIds = needsShuffle
+      ? this.shuffleThreatIds(assault.cardIds)
+      : existingBag.remainingCardIds;
+    const cardId = orderedCardIds[0] ?? null;
+    const encounter = cardId ? this.threats.get(cardId) ?? null : null;
+    if (!cardId || !encounter) {
+      throw new Error(`Scenario assault ${scenario.id} references an unavailable Threat card`);
+    }
+
+    const targetSeat = eligibleSeats[this.randomSource.nextInt(eligibleSeats.length)]!;
+    const targetSeatIndex = this.state.turnOrder.indexOf(targetSeat.seatId);
+    const targetPlayer = this.state.players.find((player) => player.seatId === targetSeat.seatId);
+    const targetSector = targetPlayer
+      ? this.state.sectors.find((sector) => sector.id === targetPlayer.character.currentSpaceId)
+      : null;
+    if (targetSeatIndex < 0 || !targetPlayer || !targetSector) {
+      return false;
+    }
+
+    const createdAt = new Date().toISOString();
+    const roundNumber = getCurrentRoundNumber(this.state);
+    const summary = `${scenario.nemesis ?? scenario.name} sends ${encounter.title} against ${this.getSeatLabel(targetSeat.seatId)}.`;
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      phase: "action",
+      resolutionSource: null,
+      activeSeatIndex: targetSeatIndex,
+      scenarioAssaultBag: {
+        scenarioId: scenario.id,
+        cycle,
+        remainingCardIds: orderedCardIds.slice(1)
+      },
+      pendingScenarioAssault: {
+        scenarioId: scenario.id,
+        cardId,
+        targetSeatId: targetSeat.seatId,
+        resumeSeatId,
+        resumePhase,
+        roundNumber
+      },
+      currentEncounter: encounter,
+      recentEncounterCardIds: this.getRecentEncounterCardIdsAfterDraw(encounter.id),
+      pendingEnemyRoll: null,
+      pendingEffect: null,
+      activeResolution: {
+        id: `${targetSeat.seatId}:scenario-assault:${cardId}:${createdAt}`,
+        playerId: targetSeat.seatId,
+        source: "scenario",
+        stage: "card_reveal",
+        card: {
+          id: encounter.id,
+          title: encounter.title,
+          type: getThreatPresentationCategory(encounter),
+          flavor: encounter.flavor,
+          artType: "threat"
+        },
+        origin: {
+          sourceDeck: "scenario-assault",
+          sourceSectorId: targetSector.id,
+          sourceEventId: `${scenario.id}:round:${roundNumber}:assault`,
+          queuePosition: 0,
+          privacy: "public"
+        },
+        battle: {
+          enemyName: encounter.cardType === "enemy" ? encounter.enemyName : encounter.title,
+          stat: encounter.stat,
+          difficulty: encounter.difficulty,
+          modifiers: []
+        },
+        outcome: {
+          title: "Retinue assault",
+          text: summary,
+          effects: []
+        }
+      },
+      lastOutcomeSummary: {
+        seatId: targetSeat.seatId,
+        movedToSectorId: targetSector.id,
+        encounterCardId: encounter.id,
+        encounterTitle: encounter.title,
+        encounterCardType: encounter.cardType,
+        checkStat: null,
+        die1: null,
+        die2: null,
+        statBonus: null,
+        checkTotal: null,
+        difficulty: encounter.difficulty,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: null,
+        summary
+      },
+      eventLog: [
+        ...this.state.eventLog,
+        {
+          type: "SCENARIO_ASSAULT_STARTED",
+          scenarioId: scenario.id,
+          seatId: targetSeat.seatId,
+          cardId,
+          cycle,
+          roundNumber,
+          createdAt
+        }
+      ]
+    };
+
+    return true;
+  }
+
+  private finishRandomScenarioAssault(targetSeatId: string): void {
+    const pending = this.state.pendingScenarioAssault;
+    if (
+      !pending ||
+      pending.targetSeatId !== targetSeatId ||
+      this.state.currentEncounter ||
+      this.state.activeResolution ||
+      this.state.pendingEffect
+    ) {
+      return;
+    }
+
+    const resumeSeatIndex = this.state.turnOrder.indexOf(pending.resumeSeatId);
+    if (resumeSeatIndex < 0) {
+      this.state = {
+        ...this.state,
+        pendingScenarioAssault: null,
+        sequence: this.state.sequence + 1
+      };
+      return;
+    }
+
+    const resumePlayer = this.state.players.find((player) => player.seatId === pending.resumeSeatId);
+    const resumePhase = resumePlayer?.character.status === "active" ? pending.resumePhase : "action";
+    const createdAt = new Date().toISOString();
+    this.state = {
+      ...this.state,
+      activeSeatIndex: resumeSeatIndex,
+      phase: resumePhase,
+      pendingScenarioAssault: null,
+      sequence: this.state.sequence + 1,
+      eventLog: [
+        ...this.state.eventLog,
+        {
+          type: "SCENARIO_ASSAULT_COMPLETED",
+          scenarioId: pending.scenarioId,
+          seatId: targetSeatId,
+          cardId: pending.cardId,
+          roundNumber: pending.roundNumber,
+          resumedSeatId: pending.resumeSeatId,
+          createdAt
+        }
+      ]
+    };
+
+    this.applyStartOfTurnScenarioEffects(pending.resumeSeatId);
+    this.maybeTriggerAbilityOnTurnStarted(pending.resumeSeatId);
+    this.emitMovementDiagnostic("turn-completed", pending.resumeSeatId);
+  }
+
   private prepareThreatBag(lane: ThreatIcon, seatId: string): void {
     const existing = this.state.threatDrawBags?.[lane];
     if (existing && existing.remainingCardIds.length > 0) return;
@@ -7117,6 +7323,8 @@ export class GameRoomServer {
       currentEncounter: null,
       recentEncounterCardIds: [],
       threatDrawBags: {},
+      scenarioAssaultBag: null,
+      pendingScenarioAssault: null,
       movementPresentationGate: null,
       devouredThreatSectorIds: [],
       sectors: this.state.sectors.map((sector) => ({ ...sector, persistentThreatIds: [] })),
@@ -7667,6 +7875,7 @@ export class GameRoomServer {
           toPhase: nextPhase,
           createdAt: new Date().toISOString()
         });
+        this.finishRandomScenarioAssault(seatId);
         progressMade = true;
       }
     }
@@ -7850,15 +8059,23 @@ export class GameRoomServer {
       createdAt: new Date().toISOString()
     });
 
-    if (this.state.status === "active" && this.didRoundWrap(previousActiveSeatIndex, this.state.activeSeatIndex)) {
+    const roundWrapped =
+      this.state.status === "active" &&
+      this.didRoundWrap(previousActiveSeatIndex, this.state.activeSeatIndex);
+    if (roundWrapped) {
       if (!suppressRoundEscalation) {
         this.applyRoundEscalation(seatId);
       }
     }
 
+    const scenarioAssaultStarted =
+      this.state.status === "active" &&
+      roundWrapped &&
+      this.maybeStartRandomScenarioAssault();
+
     if (this.state.status === "active") {
       const nextSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? null;
-      if (nextSeatId) {
+      if (nextSeatId && !scenarioAssaultStarted) {
         this.applyStartOfTurnScenarioEffects(nextSeatId);
         this.maybeTriggerAbilityOnTurnStarted(nextSeatId);
         this.emitMovementDiagnostic("turn-completed", nextSeatId);

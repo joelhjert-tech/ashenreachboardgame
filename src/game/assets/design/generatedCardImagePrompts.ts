@@ -138,9 +138,9 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "cardType": "threat",
     "title": "Bell-Ear Stalker",
     "fileName": "bell-ear-stalker.png",
-    "outputPath": "/assets/cards/threats/red/bell-ear-stalker.png",
+    "outputPath": "/assets/cards/threats/blue/bell-ear-stalker.png",
     "fallbackPath": "/assets/cards/fallbacks/threat.svg",
-    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Bell-Ear Stalker, a living hostile with a clear full-body silhouette, local predator or raider threat, clearly lethal, faction affiliation Buried Maw, threat family mutated hunting beast, threat difficulty 6 driven by guile, regional hint global, A lean retinue hunter crosses the machinery ravine without ringing the iron bells sewn through its ears, The bells sound only after it has chosen what to take, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Bell-Ear Stalker, a living hostile with a clear full-body silhouette, local predator or raider threat, clearly lethal, faction affiliation Pallid Retinue, threat family mutated hunting beast, threat difficulty 6 driven by signal, regional hint global, A lean retinue hunter crosses the machinery ravine without ringing the iron bells sewn through its ears, The bells sound only after it has chosen what to take, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, copied or recognizable external board-game imagery, copyrighted character or symbol, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Bell-Ear Stalker threat card art."
   },
@@ -528,7 +528,7 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "cardType": "threat",
     "title": "Copper-Snout Bailiff",
     "fileName": "copper-snout-bailiff.png",
-    "outputPath": "/assets/cards/threats/red/copper-snout-bailiff.png",
+    "outputPath": "/assets/cards/threats/yellow/copper-snout-bailiff.png",
     "fallbackPath": "/assets/cards/fallbacks/threat.svg",
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Copper-Snout Bailiff, a living hostile with a clear full-body silhouette, elite horror or war-machine, dominant and oppressive, faction affiliation Pallid Retinue, threat family mutated hunting beast, threat difficulty 9 driven by forge, regional hint global, The Curator's broad enforcer blocks the route with a collection hook and a muzzle built to break sealed doors, Every debt sounds the same beneath the ram, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, copied or recognizable external board-game imagery, copyrighted character or symbol, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
@@ -2353,6 +2353,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Tithe Gnawer, a living hostile with a clear full-body silhouette, local predator or raider threat, clearly lethal, faction affiliation Pallid Retinue, threat family mutated hunting beast, threat difficulty 5 driven by grit, regional hint global, A quick pale scavenger spills from the tribute ducts, clutching tithe tags stolen for the Pallid Curator, It knows the value of everything except a life, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, copied or recognizable external board-game imagery, copyrighted character or symbol, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Tithe Gnawer threat card art."
+  },
+  {
+    "assetId": "threat_art_tithe-lock-audit",
+    "assetType": "threatCardArt",
+    "cardId": "tithe-lock-audit",
+    "cardType": "threat",
+    "title": "Tithe-Lock Audit",
+    "fileName": "tithe-lock-audit.png",
+    "outputPath": "/assets/cards/threats/blue/tithe-lock-audit.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is the hazard itself, a dangerous place or event made readable at card size, serious enemy or major hazard, memorable silhouette, faction affiliation Pallid Retinue, threat family environmental hazard, threat difficulty 7 driven by signal, regional hint global, A floating seal-engine traps the chosen operative inside intersecting receipt beams. On failure, suffer 1 Wound, The lock opens only after deciding what part of you counts as payment, motion, pressure, energy, environmental violence, avoid looking like a humanoid unless implied by the card",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, copied or recognizable external board-game imagery, copyrighted character or symbol, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Tithe-Lock Audit threat card art."
   },
   {
     "assetId": "threat_art_toll-scrip-urchins",

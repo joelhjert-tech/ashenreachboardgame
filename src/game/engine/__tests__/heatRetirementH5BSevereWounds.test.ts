@@ -176,11 +176,11 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
       expect(getRuntimeCardArtPath("threat", target.id)).toBe(`/assets/cards/threats/${target.lane}/${target.id}.png`);
       expect(createCanonicalSectorGraph().filter((sector) => sector.encounterDecks.threat.includes(target.id))).toHaveLength(target.graphCount);
     }
-    expect(threats.size).toBe(203);
+    expect(threats.size).toBe(204);
     expect([...threats.values()].reduce<Record<string, number>>((counts, card) => {
       counts[card.threatLane ?? "missing"] = (counts[card.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
-    }, {})).toEqual({ red: 65, blue: 72, yellow: 66 });
+    }, {})).toEqual({ red: 63, blue: 74, yellow: 67 });
   });
 
   it.each(TARGETS)("$id loss applies one authoritative consequence before presenting the result", (target) => {

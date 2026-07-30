@@ -25,7 +25,7 @@ function stateWithHazard(hazardId: string) {
 describe("persistent Hazard rules", () => {
   it("gives every authored Hazard the standard one-Salvage clear reward", () => {
     const hazards = [...loadThreatCards().values()].filter((card) => card.cardType === "hazard");
-    expect(hazards).toHaveLength(53);
+    expect(hazards).toHaveLength(54);
     expect(hazards.every((card) =>
       card.clearReward?.type === "gain_salvage" && card.clearReward.amount === 1
     )).toBe(true);

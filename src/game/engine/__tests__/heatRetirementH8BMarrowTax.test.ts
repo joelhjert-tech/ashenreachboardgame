@@ -152,11 +152,11 @@ describe("Heat Retirement H8B Marrow Tax Auditors", () => {
       .filter((sector) => sector.encounterDecks.threat.includes(TARGET_ID))
       .map((sector) => sector.id)
       .sort()).toEqual(EXPECTED_SECTORS);
-    expect(threats.size).toBe(203);
+    expect(threats.size).toBe(204);
     expect([...threats.values()].reduce<Record<string, number>>((counts, threat) => {
       counts[threat.threatLane ?? "missing"] = (counts[threat.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
-    }, {})).toEqual({ red: 65, blue: 72, yellow: 66 });
+    }, {})).toEqual({ red: 63, blue: 74, yellow: 67 });
   });
 
   it("grants the exact discovery follower plus the standard clear reward without creating a loss result", () => {

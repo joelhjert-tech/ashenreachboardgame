@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PERSISTENT_HAZARD_EXPANSION_IDS } from "../../../../game/data/threatFactions.js";
+import { GRINNING_TITHE_HAZARD_ID } from "../../../../game/data/scenarios.js";
 import {
   adminLoreCounts,
   adminLoreEntries,
@@ -33,15 +34,18 @@ describe("admin lore registry", () => {
           threat.id as (typeof PERSISTENT_HAZARD_EXPANSION_IDS)[number]
         )
       ).length;
+      const scenarioHazardCount = faction.threats.some((threat) => threat.id === GRINNING_TITHE_HAZARD_ID)
+        ? 1
+        : 0;
       expect(faction.nemesisKey).toMatch(/^nemesis:/);
       const enemyCount = faction.threats.filter((threat) => threat.cardType === "enemy").length;
       expect(enemyCount).toBeGreaterThanOrEqual(12);
       expect(enemyCount).toBeLessThanOrEqual(13);
       expect(faction.threats.filter((threat) => threat.cardType === "hazard")).toHaveLength(
-        4 + expansionCount
+        4 + expansionCount + scenarioHazardCount
       );
       expect(new Set(faction.threats.map((threat) => threat.id)).size).toBe(
-        enemyCount + 4 + expansionCount
+        enemyCount + 4 + expansionCount + scenarioHazardCount
       );
     }
   });

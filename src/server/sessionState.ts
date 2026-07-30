@@ -205,6 +205,8 @@ export function createInitialSessionState(
     eventLog: [],
     recentEncounterCardIds: [],
     threatDrawBags: {},
+    scenarioAssaultBag: null,
+    pendingScenarioAssault: null,
     devouredThreatSectorIds: [],
     currentEncounter: null,
     pendingEnemyRoll: null,

@@ -2,14 +2,14 @@
   "id": "bell-ear-stalker",
   "type": "threat",
   "cardType": "enemy",
-  "faction": "Buried Maw",
+  "faction": "Pallid Retinue",
   "title": "Bell-Ear Stalker",
   "enemyName": "Bell-Ear Stalker",
   "text": "A lean retinue hunter crosses the machinery ravine without ringing the iron bells sewn through its ears.",
   "flavor": "The bells sound only after it has chosen what to take.",
   "severity": 2,
   "region": "global",
-  "stat": "guile",
+  "stat": "signal",
   "difficulty": 6,
   "trophyValue": 2,
   "defeatReward": {
@@ -21,7 +21,7 @@
     "amount": 1
   },
   "enemyFamily": "beast",
-  "threatLane": "red",
+  "threatLane": "blue",
   "rarity": "uncommon",
   "tempo": "push",
   "resourceTags": [
@@ -29,5 +29,5 @@
     "wound",
     "scenario"
   ],
-  "imagePrompt": "Original Ashenreach Bell-Ear Stalker, a lean pale-furred hunter with long asymmetrical ears hung with small iron bells, narrow copper-ceramic snout guard, swept sensory filaments, grasping hands, springing feet, and a patched collector harness crouched on a machinery bridge, cinematic grimdark science-fantasy card art, no text"
+  "imagePrompt": "Original Ashen Reach Bell-Ear Stalker, a lean bridge hunter visibly descended from the Pallid Curator's design with a pale narrow face, enormous asymmetrical bell-pierced ears, rose-copper snout guard, one cold-blue eye and one magenta signal lens, black-iron retinue harness, six-spoke halo fragment and articulated cage limbs, stalking through a ruined machinery ravine, cinematic dark science-fantasy card art, no text"
 }

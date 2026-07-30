@@ -107,7 +107,7 @@ Each scenario has:
 - a confrontation sequence
 - a victory threshold
 
-The Grinning Tithe is the pressure-free exception: Global Escalation cannot rise or cause defeat. Every Red Threat draw comes from its shared shuffled three-card Pallid Retinue bag, and the only shared scenario objective is dealing 6 wounds to the Pallid Curator at the Cinder Gate.
+The Grinning Tithe is the pressure-free exception: Global Escalation cannot rise or cause defeat. Red, Blue, and Yellow Threats each reveal their dedicated Pallid Retinue minion. At every round end, one random card from the four-card Retinue assault deck attacks one server-selected random active operative; the deck contains the three minions and Tithe-Lock Audit hazard and reshuffles only after all four cards have appeared. The only shared scenario objective is dealing 6 wounds to the Pallid Curator at the Cinder Gate.
 
 ## Escalation
 

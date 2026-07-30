@@ -73,6 +73,13 @@ export interface ScenarioRewardDefinition {
   timing?: string;
 }
 
+export interface ScenarioRandomAssaultDefinition {
+  trigger: "round-end";
+  target: "random-active-operative";
+  drawMode: "without-replacement";
+  cardIds: string[];
+}
+
 export interface ScenarioDefinition {
   id: string;
   name: string;
@@ -94,6 +101,8 @@ export interface ScenarioDefinition {
   boardHooks: ScenarioBoardHooks;
   /** Scenario-owned Threat lane contents. Cards listed here stay out of normal global lane bags. */
   threatLaneOverrides?: Partial<Record<"red" | "blue" | "yellow", string[]>>;
+  /** Optional server-owned assault deck that interrupts the round boundary before the next operative begins. */
+  randomAssault?: ScenarioRandomAssaultDefinition;
   progressSources: string[];
   finalGateRequirement: string;
   scenarioRewards: ScenarioRewardDefinition[];
@@ -128,6 +137,11 @@ export const GRINNING_TITHE_MINION_IDS = [
   "tithe-gnawer",
   "bell-ear-stalker",
   "copper-snout-bailiff"
+] as const;
+export const GRINNING_TITHE_HAZARD_ID = "tithe-lock-audit" as const;
+export const GRINNING_TITHE_ASSAULT_CARD_IDS = [
+  ...GRINNING_TITHE_MINION_IDS,
+  GRINNING_TITHE_HAZARD_ID
 ] as const;
 
 export function getEngineModeName(modeIndex: number): string {
@@ -972,14 +986,22 @@ export const SCENARIOS: ScenarioDefinition[] = [
       collapseRule: "This scenario cannot fail from Global Escalation or round pressure."
     },
     boardHooks: {
-      redThreat: "Every Red Threat icon draws from the shuffled Pallid Retinue bag.",
-      blueThreat: "Blue Threats retain their normal server-shuffled lane behavior.",
-      yellowThreat: "Yellow Threats retain their normal server-shuffled lane behavior.",
+      redThreat: "Every Red Threat icon reveals the Tithe Gnawer.",
+      blueThreat: "Every Blue Threat icon reveals the Bell-Ear Stalker.",
+      yellowThreat: "Every Yellow Threat icon reveals the Copper-Snout Bailiff.",
       shop: "Services remain available under their normal successful-clear rules and do not advance the boss hunt.",
       anomaly: "Anomalies remain optional preparation and do not gate the final confrontation."
     },
     threatLaneOverrides: {
-      red: [...GRINNING_TITHE_MINION_IDS]
+      red: [GRINNING_TITHE_MINION_IDS[0]],
+      blue: [GRINNING_TITHE_MINION_IDS[1]],
+      yellow: [GRINNING_TITHE_MINION_IDS[2]]
+    },
+    randomAssault: {
+      trigger: "round-end",
+      target: "random-active-operative",
+      drawMode: "without-replacement",
+      cardIds: [...GRINNING_TITHE_ASSAULT_CARD_IDS]
     },
     progressSources: [
       "Pass a confrontation check against the Pallid Curator at the Cinder Gate to deal 1 wound."
@@ -1016,24 +1038,27 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Normal shops, healing, recruitment, and repair remain available but never gate or advance the boss confrontation."
     ],
     tileEventHooks: [
-      "Red Threat icons use only Tithe Gnawer, Bell-Ear Stalker, and Copper-Snout Bailiff while this scenario is active.",
-      "The three-card retinue bag is shared by all operatives, draws without replacement, and reshuffles only after exhaustion."
+      "Red, Blue, and Yellow Threat icons reveal the Tithe Gnawer, Bell-Ear Stalker, and Copper-Snout Bailiff respectively.",
+      "At each round end, the Curator draws from its four-card assault deck and attacks one randomly selected active operative.",
+      "The assault deck includes all three minions and Tithe-Lock Audit, draws without replacement, and reshuffles only after exhaustion."
     ],
     modeScaling: {
       singlePlayer: "One operative can damage the boss across repeated visits; no pressure clock shortens the hunt.",
       multiplayer:
-        "All operatives share the same six-wound boss track and shuffled retinue bag. In standard co-op, the active operative may ask up to two other operatives to assist eligible challenges and enemy battles."
+        "All operatives share the same six-wound boss track and four-card assault deck. At each round end, the server randomly selects one active operative as the assault target. In standard co-op, the targeted operative may ask up to two other operatives to assist eligible challenges and enemy battles."
     },
     setup: [
       "Set Global Escalation to 0 and disable all positive loss-pressure gains.",
-      "Prepare the three-card Pallid Retinue Red Threat bag.",
+      "Assign Tithe Gnawer to Red Threats, Bell-Ear Stalker to Blue Threats, and Copper-Snout Bailiff to Yellow Threats.",
+      "Prepare the four-card Pallid Retinue assault deck, including Tithe-Lock Audit.",
       "Place the Pallid Curator at the Cinder Gate with 6 life."
     ],
     specialRules: [
       "Global Escalation cannot increase and cannot cause defeat.",
-      "Every Red Threat draw comes from the shuffled Pallid Retinue bag.",
+      "Each printed Threat lane has one dedicated Pallid Retinue minion.",
       "Retinue cards resolve as normal public enemy battles and keep their printed rewards and wounds.",
-      "The Pallid Retinue bag is shared, draws without replacement, and reshuffles only after all three minions have appeared.",
+      "At each round end, one random card from the shared assault deck attacks one server-selected random active operative.",
+      "The assault deck draws without replacement and reshuffles only after all three minions and Tithe-Lock Audit have appeared.",
       "In standard multiplayer co-op only, the active operative may ask up to two connected operatives to add their intrinsic base stat to an eligible challenge or enemy battle before dice are rolled. Helpers add no dice.",
       "The Cinder Gate confrontation is always unlocked. Each passed boss check deals 1 wound to the Pallid Curator.",
       "The session ends in shared victory immediately when the Pallid Curator takes its sixth wound."
@@ -1046,7 +1071,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Boss damage persists between operatives and visits."
     ],
     victoryText: "When the shared boss track reaches 6 wounds, the Pallid Curator is defeated and every operative wins.",
-    designFeel: "A direct, pressure-free hunt with recurring random minions and a persistent cooperative boss health track.",
+    designFeel: "A direct, pressure-free hunt with lane-specific minions, random round-end assaults, and a persistent cooperative boss health track.",
     difficulty: "medium",
     recommendedRolloutOrder: 8,
     confrontationText:
@@ -1064,7 +1089,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     }),
     sheetArtAssetId: "scenario_sheet_grinning_tithe",
     sheetArtPrompt:
-      "The Pallid Curator, an original compact but commanding pale tribute-beast with huge asymmetrical ears, rose-copper ceramic snout, one natural eye and one magenta signal lens, tufted filaments, oversized hands and feet, black-iron collector regalia, six-spoke mechanical tithe halo and articulated tool limbs, centered on a broken tribute dais in the black-iron Cinder Gate while smaller varied pale retinue creatures emerge from ducts, magenta breach lightning, cold blue rim light and restrained ember accents, cinematic grimdark science-fantasy portrait scenario art, no text."
+      "The Pallid Curator, an original compact but commanding pale tribute-beast with huge asymmetrical ears, rose-copper ceramic snout, one natural eye and one magenta signal lens, tufted filaments, oversized hands and feet, black-iron collector regalia, six-spoke mechanical tithe halo and articulated tool limbs, centered on a broken tribute dais in the black-iron Cinder Gate. Its three pale retinue minions visibly share the same face, ears, signal lens, rose-copper fittings and halo machinery, while a fourth mechanical audit effigy closes magenta cage beams around the floor. Cold blue rim light, restrained ember accents, cinematic dark science-fantasy portrait scenario art, no text."
   },
   {
     id: "scenario_broken_concordance",

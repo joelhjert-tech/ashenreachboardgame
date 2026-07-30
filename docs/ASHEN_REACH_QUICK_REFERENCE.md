@@ -143,6 +143,7 @@ The sixteen standard passive +1 cards use the same rule: while the exact copy is
 
 - **Win Progress:** objective completion.
 - **Loss Pressure:** scenario defeat track when enabled. The Grinning Tithe disables it and cannot lose through Global Escalation.
+- **Grinning Tithe Assault:** at each round end, the server draws one of three Pallid Retinue minions or the Tithe-Lock Audit hazard without replacement, then randomly selects an active operative to resolve it.
 - **Global Escalation:** round pressure and difficulty growth.
 - **Wounds:** immediate operative harm.
 - **Scars/Afflictions:** lasting conditions.

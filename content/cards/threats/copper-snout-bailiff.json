@@ -21,7 +21,7 @@
     "amount": 2
   },
   "enemyFamily": "beast",
-  "threatLane": "red",
+  "threatLane": "yellow",
   "rarity": "rare",
   "tempo": "stall",
   "resourceTags": [
@@ -29,5 +29,5 @@
     "wound",
     "scenario"
   ],
-  "imagePrompt": "Original Ashenreach Copper-Snout Bailiff, a broad pale-furred tithe beast with iron-ringed ears, oxidized copper muzzle ram, massive banded arms, crushing hands, heavy feet, and an industrial collection hook in a scorched tribute corridor, cinematic grimdark science-fantasy card art, no text"
+  "imagePrompt": "Original Ashen Reach Copper-Snout Bailiff, a broad armored enforcer sharing the Pallid Curator's pale narrow face, enormous asymmetrical ears, rose-copper ceramic muzzle ram, one cold-blue eye and one amber-magenta signal lens, black-iron collector regalia, heavy tithe halo, mechanical balance scales and industrial collection hook, standing in a scorched tribute corridor, cinematic dark science-fantasy card art, no text"
 }

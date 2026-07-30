@@ -21,13 +21,13 @@ describe("canonical card category boundary", () => {
       return counts;
     }, {});
 
-    expect(threats).toHaveLength(203);
-    expect(categories).toEqual({ enemy: 150, hazard: 25, event: 10, encounter: 6, asset: 12 });
+    expect(threats).toHaveLength(204);
+    expect(categories).toEqual({ enemy: 150, hazard: 26, event: 10, encounter: 6, asset: 12 });
     const discoveries = threats.filter((card) => getThreatPresentationCategory(card) === "asset");
     expect(discoveries.filter((card) => card.resourceTags?.includes("gear"))).toHaveLength(7);
     expect(discoveries.filter((card) => card.resourceTags?.includes("follower"))).toHaveLength(5);
     expect(threats.filter((card) => getThreatGameplayLifecycle(card) === "battle")).toHaveLength(150);
-    expect(threats.filter((card) => getThreatGameplayLifecycle(card) === "test")).toHaveLength(53);
+    expect(threats.filter((card) => getThreatGameplayLifecycle(card) === "test")).toHaveLength(54);
     expect(threats.filter(isTrophyEligibleThreat)).toHaveLength(150);
     expect(threats.flatMap(validateThreatCategoryIdentity)).toEqual([]);
   });
@@ -37,7 +37,10 @@ describe("canonical card category boundary", () => {
     const threatIds = new Set(sectors.flatMap((sector) => sector.encounterDecks.threat));
     const scenarioThreatIds = new Set(
       SCENARIOS.flatMap((scenario) =>
-        Object.values(scenario.threatLaneOverrides ?? {}).flatMap((cardIds) => cardIds ?? [])
+        [
+          ...Object.values(scenario.threatLaneOverrides ?? {}).flatMap((cardIds) => cardIds ?? []),
+          ...(scenario.randomAssault?.cardIds ?? [])
+        ]
       )
     );
     const anomalyIds = new Set(sectors.flatMap((sector) => sector.encounterDecks.anomaly));

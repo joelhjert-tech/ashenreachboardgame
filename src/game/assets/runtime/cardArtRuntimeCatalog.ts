@@ -8,6 +8,11 @@ export interface RuntimeCardArtCatalogEntry {
 
 export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
   {
+    "cardId": "archive-shade",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/archive-shade.png"
+  },
+  {
     "cardId": "ash-choir-crusader",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/ash-choir-crusader.png"
@@ -33,6 +38,16 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/ash-rat-skitter.png"
   },
   {
+    "cardId": "ash-sash-challenger",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/ash-sash-challenger.png"
+  },
+  {
+    "cardId": "ashen-cantor-mauler",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/ashen-cantor-mauler.png"
+  },
+  {
     "cardId": "ashen-doppelganger",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/ashen-doppelganger.png"
@@ -45,7 +60,7 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
   {
     "cardId": "bell-ear-stalker",
     "cardType": "threat",
-    "outputPath": "/assets/cards/threats/red/bell-ear-stalker.png"
+    "outputPath": "/assets/cards/threats/blue/bell-ear-stalker.png"
   },
   {
     "cardId": "bell-mask-pilgrim",
@@ -58,9 +73,24 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/bellwire-snare.png"
   },
   {
+    "cardId": "boilerclaw-porter",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/boilerclaw-porter.png"
+  },
+  {
     "cardId": "bone-rivet-brute",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/bone-rivet-brute.png"
+  },
+  {
+    "cardId": "borrowed-face-scout",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/borrowed-face-scout.png"
+  },
+  {
+    "cardId": "breach-court-whisperer",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/breach-court-whisperer.png"
   },
   {
     "cardId": "breach-halberd",
@@ -78,6 +108,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/breachline-survey-vault.png"
   },
   {
+    "cardId": "briar-oath-duelist",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/briar-oath-duelist.png"
+  },
+  {
     "cardId": "bridge-toll-runt",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/bridge-toll-runt.png"
@@ -93,6 +128,16 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/broodglass-hatchfall.png"
   },
   {
+    "cardId": "cargo-hold-tyrant",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/cargo-hold-tyrant.png"
+  },
+  {
+    "cardId": "cargo-scrip-fence",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/cargo-scrip-fence.png"
+  },
+  {
     "cardId": "cartographer-under-glass",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/cartographer-under-glass.png"
@@ -101,6 +146,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "chain-maul-salvager",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/chain-maul-salvager.png"
+  },
+  {
+    "cardId": "chainwake-boarder",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/chainwake-boarder.png"
   },
   {
     "cardId": "choir-bulwark",
@@ -116,6 +166,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "choir-wraith",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/choir-wraith.png"
+  },
+  {
+    "cardId": "chordbreaker-penitent",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/chordbreaker-penitent.png"
   },
   {
     "cardId": "cinder-bone-marauder",
@@ -148,14 +203,24 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/coffin-frame-automaton.png"
   },
   {
+    "cardId": "coffin-iron-grappler",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/coffin-iron-grappler.png"
+  },
+  {
     "cardId": "copper-snout-bailiff",
     "cardType": "threat",
-    "outputPath": "/assets/cards/threats/red/copper-snout-bailiff.png"
+    "outputPath": "/assets/cards/threats/yellow/copper-snout-bailiff.png"
   },
   {
     "cardId": "copperjaw-vermin",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/copperjaw-vermin.png"
+  },
+  {
+    "cardId": "courtline-enforcer",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/courtline-enforcer.png"
   },
   {
     "cardId": "courtline-fold",
@@ -173,9 +238,39 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/crown-bell-baron.png"
   },
   {
+    "cardId": "deep-tremor-ear",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/deep-tremor-ear.png"
+  },
+  {
+    "cardId": "dimming-beacon-host",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/dimming-beacon-host.png"
+  },
+  {
+    "cardId": "dust-lock-porter",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/dust-lock-porter.png"
+  },
+  {
+    "cardId": "echo-thread-examiner",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/echo-thread-examiner.png"
+  },
+  {
+    "cardId": "ember-throat-jackal",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/ember-throat-jackal.png"
+  },
+  {
     "cardId": "emberwatch-sparkfall",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/emberwatch-sparkfall.png"
+  },
+  {
+    "cardId": "false-horizon-adept",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/false-horizon-adept.png"
   },
   {
     "cardId": "false-route-procession",
@@ -183,14 +278,39 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/false-route-procession.png"
   },
   {
+    "cardId": "final-cadence-examiner",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/final-cadence-examiner.png"
+  },
+  {
+    "cardId": "foldline-surveyor",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/foldline-surveyor.png"
+  },
+  {
     "cardId": "furnace-ditch-collapse",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/furnace-ditch-collapse.png"
   },
   {
+    "cardId": "furnace-page",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/furnace-page.png"
+  },
+  {
+    "cardId": "furnace-spine-breaker",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/furnace-spine-breaker.png"
+  },
+  {
     "cardId": "gate-choir-executioner",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/gate-choir-executioner.png"
+  },
+  {
+    "cardId": "gate-claim-diviner",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/gate-claim-diviner.png"
   },
   {
     "cardId": "gate-tax-collectors",
@@ -201,6 +321,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "gateblind-pulse",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/gateblind-pulse.png"
+  },
+  {
+    "cardId": "gatejaw-custodian",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/gatejaw-custodian.png"
   },
   {
     "cardId": "gateward-claim-jacker",
@@ -221,6 +346,16 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "glass-tick-cloud",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/glass-tick-cloud.png"
+  },
+  {
+    "cardId": "glassjaw-whelp",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/glassjaw-whelp.png"
+  },
+  {
+    "cardId": "glassstep-mimic",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/glassstep-mimic.png"
   },
   {
     "cardId": "glasswing-midge-cloud",
@@ -248,6 +383,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/grothak-gorged-king.png"
   },
   {
+    "cardId": "grubmaw-scavenger",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/grubmaw-scavenger.png"
+  },
+  {
     "cardId": "guardian-bridge-duelist",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/guardian-bridge-duelist.png"
@@ -258,9 +398,39 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/gutter-bell-mite.png"
   },
   {
+    "cardId": "hearth-charter-broker",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/hearth-charter-broker.png"
+  },
+  {
+    "cardId": "hearth-ruin-behemoth",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/hearth-ruin-behemoth.png"
+  },
+  {
+    "cardId": "hollow-decree-seer",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/hollow-decree-seer.png"
+  },
+  {
+    "cardId": "hollowroad-listener",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/hollowroad-listener.png"
+  },
+  {
+    "cardId": "hush-cant-novice",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/hush-cant-novice.png"
+  },
+  {
     "cardId": "hushed-chapel",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/hushed-chapel.png"
+  },
+  {
+    "cardId": "hymn-license-clerk",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/hymn-license-clerk.png"
   },
   {
     "cardId": "hymn-scarred-zealot",
@@ -288,6 +458,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/lalla-bubu-crownling.png"
   },
   {
+    "cardId": "lane-hook-reaver",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/lane-hook-reaver.png"
+  },
+  {
     "cardId": "lantern-ash-ghoul",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/lantern-ash-ghoul.png"
@@ -308,6 +483,16 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/latchspire-raider.png"
   },
   {
+    "cardId": "ledger-eye-clerk",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/ledger-eye-clerk.png"
+  },
+  {
+    "cardId": "lock-song-adjudicator",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/lock-song-adjudicator.png"
+  },
+  {
     "cardId": "locked-vault",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/locked-vault.png"
@@ -321,6 +506,16 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "memory-tax-gate",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/memory-tax-gate.png"
+  },
+  {
+    "cardId": "memory-weld-auditor",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/memory-weld-auditor.png"
+  },
+  {
+    "cardId": "memoryglass-larva",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/memoryglass-larva.png"
   },
   {
     "cardId": "mirror-lord-envoy",
@@ -353,9 +548,19 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/mudglass-sinkhole.png"
   },
   {
+    "cardId": "name-tithe-reader",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/name-tithe-reader.png"
+  },
+  {
     "cardId": "null-drone",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/null-drone.png"
+  },
+  {
+    "cardId": "nursery-rib-ravager",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/nursery-rib-ravager.png"
   },
   {
     "cardId": "pale-cartel-shakedown",
@@ -373,14 +578,44 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/pale-marshal.png"
   },
   {
+    "cardId": "pale-receipt-runner",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/pale-receipt-runner.png"
+  },
+  {
     "cardId": "pale-toll-enforcer",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/pale-toll-enforcer.png"
   },
   {
+    "cardId": "petal-debt-courier",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/petal-debt-courier.png"
+  },
+  {
+    "cardId": "prism-mite-cluster",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/prism-mite-cluster.png"
+  },
+  {
+    "cardId": "promise-echo-advocate",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/promise-echo-advocate.png"
+  },
+  {
     "cardId": "rail-scent-kennelmaster",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/rail-scent-kennelmaster.png"
+  },
+  {
+    "cardId": "receipt-hound",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/receipt-hound.png"
+  },
+  {
+    "cardId": "receipt-memory-bailiff",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/receipt-memory-bailiff.png"
   },
   {
     "cardId": "red-march-cannoneer",
@@ -398,6 +633,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/redglass-stray.png"
   },
   {
+    "cardId": "redwake-breaker",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/redwake-breaker.png"
+  },
+  {
     "cardId": "reflection-pawnbroker",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/reflection-pawnbroker.png"
@@ -408,9 +648,19 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/relay-husk.png"
   },
   {
+    "cardId": "relay-hymnist",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/relay-hymnist.png"
+  },
+  {
     "cardId": "relay-pilgrim-riot",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/relay-pilgrim-riot.png"
+  },
+  {
+    "cardId": "relay-spark-seeker",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/relay-spark-seeker.png"
   },
   {
     "cardId": "reliquary-judge",
@@ -421,6 +671,21 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "rift-whispers",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/rift-whispers.png"
+  },
+  {
+    "cardId": "rivet-fist-laborer",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/rivet-fist-laborer.png"
+  },
+  {
+    "cardId": "rivet-quota-keeper",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/rivet-quota-keeper.png"
+  },
+  {
+    "cardId": "roadbone-gnawer",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/roadbone-gnawer.png"
   },
   {
     "cardId": "roadside-bone-oracle",
@@ -448,6 +713,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/rust-plate-strider.png"
   },
   {
+    "cardId": "saint-frame-listener",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/saint-frame-listener.png"
+  },
+  {
     "cardId": "saint-of-ashes-echo",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/saint-of-ashes-echo.png"
@@ -466,6 +736,21 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "seal-gravel-prowler",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/seal-gravel-prowler.png"
+  },
+  {
+    "cardId": "seal-whisper-listener",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/seal-whisper-listener.png"
+  },
+  {
+    "cardId": "shardhide-pouncer",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/shardhide-pouncer.png"
+  },
+  {
+    "cardId": "shardnest-scrounger",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/shardnest-scrounger.png"
   },
   {
     "cardId": "shardvine-ambushers",
@@ -493,6 +778,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/signal-rotted-engineer.png"
   },
   {
+    "cardId": "signal-snare-spotter",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/signal-snare-spotter.png"
+  },
+  {
     "cardId": "siren-relay-echo",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/siren-relay-echo.png"
@@ -513,6 +803,21 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/soot-stained-cutpurse.png"
   },
   {
+    "cardId": "sootglass-diviner",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/sootglass-diviner.png"
+  },
+  {
+    "cardId": "spark-harvest-hound",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/spark-harvest-hound.png"
+  },
+  {
+    "cardId": "spark-ledger-tender",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/spark-ledger-tender.png"
+  },
+  {
     "cardId": "specimen-null-arrives",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/specimen-null-arrives.png"
@@ -521,6 +826,16 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "spindle-static-squall",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/spindle-static-squall.png"
+  },
+  {
+    "cardId": "splinterbody-pursuer",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/splinterbody-pursuer.png"
+  },
+  {
+    "cardId": "star-noise-interpreter",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/star-noise-interpreter.png"
   },
   {
     "cardId": "starless-taxation",
@@ -538,9 +853,19 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/static-larva-swarm.png"
   },
   {
+    "cardId": "static-veil-deacon",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/static-veil-deacon.png"
+  },
+  {
     "cardId": "suture-storm",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/suture-storm.png"
+  },
+  {
+    "cardId": "thorn-reflection-scribe",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/thorn-reflection-scribe.png"
   },
   {
     "cardId": "thousand-window-sovereign",
@@ -548,9 +873,24 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/thousand-window-sovereign.png"
   },
   {
+    "cardId": "throne-echo-medium",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/throne-echo-medium.png"
+  },
+  {
+    "cardId": "tithe-cart-drover",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/tithe-cart-drover.png"
+  },
+  {
     "cardId": "tithe-gnawer",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/tithe-gnawer.png"
+  },
+  {
+    "cardId": "tithe-lock-audit",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/tithe-lock-audit.png"
   },
   {
     "cardId": "toll-scrip-urchins",
@@ -568,6 +908,21 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/trench-blast.png"
   },
   {
+    "cardId": "tunnel-drum-brute",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/tunnel-drum-brute.png"
+  },
+  {
+    "cardId": "tunnel-toll-appraiser",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/tunnel-toll-appraiser.png"
+  },
+  {
+    "cardId": "underroad-ram",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/underroad-ram.png"
+  },
+  {
     "cardId": "veil-censor",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/veil-censor.png"
@@ -578,9 +933,19 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/veil-rift-judicator.png"
   },
   {
+    "cardId": "velvet-clause-runner",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/velvet-clause-runner.png"
+  },
+  {
     "cardId": "velvet-knife-confessor",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/velvet-knife-confessor.png"
+  },
+  {
+    "cardId": "velvet-oracle",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/velvet-oracle.png"
   },
   {
     "cardId": "violet-thorn-toll",
@@ -593,6 +958,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/void-salt-sickness.png"
   },
   {
+    "cardId": "warbell-runner",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/warbell-runner.png"
+  },
+  {
     "cardId": "webglass-echo-trap",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/webglass-echo-trap.png"
@@ -603,6 +973,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/webglass-snarefield.png"
   },
   {
+    "cardId": "welded-breach-ox",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/welded-breach-ox.png"
+  },
+  {
     "cardId": "wire-chewer-pack",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/wire-chewer-pack.png"
@@ -611,6 +986,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "wireghost-key",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/wireghost-key.png"
+  },
+  {
+    "cardId": "witness-coil",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/witness-coil.png"
   },
   {
     "cardId": "yard-ghoul-welders",

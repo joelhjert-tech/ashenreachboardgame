@@ -63,11 +63,11 @@ describe("Heat retirement H4C: Siren Relay Echo", () => {
       failEffect: { type: "next_non_battle_test_modifier", amount: -1, sourceCardId: "siren-relay-echo", stat: "command", context: "nonBattleTest" }
     });
     expect(JSON.stringify(siren)).not.toMatch(/gain_heat|lose_heat|\bHeat\b/);
-    expect(threats.size).toBe(203);
+    expect(threats.size).toBe(204);
     expect([...threats.values()].reduce<Record<string, number>>((counts, card) => {
       counts[card.threatLane ?? "missing"] = (counts[card.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
-    }, {})).toEqual({ red: 65, blue: 72, yellow: 66 });
+    }, {})).toEqual({ red: 63, blue: 74, yellow: 67 });
     for (const [id, hash] of [
       ["relay-husk", "f24c3bf5528e8a54c7756759c2711f4ac686d922a3284e6048a8325f0ad27cd6"],
       ["signal-rotted-engineer", "a631172f57f167f890a53922b1add8ed5183ab1033f2ba5b16f8a08fff6e374b"]

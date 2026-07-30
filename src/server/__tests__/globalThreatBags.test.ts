@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { BOARD_SPACES, type ThreatIcon } from "../../game/data/boardSpaces.js";
-import { GRINNING_TITHE_MINION_IDS } from "../../game/data/scenarios.js";
+import {
+  GRINNING_TITHE_ASSAULT_CARD_IDS,
+  GRINNING_TITHE_MINION_IDS
+} from "../../game/data/scenarios.js";
 import { createSeededRandomSource } from "../../game/engine/dice.js";
 import { applyEffectToState } from "../../game/engine/reducer.js";
 import { loadThreatCards } from "../../game/content/threats.js";
@@ -57,7 +60,11 @@ describe("server-owned global Threat bags", () => {
     }
     expect(reachable.size).toBe(200);
     expect(reachable).toEqual(
-      new Set([...catalog.keys()].filter((cardId) => !GRINNING_TITHE_MINION_IDS.includes(cardId as typeof GRINNING_TITHE_MINION_IDS[number])))
+      new Set([...catalog.keys()].filter(
+        (cardId) => !GRINNING_TITHE_ASSAULT_CARD_IDS.includes(
+          cardId as typeof GRINNING_TITHE_ASSAULT_CARD_IDS[number]
+        )
+      ))
     );
 
     const printedSlots = BOARD_SPACES.flatMap((space) => space.threatIcons);
@@ -70,24 +77,27 @@ describe("server-owned global Threat bags", () => {
     }
   });
 
-  it("uses the shared shuffled Pallid Retinue bag for every Red draw in The Grinning Tithe", () => {
+  it("uses one dedicated Pallid Retinue minion for each printed lane in The Grinning Tithe", () => {
     const server = createBagServer(3306, "scenario_grinning_tithe");
-    server.prepareThreatBag("red", "seat-1");
-    const firstCycle = [...server.getState().threatDrawBags!.red!.remainingCardIds];
+    const laneCards = [
+      ["red", GRINNING_TITHE_MINION_IDS[0]],
+      ["blue", GRINNING_TITHE_MINION_IDS[1]],
+      ["yellow", GRINNING_TITHE_MINION_IDS[2]]
+    ] as const;
 
-    expect(firstCycle).toHaveLength(3);
-    expect(new Set(firstCycle)).toEqual(new Set(GRINNING_TITHE_MINION_IDS));
-    expect(firstCycle.every((cardId) => catalog.get(cardId)?.threatLane === "red")).toBe(true);
+    for (const [lane, cardId] of laneCards) {
+      server.prepareThreatBag(lane, "seat-1");
+      expect(server.getState().threatDrawBags?.[lane]?.remainingCardIds).toEqual([cardId]);
+      expect(server.peekGlobalThreatId(lane, "seat-6")).toBe(cardId);
+      expect(catalog.get(cardId)?.threatLane).toBe(lane);
 
-    const first = server.peekGlobalThreatId("red", "seat-1");
-    server.getState().threatDrawBags!.red!.remainingCardIds.shift();
-    const second = server.peekGlobalThreatId("red", "seat-6");
-    expect(second).not.toBe(first);
-
-    server.getState().threatDrawBags!.red!.remainingCardIds = [];
-    server.prepareThreatBag("red", "seat-1");
-    expect(server.getState().threatDrawBags!.red).toMatchObject({ cycle: 2 });
-    expect(new Set(server.getState().threatDrawBags!.red!.remainingCardIds)).toEqual(new Set(GRINNING_TITHE_MINION_IDS));
+      server.getState().threatDrawBags![lane]!.remainingCardIds = [];
+      server.prepareThreatBag(lane, "seat-1");
+      expect(server.getState().threatDrawBags?.[lane]).toMatchObject({
+        cycle: 2,
+        remainingCardIds: [cardId]
+      });
+    }
   });
 
   it("shares one bag across seats and keeps its order private from TV and phone projections", () => {

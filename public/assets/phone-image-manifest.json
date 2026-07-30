@@ -8,9 +8,9 @@
     "metadata": "stripped"
   },
   "totals": {
-    "sources": 470,
-    "sourceBytes": 1110796238,
-    "derivativeBytes": 49168558,
+    "sources": 471,
+    "sourceBytes": 1114060667,
+    "derivativeBytes": 49340504,
     "reductionPercent": 95.57
   },
   "entries": [
@@ -1911,6 +1911,18 @@
       "derivativeBytes": 141170
     },
     {
+      "sourcePath": "/assets/cards/threats/blue/bell-ear-stalker.png",
+      "sourceHash": "47e4adc09092e2980086e7d7ee3de656d227161b44397fc549554fd93558d117",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2781302,
+      "derivativePath": "/assets/cards/threats/blue/bell-ear-stalker.phone.webp",
+      "derivativeHash": "e0307e9e1654c8553df50bb92d8a2984a37afb969fb88aa3ff5cbad7b2b4f8f4",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 115816
+    },
+    {
       "sourcePath": "/assets/cards/threats/blue/bell-mask-pilgrim.png",
       "sourceHash": "8dba2c9d7578e20f5dff25c672d77a7b847341ccc2bae1950de22f8db507722b",
       "sourceWidth": 1086,
@@ -2631,6 +2643,18 @@
       "derivativeBytes": 64936
     },
     {
+      "sourcePath": "/assets/cards/threats/blue/tithe-lock-audit.png",
+      "sourceHash": "21c03df86b4ca8a9de5fe0e1153a6d94eef58e086ca7b5620285d085ddfd8f5f",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2876568,
+      "derivativePath": "/assets/cards/threats/blue/tithe-lock-audit.phone.webp",
+      "derivativeHash": "cf18628264db45a8f8ba8df078f0819d05afe63292a26c2a842bcff410c0ef6e",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 121374
+    },
+    {
       "sourcePath": "/assets/cards/threats/blue/veil-censor.png",
       "sourceHash": "f97bcec713d7691d8cec73939618e16905053d9e5c7ea214833b99229e5c21f9",
       "sourceWidth": 1024,
@@ -2773,18 +2797,6 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 95054
-    },
-    {
-      "sourcePath": "/assets/cards/threats/red/bell-ear-stalker.png",
-      "sourceHash": "c32ab4715f64a2d78587aeda524e41f2721628dd5e28907ed127cf9c25aa3f48",
-      "sourceWidth": 1086,
-      "sourceHeight": 1448,
-      "sourceBytes": 2673240,
-      "derivativePath": "/assets/cards/threats/red/bell-ear-stalker.phone.webp",
-      "derivativeHash": "b6bb630decbabcfaa279e66b61555bf4ec31eff8720e5455448b0683eca6de11",
-      "derivativeWidth": 720,
-      "derivativeHeight": 960,
-      "derivativeBytes": 107998
     },
     {
       "sourcePath": "/assets/cards/threats/red/boilerclaw-porter.png",
@@ -2953,18 +2965,6 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 56448
-    },
-    {
-      "sourcePath": "/assets/cards/threats/red/copper-snout-bailiff.png",
-      "sourceHash": "6d8965d2ac725561b3da7e0a5b79508943fdf2c6918f4e07a7d4d9d8b98510ca",
-      "sourceWidth": 1086,
-      "sourceHeight": 1448,
-      "sourceBytes": 2783198,
-      "derivativePath": "/assets/cards/threats/red/copper-snout-bailiff.phone.webp",
-      "derivativeHash": "7b6ed612c791de3bee1e7f370f864de2de83498fdb5e45afb47cc4b2ba7fc0ba",
-      "derivativeWidth": 720,
-      "derivativeHeight": 960,
-      "derivativeBytes": 120490
     },
     {
       "sourcePath": "/assets/cards/threats/red/courtline-enforcer.png",
@@ -3376,15 +3376,15 @@
     },
     {
       "sourcePath": "/assets/cards/threats/red/tithe-gnawer.png",
-      "sourceHash": "df8b17a6bd9f0cec1a5834b11ec0dd39ed0050248f70f31a48954657126714cc",
+      "sourceHash": "da20e0e8ef4f5e4f8e5d526814b8ad1d498ef3ca15479f55ee8950034932a3ed",
       "sourceWidth": 1024,
       "sourceHeight": 1536,
-      "sourceBytes": 2668944,
+      "sourceBytes": 2751016,
       "derivativePath": "/assets/cards/threats/red/tithe-gnawer.phone.webp",
-      "derivativeHash": "c45b7bc0b0bf3f10bbde8b4c11fb2bac759cf0b087619b3f444e7b6032c59d33",
+      "derivativeHash": "86ef58d937d03abb3438d6ab9b067137c1d18a753c253297e1c437391f82d141",
       "derivativeWidth": 640,
       "derivativeHeight": 960,
-      "derivativeBytes": 85290
+      "derivativeBytes": 98722
     },
     {
       "sourcePath": "/assets/cards/threats/red/tomb-gate-colossus.png",
@@ -3541,6 +3541,18 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 114860
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/copper-snout-bailiff.png",
+      "sourceHash": "af4f48f4d0ab055349f8744d7fcb35236d35e0ba960cc3f52e38edec43c0837e",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2980925,
+      "derivativePath": "/assets/cards/threats/yellow/copper-snout-bailiff.phone.webp",
+      "derivativeHash": "bf5839654f0626d476e927056f4bf50f9f875100d25a3018a48699556bb24b30",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 149812
     },
     {
       "sourcePath": "/assets/cards/threats/yellow/copperjaw-vermin.png",

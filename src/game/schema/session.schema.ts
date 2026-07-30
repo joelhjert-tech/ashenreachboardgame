@@ -534,6 +534,19 @@ export const gameStateSchema = z.object({
       remainingCardIds: z.array(z.string().min(1))
     })
   ).optional(),
+  scenarioAssaultBag: z.object({
+    scenarioId: z.string().min(1),
+    cycle: z.number().int().min(1),
+    remainingCardIds: z.array(z.string().min(1))
+  }).nullable().optional(),
+  pendingScenarioAssault: z.object({
+    scenarioId: z.string().min(1),
+    cardId: z.string().min(1),
+    targetSeatId: z.string().min(1),
+    resumeSeatId: z.string().min(1),
+    resumePhase: z.enum(["navigation", "action"]),
+    roundNumber: z.number().int().min(1)
+  }).nullable().optional(),
   devouredThreatSectorIds: z.array(z.string().min(1)).optional(),
   escalationLevel: z.number().int().min(0),
   resolvedEscalationSourceEventIds: z.array(z.string().min(1)).optional(),

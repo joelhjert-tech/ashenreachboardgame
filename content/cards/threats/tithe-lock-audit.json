@@ -1,0 +1,35 @@
+{
+  "id": "tithe-lock-audit",
+  "type": "threat",
+  "cardType": "hazard",
+  "faction": "Pallid Retinue",
+  "title": "Tithe-Lock Audit",
+  "text": "A floating seal-engine traps the chosen operative inside intersecting receipt beams. On failure, suffer 1 Wound.",
+  "flavor": "The lock opens only after deciding what part of you counts as payment.",
+  "severity": 3,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 7,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You broke the audit lattice and recovered a cooled seal tooth."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "blue",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "salvage",
+    "wound",
+    "scenario"
+  ],
+  "imagePrompt": "Original Ashen Reach Tithe-Lock Audit environmental hazard, a hovering black-iron ritual effigy of the Pallid Curator with an abstract rose-copper ceramic faceplate, enormous asymmetrical ear-like sensor vanes, one cold-blue lens and one magenta signal lens, a six-spoke mechanical tithe halo, articulated cage arms and intersecting magenta audit beams trapping a ruined tribute floor, cinematic dark science-fantasy card art, no living body, no text"
+}
