@@ -27,7 +27,7 @@ function createBagServer(seed = 0x5eed, scenarioId = "scenario_broken_seal"): Ba
 
 describe("server-owned global Threat bags", () => {
   const catalog = loadThreatCards();
-  const expectedCounts: Record<ThreatIcon, number> = { red: 29, blue: 36, yellow: 52 };
+  const expectedCounts: Record<ThreatIcon, number> = { red: 62, blue: 72, yellow: 66 };
 
   it("prepares two complete seeded cycles per lane without duplicates inside a cycle", () => {
     for (const lane of ["red", "blue", "yellow"] as const) {
@@ -48,14 +48,14 @@ describe("server-owned global Threat bags", () => {
     }
   });
 
-  it("makes all 117 standard Threats reachable and every one of the 58 printed slots drawable", () => {
+  it("makes all 200 standard Threats reachable and every one of the 58 printed slots drawable", () => {
     const server = createBagServer(10958);
     const reachable = new Set<string>();
     for (const lane of ["red", "blue", "yellow"] as const) {
       server.prepareThreatBag(lane, "seat-1");
       server.getState().threatDrawBags![lane]!.remainingCardIds.forEach((cardId) => reachable.add(cardId));
     }
-    expect(reachable.size).toBe(117);
+    expect(reachable.size).toBe(200);
     expect(reachable).toEqual(
       new Set([...catalog.keys()].filter((cardId) => !GRINNING_TITHE_MINION_IDS.includes(cardId as typeof GRINNING_TITHE_MINION_IDS[number])))
     );

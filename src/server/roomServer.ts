@@ -186,6 +186,11 @@ import {
   resolveNamedPlayerRules
 } from "../game/rules/namedPlayerRules.js";
 import { getChallengeItemEligibility } from "../game/rules/challengeItemEligibility.js";
+import {
+  getPersistentEnemyDifficultyModifier,
+  getPersistentHazardExtraThreatLane,
+  isFirstThreatGearSuppressed
+} from "../game/rules/persistentHazards.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import { applyStartingLoadout, ARTIFACT_EXCHANGE_CONTRACT_COST } from "../game/rules/startingLoadout.js";
 import {
@@ -265,7 +270,12 @@ import type {
   AfflictionReactionResolvedAction,
   RollModifierSource
 } from "../game/engine/actions.js";
-import { getCharacterStatBreakdown, getEquippedGearItem, getEquippedGearModifierSources } from "../game/engine/gear.js";
+import {
+  getCharacterStatBreakdown,
+  getCompanionStatModifierSources,
+  getEquippedGearItem,
+  getEquippedGearModifierSources
+} from "../game/engine/gear.js";
 import { getMovementProfile } from "../game/rules/movementPhase.js";
 import type {
   AnomalyCard,
@@ -2932,10 +2942,14 @@ export class GameRoomServer {
       sources.push({ label: `Permanent ${CHALLENGE_LABELS[stat]}`, value: permanent });
     }
 
-    sources.push(...getEquippedGearModifierSources(player.character, stat, {
-      mode,
-      suppressedInstanceIds: getSuppressedEquipmentInstanceIds(this.state, player.seatId, this.state.activeResolution?.id)
-    }));
+    if (isFirstThreatGearSuppressed(this.state.tileArrivalThreatProgress)) {
+      sources.push(...getCompanionStatModifierSources(player.character, stat));
+    } else {
+      sources.push(...getEquippedGearModifierSources(player.character, stat, {
+        mode,
+        suppressedInstanceIds: getSuppressedEquipmentInstanceIds(this.state, player.seatId, this.state.activeResolution?.id)
+      }));
+    }
     sources.push(...getAfflictionModifierSources(player, stat, mode, getAfflictionCatalog(this.state)));
     sources.push(...this.getCharacterModifierSources(player, stat, mode));
     sources.push(...this.consumeScarRollModifierSources(player, stat, mode));
@@ -4266,7 +4280,7 @@ export class GameRoomServer {
         : activeResolution.roll.target;
     const total = roll.total + statBonus;
     const success = total >= difficulty;
-    const baseOutcomeEffect = success ? encounter.successEffect : encounter.failEffect;
+    const baseOutcomeEffect = this.getHazardOutcomeEffect(encounter, success);
     const resolvedOutcomeEffect = this.resolveThreatOutcomeEffect(
       intent.seatId,
       encounter,
@@ -4356,7 +4370,7 @@ export class GameRoomServer {
       const success = finalTotal >= resolution.roll.target;
       const sourceEffect = encounter.cardType === "enemy"
         ? (success ? encounter.defeatReward : encounter.woundOnLoss ?? { type: "take_wound", amount: 1 })
-        : (success ? encounter.successEffect : encounter.failEffect);
+        : this.getHazardOutcomeEffect(encounter, success);
       const effect = this.resolveThreatOutcomeEffect(intent.seatId, encounter, sourceEffect, success ? encounter.successEffectKey : encounter.failEffectKey, success ? "onSuccess" : "onFailure");
       this.state = {
         ...this.state,
@@ -4388,7 +4402,9 @@ export class GameRoomServer {
       const encounter = this.state.currentEncounter;
       if (!resolution?.roll || !encounter || resolution.roll.finalTotal !== resolution.roll.target - 1) throw new IntentRejectedError(intent.type, "The battle is no longer exactly one point short");
       const finalTotal = resolution.roll.finalTotal + 1;
-      const successEffect = encounter.cardType === "enemy" ? encounter.defeatReward : encounter.successEffect;
+      const successEffect = encounter.cardType === "enemy"
+        ? encounter.defeatReward
+        : this.getHazardOutcomeEffect(encounter, true);
       const effect = this.resolveThreatOutcomeEffect(intent.seatId, encounter, successEffect, encounter.successEffectKey, "onSuccess");
       this.state = { ...this.state, pendingEffect: effect, activeResolution: { ...resolution, roll: { ...resolution.roll, modifierTotal: resolution.roll.modifierTotal + 1, finalTotal, success: true }, outcome: { title: "Scar turned the battle", text: `${control.scarName} added +1.`, effects: [control.effectText] } } };
     } else if (control.ruleKey === "prevent-equipment-suppression") {
@@ -8070,12 +8086,22 @@ export class GameRoomServer {
         threatLanes.push(persistentLane);
         threatRuleIds.push(`persistent:${persistentId}:${persistentLane}`);
       }
+      const extraThreatLane = getPersistentHazardExtraThreatLane(
+        this.state,
+        boardSpace.id,
+        boardSpace.threatIcons[0]
+      );
       const remaining = calculateExplorationDraws(boardSpace, this.getCurrentSectorThreatCards(player));
       boardSpace.threatIcons.forEach((lane, index) => {
-        if (remaining[lane] <= 0) return;
-        remaining[lane] -= 1;
-        threatLanes.push(lane);
-        threatRuleIds.push(`threat:${index}:${lane}`);
+        if (remaining[lane] > 0) {
+          remaining[lane] -= 1;
+          threatLanes.push(lane);
+          threatRuleIds.push(`threat:${index}:${lane}`);
+        }
+        if (index === 0 && extraThreatLane === lane) {
+          threatLanes.push(lane);
+          threatRuleIds.push(`persistent-rule:deadwire-repeater:${lane}`);
+        }
       });
     }
     return {
@@ -8904,9 +8930,7 @@ export class GameRoomServer {
           ? success
             ? encounter.defeatReward
             : encounter.woundOnLoss
-          : success
-            ? encounter.successEffect
-            : encounter.failEffect;
+          : this.getHazardOutcomeEffect(encounter, success);
       const baseEffect = this.combineEffects(
         [keyedModifiers.effect, authoredEffect].filter((entry): entry is EncounterEffect => Boolean(entry))
       ) ?? authoredEffect;
@@ -9006,10 +9030,13 @@ export class GameRoomServer {
     const total = roll.total + statBonus;
     const success = total >= difficulty;
     const baseOutcomeEffect = this.combineEffects(
-      [keyedModifiers.effect, success ? encounter.successEffect : encounter.failEffect].filter(
+      [
+        keyedModifiers.effect,
+        this.getHazardOutcomeEffect(encounter, success)
+      ].filter(
         (effect): effect is EncounterEffect => Boolean(effect)
       )
-    ) ?? (success ? encounter.successEffect : encounter.failEffect);
+    ) ?? this.getHazardOutcomeEffect(encounter, success);
     const resolvedOutcomeEffect = this.resolveThreatOutcomeEffect(
       intent.seatId,
       encounter,
@@ -10776,6 +10803,10 @@ export class GameRoomServer {
     const keyedModifiers = this.resolveThreatEffectKeys(fighterSeatId, encounter, encounter.combatEffectKeys, "beforeCombat");
     const boardTier = getBoardSpace(player.character.currentSpaceId)?.tier ?? "unknown";
     const soloCombatEase = getSoloCombatDifficultyEase(this.state.sessionMode, boardTier);
+    const persistentHazardEnemyModifier = getPersistentEnemyDifficultyModifier(
+      this.state,
+      player.character.currentSpaceId
+    );
     const modifierSources = this.buildStatModifierSources(player, stat, "battle", {
       scenarioModifier: this.getScenarioBattleModifier(fighterSeatId),
       keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0,
@@ -10792,7 +10823,11 @@ export class GameRoomServer {
     const statBonus = this.sumModifierSources(modifierSources);
     const easedEncounterDifficulty = Math.max(
       0,
-      encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0) - soloCombatEase
+      encounter.difficulty +
+        escalationModifier +
+        (keyedModifiers.difficultyModifier ?? 0) +
+        persistentHazardEnemyModifier -
+        soloCombatEase
     );
     const enemyBonus = easedEncounterDifficulty;
     const scenarioEnemyBonus = this.getScenarioEnemyBattleModifier();
@@ -10801,6 +10836,9 @@ export class GameRoomServer {
     const oppositionModifierSources = namedEnemyModifier > 0
       ? [{ label: CW_ENEMY_MODIFIER_LABEL, value: namedEnemyModifier }]
       : [];
+    if (persistentHazardEnemyModifier > 0) {
+      oppositionModifierSources.push({ label: "Emberlung Vent", value: persistentHazardEnemyModifier });
+    }
     const total = playerRoll.total + statBonus;
     const enemyTotal = enemyRoll.total + enemyBonus + scenarioEnemyBonus + keyedEnemyBonus + namedEnemyModifier;
     const success = total >= enemyTotal;
@@ -10978,6 +11016,21 @@ export class GameRoomServer {
       type: "sequence",
       effects
     };
+  }
+
+  private getHazardOutcomeEffect(
+    encounter: Extract<ThreatCard, { cardType: "hazard" }>,
+    success: boolean
+  ): EncounterEffect | undefined {
+    if (!success) {
+      return encounter.failEffect;
+    }
+
+    return this.combineEffects(
+      [encounter.clearReward, encounter.successEffect].filter(
+        (effect): effect is EncounterEffect => Boolean(effect)
+      )
+    ) ?? undefined;
   }
 
   private resolveSectorCardResolution(seatId: string, deckKind: BoardTextDeckKind | null): SectorCardResolution | null {

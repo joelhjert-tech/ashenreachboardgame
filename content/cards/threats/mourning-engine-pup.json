@@ -7,10 +7,10 @@
   "enemyName": "Mourning Engine Pup",
   "text": "A small war-machine prowls the road, still searching for the dead master it was built to guard.",
   "flavor": "It whines through a furnace grille.",
-  "severity": 3,
+  "severity": 1,
   "region": "middle",
   "stat": "forge",
-  "difficulty": 9,
+  "difficulty": 3,
   "trophyValue": 1,
   "defeatReward": {
     "type": "sequence",

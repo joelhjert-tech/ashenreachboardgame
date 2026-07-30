@@ -1,0 +1,33 @@
+{
+  "id": "glassstep-mimic",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Mirror Wake",
+  "title": "Glassstep Mimic",
+  "enemyName": "Glassstep Mimic",
+  "text": "Glassstep Mimic repeats every footfall from the wrong direction until the route seems surrounded. On loss, suffer 1 Wound.",
+  "flavor": "The extra step is always closer.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Glassstep Mimic is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Glassstep Mimic: repeats every footfall from the wrong direction until the route seems surrounded; translucent anatomy, fractured reflections, and asymmetrical glass growth; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

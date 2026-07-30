@@ -1,0 +1,33 @@
+{
+  "id": "dimming-beacon-host",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Last Light Engine",
+  "title": "Dimming Beacon Host",
+  "enemyName": "Dimming Beacon Host",
+  "text": "Dimming Beacon Host carries a failing navigation lamp whose repair routines overwrite nearby instruments. On loss, suffer 1 Wound.",
+  "flavor": "Every fix makes the darkness more precise.",
+  "severity": 1,
+  "region": "global",
+  "stat": "forge",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Dimming Beacon Host is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Dimming Beacon Host: carries a failing navigation lamp whose repair routines overwrite nearby instruments; industrial joints, patched plating, exposed cables, and work lights; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

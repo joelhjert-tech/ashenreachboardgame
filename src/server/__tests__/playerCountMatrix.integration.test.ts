@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { getBattleAssistViewModel, getInventoryCards } from "../../client/phone/inventoryPresentation.js";
 import type { PhonePatchPayload } from "../../client/shared/types.js";
 import { loadGear } from "../../game/content/gear.js";
+import { BOARD_SPACES } from "../../game/data/boardSpaces.js";
 import { createSequenceRandomSource } from "../../game/engine/dice.js";
 import type { EnemyThreatCard } from "../../game/schema/card.schema.js";
 import { createJoinToken, createHostToken } from "../auth.js";
@@ -229,7 +230,11 @@ function statePatchForActiveTurnLength(length: number): (message: ServerEnvelope
 function getFirstNeighborForSeat(state: GameState, seatId: string): string {
   const player = state.players.find((entry) => entry.seatId === seatId);
   const sector = state.sectors.find((entry) => entry.id === player?.character.currentSpaceId);
-  const neighbor = sector?.neighbors[0];
+  const neighbor =
+    sector?.neighbors.find(
+      (neighborId) =>
+        BOARD_SPACES.find((space) => space.id === neighborId)?.threatIcons.length === 0
+    ) ?? sector?.neighbors[0];
 
   if (!neighbor) {
     throw new Error(`Missing neighbor for ${seatId}`);

@@ -1,0 +1,33 @@
+{
+  "id": "memoryglass-larva",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Shardborn Brood",
+  "title": "Memoryglass Larva",
+  "enemyName": "Memoryglass Larva",
+  "text": "Memoryglass Larva feeds on repeated thoughts and grows a new facet for every remembered route. On loss, suffer 1 Wound.",
+  "flavor": "Forget the road quickly, before it learns the way home.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Memoryglass Larva is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Memoryglass Larva: feeds on repeated thoughts and grows a new facet for every remembered route; translucent anatomy, fractured reflections, and asymmetrical glass growth; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

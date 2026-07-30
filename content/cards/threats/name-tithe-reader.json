@@ -1,0 +1,33 @@
+{
+  "id": "name-tithe-reader",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Pallid Retinue",
+  "title": "Name-Tithe Reader",
+  "enemyName": "Name-Tithe Reader",
+  "text": "Name-Tithe Reader reads old names from blank paper until one of them answers from inside the expedition. On loss, suffer 1 Wound.",
+  "flavor": "The ledger remembers people who never existed.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Name-Tithe Reader is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Name-Tithe Reader: reads old names from blank paper until one of them answers from inside the expedition; stamps, ledgers, measuring tools, and severe ceremonial clothing; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

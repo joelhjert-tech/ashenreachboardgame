@@ -7,14 +7,14 @@
   "enemyName": "Ash-Court Duelist",
   "text": "A ritual challenger steps from a ruined gallery and demands recognition before steel.",
   "flavor": "The court is dead. Its etiquette is not.",
-  "severity": 3,
+  "severity": 1,
   "region": "middle",
   "stat": "command",
-  "difficulty": 9,
-  "trophyValue": 2,
+  "difficulty": 3,
+  "trophyValue": 1,
   "defeatReward": {
     "type": "gain_trophy",
-    "amount": 2
+    "amount": 1
   },
   "woundOnLoss": {
     "type": "take_wound",

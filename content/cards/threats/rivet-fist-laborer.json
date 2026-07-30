@@ -1,0 +1,33 @@
+{
+  "id": "rivet-fist-laborer",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Iron Synod",
+  "title": "Rivet-Fist Laborer",
+  "enemyName": "Rivet-Fist Laborer",
+  "text": "Rivet-Fist Laborer continues a long-abandoned construction order by hammering trespassers into the floor. On loss, suffer 1 Wound.",
+  "flavor": "The shift ended generations ago. The labor did not.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Rivet-Fist Laborer is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Rivet-Fist Laborer: continues a long-abandoned construction order by hammering trespassers into the floor; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

@@ -1,0 +1,33 @@
+{
+  "id": "final-cadence-examiner",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Ashen Choir",
+  "title": "Final Cadence Examiner",
+  "enemyName": "Final Cadence Examiner",
+  "text": "Final Cadence Examiner tests each voice against a perfect closing note and condemns every living variation. On loss, suffer 1 Wound.",
+  "flavor": "Perfection leaves no room to breathe.",
+  "severity": 2,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 4,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Final Cadence Examiner is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "choir",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Final Cadence Examiner: tests each voice against a perfect closing note and condemns every living variation; ritual signal equipment, ash-dark vestments, and resonant metal ornaments; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

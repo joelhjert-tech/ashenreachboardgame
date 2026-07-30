@@ -1,0 +1,33 @@
+{
+  "id": "gate-claim-diviner",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Rift Court",
+  "title": "Gate-Claim Diviner",
+  "enemyName": "Gate-Claim Diviner",
+  "text": "Gate-Claim Diviner reads ownership in the vibrations of locked hinges and declares every gate Court property. On loss, suffer 1 Wound.",
+  "flavor": "A closed door is merely a verdict waiting to speak.",
+  "severity": 2,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 4,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Gate-Claim Diviner is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Gate-Claim Diviner: reads ownership in the vibrations of locked hinges and declares every gate Court property; stamps, ledgers, measuring tools, and severe ceremonial clothing; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

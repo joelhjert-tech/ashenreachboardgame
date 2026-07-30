@@ -9,7 +9,7 @@
   "flavor": "The mask is official. The fear inside it is not.",
   "severity": 1,
   "region": "outer",
-  "stat": "command",
+  "stat": "guile",
   "difficulty": 3,
   "trophyValue": 1,
   "defeatReward": {

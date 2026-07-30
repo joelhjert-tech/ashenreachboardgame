@@ -1,0 +1,47 @@
+{
+  "id": "latchfog-nullfield",
+  "type": "threat",
+  "cardType": "hazard",
+  "faction": "Mirror Wake",
+  "title": "Latchfog Nullfield",
+  "text": "A reflective fog unfastens every practiced tool from its purpose. On failure, suffer 1 Wound and fix this Hazard to the sector. While fixed, equipped Gear contributes no stat bonuses to the first Threat resolved on each arrival.",
+  "flavor": "Your hands remember the tool. The tool remembers someone else.",
+  "severity": 4,
+  "stat": "guile",
+  "difficulty": 8,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
+  "persistentRule": {
+    "type": "equipment_nullfield",
+    "scope": "first_threat",
+    "suppression": "equipped_gear_bonuses"
+  },
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You pinned the false reflections and recovered the nullfield's anchor."
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "return_threat_to_space"
+      }
+    ]
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "red",
+  "region": "global",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "salvage",
+    "gear",
+    "wound"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "id": "spark-ledger-tender",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Last Light Engine",
+  "title": "Spark-Ledger Tender",
+  "enemyName": "Spark-Ledger Tender",
+  "text": "Spark-Ledger Tender marks every charged device as reactor property and begins disassembly before the ink dries. On loss, suffer 1 Wound.",
+  "flavor": "Its inventory has only one destination.",
+  "severity": 1,
+  "region": "global",
+  "stat": "forge",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Spark-Ledger Tender is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Spark-Ledger Tender: marks every charged device as reactor property and begins disassembly before the ink dries; industrial joints, patched plating, exposed cables, and work lights; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

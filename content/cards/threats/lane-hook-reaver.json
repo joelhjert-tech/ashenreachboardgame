@@ -1,0 +1,33 @@
+{
+  "id": "lane-hook-reaver",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Red Maw Raiders",
+  "title": "Lane-Hook Reaver",
+  "enemyName": "Lane-Hook Reaver",
+  "text": "Lane-Hook Reaver anchors a hooked chain into the route and pulls travelers out of formation. On loss, suffer 1 Wound.",
+  "flavor": "Every road is a boarding plank if the hook holds.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Lane-Hook Reaver is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Lane-Hook Reaver: anchors a hooked chain into the route and pulls travelers out of formation; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

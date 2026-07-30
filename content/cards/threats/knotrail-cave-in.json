@@ -1,0 +1,46 @@
+{
+  "id": "knotrail-cave-in",
+  "type": "threat",
+  "cardType": "hazard",
+  "faction": "Red Maw Raiders",
+  "title": "Knotrail Cave-In",
+  "text": "Raiders have folded a transit rail into a barbed knot. On failure, suffer 1 Wound and fix this Hazard to the sector. Operatives may enter the blocked sector, but no movement route may cross through it until the Cave-In is cleared.",
+  "flavor": "A road can be held hostage without a guard.",
+  "severity": 4,
+  "stat": "grit",
+  "difficulty": 8,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
+  "persistentRule": {
+    "type": "route_cave_in",
+    "mode": "may_enter_not_cross"
+  },
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You cut the knotted rail apart and reopened the through-route."
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "return_threat_to_space"
+      }
+    ]
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "region": "global",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "salvage",
+    "movement",
+    "wound"
+  ]
+}

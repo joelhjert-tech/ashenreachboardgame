@@ -1,0 +1,33 @@
+{
+  "id": "saint-frame-listener",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Iron Synod",
+  "title": "Saint-Frame Listener",
+  "enemyName": "Saint-Frame Listener",
+  "text": "Saint-Frame Listener opens a ring of preserved ears and triangulates the smallest lie in the route noise. On loss, suffer 1 Wound.",
+  "flavor": "It was built to hear testimony, not mercy.",
+  "severity": 2,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 6,
+  "trophyValue": 3,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Saint-Frame Listener is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Saint-Frame Listener: opens a ring of preserved ears and triangulates the smallest lie in the route noise; industrial joints, patched plating, exposed cables, and work lights; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

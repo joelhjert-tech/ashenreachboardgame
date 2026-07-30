@@ -1,0 +1,33 @@
+{
+  "id": "shardnest-scrounger",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Shardborn Brood",
+  "title": "Shardnest Scrounger",
+  "enemyName": "Shardnest Scrounger",
+  "text": "Shardnest Scrounger builds a glittering nest from stripped mechanisms and defends each stolen spring as an egg. On loss, suffer 1 Wound.",
+  "flavor": "The nest clicks even when the creature sleeps.",
+  "severity": 1,
+  "region": "global",
+  "stat": "forge",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Shardnest Scrounger is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Shardnest Scrounger: builds a glittering nest from stripped mechanisms and defends each stolen spring as an egg; translucent anatomy, fractured reflections, and asymmetrical glass growth; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

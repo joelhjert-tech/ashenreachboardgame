@@ -1,0 +1,33 @@
+{
+  "id": "tithe-cart-drover",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Pallid Retinue",
+  "title": "Tithe-Cart Drover",
+  "enemyName": "Tithe-Cart Drover",
+  "text": "Tithe-Cart Drover steers a rattling collection cart across the route and sweeps unattended gear into its locked bins. On loss, suffer 1 Wound.",
+  "flavor": "The cart is never full, only overdue.",
+  "severity": 1,
+  "region": "global",
+  "stat": "forge",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Tithe-Cart Drover is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Tithe-Cart Drover: steers a rattling collection cart across the route and sweeps unattended gear into its locked bins; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

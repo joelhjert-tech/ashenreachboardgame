@@ -1,0 +1,33 @@
+{
+  "id": "hymn-license-clerk",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Ashen Choir",
+  "title": "Hymn-License Clerk",
+  "enemyName": "Hymn-License Clerk",
+  "text": "Hymn-License Clerk demands proof that every spoken frequency has been approved by the Glass Prophet's registry. On loss, suffer 1 Wound.",
+  "flavor": "Unlicensed breathing is still a violation.",
+  "severity": 1,
+  "region": "global",
+  "stat": "guile",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Hymn-License Clerk is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Hymn-License Clerk: demands proof that every spoken frequency has been approved by the Glass Prophet's registry; stamps, ledgers, measuring tools, and severe ceremonial clothing; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

@@ -152,14 +152,14 @@ describe("Heat Retirement H8B Marrow Tax Auditors", () => {
       .filter((sector) => sector.encounterDecks.threat.includes(TARGET_ID))
       .map((sector) => sector.id)
       .sort()).toEqual(EXPECTED_SECTORS);
-    expect(threats.size).toBe(120);
+    expect(threats.size).toBe(203);
     expect([...threats.values()].reduce<Record<string, number>>((counts, threat) => {
       counts[threat.threatLane ?? "missing"] = (counts[threat.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
-    }, {})).toEqual({ red: 32, blue: 36, yellow: 52 });
+    }, {})).toEqual({ red: 65, blue: 72, yellow: 66 });
   });
 
-  it("grants the exact discovery follower without changing Salvage or creating a loss result", () => {
+  it("grants the exact discovery follower plus the standard clear reward without creating a loss result", () => {
     const card = requireTarget();
     const state = createInitialSessionState("h8b-success", "single-player");
     state.status = "active";
@@ -179,7 +179,7 @@ describe("Heat Retirement H8B Marrow Tax Auditors", () => {
     server.resolveCheckIntent({ type: "CHECK_REQUESTED", seatId: "seat-1", stat: "guile" });
     const resolved = server.getState();
     expect(resolved.pendingEffect).toBeNull();
-    expect(resolved.players[0]!.character.salvage).toBe(3);
+    expect(resolved.players[0]!.character.salvage).toBe(4);
     expect(resolved.players[0]!.character.followers?.filter((follower) => follower.id === "pale-cartel-fixer")).toHaveLength(1);
     expect(resolved.activeResolution?.outcome?.salvageLoss).toBeUndefined();
     expect((resolved.eventLog as Array<{ type?: string }>).filter((event) => event.type === "RESOLUTION_APPLIED")).toHaveLength(1);

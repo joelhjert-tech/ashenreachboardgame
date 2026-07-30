@@ -9,7 +9,7 @@
   "flavor": "It does not charge. It permits the distance to close.",
   "severity": 2,
   "region": "outer",
-  "stat": "command",
+  "stat": "forge",
   "difficulty": 5,
   "trophyValue": 2,
   "combatEffectKeys": [

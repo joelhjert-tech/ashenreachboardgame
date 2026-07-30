@@ -1,0 +1,33 @@
+{
+  "id": "spark-harvest-hound",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Last Light Engine",
+  "title": "Spark-Harvest Hound",
+  "enemyName": "Spark-Harvest Hound",
+  "text": "Spark-Harvest Hound sniffs out charged equipment and bites until the current changes owners. On loss, suffer 1 Wound.",
+  "flavor": "Its tail wags only when a circuit dies.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Spark-Harvest Hound is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Spark-Harvest Hound: sniffs out charged equipment and bites until the current changes owners; industrial joints, patched plating, exposed cables, and work lights; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

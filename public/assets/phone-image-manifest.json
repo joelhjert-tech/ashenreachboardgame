@@ -8,10 +8,10 @@
     "metadata": "stripped"
   },
   "totals": {
-    "sources": 392,
-    "sourceBytes": 908267288,
-    "derivativeBytes": 42512894,
-    "reductionPercent": 95.32
+    "sources": 470,
+    "sourceBytes": 1110796238,
+    "derivativeBytes": 49168558,
+    "reductionPercent": 95.57
   },
   "entries": [
     {
@@ -1863,6 +1863,18 @@
       "derivativeBytes": 9676
     },
     {
+      "sourcePath": "/assets/cards/threats/blue/archive-shade.png",
+      "sourceHash": "76ef77133454ce167d85c3d58ffecc3eede21bcdef00b8ef175fcdeeaf5309f3",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2554145,
+      "derivativePath": "/assets/cards/threats/blue/archive-shade.phone.webp",
+      "derivativeHash": "597d3cca379b0bb9afab2090fd9e15005dc56eec2f9592513de7d387c699db5b",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 80854
+    },
+    {
       "sourcePath": "/assets/cards/threats/blue/ash-choir-crusader.png",
       "sourceHash": "74e19330cb75838b366f205b6ae547bbc7d3a3b87c2e645b4ce64c484573bce3",
       "sourceWidth": 1086,
@@ -1921,6 +1933,30 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 72534
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/borrowed-face-scout.png",
+      "sourceHash": "35153dce1d74f5ad20a9938987627c890b893088a84569f69bfd2e3a2a4f5cd5",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2211524,
+      "derivativePath": "/assets/cards/threats/blue/borrowed-face-scout.phone.webp",
+      "derivativeHash": "c912a2d7349ea1661fdbbe0b89e4a8f5b76398238d73346e20703b04990e50b1",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 58164
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/breach-court-whisperer.png",
+      "sourceHash": "fb1d06c601f742d219db104cea3971025ec0e9b27097c5121b08a3bb818f8b48",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2379527,
+      "derivativePath": "/assets/cards/threats/blue/breach-court-whisperer.phone.webp",
+      "derivativeHash": "cb81bbf2766a1245bc8cf85a03f654bfe9047885f4d313d26ae47b36a868d58f",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 70232
     },
     {
       "sourcePath": "/assets/cards/threats/blue/breachline-survey-vault.png",
@@ -1995,6 +2031,42 @@
       "derivativeBytes": 100068
     },
     {
+      "sourcePath": "/assets/cards/threats/blue/deep-tremor-ear.png",
+      "sourceHash": "1f8e6fc2fe8fe5f80415d581cdf2b9583d954d7edbc30469cb0edb74b1410bb3",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2918065,
+      "derivativePath": "/assets/cards/threats/blue/deep-tremor-ear.phone.webp",
+      "derivativeHash": "13c4b6d5a718270f3f0d30453d617b92d518655677f4964a0d8441b6dacd9673",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 107352
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/dimming-beacon-host.png",
+      "sourceHash": "49f061d6416a537bc33453687f5d6f59668a61ef350094e719301b957ddec844",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2564997,
+      "derivativePath": "/assets/cards/threats/blue/dimming-beacon-host.phone.webp",
+      "derivativeHash": "6b7efa57b20d35ad39fad65eb3b7cc61362e1b969f4a60491fc79380be8e4e43",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 90114
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/echo-thread-examiner.png",
+      "sourceHash": "6a70af52a620b2d5009be45143f2c5124e9c8f00425153dcf393500a7f59606c",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2621948,
+      "derivativePath": "/assets/cards/threats/blue/echo-thread-examiner.phone.webp",
+      "derivativeHash": "2718cdbe78f5e4673829a770cbfc95032bfe7519ee9f34ee39ceb8cbe7daab2d",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 91282
+    },
+    {
       "sourcePath": "/assets/cards/threats/blue/emberwatch-sparkfall.png",
       "sourceHash": "50fc1bc6e1df12d97b92451b2cb3240d79743bc0152435d82d68bfdb40682e73",
       "sourceWidth": 1086,
@@ -2005,6 +2077,54 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 138998
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/false-horizon-adept.png",
+      "sourceHash": "88f6ac66a0cd6f2a2da35c12f2fb92c6eb8369a6d2f7d43a7a442c168fdf21cd",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2544523,
+      "derivativePath": "/assets/cards/threats/blue/false-horizon-adept.phone.webp",
+      "derivativeHash": "d572c5fe24a45c012f203ffe2a205482239e91ceb1a25e043d52da3daa86389c",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 79818
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/final-cadence-examiner.png",
+      "sourceHash": "df66d2024d989a878691466339faa7be71a18a14087774972bc75d58434874fb",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2661114,
+      "derivativePath": "/assets/cards/threats/blue/final-cadence-examiner.phone.webp",
+      "derivativeHash": "321f5e42fac1a448c2abf6581de60de6ba18c6af0ce8818d27ba06d8954823cf",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 100794
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/foldline-surveyor.png",
+      "sourceHash": "f63cfa102cb97731937c24aafe183dcf7ebe08bb087f3775508f5ea37b7f5db3",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2346279,
+      "derivativePath": "/assets/cards/threats/blue/foldline-surveyor.phone.webp",
+      "derivativeHash": "ab37ff3ec9ec9c9e26915061635c1cb49239b7efb937268ceebbee2d90d62801",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 60370
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/gate-claim-diviner.png",
+      "sourceHash": "f0d526d9ef0bac792f99dd87b7fbfa48d643f8ab156380f3c5da550feb3d9c88",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2468922,
+      "derivativePath": "/assets/cards/threats/blue/gate-claim-diviner.phone.webp",
+      "derivativeHash": "8febd3bf085cea90579dc5bf46644207fd68108995af8cb6dbf6e23b7278ee39",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 67170
     },
     {
       "sourcePath": "/assets/cards/threats/blue/gateblind-pulse.png",
@@ -2043,6 +2163,18 @@
       "derivativeBytes": 113832
     },
     {
+      "sourcePath": "/assets/cards/threats/blue/glassstep-mimic.png",
+      "sourceHash": "95ee5734920b77fb0bfbfc2fecb71ae4157c594fb2330d736003777def5624cd",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2600588,
+      "derivativePath": "/assets/cards/threats/blue/glassstep-mimic.phone.webp",
+      "derivativeHash": "edf82a8004970df0d6bf34cf0df39c20f686ea1eb0a3eab2d661aa3f524acbf0",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 88164
+    },
+    {
       "sourcePath": "/assets/cards/threats/blue/glasswing-midge-cloud.png",
       "sourceHash": "0be87dbde7284c4868726f435986e427cd41d2b862a4b5956aee65564ced099b",
       "sourceWidth": 1086,
@@ -2079,6 +2211,42 @@
       "derivativeBytes": 75312
     },
     {
+      "sourcePath": "/assets/cards/threats/blue/hollow-decree-seer.png",
+      "sourceHash": "5154fda2ea420e6b885110ffde3bcfbf3ca85219bca9679683b708da69bd2cd7",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2573209,
+      "derivativePath": "/assets/cards/threats/blue/hollow-decree-seer.phone.webp",
+      "derivativeHash": "18a13a50192fe16ccced8b57b6d52096342dc15a5ba9f93bc939b7ed52ed44ae",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 92252
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/hollowroad-listener.png",
+      "sourceHash": "0db674003e7ffb0ff1450e07f4699df02d46c2bc71741258eb7bb7c73ab46df6",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2717276,
+      "derivativePath": "/assets/cards/threats/blue/hollowroad-listener.phone.webp",
+      "derivativeHash": "32515143872c9c30bd0ca3232649af3cee0e08ee95d4971cc0d9e5feba6abb11",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 75062
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/hush-cant-novice.png",
+      "sourceHash": "d4ac95538e3f45c23280608a3d3d73982c128a7cacc6be8bed2558135baec5ca",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2474822,
+      "derivativePath": "/assets/cards/threats/blue/hush-cant-novice.phone.webp",
+      "derivativeHash": "c0113f14a9b0d95ba5fe6aa0e41b409dd197536ff41312d6edb82405a1ce4625",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 78740
+    },
+    {
       "sourcePath": "/assets/cards/threats/blue/hushed-chapel.png",
       "sourceHash": "fc30c8649bbfdd25bd443434f04b4c2c6ba7cb5bf27c31f2d8b964c9a3557b58",
       "sourceWidth": 1024,
@@ -2101,6 +2269,54 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 160190
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/ledger-eye-clerk.png",
+      "sourceHash": "6b7eaefe92335ba7c9b7377e1d2d21e3ef420e6aa27f498637eae4878f7ca291",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2553587,
+      "derivativePath": "/assets/cards/threats/blue/ledger-eye-clerk.phone.webp",
+      "derivativeHash": "72e66b0bdc9fc410c18e85d6263665b19e471a5a4cf90b68aa413befaadf3254",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 82646
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/lock-song-adjudicator.png",
+      "sourceHash": "30928bd0c36c15be29db95dfa91e195182ad4adb27904a5fc9be301c7c1d49c3",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2584037,
+      "derivativePath": "/assets/cards/threats/blue/lock-song-adjudicator.phone.webp",
+      "derivativeHash": "a4704dffa3aeb1cb16670bfc2a108989aea324b67e809fc0d8e698cd5df9dfa5",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 89442
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/memory-weld-auditor.png",
+      "sourceHash": "3f8ca0849d638504b049614fbb621fdfe9a35fbb9efd5634a12f1e3a10613f6c",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2452850,
+      "derivativePath": "/assets/cards/threats/blue/memory-weld-auditor.phone.webp",
+      "derivativeHash": "ea16ec0769cc6e0392e6efb569c657a121bc0d82338bcb7c2e4b4c6c478816d9",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 81336
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/memoryglass-larva.png",
+      "sourceHash": "4614981b7dfeec3769631edcbdc8248aca98f311c9d37e32ba90bda5c40670f0",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2594383,
+      "derivativePath": "/assets/cards/threats/blue/memoryglass-larva.phone.webp",
+      "derivativeHash": "a74d8f895f7c5df3f24dc4f8b76c66bb9ca4efedeb6fbfc4d1579bf57364a70c",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 94628
     },
     {
       "sourcePath": "/assets/cards/threats/blue/mirror-lord-envoy.png",
@@ -2139,6 +2355,18 @@
       "derivativeBytes": 166980
     },
     {
+      "sourcePath": "/assets/cards/threats/blue/name-tithe-reader.png",
+      "sourceHash": "b9b5035a76e7a5bbecc1068d02d4f594c23496eebe348c4fed6430aab49495f1",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2129539,
+      "derivativePath": "/assets/cards/threats/blue/name-tithe-reader.phone.webp",
+      "derivativeHash": "f19537568731c56e54102da4daf9397126d6ec9bce3e1ed7c530fe7a0d1f0cb3",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 47456
+    },
+    {
       "sourcePath": "/assets/cards/threats/blue/pale-marshal.png",
       "sourceHash": "13a44c77176cea4918405aaa6af34efa9628cb846489298d9b9ea34482ebe147",
       "sourceWidth": 1086,
@@ -2149,6 +2377,66 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 113634
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/prism-mite-cluster.png",
+      "sourceHash": "8493de93791cc38806deed21fd151e9c4d0e1f9722a83d06dfa0166fd6cbe712",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2876159,
+      "derivativePath": "/assets/cards/threats/blue/prism-mite-cluster.phone.webp",
+      "derivativeHash": "93922f32abe050d0b03f155b67872f031ee76c2be564b8f50272fb0830c1b155",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 123572
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/promise-echo-advocate.png",
+      "sourceHash": "7586a47fe713d0d99d14b67e8f081ccc63612e5f6179405465143873aba6eff2",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2605455,
+      "derivativePath": "/assets/cards/threats/blue/promise-echo-advocate.phone.webp",
+      "derivativeHash": "b798061d086608c37b1d1e20e1acb338eb33a6a9c64e151fe832cc60e9b80581",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 88914
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/receipt-memory-bailiff.png",
+      "sourceHash": "cc29b7b60703e9f8f30c7ed491ea51eef84a60021cff606ddf1ad616dae553ed",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2640031,
+      "derivativePath": "/assets/cards/threats/blue/receipt-memory-bailiff.phone.webp",
+      "derivativeHash": "2c97cb9018ba7107480aee699b5d2d36bfb496ea906d251391870c74e333f3fa",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 86566
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/relay-hymnist.png",
+      "sourceHash": "a81dc2f2e5a2c549a655a95e1c830bde693c3ac7b64975d6e3a3b42f162fc1a2",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2818031,
+      "derivativePath": "/assets/cards/threats/blue/relay-hymnist.phone.webp",
+      "derivativeHash": "da9815236c930e76c44b5f4ffb938e359f203bd58f68d527500652b1370d4213",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 96028
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/relay-spark-seeker.png",
+      "sourceHash": "dd9dab536da6fafd48269148e572887fbebd1f8b06ba86294c15e87f7c38f141",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2565689,
+      "derivativePath": "/assets/cards/threats/blue/relay-spark-seeker.phone.webp",
+      "derivativeHash": "521c68ba47cd3b3722dce2be0da0938f92bd36d151d810ab456c8731a0cbd901",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 79384
     },
     {
       "sourcePath": "/assets/cards/threats/blue/reliquary-judge.png",
@@ -2187,6 +2475,18 @@
       "derivativeBytes": 123590
     },
     {
+      "sourcePath": "/assets/cards/threats/blue/saint-frame-listener.png",
+      "sourceHash": "400882215cb2f1b03b3469fcba7e92f94301ab15c26700e7ff347c49079a2790",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2539223,
+      "derivativePath": "/assets/cards/threats/blue/saint-frame-listener.phone.webp",
+      "derivativeHash": "2efe8d361e1ee2af61d953c2e76211eacfb9f4828344dce14418b2b311666995",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 84424
+    },
+    {
       "sourcePath": "/assets/cards/threats/blue/saint-of-ashes-echo.png",
       "sourceHash": "94b9d67f40f0280f54da9e246987b90a639306ffa53b675f2dd22737aa48a6eb",
       "sourceWidth": 1086,
@@ -2211,6 +2511,42 @@
       "derivativeBytes": 146062
     },
     {
+      "sourcePath": "/assets/cards/threats/blue/seal-whisper-listener.png",
+      "sourceHash": "182394494f3b75cbf324789427a7bc8cc652b92758aa78176b4b24a47c4d8c7f",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2778721,
+      "derivativePath": "/assets/cards/threats/blue/seal-whisper-listener.phone.webp",
+      "derivativeHash": "72bf8ba0c19ea5eca923e603e540f79195c4e52838114b21501f1dbd25e5434b",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 93688
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/signal-snare-spotter.png",
+      "sourceHash": "1b18bd340315ec1e4da6f8ba2b680cacb887f048d33a5b3ac77d9e10572ae8f6",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2199623,
+      "derivativePath": "/assets/cards/threats/blue/signal-snare-spotter.phone.webp",
+      "derivativeHash": "0d079ee8a90eea52b3f2af8aa5ac61c905b65dcde6a5122921b69ba93fcd1a0d",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 48118
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/sootglass-diviner.png",
+      "sourceHash": "fbdd36068c4563d39eef1f6ce48c48f5bfc779277b00902357aeebfd579fd2b7",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2492763,
+      "derivativePath": "/assets/cards/threats/blue/sootglass-diviner.phone.webp",
+      "derivativeHash": "999314e0847def5fd9744c0f3216cf7c9b9c9382edc9b91ca2ee5a797b7146d8",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 58482
+    },
+    {
       "sourcePath": "/assets/cards/threats/blue/spindle-static-squall.png",
       "sourceHash": "9b9fb8becb31cceaa76af65ff84d0ac042d6cdf47f068ba3fc0bf0f55621ff85",
       "sourceWidth": 1024,
@@ -2223,6 +2559,18 @@
       "derivativeBytes": 18894
     },
     {
+      "sourcePath": "/assets/cards/threats/blue/star-noise-interpreter.png",
+      "sourceHash": "8fdfb3f5c6953cb6b5fbe06973876e25df2a2e165864ba12ec7574cfa1451fe1",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2577472,
+      "derivativePath": "/assets/cards/threats/blue/star-noise-interpreter.phone.webp",
+      "derivativeHash": "0f7705b13079540401fdff491df08244996c193240c647b51f4d977eae39c965",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 86830
+    },
+    {
       "sourcePath": "/assets/cards/threats/blue/static-censer-acolyte.png",
       "sourceHash": "d18c9f4d9b82fca7498259ef30b55e23d9545ff600f2a5c2a0c6f492de345bb4",
       "sourceWidth": 1086,
@@ -2233,6 +2581,54 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 103632
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/static-veil-deacon.png",
+      "sourceHash": "17e20a47fddf76889e6cfa81050a84fcb97025bb8331cc372ddc56c0e1f7efb2",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2972308,
+      "derivativePath": "/assets/cards/threats/blue/static-veil-deacon.phone.webp",
+      "derivativeHash": "7951317e0c47266f919b6dc7a935aaa3ba328ef2818edfcf331f4d9f769cc7cc",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 123324
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/thorn-reflection-scribe.png",
+      "sourceHash": "88b790656c3271030af6803a28232c8468ebd9c4e8b25677aba2dd3bd5ee1c1c",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2656818,
+      "derivativePath": "/assets/cards/threats/blue/thorn-reflection-scribe.phone.webp",
+      "derivativeHash": "1f398ff3f2a3acad259be037c35c9d74379876871ba61e056feef8a282ffa72f",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 87912
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/thousand-window-sovereign.png",
+      "sourceHash": "e1a91400072d10955e549ae18b550de6cbd806d427c5a6e7e4c306b1a0f5c8de",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2932638,
+      "derivativePath": "/assets/cards/threats/blue/thousand-window-sovereign.phone.webp",
+      "derivativeHash": "114479edc74f4bdc5f0d04cd81918a52f9e2c55a842fd3b4bb2211ca51e547e5",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 121770
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/throne-echo-medium.png",
+      "sourceHash": "4590d79c6eea07cce1062f9de1f0873e6408c759846df6c6ee43774e4bb78510",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2410219,
+      "derivativePath": "/assets/cards/threats/blue/throne-echo-medium.phone.webp",
+      "derivativeHash": "c804f610e9df6ed33cbaa867476eac09ba44808e516ae609193632ce978bb2b5",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 64936
     },
     {
       "sourcePath": "/assets/cards/threats/blue/veil-censor.png",
@@ -2257,6 +2653,18 @@
       "derivativeWidth": 640,
       "derivativeHeight": 960,
       "derivativeBytes": 14682
+    },
+    {
+      "sourcePath": "/assets/cards/threats/blue/velvet-oracle.png",
+      "sourceHash": "a054dc6fbd73309992e62d4ac4f296647e994fe07bef17c29e46fd0736fd58e5",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2748865,
+      "derivativePath": "/assets/cards/threats/blue/velvet-oracle.phone.webp",
+      "derivativeHash": "5b3436676867317dd845ecd6a957b170bc2ed1d228cde54c24ea19b1b9cd33c5",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 89224
     },
     {
       "sourcePath": "/assets/cards/threats/blue/void-salt-sickness.png",
@@ -2295,6 +2703,18 @@
       "derivativeBytes": 20036
     },
     {
+      "sourcePath": "/assets/cards/threats/blue/witness-coil.png",
+      "sourceHash": "5996ed9faccf7e594eeac659c4d3cb77aa03f0ed0a6c5b11d3ee81d6c5f37d52",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2477941,
+      "derivativePath": "/assets/cards/threats/blue/witness-coil.phone.webp",
+      "derivativeHash": "55cf1fa4a8b9188611ea3b0c712708a7fe6f6268ae40ef1a52f0448e64e493e9",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 92346
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/ash-cinder-runt.png",
       "sourceHash": "4b46e73699646d789dd9852bc2c560377334cd65cf376f26834eea66c2b35f0b",
       "sourceWidth": 1086,
@@ -2331,6 +2751,30 @@
       "derivativeBytes": 171458
     },
     {
+      "sourcePath": "/assets/cards/threats/red/ash-sash-challenger.png",
+      "sourceHash": "dbf5816d5a493361d543cc8fd999f8f8eddf4e245476143202e667a6b280f43c",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2611655,
+      "derivativePath": "/assets/cards/threats/red/ash-sash-challenger.phone.webp",
+      "derivativeHash": "a84258471b6c3de8623ca61468584a3f7305726e2277b503792d9cb724717680",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 72846
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/ashen-cantor-mauler.png",
+      "sourceHash": "b17b9bd98dad4b2d937f2495630ec57bf88f46b758c8aea39624d69b40f233c7",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2744662,
+      "derivativePath": "/assets/cards/threats/red/ashen-cantor-mauler.phone.webp",
+      "derivativeHash": "485ea40042f41de922c129eeb7b414d35552d90b7cf234495db0049cf5daca25",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 95054
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/bell-ear-stalker.png",
       "sourceHash": "c32ab4715f64a2d78587aeda524e41f2721628dd5e28907ed127cf9c25aa3f48",
       "sourceWidth": 1086,
@@ -2341,6 +2785,18 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 107998
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/boilerclaw-porter.png",
+      "sourceHash": "c118d238a3767cfe40c0e60cb0a894ead6ce092112ba99255fa3e626fe4e7787",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2553725,
+      "derivativePath": "/assets/cards/threats/red/boilerclaw-porter.phone.webp",
+      "derivativeHash": "37532459d47c80ad3d772cb1d0046f4860ae830d9a7bae17b43c3735fb5a85f8",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 89758
     },
     {
       "sourcePath": "/assets/cards/threats/red/bone-rivet-brute.png",
@@ -2367,6 +2823,18 @@
       "derivativeBytes": 132472
     },
     {
+      "sourcePath": "/assets/cards/threats/red/briar-oath-duelist.png",
+      "sourceHash": "d9f2d061120c1381a4a70520176de4589aa658880d4c8a915f6129a9030b4c33",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2580694,
+      "derivativePath": "/assets/cards/threats/red/briar-oath-duelist.phone.webp",
+      "derivativeHash": "b72eabf66dd0c1e3fff839f992f02f6253ba9f6b34113a142d225a18b6545810",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 70822
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/broken-mast-collapse.png",
       "sourceHash": "8fd66b1cee4d55ce57d6eba224fe038c71d465ad94775ddb38dce9539c68e530",
       "sourceWidth": 1086,
@@ -2391,6 +2859,18 @@
       "derivativeBytes": 109976
     },
     {
+      "sourcePath": "/assets/cards/threats/red/cargo-hold-tyrant.png",
+      "sourceHash": "95490ec9b9100f4febdfbd24b4a44a843a7b470ce74579a70da31501901fa722",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2704414,
+      "derivativePath": "/assets/cards/threats/red/cargo-hold-tyrant.phone.webp",
+      "derivativeHash": "281c33444c24cf3f0472b12e9b744a02df3501b43acff6166ef1eb26036c4d2a",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 80732
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/chain-maul-salvager.png",
       "sourceHash": "6adfb8eeb71d9b9e13f84d9fbb73f9406c410a0ba4724e490c4233aa5834dab5",
       "sourceWidth": 1086,
@@ -2401,6 +2881,30 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 132802
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/chainwake-boarder.png",
+      "sourceHash": "27954a1e4ec8b5905a6d550c6db97b4a6aa2198951504e488b0aad10bb5b707f",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2463427,
+      "derivativePath": "/assets/cards/threats/red/chainwake-boarder.phone.webp",
+      "derivativeHash": "0cce44c4a25e0e4e5e1fba4ee9906cc1a4f28260812e9e75c8a9f008c94d5cc0",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 70730
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/chordbreaker-penitent.png",
+      "sourceHash": "966443a650d78af77d025b4af8f4f6c67819cac449d37b72dc959cd5c13abb4a",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2636746,
+      "derivativePath": "/assets/cards/threats/red/chordbreaker-penitent.phone.webp",
+      "derivativeHash": "7fbee5164c57b8971e497cedc21e65b18d820e3a717447158786d53f0654c3f9",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 75070
     },
     {
       "sourcePath": "/assets/cards/threats/red/cinder-bone-marauder.png",
@@ -2439,6 +2943,18 @@
       "derivativeBytes": 83384
     },
     {
+      "sourcePath": "/assets/cards/threats/red/coffin-iron-grappler.png",
+      "sourceHash": "effd2038d072d0cd6ededbff74c4a4bbcb4399332bda80f9a186016e298f293d",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2445238,
+      "derivativePath": "/assets/cards/threats/red/coffin-iron-grappler.phone.webp",
+      "derivativeHash": "f9c04212efd9e09e4a764cb29621b1794954cfa2733423ad6e9ef1076e3a1c83",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 56448
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/copper-snout-bailiff.png",
       "sourceHash": "6d8965d2ac725561b3da7e0a5b79508943fdf2c6918f4e07a7d4d9d8b98510ca",
       "sourceWidth": 1086,
@@ -2449,6 +2965,18 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 120490
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/courtline-enforcer.png",
+      "sourceHash": "dde0b5b4f8c4e6bd7a4a87457ffbf17df0ce1e6d054cad3279e4ebf169666aa6",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2221027,
+      "derivativePath": "/assets/cards/threats/red/courtline-enforcer.phone.webp",
+      "derivativeHash": "22136453ecd14e46ef96589f094904b9859030995047262ac2d2733003a8086e",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 56936
     },
     {
       "sourcePath": "/assets/cards/threats/red/courtline-fold.png",
@@ -2463,6 +2991,18 @@
       "derivativeBytes": 103842
     },
     {
+      "sourcePath": "/assets/cards/threats/red/ember-throat-jackal.png",
+      "sourceHash": "6eaad1a305a74ce8e28bf3cdc2ac2481b4a9c373d8dd3a8d5525ef25660ecd9d",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2471046,
+      "derivativePath": "/assets/cards/threats/red/ember-throat-jackal.phone.webp",
+      "derivativeHash": "13f9b57bd9a3f44e27a371fcb04cca235a740f8199080048503a1e3d053ff8e2",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 72492
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/furnace-ditch-collapse.png",
       "sourceHash": "cba71bdb4bf9451e953da9cba298e3eed54c19986eeae59ae29b276d6732457f",
       "sourceWidth": 1086,
@@ -2475,6 +3015,78 @@
       "derivativeBytes": 177456
     },
     {
+      "sourcePath": "/assets/cards/threats/red/furnace-page.png",
+      "sourceHash": "ba4c703c2abbf9750f71636c59fd6e158803100e4dbe8daf940ec45a86fe1b66",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2388866,
+      "derivativePath": "/assets/cards/threats/red/furnace-page.phone.webp",
+      "derivativeHash": "de243b3ef42e80ff7ac5b5181ae9993d55a8acb2d5189406770ff09f00b96803",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 65964
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/furnace-spine-breaker.png",
+      "sourceHash": "8f63d595dae904dfaeed90f52e5cfa3b5817391be4ac1507021ec561b11c350c",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2655019,
+      "derivativePath": "/assets/cards/threats/red/furnace-spine-breaker.phone.webp",
+      "derivativeHash": "6879edabb61243bee9d733f96bd0b8461f1e9cb3fb22a45685a861ca81e78259",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 100238
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/gatejaw-custodian.png",
+      "sourceHash": "8ae507a7822cae51973d2e8a7a4add5e77bf05efbe29daa46ab66775ab9bba25",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2404675,
+      "derivativePath": "/assets/cards/threats/red/gatejaw-custodian.phone.webp",
+      "derivativeHash": "d2cddc3b9bf7c20024874d14ad972428030e46ca28081fe26bce5acb88e43469",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 67282
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/glassjaw-whelp.png",
+      "sourceHash": "01458c26d553ce2360db5645a6d1d63cc49e4cbd6ea42470ced4d7e8fcf369a4",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2820166,
+      "derivativePath": "/assets/cards/threats/red/glassjaw-whelp.phone.webp",
+      "derivativeHash": "36348fb60e167daac510457c216b552b00cc63f15e3456db0b8994f647cb25fd",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 109524
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/grubmaw-scavenger.png",
+      "sourceHash": "edcf24e7c92ca0d841678a00be3c0bf0ea9139f23081a3716a556300710a345c",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2791210,
+      "derivativePath": "/assets/cards/threats/red/grubmaw-scavenger.phone.webp",
+      "derivativeHash": "38d1f0fd8b94fc8917b182092505d3b1430e0005cf99d5cda1fc2af7592f3a92",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 96438
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/hearth-ruin-behemoth.png",
+      "sourceHash": "15e9c15b70216f900c8c507e9c6f873e0307a7667ab1fc5879946b3504d09a2c",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2831550,
+      "derivativePath": "/assets/cards/threats/red/hearth-ruin-behemoth.phone.webp",
+      "derivativeHash": "ac5d0ebcd6a22a5108f383ec1bd8d20c99a209b13101993e10741e7274d58dd2",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 106406
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/hymn-scarred-zealot.png",
       "sourceHash": "6302113a010cdd5b06dbd994e750efd86d4f0f1fa8f9711258d591cb8969b1a6",
       "sourceWidth": 1086,
@@ -2485,6 +3097,18 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 109602
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/lane-hook-reaver.png",
+      "sourceHash": "6cd7e90b06d5c7686fa9268736def5fe33dee59d069a6c2b38a96eb081c3bb11",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2810864,
+      "derivativePath": "/assets/cards/threats/red/lane-hook-reaver.phone.webp",
+      "derivativeHash": "4579c1e3198069e31d7884448b73c003b49de8e8d51ce6c68195b5673ce93421",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 100344
     },
     {
       "sourcePath": "/assets/cards/threats/red/lantern-ash-ghoul.png",
@@ -2523,6 +3147,18 @@
       "derivativeBytes": 149138
     },
     {
+      "sourcePath": "/assets/cards/threats/red/nursery-rib-ravager.png",
+      "sourceHash": "f6de1bad8e49fd000386ad75cdd75ed56e026043e717ac61aade6b1ea28007af",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2777273,
+      "derivativePath": "/assets/cards/threats/red/nursery-rib-ravager.phone.webp",
+      "derivativeHash": "49ceb44feaf0b1682be1a0d0fbe5a9929f615c109fc7d311e44c3e863d57a472",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 91072
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/rail-scent-kennelmaster.png",
       "sourceHash": "9b575ca812cfc64d481eb93dda97152821427ee8087177155e5a083ca34631cc",
       "sourceWidth": 1086,
@@ -2533,6 +3169,18 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 76358
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/receipt-hound.png",
+      "sourceHash": "401e21be74b5e46f694ff04994ed7a821a8d8c15d92c3e5a747b9dc536628ba3",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2546267,
+      "derivativePath": "/assets/cards/threats/red/receipt-hound.phone.webp",
+      "derivativeHash": "c873f7b99b83ee10cf6e44287a7063f5d01906db0ee2bdcb8d7d6db9b131d900",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 75608
     },
     {
       "sourcePath": "/assets/cards/threats/red/red-march-cannoneer.png",
@@ -2571,6 +3219,42 @@
       "derivativeBytes": 116398
     },
     {
+      "sourcePath": "/assets/cards/threats/red/redwake-breaker.png",
+      "sourceHash": "7413f3ff70cd05851c0309a1810e4b7da4013f32f55ea0fe7e5e9aec2876b994",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2737393,
+      "derivativePath": "/assets/cards/threats/red/redwake-breaker.phone.webp",
+      "derivativeHash": "a22c6c2fce69a6baeafb73ea905d2a1f53220a1b6483973519717ba265ebcc09",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 94076
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/rivet-fist-laborer.png",
+      "sourceHash": "b14844cc9cf8d2d646873984eba85dc6767b54588e2c4829b598d355c7fb02c4",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2799521,
+      "derivativePath": "/assets/cards/threats/red/rivet-fist-laborer.phone.webp",
+      "derivativeHash": "353afb8d6b88714ad2d2be81a861529192b65ec24e588e20ef89d3a05e590bb9",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 98200
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/roadbone-gnawer.png",
+      "sourceHash": "dc0c79aa9a57fdd3b4d6f33be27c413f775b04be5662cf7b134d3fc86cef6944",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2684891,
+      "derivativePath": "/assets/cards/threats/red/roadbone-gnawer.phone.webp",
+      "derivativeHash": "a4a1abd761acbc5c37c7387e33f664eff64a8480048fc25dcb7dcebd9ea2972b",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 93684
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/rust-plate-strider.png",
       "sourceHash": "54a6f6cf9f2e0f2d211551465acc43ad0589329af0321346d8dc7f0cf4d773ca",
       "sourceWidth": 1086,
@@ -2581,6 +3265,30 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 102166
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/seal-gravel-prowler.png",
+      "sourceHash": "3373992c0cae3b10b0cd297f6c29e364e10789134f3ce0695ca84f5379824f8c",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2659668,
+      "derivativePath": "/assets/cards/threats/red/seal-gravel-prowler.phone.webp",
+      "derivativeHash": "386db54beeed73e05870d0b103757a52111b4fbaab4d36f7691de12b5c8647ea",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 90550
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/shardhide-pouncer.png",
+      "sourceHash": "06ee16a9cfc64368329f41608a3567f1d95dcb2810b0b5f00a4f4300ac2f50f0",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2729137,
+      "derivativePath": "/assets/cards/threats/red/shardhide-pouncer.phone.webp",
+      "derivativeHash": "4055715b39016908ae9d0b62e07cb963fbde065e5cec136e1e865be428b09493",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 101978
     },
     {
       "sourcePath": "/assets/cards/threats/red/shardwind-front.png",
@@ -2619,6 +3327,18 @@
       "derivativeBytes": 18880
     },
     {
+      "sourcePath": "/assets/cards/threats/red/spark-harvest-hound.png",
+      "sourceHash": "2b75cc5035b65086cb7c4b9411a49cb2de80d07e44b477feac58a96aa11fa10f",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2629696,
+      "derivativePath": "/assets/cards/threats/red/spark-harvest-hound.phone.webp",
+      "derivativeHash": "992d60576fb51bb4c5949617e4408181aeb1cda5cbda2b8b6a2a18017de5dd45",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 101750
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/specimen-null-arrives.png",
       "sourceHash": "d4d718d74eecd2f50780a8996bd62850bd001339f4b3b93fb9bce30378085839",
       "sourceWidth": 1024,
@@ -2629,6 +3349,18 @@
       "derivativeWidth": 640,
       "derivativeHeight": 960,
       "derivativeBytes": 8148
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/splinterbody-pursuer.png",
+      "sourceHash": "9551cdb648089a99765e1ebad898948af931e9983fed8e501b7bafcfd40a0551",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2585828,
+      "derivativePath": "/assets/cards/threats/red/splinterbody-pursuer.phone.webp",
+      "derivativeHash": "a715b96ef8ab12b9141a94da4a00786f19071438e36c4a9ab52fab7df33c4f97",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 95940
     },
     {
       "sourcePath": "/assets/cards/threats/red/suture-storm.png",
@@ -2679,6 +3411,54 @@
       "derivativeBytes": 142988
     },
     {
+      "sourcePath": "/assets/cards/threats/red/tunnel-drum-brute.png",
+      "sourceHash": "230f7f62717fabde120cbd6eed0f10c310a776bb5e29522f66bc7cf706ea8726",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2552193,
+      "derivativePath": "/assets/cards/threats/red/tunnel-drum-brute.phone.webp",
+      "derivativeHash": "16cc8433eaf2f4b6b556b2d7f3db6bc3f822babd0cfee2e6fff0df693b53a4db",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 70570
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/underroad-ram.png",
+      "sourceHash": "e109db0c0f1da32f5244c68ae288d2e088ea126b4a0254ac53e9afc98a4bdb49",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 3050295,
+      "derivativePath": "/assets/cards/threats/red/underroad-ram.phone.webp",
+      "derivativeHash": "c298d701bd1193ab9e9131be78abdec509cfe74035ba2c98517440ca26858041",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 113018
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/warbell-runner.png",
+      "sourceHash": "c55724f54e7282c45d051fbb9adecc69989fc78de997ab4a0eb8d682e1d45b38",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2598851,
+      "derivativePath": "/assets/cards/threats/red/warbell-runner.phone.webp",
+      "derivativeHash": "c8707e746932595b1fb04ac06e28e8ea547e73d3efa0e24b0e5b64cd2672c38d",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 86256
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/welded-breach-ox.png",
+      "sourceHash": "38e6ff41aabfb7bae06e7f38d71198446dc2dcbd6cad24868459f7c19d4c5e6b",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2668587,
+      "derivativePath": "/assets/cards/threats/red/welded-breach-ox.phone.webp",
+      "derivativeHash": "0ab92ce5768a826775cf6b160831770a73793eb2d89c7c1384d3e8654cb7a234",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 103294
+    },
+    {
       "sourcePath": "/assets/cards/threats/yellow/ash-court-duelist.png",
       "sourceHash": "71e4309d895c1e3a9c548f87f3eedcaa3d2097ee071e1f55ae1d5a7b687be49b",
       "sourceWidth": 1087,
@@ -2713,6 +3493,18 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 105688
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/cargo-scrip-fence.png",
+      "sourceHash": "42f4831d9543e3785547c5d4317c799ca828eb458c3cf3381def1435556fe6ed",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2714954,
+      "derivativePath": "/assets/cards/threats/yellow/cargo-scrip-fence.phone.webp",
+      "derivativeHash": "ebf48e42230838c067a9147e9ecb6518257a0f5013cb6525dd228a97a7863efa",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 96230
     },
     {
       "sourcePath": "/assets/cards/threats/yellow/cartographer-under-glass.png",
@@ -2773,6 +3565,18 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 32396
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/dust-lock-porter.png",
+      "sourceHash": "e5f6046c99af8f66577b4b6c2b495bc1430785129fd7b026f5432357c74b22c7",
+      "sourceWidth": 1024,
+      "sourceHeight": 1536,
+      "sourceBytes": 2708394,
+      "derivativePath": "/assets/cards/threats/yellow/dust-lock-porter.phone.webp",
+      "derivativeHash": "8b067e72940f559f11b544d408ce2a25116445e39b8f6ff5e344d9ee1efb13d1",
+      "derivativeWidth": 640,
+      "derivativeHeight": 960,
+      "derivativeBytes": 77002
     },
     {
       "sourcePath": "/assets/cards/threats/yellow/false-route-procession.png",
@@ -2881,6 +3685,30 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 150792
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/hearth-charter-broker.png",
+      "sourceHash": "2293bf4d31aa6e31c1ee083a8d76e07ef9afe789f212002cb1d73692eb521b29",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2435383,
+      "derivativePath": "/assets/cards/threats/yellow/hearth-charter-broker.phone.webp",
+      "derivativeHash": "85bc9030b5053da9d0c1e5c80adfeacb2098019dd6461511475eea7e9508def6",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 70774
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/hymn-license-clerk.png",
+      "sourceHash": "f5adc6b20ddd4183e8c88bea67356cbf7640a2b1b2c27c825137993d3083c095",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2537643,
+      "derivativePath": "/assets/cards/threats/yellow/hymn-license-clerk.phone.webp",
+      "derivativeHash": "b7ed51241023dad5fabbb8aefb6907bf03cb4c40f6c00365402395f85aad2c89",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 71254
     },
     {
       "sourcePath": "/assets/cards/threats/yellow/iron-lung-grenadier.png",
@@ -3039,6 +3867,18 @@
       "derivativeBytes": 106324
     },
     {
+      "sourcePath": "/assets/cards/threats/yellow/pale-receipt-runner.png",
+      "sourceHash": "c9e01a6ca61e69adb0b36729af3cce820b1103595515aad2601d62bef087ddb3",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2621364,
+      "derivativePath": "/assets/cards/threats/yellow/pale-receipt-runner.phone.webp",
+      "derivativeHash": "c2ee179f7323d96cba3f7ace280e043cd7377119d6b678aaf1f0d0a31a995aab",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 81068
+    },
+    {
       "sourcePath": "/assets/cards/threats/yellow/pale-toll-enforcer.png",
       "sourceHash": "1d311da2199848675625683932b892178b8d5611da23e965e3b160e5aeac2a4f",
       "sourceWidth": 1086,
@@ -3049,6 +3889,30 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 87196
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/petal-debt-courier.png",
+      "sourceHash": "c01d439453c6063cf92f6c6a5d38cf5fcfd14c36a450e6582795fad23e2ecf48",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2336824,
+      "derivativePath": "/assets/cards/threats/yellow/petal-debt-courier.phone.webp",
+      "derivativeHash": "227f47c48f5d2e4155cc2e3e1b3d18fa25e5e36aa3bbe45e987cdfec8d287c98",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 64062
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/reflection-pawnbroker.png",
+      "sourceHash": "871cea85559dad0adc3d46f019fcf866591dc71e92b544d169fac93fc05f9544",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2534777,
+      "derivativePath": "/assets/cards/threats/yellow/reflection-pawnbroker.phone.webp",
+      "derivativeHash": "6e30d5c721688d7f652610783792dc0dad2c66e4da0e9f5fb636f1d731259a53",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 93750
     },
     {
       "sourcePath": "/assets/cards/threats/yellow/relay-husk.png",
@@ -3073,6 +3937,18 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 123712
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/rivet-quota-keeper.png",
+      "sourceHash": "4de747e32c81e784c9b26c4a70dcd28591c9988225afc95cf41f5268f4857edf",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2369482,
+      "derivativePath": "/assets/cards/threats/yellow/rivet-quota-keeper.phone.webp",
+      "derivativeHash": "14eb179150f32897fbf8cc889196efd7587a1cf88a04bae78749a88facd57c52",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 84126
     },
     {
       "sourcePath": "/assets/cards/threats/yellow/route-splice.png",
@@ -3121,6 +3997,18 @@
       "derivativeWidth": 640,
       "derivativeHeight": 960,
       "derivativeBytes": 8582
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/shardnest-scrounger.png",
+      "sourceHash": "6b5ee8253ee3c780bf7750ba719212f73b3420581e48335405f8d3ac8c94f7ea",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2851828,
+      "derivativePath": "/assets/cards/threats/yellow/shardnest-scrounger.phone.webp",
+      "derivativeHash": "9d8111446a6d1c3922408e6b965fcdaf9018735df5606f5358197472e3dfaa89",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 123428
     },
     {
       "sourcePath": "/assets/cards/threats/yellow/shardvine-ambushers.png",
@@ -3195,6 +4083,18 @@
       "derivativeBytes": 108890
     },
     {
+      "sourcePath": "/assets/cards/threats/yellow/spark-ledger-tender.png",
+      "sourceHash": "fd9c7dd88d33ab4c495f607e873815cf3344357c6f3c629f8bd88ecb7e289037",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2421949,
+      "derivativePath": "/assets/cards/threats/yellow/spark-ledger-tender.phone.webp",
+      "derivativeHash": "04707d4610a6a20a5b2bda628bf70f98d420b68d83e3a1ef946de0469cdf3da2",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 77168
+    },
+    {
       "sourcePath": "/assets/cards/threats/yellow/starless-taxation.png",
       "sourceHash": "689d0b14ea2ce3788cf378348bf22a4c4d604c26a16cf88ca88997d77bdd0d6f",
       "sourceWidth": 1024,
@@ -3219,6 +4119,18 @@
       "derivativeBytes": 131376
     },
     {
+      "sourcePath": "/assets/cards/threats/yellow/tithe-cart-drover.png",
+      "sourceHash": "3bde49804f297526b1b9e7a28441aa39c35ba37a7e65d576b96e2f4e77147901",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2461533,
+      "derivativePath": "/assets/cards/threats/yellow/tithe-cart-drover.phone.webp",
+      "derivativeHash": "5d3d70ceb6da26b0deb7cdc7f7b5ca937fba7033af0f179266097fc6f950bc46",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 91880
+    },
+    {
       "sourcePath": "/assets/cards/threats/yellow/toll-scrip-urchins.png",
       "sourceHash": "3dac21c27fb817a849d117cec6fb6c0546060c53776f7db5c86d77957f76c9ef",
       "sourceWidth": 1086,
@@ -3229,6 +4141,30 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 126718
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/tunnel-toll-appraiser.png",
+      "sourceHash": "be9cfb5b5a02df6ba6dedeed749938c8b36d1dfdfaab86c4e7082362e3a7b6b7",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2647602,
+      "derivativePath": "/assets/cards/threats/yellow/tunnel-toll-appraiser.phone.webp",
+      "derivativeHash": "17b568f281b5505a9a5a1e4c45948535020a645ae1549c3de70fafa6226249bc",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 92122
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/velvet-clause-runner.png",
+      "sourceHash": "8fd999d55f0ca0195796146a0669bded24f5ecddd215dce092deaa6fa3bfe109",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2489342,
+      "derivativePath": "/assets/cards/threats/yellow/velvet-clause-runner.phone.webp",
+      "derivativeHash": "1315ee0d976f40f627c8a94ec5f4ca9039624597b96a784f636b94c54a448b51",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 68326
     },
     {
       "sourcePath": "/assets/cards/threats/yellow/velvet-knife-confessor.png",

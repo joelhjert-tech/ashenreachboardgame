@@ -7,15 +7,15 @@
   "enemyName": "Pale Contract Collector",
   "text": "A debt enforcer mistakes your crew for the names written in a burning ledger. If you lose, lose up to 1 Salvage.",
   "flavor": "The Pale Cartels never waste a case of mistaken identity.",
-  "severity": 2,
+  "severity": 1,
   "region": "outer",
   "stat": "command",
-  "difficulty": 8,
-  "trophyValue": 2,
+  "difficulty": 3,
+  "trophyValue": 1,
   "missionReward": true,
   "defeatReward": {
     "type": "gain_trophy",
-    "amount": 2
+    "amount": 1
   },
   "woundOnLoss": {
     "type": "lose_salvage",

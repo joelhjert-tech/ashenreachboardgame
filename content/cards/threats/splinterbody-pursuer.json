@@ -1,0 +1,33 @@
+{
+  "id": "splinterbody-pursuer",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Mirror Wake",
+  "title": "Splinterbody Pursuer",
+  "enemyName": "Splinterbody Pursuer",
+  "text": "Splinterbody Pursuer copies an operative's stance one heartbeat late and turns every feint into a collision. On loss, suffer 1 Wound.",
+  "flavor": "Your reflection has already decided not to stop.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Splinterbody Pursuer is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Splinterbody Pursuer: copies an operative's stance one heartbeat late and turns every feint into a collision; translucent anatomy, fractured reflections, and asymmetrical glass growth; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

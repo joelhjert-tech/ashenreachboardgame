@@ -7,10 +7,10 @@
   "enemyName": "Copperjaw Vermin",
   "text": "Metal-toothed carrion things gnaw through the dead machinery under the path.",
   "flavor": "The jaws are copper. The appetite is older.",
-  "severity": 2,
+  "severity": 1,
   "region": "outer",
   "stat": "forge",
-  "difficulty": 7,
+  "difficulty": 3,
   "trophyValue": 1,
   "defeatReward": {
     "type": "gain_trophy",

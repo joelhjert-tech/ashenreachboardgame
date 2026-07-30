@@ -1,0 +1,33 @@
+{
+  "id": "signal-snare-spotter",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Red Maw Raiders",
+  "title": "Signal-Snare Spotter",
+  "enemyName": "Signal-Snare Spotter",
+  "text": "Signal-Snare Spotter casts false range marks across the lane and directs unseen crews toward the confusion. On loss, suffer 1 Wound.",
+  "flavor": "The bright marker is never the safe one.",
+  "severity": 1,
+  "region": "global",
+  "stat": "guile",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Signal-Snare Spotter is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Signal-Snare Spotter: casts false range marks across the lane and directs unseen crews toward the confusion; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

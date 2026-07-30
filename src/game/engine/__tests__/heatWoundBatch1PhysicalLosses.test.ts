@@ -15,7 +15,7 @@ const TARGETS = [
   { id: "ash-cinder-runt", branch: "woundOnLoss", cardType: "enemy", severity: 1, difficulty: 2, lane: "red", graphCount: 2, stat: "grit" },
   { id: "grave-silt-press", branch: "failEffect", cardType: "hazard", severity: 1, difficulty: 5, lane: "blue", graphCount: 2, stat: "command" },
   { id: "mirror-mite-bloom", branch: "woundOnLoss", cardType: "enemy", severity: 2, difficulty: 5, lane: "blue", graphCount: 2, stat: "signal" },
-  { id: "relay-pilgrim-riot", branch: "woundOnLoss", cardType: "enemy", severity: 2, difficulty: 6, lane: "yellow", graphCount: 2, stat: "command" }
+  { id: "relay-pilgrim-riot", branch: "woundOnLoss", cardType: "enemy", severity: 2, difficulty: 6, lane: "yellow", graphCount: 2, stat: "forge" }
 ] as const;
 
 const cards = loadThreatCards();

@@ -396,7 +396,7 @@ function validateCanonicalEconomy(): void {
 
 function validateContentFloors(): void {
   const contentTargets = [
-    ["threats", threats.size, 40, 120],
+    ["threats", threats.size, 40, 220],
     ["anomalies", anomalies.size, 20, 30],
     ["artifacts", artifacts.size, 12, 30],
     ["escalations", escalations.size, 15, 25],

@@ -1,0 +1,33 @@
+{
+  "id": "false-horizon-adept",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Mirror Wake",
+  "title": "False Horizon Adept",
+  "enemyName": "False Horizon Adept",
+  "text": "False Horizon Adept bends distant landmarks into a convincing route that ends inside its waiting hands. On loss, suffer 1 Wound.",
+  "flavor": "The shortest path is the one that never existed.",
+  "severity": 2,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 4,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "False Horizon Adept is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of False Horizon Adept: bends distant landmarks into a convincing route that ends inside its waiting hands; translucent anatomy, fractured reflections, and asymmetrical glass growth; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

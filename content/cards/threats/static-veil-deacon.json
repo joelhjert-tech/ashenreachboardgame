@@ -1,0 +1,33 @@
+{
+  "id": "static-veil-deacon",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Ashen Choir",
+  "title": "Static Veil Deacon",
+  "enemyName": "Static Veil Deacon",
+  "text": "Static Veil Deacon draws a curtain of white noise around the expedition and listens for panic inside it. On loss, suffer 1 Wound.",
+  "flavor": "The veil is woven from all the words that fail to arrive.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Static Veil Deacon is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "choir",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Static Veil Deacon: draws a curtain of white noise around the expedition and listens for panic inside it; ritual signal equipment, ash-dark vestments, and resonant metal ornaments; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

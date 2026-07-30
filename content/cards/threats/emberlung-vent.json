@@ -1,0 +1,47 @@
+{
+  "id": "emberlung-vent",
+  "type": "threat",
+  "cardType": "hazard",
+  "faction": "Last Light Engine",
+  "title": "Emberlung Vent",
+  "text": "A ruptured ember-lung feeds nearby hostiles. On failure, suffer 1 Wound and fix this Hazard to the sector. While fixed, Enemies here and in adjacent sectors gain +1 difficulty. A successful clear removes it.",
+  "flavor": "The Engine exhales through every borrowed weapon.",
+  "severity": 4,
+  "stat": "forge",
+  "difficulty": 8,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
+  "persistentRule": {
+    "type": "adjacent_enemy_difficulty",
+    "amount": 1,
+    "radius": "same_or_adjacent"
+  },
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You sealed the Emberlung Vent and marked its cooled alloy for recovery."
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "return_threat_to_space"
+      }
+    ]
+  },
+  "enemyFamily": "machine",
+  "threatLane": "red",
+  "region": "global",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "salvage",
+    "wound",
+    "escalation"
+  ]
+}

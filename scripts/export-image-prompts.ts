@@ -52,7 +52,7 @@ const severityPrompt: Record<number, string> = {
 };
 
 const negativePrompt =
-  "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette";
+  "readable text, logo, watermark, UI, dice, card frame, board game brand, copied or recognizable external board-game imagery, copyrighted character or symbol, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette";
 
 type PromptLike = {
   id: string;

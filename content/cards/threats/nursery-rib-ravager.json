@@ -1,0 +1,33 @@
+{
+  "id": "nursery-rib-ravager",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Shardborn Brood",
+  "title": "Nursery-Rib Ravager",
+  "enemyName": "Nursery-Rib Ravager",
+  "text": "Nursery-Rib Ravager guards a cage of translucent brood organs with hooked ribs and sudden lateral strikes. On loss, suffer 1 Wound.",
+  "flavor": "It carries the next generation where a heart should be.",
+  "severity": 2,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 4,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Nursery-Rib Ravager is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Nursery-Rib Ravager: guards a cage of translucent brood organs with hooked ribs and sudden lateral strikes; translucent anatomy, fractured reflections, and asymmetrical glass growth; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

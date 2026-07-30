@@ -1,0 +1,33 @@
+{
+  "id": "prism-mite-cluster",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Shardborn Brood",
+  "title": "Prism Mite Cluster",
+  "enemyName": "Prism Mite Cluster",
+  "text": "Prism Mite Cluster covers lenses and antennae with tiny bodies that split one signal into a hundred. On loss, suffer 1 Wound.",
+  "flavor": "Each wing reflects a different warning.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Prism Mite Cluster is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "vermin",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Prism Mite Cluster: covers lenses and antennae with tiny bodies that split one signal into a hundred; a dense but readable cluster of small crystalline creatures; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

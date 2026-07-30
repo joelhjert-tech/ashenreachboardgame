@@ -1,0 +1,33 @@
+{
+  "id": "sootglass-diviner",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Cinder Court",
+  "title": "Sootglass Diviner",
+  "enemyName": "Sootglass Diviner",
+  "text": "Sootglass Diviner reads cooling ash in a hand mirror and attacks the future in which the operative escapes. On loss, suffer 1 Wound.",
+  "flavor": "Its predictions are simply threats spoken early.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Sootglass Diviner is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Sootglass Diviner: reads cooling ash in a hand mirror and attacks the future in which the operative escapes; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

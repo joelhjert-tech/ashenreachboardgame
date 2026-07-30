@@ -1,0 +1,33 @@
+{
+  "id": "glassjaw-whelp",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Shardborn Brood",
+  "title": "Glassjaw Whelp",
+  "enemyName": "Glassjaw Whelp",
+  "text": "Glassjaw Whelp tests fresh crystal teeth against armor seams before the larger brood arrives. On loss, suffer 1 Wound.",
+  "flavor": "Each broken tooth becomes another egg.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Glassjaw Whelp is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Glassjaw Whelp: tests fresh crystal teeth against armor seams before the larger brood arrives; translucent anatomy, fractured reflections, and asymmetrical glass growth; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

@@ -1,0 +1,33 @@
+{
+  "id": "memory-weld-auditor",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Iron Synod",
+  "title": "Memory-Weld Auditor",
+  "enemyName": "Memory-Weld Auditor",
+  "text": "Memory-Weld Auditor compares spoken recollection against a steel archive and removes whatever cannot be reconciled. On loss, suffer 1 Wound.",
+  "flavor": "Contradiction is treated as a loose component.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Memory-Weld Auditor is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Memory-Weld Auditor: compares spoken recollection against a steel archive and removes whatever cannot be reconciled; stamps, ledgers, measuring tools, and severe ceremonial clothing; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

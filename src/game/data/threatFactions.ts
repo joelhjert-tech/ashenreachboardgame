@@ -20,6 +20,29 @@ export const THREAT_FACTION_CARD_QUOTA = {
   hazard: 4
 } as const;
 
+export const ENEMY_LANE_TARGET = 50;
+
+export const ENEMY_DIFFICULTY_BAND_TARGETS = {
+  entry: 26,
+  standard: 15,
+  severe: 5,
+  extreme: 4
+} as const;
+
+export const ENEMY_LANE_PRIMARY_STATS = {
+  red: ["grit", "forge"],
+  blue: ["signal", "command"],
+  yellow: ["guile", "forge"]
+} as const;
+
+export const PERSISTENT_HAZARD_EXPANSION_IDS = [
+  "emberlung-vent",
+  "knotrail-cave-in",
+  "deadwire-repeater",
+  "ledger-mold-bloom",
+  "latchfog-nullfield"
+] as const;
+
 export interface ThreatFactionDefinition {
   id: string;
   name: ThreatFactionName;

@@ -1,0 +1,33 @@
+{
+  "id": "redwake-breaker",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Red Maw Raiders",
+  "title": "Redwake Breaker",
+  "enemyName": "Redwake Breaker",
+  "text": "Redwake Breaker advances behind a slab shield while a piston maul clears the lane one impact at a time. On loss, suffer 1 Wound.",
+  "flavor": "The shield is a door taken from the last place that resisted.",
+  "severity": 2,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 6,
+  "trophyValue": 3,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Redwake Breaker is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Redwake Breaker: advances behind a slab shield while a piston maul clears the lane one impact at a time; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

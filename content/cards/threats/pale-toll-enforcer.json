@@ -9,7 +9,7 @@
   "flavor": "The stamp falls. The debt wakes.",
   "severity": 2,
   "region": "outer",
-  "stat": "command",
+  "stat": "guile",
   "difficulty": 6,
   "trophyValue": 1,
   "defeatReward": {

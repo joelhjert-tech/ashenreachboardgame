@@ -1,0 +1,33 @@
+{
+  "id": "throne-echo-medium",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Cinder Court",
+  "title": "Throne-Echo Medium",
+  "enemyName": "Throne-Echo Medium",
+  "text": "Throne-Echo Medium channels a dead audience whose applause drowns out every useful signal. On loss, suffer 1 Wound.",
+  "flavor": "The hall is gone, but the spectators refuse to leave.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Throne-Echo Medium is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "revenant",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Throne-Echo Medium: channels a dead audience whose applause drowns out every useful signal; preserved metal bindings, worn burial fabric, and pale internal light; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

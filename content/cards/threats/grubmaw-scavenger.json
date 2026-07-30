@@ -1,0 +1,33 @@
+{
+  "id": "grubmaw-scavenger",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Buried Maw",
+  "title": "Grubmaw Scavenger",
+  "enemyName": "Grubmaw Scavenger",
+  "text": "Grubmaw Scavenger chews through abandoned packs and lunges at anything trying to recover them. On loss, suffer 1 Wound.",
+  "flavor": "It prefers buckles, but it will settle for fingers.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Grubmaw Scavenger is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "beast",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Grubmaw Scavenger: chews through abandoned packs and lunges at anything trying to recover them; scarred hide, route debris, predatory posture, and a clear animal silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

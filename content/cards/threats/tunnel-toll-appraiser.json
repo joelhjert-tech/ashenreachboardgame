@@ -1,0 +1,33 @@
+{
+  "id": "tunnel-toll-appraiser",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Buried Maw",
+  "title": "Tunnel-Toll Appraiser",
+  "enemyName": "Tunnel-Toll Appraiser",
+  "text": "Tunnel-Toll Appraiser values safe passage by listening to what moves beneath the floor. On loss, suffer 1 Wound.",
+  "flavor": "The cheapest route is usually hungry.",
+  "severity": 1,
+  "region": "global",
+  "stat": "guile",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Tunnel-Toll Appraiser is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Tunnel-Toll Appraiser: values safe passage by listening to what moves beneath the floor; stamps, ledgers, measuring tools, and severe ceremonial clothing; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

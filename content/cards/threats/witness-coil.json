@@ -1,0 +1,33 @@
+{
+  "id": "witness-coil",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Iron Synod",
+  "title": "Witness Coil",
+  "enemyName": "Witness Coil",
+  "text": "Witness Coil records every movement in hot wire and lashes out when two accounts disagree. On loss, suffer 1 Wound.",
+  "flavor": "It trusts the burn mark more than the witness.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Witness Coil is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Witness Coil: records every movement in hot wire and lashes out when two accounts disagree; industrial joints, patched plating, exposed cables, and work lights; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

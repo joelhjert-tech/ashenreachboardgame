@@ -1,0 +1,33 @@
+{
+  "id": "lock-song-adjudicator",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "The Sealed Deep",
+  "title": "Lock-Song Adjudicator",
+  "enemyName": "Lock-Song Adjudicator",
+  "text": "Lock-Song Adjudicator broadcasts obsolete prison verdicts until the expedition's instruments begin enforcing them. On loss, suffer 1 Wound.",
+  "flavor": "The sentence survived everyone named in it.",
+  "severity": 2,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 5,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Lock-Song Adjudicator is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Lock-Song Adjudicator: broadcasts obsolete prison verdicts until the expedition's instruments begin enforcing them; stamps, ledgers, measuring tools, and severe ceremonial clothing; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

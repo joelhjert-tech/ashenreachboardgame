@@ -7,6 +7,7 @@ import {
   isInnerApproachChallengeCleared,
   isInnerApproachSector
 } from "./innerApproach.js";
+import { getPersistentHazardMovementBlockReason } from "./persistentHazards.js";
 
 export type MovementRoute = {
   routeId: string;
@@ -389,6 +390,15 @@ export function getMovementStepBlockReason(
 
   if (!fromSector.neighbors.includes(toSectorId)) {
     return `Sector ${toSectorId} is not reachable from ${fromSectorId}`;
+  }
+
+  const persistentHazardBlockReason = getPersistentHazardMovementBlockReason(
+    state,
+    player,
+    fromSectorId
+  );
+  if (persistentHazardBlockReason) {
+    return persistentHazardBlockReason;
   }
 
   const regionTransitionBlockReason = getRegionTransitionBlockReason(state, fromSectorId, toSectorId);

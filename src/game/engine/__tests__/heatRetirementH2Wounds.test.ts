@@ -161,11 +161,11 @@ describe("Heat Retirement H2 normal Wound Threats", () => {
       expect(createCanonicalSectorGraph().filter((sector) => sector.encounterDecks.threat.includes(target.id))).toHaveLength(target.graphCount);
     }
 
-    expect(threats.size).toBe(120);
+    expect(threats.size).toBe(203);
     expect([...threats.values()].reduce<Record<string, number>>((counts, card) => {
       counts[card.threatLane ?? "missing"] = (counts[card.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
-    }, {})).toEqual({ red: 32, blue: 36, yellow: 52 });
+    }, {})).toEqual({ red: 65, blue: 72, yellow: 66 });
   });
 
   it("keeps success-effect omission restricted to the four approved retirement IDs", () => {
@@ -248,7 +248,7 @@ describe("Heat Retirement H2 normal Wound Threats", () => {
     expect(JSON.stringify(card)).not.toMatch(/"gain_scar"/i);
   });
 
-  it("preserves Choir scenario leverage and leaves Lantern success consequence-free", () => {
+  it("preserves Choir scenario leverage and gives Lantern the standard clear reward", () => {
     const choir = openCheck(requireTarget("choir-static-burst"), false).getState();
     expect(choir.pendingEffect).toBeNull();
     const choirState = choir;
@@ -259,11 +259,11 @@ describe("Heat Retirement H2 normal Wound Threats", () => {
     const lantern = openCheck(requireTarget("lantern-moth-swarm"), false);
     expect(lantern.getState().pendingEffect).toBeNull();
     expect(lantern.getState().activeResolution?.outcome).toEqual({
-      title: "Check passed",
-      text: "Success: no additional effect.",
-      effects: []
+      title: "Outcome applied",
+      text: "Resolution: gain 1 Salvage.",
+      effects: ["Resolution: gain 1 Salvage."]
     });
-    expect(countEvents(lantern.getState(), "RESOLUTION_APPLIED")).toBe(0);
+    expect(countEvents(lantern.getState(), "RESOLUTION_APPLIED")).toBe(1);
   });
 
   it("keeps the owner-only failed-hazard Artifact reaction authoritative and single-use", () => {

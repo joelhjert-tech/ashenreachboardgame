@@ -1,0 +1,33 @@
+{
+  "id": "coffin-iron-grappler",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "The Sealed Deep",
+  "title": "Coffin-Iron Grappler",
+  "enemyName": "Coffin-Iron Grappler",
+  "text": "Coffin-Iron Grappler hooks intruders with riveted arms and drags them back across the seal line. On loss, suffer 1 Wound.",
+  "flavor": "Every link in its chain remembers a prisoner.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Coffin-Iron Grappler is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "revenant",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Coffin-Iron Grappler: hooks intruders with riveted arms and drags them back across the seal line; preserved metal bindings, worn burial fabric, and pale internal light; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

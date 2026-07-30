@@ -1,0 +1,33 @@
+{
+  "id": "underroad-ram",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Buried Maw",
+  "title": "Underroad Ram",
+  "enemyName": "Underroad Ram",
+  "text": "Underroad Ram charges through thin ground with a crown of stone fused across its skull. On loss, suffer 1 Wound.",
+  "flavor": "The road cracks several breaths before it arrives.",
+  "severity": 2,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 4,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Underroad Ram is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "beast",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Underroad Ram: charges through thin ground with a crown of stone fused across its skull; scarred hide, route debris, predatory posture, and a clear animal silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

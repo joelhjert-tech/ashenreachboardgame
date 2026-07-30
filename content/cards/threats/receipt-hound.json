@@ -1,0 +1,33 @@
+{
+  "id": "receipt-hound",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Pallid Retinue",
+  "title": "Receipt Hound",
+  "enemyName": "Receipt Hound",
+  "text": "Receipt Hound smells unrecorded possessions and attacks the hand closest to the disputed property. On loss, suffer 1 Wound.",
+  "flavor": "It never bites the item listed on the form.",
+  "severity": 1,
+  "region": "global",
+  "stat": "guile",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Receipt Hound is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "beast",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Receipt Hound: smells unrecorded possessions and attacks the hand closest to the disputed property; scarred hide, route debris, predatory posture, and a clear animal silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

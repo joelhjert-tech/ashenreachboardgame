@@ -1,0 +1,33 @@
+{
+  "id": "dust-lock-porter",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "The Sealed Deep",
+  "title": "Dust-Lock Porter",
+  "enemyName": "Dust-Lock Porter",
+  "text": "Dust-Lock Porter collects abandoned tools and seals them into a walking cabinet of prison iron. On loss, suffer 1 Wound.",
+  "flavor": "The key hangs inside the lock.",
+  "severity": 1,
+  "region": "global",
+  "stat": "forge",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Dust-Lock Porter is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Dust-Lock Porter: collects abandoned tools and seals them into a walking cabinet of prison iron; industrial joints, patched plating, exposed cables, and work lights; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

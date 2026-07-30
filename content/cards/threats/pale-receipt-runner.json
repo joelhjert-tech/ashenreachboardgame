@@ -1,0 +1,33 @@
+{
+  "id": "pale-receipt-runner",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Pallid Retinue",
+  "title": "Pale Receipt Runner",
+  "enemyName": "Pale Receipt Runner",
+  "text": "Pale Receipt Runner slips between travelers stamping possessions as seized before anyone notices the mark. On loss, suffer 1 Wound.",
+  "flavor": "Ownership changes with a tap of wet ink.",
+  "severity": 1,
+  "region": "global",
+  "stat": "guile",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Pale Receipt Runner is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Pale Receipt Runner: slips between travelers stamping possessions as seized before anyone notices the mark; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

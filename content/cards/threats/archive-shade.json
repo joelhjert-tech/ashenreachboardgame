@@ -1,0 +1,33 @@
+{
+  "id": "archive-shade",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "The Sealed Deep",
+  "title": "Archive Shade",
+  "enemyName": "Archive Shade",
+  "text": "Archive Shade unfolds from a ruined record vault and erases the difference between warning and memory. On loss, suffer 1 Wound.",
+  "flavor": "Every missing page still casts a shadow.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Archive Shade is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "revenant",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Archive Shade: unfolds from a ruined record vault and erases the difference between warning and memory; preserved metal bindings, worn burial fabric, and pale internal light; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

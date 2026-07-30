@@ -6,7 +6,11 @@ import { loadGear } from "../game/content/gear.js";
 import { loadThreatCards } from "../game/content/threats.js";
 import { createSeededRandomSource, type RandomSource } from "../game/engine/dice.js";
 import { reduceGameState } from "../game/engine/reducer.js";
-import type { EncounterEffect, ThreatCard } from "../game/schema/card.schema.js";
+import {
+  STANDARD_HAZARD_CLEAR_REWARD,
+  type EncounterEffect,
+  type ThreatCard
+} from "../game/schema/card.schema.js";
 import type { Character, Stat } from "../game/schema/character.schema.js";
 import type { GearItem } from "../game/schema/gear.schema.js";
 import type { GameAction } from "../game/engine/actions.js";
@@ -124,7 +128,12 @@ function isSimulatable(record: Record<string, unknown>): boolean {
 }
 
 function toSimulatableThreat(record: Record<string, unknown>, outcomeMode: AdminSimulationStartRequest["outcomeMode"]): ThreatCard {
-  if (record.type === "threat" && (record.cardType === "enemy" || record.cardType === "hazard") && outcomeMode === "calculated") return record as unknown as ThreatCard;
+  if (record.type === "threat" && (record.cardType === "enemy" || record.cardType === "hazard") && outcomeMode === "calculated") {
+    const threat = record as unknown as ThreatCard;
+    return threat.cardType === "hazard" && !threat.clearReward
+      ? { ...threat, clearReward: STANDARD_HAZARD_CLEAR_REWARD }
+      : threat;
+  }
   const branchEffect = outcomeMode === "failure"
     ? (record.woundOnLoss ?? record.failEffect ?? record.failureEffect)
     : (record.defeatReward ?? record.successEffect ?? record.resolveEffect ?? record.effect);
@@ -146,6 +155,9 @@ function toSimulatableThreat(record: Record<string, unknown>, outcomeMode: Admin
     severity: 1,
     stat: (record.testStat ?? record.stat ?? "command") as Stat,
     difficulty: forcedSuccess ? 2 : 12,
+    ...(record.type === "threat" && record.cardType === "hazard"
+      ? { clearReward: STANDARD_HAZARD_CLEAR_REWARD }
+      : {}),
     successEffect: effect,
     failEffect: effect
   };

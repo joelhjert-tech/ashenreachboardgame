@@ -1,0 +1,33 @@
+{
+  "id": "relay-hymnist",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Ashen Choir",
+  "title": "Relay Hymnist",
+  "enemyName": "Relay Hymnist",
+  "text": "Relay Hymnist threads a rigid chant through abandoned towers and turns the whole lane into an instrument. On loss, suffer 1 Wound.",
+  "flavor": "Every mast remembers one forbidden verse.",
+  "severity": 2,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 4,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Relay Hymnist is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "choir",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Relay Hymnist: threads a rigid chant through abandoned towers and turns the whole lane into an instrument; ritual signal equipment, ash-dark vestments, and resonant metal ornaments; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

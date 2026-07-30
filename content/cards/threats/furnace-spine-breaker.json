@@ -1,0 +1,33 @@
+{
+  "id": "furnace-spine-breaker",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Last Light Engine",
+  "title": "Furnace-Spine Breaker",
+  "enemyName": "Furnace-Spine Breaker",
+  "text": "Furnace-Spine Breaker locks onto worked metal and dismantles both tool and wielder with the same crushing arms. On loss, suffer 1 Wound.",
+  "flavor": "Maintenance becomes violence when the checklist has no final line.",
+  "severity": 2,
+  "region": "global",
+  "stat": "forge",
+  "difficulty": 5,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Furnace-Spine Breaker is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Furnace-Spine Breaker: locks onto worked metal and dismantles both tool and wielder with the same crushing arms; industrial joints, patched plating, exposed cables, and work lights; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

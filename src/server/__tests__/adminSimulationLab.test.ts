@@ -47,6 +47,32 @@ describe("AdminSimulationLab", () => {
     expect(JSON.stringify(live)).toBe(before);
   });
 
+  it("applies the universal Hazard clear reward when simulating legacy raw card JSON", async () => {
+    const lab = new AdminSimulationLab(editor);
+    const live = createInitialSessionState("live-hazard-reward", "single-player", undefined, "co-op", "standard", 1);
+    const source = await editor.findCard("lantern-moth-swarm", "threat");
+    const result = await lab.start(OWNER, {
+      mode: "start",
+      cardId: "lantern-moth-swarm",
+      cardFamily: "threat",
+      expectedRevision: source.revision,
+      operative: {
+        preset: "custom",
+        stats: { command: 3, grit: 3, signal: 3, guile: 3, forge: 20 },
+        wounds: 0,
+        salvage: 3
+      },
+      dice: { mode: "fixed", values: [6, 6], seed: "hazard-clear-reward" },
+      outcomeMode: "calculated"
+    }, live);
+
+    expect(result.outcome).toBe("SUCCESS");
+    expect(result.after.salvage).toBe(result.before.salvage + 1);
+    expect(result.effects).toContainEqual(
+      expect.objectContaining({ type: "gain_salvage", status: "success" })
+    );
+  });
+
   it("rejects browser paths, stale revisions, and exhausted fixed dice", async () => {
     const lab = new AdminSimulationLab(editor);
     const live = createInitialSessionState("live-room", "single-player", undefined, "co-op", "standard", 1);

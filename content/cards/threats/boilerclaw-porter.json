@@ -1,0 +1,33 @@
+{
+  "id": "boilerclaw-porter",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Last Light Engine",
+  "title": "Boilerclaw Porter",
+  "enemyName": "Boilerclaw Porter",
+  "text": "Boilerclaw Porter mistakes living bodies for fuel canisters and tries to stack them for collection. On loss, suffer 1 Wound.",
+  "flavor": "The loading order has outlived the station.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Boilerclaw Porter is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Boilerclaw Porter: mistakes living bodies for fuel canisters and tries to stack them for collection; industrial joints, patched plating, exposed cables, and work lights; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

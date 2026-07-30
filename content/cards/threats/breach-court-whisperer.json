@@ -1,0 +1,33 @@
+{
+  "id": "breach-court-whisperer",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Rift Court",
+  "title": "Breach Court Whisperer",
+  "enemyName": "Breach Court Whisperer",
+  "text": "Breach Court Whisperer delivers sealed decrees directly into nearby receivers without opening its mouth. On loss, suffer 1 Wound.",
+  "flavor": "The order arrives already marked as acknowledged.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Breach Court Whisperer is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Breach Court Whisperer: delivers sealed decrees directly into nearby receivers without opening its mouth; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

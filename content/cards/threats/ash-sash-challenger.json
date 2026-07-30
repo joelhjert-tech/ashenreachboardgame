@@ -1,0 +1,33 @@
+{
+  "id": "ash-sash-challenger",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Cinder Court",
+  "title": "Ash-Sash Challenger",
+  "enemyName": "Ash-Sash Challenger",
+  "text": "Ash-Sash Challenger marks the road as a dueling floor and answers hesitation with a hooked saber. On loss, suffer 1 Wound.",
+  "flavor": "The sash is older than the hand holding the blade.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Ash-Sash Challenger is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Ash-Sash Challenger: marks the road as a dueling floor and answers hesitation with a hooked saber; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

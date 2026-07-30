@@ -1,0 +1,33 @@
+{
+  "id": "hush-cant-novice",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Ashen Choir",
+  "title": "Hush-Cant Novice",
+  "enemyName": "Hush-Cant Novice",
+  "text": "Hush-Cant Novice sings below hearing and makes nearby receivers tremble in time with the hidden note. On loss, suffer 1 Wound.",
+  "flavor": "You feel the hymn first in your teeth.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Hush-Cant Novice is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "choir",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Hush-Cant Novice: sings below hearing and makes nearby receivers tremble in time with the hidden note; ritual signal equipment, ash-dark vestments, and resonant metal ornaments; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

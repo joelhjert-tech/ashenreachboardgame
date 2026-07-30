@@ -1,0 +1,33 @@
+{
+  "id": "velvet-clause-runner",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Violet Court",
+  "title": "Velvet Clause Runner",
+  "enemyName": "Velvet Clause Runner",
+  "text": "Velvet Clause Runner races between market stalls enforcing the smallest print with a concealed hook. On loss, suffer 1 Wound.",
+  "flavor": "No one reads quickly enough.",
+  "severity": 1,
+  "region": "global",
+  "stat": "guile",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Velvet Clause Runner is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Velvet Clause Runner: races between market stalls enforcing the smallest print with a concealed hook; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

@@ -1,0 +1,33 @@
+{
+  "id": "receipt-memory-bailiff",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Pallid Retinue",
+  "title": "Receipt-Memory Bailiff",
+  "enemyName": "Receipt-Memory Bailiff",
+  "text": "Receipt-Memory Bailiff presents a flawless record of a debt and watches for the instant disbelief becomes fear. On loss, suffer 1 Wound.",
+  "flavor": "The false receipt is stamped with a genuine regret.",
+  "severity": 2,
+  "region": "global",
+  "stat": "guile",
+  "difficulty": 5,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Receipt-Memory Bailiff is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Receipt-Memory Bailiff: presents a flawless record of a debt and watches for the instant disbelief becomes fear; stamps, ledgers, measuring tools, and severe ceremonial clothing; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

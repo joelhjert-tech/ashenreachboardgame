@@ -1,0 +1,33 @@
+{
+  "id": "chainwake-boarder",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Red Maw Raiders",
+  "title": "Chainwake Boarder",
+  "enemyName": "Chainwake Boarder",
+  "text": "Chainwake Boarder swings from cargo cable to cargo cable and lands behind the expedition's guard. On loss, suffer 1 Wound.",
+  "flavor": "The wake arrives before the ship.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Chainwake Boarder is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Chainwake Boarder: swings from cargo cable to cargo cable and lands behind the expedition's guard; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

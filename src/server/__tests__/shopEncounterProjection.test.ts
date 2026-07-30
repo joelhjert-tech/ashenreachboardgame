@@ -114,7 +114,7 @@ describe("shop encounter public projection", () => {
         type: "enemy",
         deck: "yellow",
         challenge: {
-          stat: "command",
+          stat: "guile",
           value: 5
         }
       }

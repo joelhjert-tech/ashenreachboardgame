@@ -1,0 +1,33 @@
+{
+  "id": "warbell-runner",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Red Maw Raiders",
+  "title": "Warbell Runner",
+  "enemyName": "Warbell Runner",
+  "text": "Warbell Runner sprints ahead of the boarding line and rings a hand bell to mark vulnerable prey. On loss, suffer 1 Wound.",
+  "flavor": "One clear note can summon an entire deck crew.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Warbell Runner is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Warbell Runner: sprints ahead of the boarding line and rings a hand bell to mark vulnerable prey; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

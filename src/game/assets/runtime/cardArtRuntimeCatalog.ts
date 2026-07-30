@@ -88,6 +88,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/broken-mast-collapse.png"
   },
   {
+    "cardId": "broodglass-hatchfall",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/broodglass-hatchfall.png"
+  },
+  {
     "cardId": "cartographer-under-glass",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/cartographer-under-glass.png"
@@ -151,6 +156,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "copperjaw-vermin",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/copperjaw-vermin.png"
+  },
+  {
+    "cardId": "courtline-fold",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/courtline-fold.png"
   },
   {
     "cardId": "cracked-censer-novice",
@@ -226,6 +236,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "grave-silt-press",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/grave-silt-press.png"
+  },
+  {
+    "cardId": "grinning-ledger-seizure",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/grinning-ledger-seizure.png"
   },
   {
     "cardId": "grothak-gorged-king",
@@ -383,6 +398,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/redglass-stray.png"
   },
   {
+    "cardId": "reflection-pawnbroker",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/reflection-pawnbroker.png"
+  },
+  {
     "cardId": "relay-husk",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/relay-husk.png"
@@ -441,6 +461,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "scrap-toll-gangers",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/scrap-toll-gangers.png"
+  },
+  {
+    "cardId": "seal-gravel-prowler",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/seal-gravel-prowler.png"
   },
   {
     "cardId": "shardvine-ambushers",
@@ -518,6 +543,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/suture-storm.png"
   },
   {
+    "cardId": "thousand-window-sovereign",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/thousand-window-sovereign.png"
+  },
+  {
     "cardId": "tithe-gnawer",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/tithe-gnawer.png"
@@ -551,6 +581,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "velvet-knife-confessor",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/velvet-knife-confessor.png"
+  },
+  {
+    "cardId": "violet-thorn-toll",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/violet-thorn-toll.png"
   },
   {
     "cardId": "void-salt-sickness",
@@ -1356,26 +1391,6 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "escalation-webglass-afterimage",
     "cardType": "escalation",
     "outputPath": "/assets/cards/escalations/escalation-webglass-afterimage.png"
-  },
-  {
-    "cardId": "broodglass-hatchfall",
-    "cardType": "threat",
-    "outputPath": "/assets/cards/threats/red/broodglass-hatchfall.png"
-  },
-  {
-    "cardId": "courtline-fold",
-    "cardType": "threat",
-    "outputPath": "/assets/cards/threats/red/courtline-fold.png"
-  },
-  {
-    "cardId": "grinning-ledger-seizure",
-    "cardType": "threat",
-    "outputPath": "/assets/cards/threats/yellow/grinning-ledger-seizure.png"
-  },
-  {
-    "cardId": "violet-thorn-toll",
-    "cardType": "threat",
-    "outputPath": "/assets/cards/threats/yellow/violet-thorn-toll.png"
   }
 ] as RuntimeCardArtCatalogEntry[];
 

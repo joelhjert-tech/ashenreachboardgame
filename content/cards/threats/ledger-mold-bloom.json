@@ -1,0 +1,43 @@
+{
+  "id": "ledger-mold-bloom",
+  "type": "threat",
+  "cardType": "hazard",
+  "faction": "Pallid Retinue",
+  "title": "Ledger-Mold Bloom",
+  "text": "Pale mold writes fraudulent debts across every local counter. On failure, lose up to 1 Salvage and fix this Hazard to the sector. While fixed, every service in the sector is locked until the Bloom is cleared.",
+  "flavor": "The first receipt is always for your own name.",
+  "severity": 3,
+  "stat": "command",
+  "difficulty": 7,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
+  "persistentRule": {
+    "type": "service_lock"
+  },
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You voided the false accounts and reopened the sector's counters."
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "lose_salvage",
+        "amount": 1
+      },
+      {
+        "type": "return_threat_to_space"
+      }
+    ]
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "yellow",
+  "region": "global",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "salvage"
+  ]
+}

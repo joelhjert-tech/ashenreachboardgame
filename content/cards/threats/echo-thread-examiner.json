@@ -1,0 +1,33 @@
+{
+  "id": "echo-thread-examiner",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Mirror Wake",
+  "title": "Echo-Thread Examiner",
+  "enemyName": "Echo-Thread Examiner",
+  "text": "Echo-Thread Examiner pulls pale threads from spoken names and tests them for weaknesses in the original. On loss, suffer 1 Wound.",
+  "flavor": "A name unravels more quietly than cloth.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Echo-Thread Examiner is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Echo-Thread Examiner: pulls pale threads from spoken names and tests them for weaknesses in the original; translucent anatomy, fractured reflections, and asymmetrical glass growth; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

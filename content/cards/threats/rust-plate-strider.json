@@ -7,10 +7,10 @@
   "enemyName": "Rust-Plate Strider",
   "text": "A four-jointed salvage walker picks through the lane on blade legs, boiler plates glowing dull orange.",
   "flavor": "It was built to clear roads. Now it clears witnesses.",
-  "severity": 3,
+  "severity": 2,
   "region": "middle",
   "stat": "forge",
-  "difficulty": 7,
+  "difficulty": 6,
   "trophyValue": 2,
   "defeatReward": {
     "type": "gain_note",

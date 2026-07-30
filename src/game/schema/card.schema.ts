@@ -490,9 +490,50 @@ export const HAZARD_SUCCESS_EFFECT_RETIREMENT_IDS = [
 
 const hazardSuccessEffectRetirementIds = new Set<string>(HAZARD_SUCCESS_EFFECT_RETIREMENT_IDS);
 
+export const STANDARD_HAZARD_CLEAR_REWARD = {
+  type: "gain_salvage",
+  amount: 1
+} as const;
+
+export const hazardClearRewardSchema = z.object({
+  type: z.literal("gain_salvage"),
+  amount: z.literal(1)
+}).strict();
+
+export const persistentHazardRuleSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("adjacent_enemy_difficulty"),
+    amount: z.literal(1),
+    radius: z.literal("same_or_adjacent")
+  }).strict(),
+  z.object({
+    type: z.literal("route_cave_in"),
+    mode: z.literal("may_enter_not_cross")
+  }).strict(),
+  z.object({
+    type: z.literal("extra_first_printed_threat"),
+    amount: z.literal(1)
+  }).strict(),
+  z.object({
+    type: z.literal("service_lock")
+  }).strict(),
+  z.object({
+    type: z.literal("equipment_nullfield"),
+    scope: z.literal("first_threat"),
+    suppression: z.literal("equipped_gear_bonuses")
+  }).strict()
+]);
+
+function effectReturnsThreatToSpace(effect: AuthoredEncounterEffect): boolean {
+  return effect.type === "return_threat_to_space" ||
+    (effect.type === "sequence" && effect.effects.some(effectReturnsThreatToSpace));
+}
+
 export const authoredHazardThreatCardSchema = threatBaseSchema.extend({
   cardType: z.literal("hazard"),
   faction: threatFactionSchema,
+  clearReward: hazardClearRewardSchema.default(STANDARD_HAZARD_CLEAR_REWARD),
+  persistentRule: persistentHazardRuleSchema.optional(),
   successEffect: authoredEffectSchema.optional(),
   failEffect: authoredEffectSchema
 }).superRefine((card, context) => {
@@ -531,6 +572,13 @@ export const authoredHazardThreatCardSchema = threatBaseSchema.extend({
       path: ["successEffect"]
     });
   }
+  if (card.persistentRule && !effectReturnsThreatToSpace(card.failEffect)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Persistent hazards must return themselves to their sector on failure",
+      path: ["failEffect"]
+    });
+  }
 });
 
 export const authoredEnemyThreatCardSchema = threatBaseSchema.extend({
@@ -566,6 +614,8 @@ export const authoredThreatCardSchema = z.union([
 
 export const runtimeHazardThreatCardSchema = threatBaseSchema.extend({
   cardType: z.literal("hazard"),
+  clearReward: hazardClearRewardSchema.optional(),
+  persistentRule: persistentHazardRuleSchema.optional(),
   successEffect: effectSchema.optional(),
   failEffect: effectSchema
 });

@@ -1,0 +1,33 @@
+{
+  "id": "star-noise-interpreter",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Last Light Engine",
+  "title": "Star-Noise Interpreter",
+  "enemyName": "Star-Noise Interpreter",
+  "text": "Star-Noise Interpreter translates reactor static into commands and broadcasts them through every open receiver. On loss, suffer 1 Wound.",
+  "flavor": "The Engine has been wrong for so long that error sounds sacred.",
+  "severity": 2,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 5,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Star-Noise Interpreter is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Star-Noise Interpreter: translates reactor static into commands and broadcasts them through every open receiver; industrial joints, patched plating, exposed cables, and work lights; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

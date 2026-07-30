@@ -1,0 +1,33 @@
+{
+  "id": "hollow-decree-seer",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Rift Court",
+  "title": "Hollow Decree Seer",
+  "enemyName": "Hollow Decree Seer",
+  "text": "Hollow Decree Seer projects a dead ruler's command into the lane and makes machinery obey the empty authority. On loss, suffer 1 Wound.",
+  "flavor": "The throne is vacant. The order is not.",
+  "severity": 2,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 6,
+  "trophyValue": 3,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Hollow Decree Seer is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Hollow Decree Seer: projects a dead ruler's command into the lane and makes machinery obey the empty authority; stamps, ledgers, measuring tools, and severe ceremonial clothing; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

@@ -1,0 +1,33 @@
+{
+  "id": "hearth-ruin-behemoth",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Cinder Court",
+  "title": "Hearth-Ruin Behemoth",
+  "enemyName": "Hearth-Ruin Behemoth",
+  "text": "Hearth-Ruin Behemoth tears open dead furnaces and wears their burning plates as a moving throne. On loss, suffer 2 Wounds.",
+  "flavor": "The Court calls it royal because nothing else survives nearby.",
+  "severity": 4,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 10,
+  "trophyValue": 6,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Hearth-Ruin Behemoth is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 2
+  },
+  "enemyFamily": "beast",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "rare",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Hearth-Ruin Behemoth: tears open dead furnaces and wears their burning plates as a moving throne; scarred hide, route debris, predatory posture, and a clear animal silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

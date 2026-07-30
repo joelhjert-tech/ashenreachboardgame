@@ -60,7 +60,7 @@ export const APPROVED_LEGACY_HEAT_CONTENT_IDS = new Set([
 ]);
 
 export const APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS = new Set([
-  "escalation-crownfall-writ", "ash-rat-skitter", "bridge-toll-runt", "crown-bell-baron", "glass-tick-cloud", "gutter-bell-mite", "locked-vault", "marrow-tax-auditors", "pale-contract-collector", "pale-toll-enforcer", "rust-mote-drone", "soot-stained-cutpurse", "toll-scrip-urchins"
+  "escalation-crownfall-writ", "ash-rat-skitter", "bridge-toll-runt", "crown-bell-baron", "glass-tick-cloud", "gutter-bell-mite", "ledger-mold-bloom", "locked-vault", "marrow-tax-auditors", "pale-contract-collector", "pale-toll-enforcer", "rust-mote-drone", "soot-stained-cutpurse", "toll-scrip-urchins"
 ]);
 
 const visibleTextKeys = new Set(["text", "activeText", "passiveText", "penalty", "trigger", "summary", "description"]);

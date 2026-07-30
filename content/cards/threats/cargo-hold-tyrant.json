@@ -1,0 +1,33 @@
+{
+  "id": "cargo-hold-tyrant",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Red Maw Raiders",
+  "title": "Cargo-Hold Tyrant",
+  "enemyName": "Cargo-Hold Tyrant",
+  "text": "Cargo-Hold Tyrant wears the chained remains of a captured hauler and fights as a one-person boarding fortress. On loss, suffer 2 Wounds.",
+  "flavor": "Its armor still bears the inventory numbers of the crew inside.",
+  "severity": 5,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 12,
+  "trophyValue": 8,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Cargo-Hold Tyrant is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 2
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "rare",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Cargo-Hold Tyrant: wears the chained remains of a captured hauler and fights as a one-person boarding fortress; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

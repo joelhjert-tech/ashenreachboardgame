@@ -8,7 +8,7 @@
   "text": "Uniformed gate collectors demand your route writ, your scar tally, and one impossible fee.",
   "flavor": "They call extortion civic maintenance.",
   "severity": 2,
-  "stat": "command",
+  "stat": "guile",
   "difficulty": 5,
   "trophyValue": 4,
   "defeatReward": {

@@ -1,0 +1,33 @@
+{
+  "id": "reflection-pawnbroker",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Mirror Wake",
+  "title": "Reflection Pawnbroker",
+  "enemyName": "Reflection Pawnbroker",
+  "text": "Reflection Pawnbroker prices copied equipment as genuine and insists the expedition already sold the originals. On loss, suffer 1 Wound.",
+  "flavor": "The duplicate comes with your fingerprints.",
+  "severity": 1,
+  "region": "global",
+  "stat": "guile",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Reflection Pawnbroker is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "cartel",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Reflection Pawnbroker: prices copied equipment as genuine and insists the expedition already sold the originals; improvised market armor, hidden tools, and portable trade marks; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

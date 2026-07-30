@@ -1,0 +1,33 @@
+{
+  "id": "ashen-cantor-mauler",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Ashen Choir",
+  "title": "Ashen Cantor Mauler",
+  "enemyName": "Ashen Cantor Mauler",
+  "text": "Ashen Cantor Mauler turns a work chant into measured blows from a soot-black hammer. On loss, suffer 1 Wound.",
+  "flavor": "The final verse is written in dents.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Ashen Cantor Mauler is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "choir",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Ashen Cantor Mauler: turns a work chant into measured blows from a soot-black hammer; ritual signal equipment, ash-dark vestments, and resonant metal ornaments; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

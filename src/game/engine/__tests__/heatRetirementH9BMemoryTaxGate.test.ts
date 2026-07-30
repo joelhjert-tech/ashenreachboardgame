@@ -97,7 +97,7 @@ describe("Heat Retirement H9B Memory Tax Gate", () => {
     });
     expect(JSON.stringify(card)).not.toMatch(/gain_heat|lose_heat|\bHeat\b/);
     expect(LEGACY_HEAT_EFFECT_APPROVALS.some((entry) => entry.id === TARGET_ID)).toBe(false);
-    expect([...threats.values()]).toHaveLength(120);
+    expect([...threats.values()]).toHaveLength(203);
   });
 
   it("creates one mandatory owner-private two-option choice when Salvage is available", () => {

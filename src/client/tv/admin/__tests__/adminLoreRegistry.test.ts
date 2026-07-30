@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PERSISTENT_HAZARD_EXPANSION_IDS } from "../../../../game/data/threatFactions.js";
 import {
   adminLoreCounts,
   adminLoreEntries,
@@ -25,12 +26,23 @@ describe("admin lore registry", () => {
     expect(adminLoreEventEntries.every((entry) => entry.imageUrl?.startsWith("/assets/cards/escalations/"))).toBe(true);
   });
 
-  it("links every faction to one nemesis and an even six-enemy, four-hazard roster", () => {
+  it("links every faction to one nemesis, its expanded roster, and registered Hazard expansions", () => {
     for (const faction of adminLoreFactionEntries) {
+      const expansionCount = faction.threats.filter((threat) =>
+        PERSISTENT_HAZARD_EXPANSION_IDS.includes(
+          threat.id as (typeof PERSISTENT_HAZARD_EXPANSION_IDS)[number]
+        )
+      ).length;
       expect(faction.nemesisKey).toMatch(/^nemesis:/);
-      expect(faction.threats.filter((threat) => threat.cardType === "enemy")).toHaveLength(6);
-      expect(faction.threats.filter((threat) => threat.cardType === "hazard")).toHaveLength(4);
-      expect(new Set(faction.threats.map((threat) => threat.id)).size).toBe(10);
+      const enemyCount = faction.threats.filter((threat) => threat.cardType === "enemy").length;
+      expect(enemyCount).toBeGreaterThanOrEqual(12);
+      expect(enemyCount).toBeLessThanOrEqual(13);
+      expect(faction.threats.filter((threat) => threat.cardType === "hazard")).toHaveLength(
+        4 + expansionCount
+      );
+      expect(new Set(faction.threats.map((threat) => threat.id)).size).toBe(
+        enemyCount + 4 + expansionCount
+      );
     }
   });
 

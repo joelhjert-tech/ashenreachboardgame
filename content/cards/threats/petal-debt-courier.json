@@ -1,0 +1,33 @@
+{
+  "id": "petal-debt-courier",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Violet Court",
+  "title": "Petal-Debt Courier",
+  "enemyName": "Petal-Debt Courier",
+  "text": "Petal-Debt Courier delivers a perfumed invoice and pockets useful equipment while the recipient reads. On loss, suffer 1 Wound.",
+  "flavor": "The flowers are real. So is the theft.",
+  "severity": 1,
+  "region": "global",
+  "stat": "guile",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Petal-Debt Courier is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Petal-Debt Courier: delivers a perfumed invoice and pockets useful equipment while the recipient reads; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

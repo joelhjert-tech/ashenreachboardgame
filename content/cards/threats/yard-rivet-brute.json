@@ -7,11 +7,11 @@
   "enemyName": "Yard-Rivet Brute",
   "text": "A hulking yard fighter wrapped in riveted scrap blocks the forge road, dragging a heated anchor chain.",
   "flavor": "The yard taught him one prayer: hit until the world opens.",
-  "severity": 3,
+  "severity": 1,
   "region": "middle",
   "stat": "forge",
-  "difficulty": 8,
-  "trophyValue": 3,
+  "difficulty": 3,
+  "trophyValue": 1,
   "defeatReward": {
     "type": "gain_note",
     "text": "You cut the anchor chain loose and kept the stamped yard hook."

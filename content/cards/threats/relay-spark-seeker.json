@@ -1,0 +1,33 @@
+{
+  "id": "relay-spark-seeker",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Last Light Engine",
+  "title": "Relay-Spark Seeker",
+  "enemyName": "Relay-Spark Seeker",
+  "text": "Relay-Spark Seeker flits between dead receivers and steals the first clean pulse it can find. On loss, suffer 1 Wound.",
+  "flavor": "It mistakes communication for loose fuel.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Relay-Spark Seeker is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Relay-Spark Seeker: flits between dead receivers and steals the first clean pulse it can find; industrial joints, patched plating, exposed cables, and work lights; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

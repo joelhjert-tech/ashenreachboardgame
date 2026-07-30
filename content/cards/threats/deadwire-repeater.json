@@ -1,0 +1,36 @@
+{
+  "id": "deadwire-repeater",
+  "type": "threat",
+  "cardType": "hazard",
+  "faction": "Ashen Choir",
+  "title": "Deadwire Repeater",
+  "text": "A buried repeater copies the first printed Threat signal it hears. On failure, fix this Hazard to the sector. On later arrivals, the sector's first printed Threat icon draws one additional Threat of the same lane until the Repeater is cleared.",
+  "flavor": "The dead choir always asks for an encore.",
+  "severity": 4,
+  "stat": "signal",
+  "difficulty": 8,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
+  "persistentRule": {
+    "type": "extra_first_printed_threat",
+    "amount": 1
+  },
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You grounded the repeating signal and stripped its clean conductor."
+  },
+  "failEffect": {
+    "type": "return_threat_to_space"
+  },
+  "enemyFamily": "choir",
+  "threatLane": "blue",
+  "region": "global",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "salvage",
+    "escalation"
+  ]
+}

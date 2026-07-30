@@ -10,7 +10,7 @@
   "severity": 2,
   "region": "outer",
   "stat": "grit",
-  "difficulty": 7,
+  "difficulty": 6,
   "trophyValue": 1,
   "defeatReward": {
     "type": "gain_trophy",

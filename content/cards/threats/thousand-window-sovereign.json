@@ -1,0 +1,33 @@
+{
+  "id": "thousand-window-sovereign",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Mirror Wake",
+  "title": "Thousand-Window Sovereign",
+  "enemyName": "Thousand-Window Sovereign",
+  "text": "Thousand-Window Sovereign opens a court of reflected possibilities and attacks from every choice the operative refused. On loss, suffer 2 Wounds.",
+  "flavor": "Only one figure is real, and it is not interested in proving which.",
+  "severity": 4,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 10,
+  "trophyValue": 6,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Thousand-Window Sovereign is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 2
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "rare",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Thousand-Window Sovereign: opens a court of reflected possibilities and attacks from every choice the operative refused; translucent anatomy, fractured reflections, and asymmetrical glass growth; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

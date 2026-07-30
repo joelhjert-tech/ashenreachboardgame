@@ -2,6 +2,7 @@ import { resolveBoardTextEffect } from "../data/boardTextEffects.js";
 import { getBoardSpace, type BoardSpaceDefinition, type ThreatIcon } from "../data/boardSpaces.js";
 import type { GameState } from "../schema/session.schema.js";
 import type { TileChallenge } from "../schema/tileChallenge.schema.js";
+import { getPersistentHazardServiceLockReason } from "./persistentHazards.js";
 import { getBoardSpaceShopTypeLabel, isBoardSpaceShopCapable } from "./shopAvailability.js";
 
 export type TileRuleKind = "tile-challenge" | "threat-draw" | "board-action" | "service" | "gate" | "scenario";
@@ -19,6 +20,10 @@ export function getServiceThreatGate(
   const space = getBoardSpace(sectorId);
   if (!space || !isBoardSpaceShopCapable(space)) {
     return { allowed: false, pending: false, failed: false, reason: null };
+  }
+  const persistentHazardLockReason = getPersistentHazardServiceLockReason(state, sectorId);
+  if (persistentHazardLockReason) {
+    return { allowed: false, pending: false, failed: true, reason: persistentHazardLockReason };
   }
   const progress = state.tileArrivalThreatProgress?.seatId === seatId &&
     state.tileArrivalThreatProgress.sectorId === sectorId

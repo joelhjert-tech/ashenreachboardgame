@@ -1,0 +1,33 @@
+{
+  "id": "roadbone-gnawer",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Buried Maw",
+  "title": "Roadbone Gnawer",
+  "enemyName": "Roadbone Gnawer",
+  "text": "Roadbone Gnawer rips marker posts from the route and sharpens its teeth on their iron cores. On loss, suffer 1 Wound.",
+  "flavor": "It eats the map before it eats the traveler.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Roadbone Gnawer is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "beast",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Roadbone Gnawer: rips marker posts from the route and sharpens its teeth on their iron cores; scarred hide, route debris, predatory posture, and a clear animal silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

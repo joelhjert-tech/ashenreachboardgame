@@ -1,0 +1,33 @@
+{
+  "id": "borrowed-face-scout",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Mirror Wake",
+  "title": "Borrowed-Face Scout",
+  "enemyName": "Borrowed-Face Scout",
+  "text": "Borrowed-Face Scout wears an unfinished copy of the nearest face and studies which memories make it flinch. On loss, suffer 1 Wound.",
+  "flavor": "It smiles only after you do.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Borrowed-Face Scout is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Borrowed-Face Scout: wears an unfinished copy of the nearest face and studies which memories make it flinch; translucent anatomy, fractured reflections, and asymmetrical glass growth; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

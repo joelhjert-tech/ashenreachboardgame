@@ -1,0 +1,33 @@
+{
+  "id": "furnace-page",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Cinder Court",
+  "title": "Furnace Page",
+  "enemyName": "Furnace Page",
+  "text": "Furnace Page carries a ceremonial blade too large for its frame and attacks anyone who will not kneel. On loss, suffer 1 Wound.",
+  "flavor": "A ruined title still demands an audience.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Furnace Page is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Furnace Page: carries a ceremonial blade too large for its frame and attacks anyone who will not kneel; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

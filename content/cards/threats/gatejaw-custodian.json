@@ -1,0 +1,33 @@
+{
+  "id": "gatejaw-custodian",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Rift Court",
+  "title": "Gatejaw Custodian",
+  "enemyName": "Gatejaw Custodian",
+  "text": "Gatejaw Custodian demands a formal right of passage while a hinged execution mask closes around each wrong answer. On loss, suffer 1 Wound.",
+  "flavor": "The hearing ends when the jaw shuts.",
+  "severity": 2,
+  "region": "global",
+  "stat": "command",
+  "difficulty": 5,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Gatejaw Custodian is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Gatejaw Custodian: demands a formal right of passage while a hinged execution mask closes around each wrong answer; layered frontier clothing, battered tools, and a readable human silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

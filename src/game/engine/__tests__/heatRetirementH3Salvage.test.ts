@@ -21,12 +21,12 @@ const TARGETS = [
   {
     id: "crown-bell-baron",
     title: "Crown-Bell Baron",
-    stat: "command",
-    difficulty: 7,
-    severity: 3,
+    stat: "guile",
+    difficulty: 3,
+    severity: 1,
     region: "middle",
     rarity: "uncommon",
-    trophyValue: 2,
+    trophyValue: 1,
     graphCount: 1,
     defeatReward: { type: "gain_note", text: "You seize the Baron's stamped writ case and expose a route-fee fraud." }
   },
@@ -34,13 +34,13 @@ const TARGETS = [
     id: "pale-contract-collector",
     title: "Pale Contract Collector",
     stat: "command",
-    difficulty: 8,
-    severity: 2,
+    difficulty: 3,
+    severity: 1,
     region: "outer",
     rarity: "common",
-    trophyValue: 2,
+    trophyValue: 1,
     graphCount: 2,
-    defeatReward: { type: "gain_trophy", amount: 2 }
+    defeatReward: { type: "gain_trophy", amount: 1 }
   },
   {
     id: "soot-stained-cutpurse",
@@ -173,11 +173,11 @@ describe("Heat Retirement H3 floor-zero Salvage Threats", () => {
       expect(getRuntimeCardArtPath("threat", target.id)).toBe(`/assets/cards/threats/yellow/${target.id}.png`);
       expect(createCanonicalSectorGraph().filter((sector) => sector.encounterDecks.threat.includes(target.id))).toHaveLength(target.graphCount);
     }
-    expect(threats.size).toBe(120);
+    expect(threats.size).toBe(203);
     expect([...threats.values()].reduce<Record<string, number>>((counts, card) => {
       counts[card.threatLane ?? "missing"] = (counts[card.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
-    }, {})).toEqual({ red: 32, blue: 36, yellow: 52 });
+    }, {})).toEqual({ red: 65, blue: 72, yellow: 66 });
   });
 
   it.each(TARGETS)("$id applies the approved floor-zero actual loss at 3, 1, and 0 Salvage", (target) => {

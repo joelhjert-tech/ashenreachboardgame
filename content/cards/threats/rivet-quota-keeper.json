@@ -1,0 +1,33 @@
+{
+  "id": "rivet-quota-keeper",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Iron Synod",
+  "title": "Rivet-Quota Keeper",
+  "enemyName": "Rivet-Quota Keeper",
+  "text": "Rivet-Quota Keeper counts every worked fastener and claims living hands when the construction quota falls short. On loss, suffer 1 Wound.",
+  "flavor": "The missing rivet must be replaced with something.",
+  "severity": 1,
+  "region": "global",
+  "stat": "forge",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Rivet-Quota Keeper is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Rivet-Quota Keeper: counts every worked fastener and claims living hands when the construction quota falls short; stamps, ledgers, measuring tools, and severe ceremonial clothing; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

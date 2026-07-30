@@ -1,0 +1,33 @@
+{
+  "id": "seal-whisper-listener",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "The Sealed Deep",
+  "title": "Seal-Whisper Listener",
+  "enemyName": "Seal-Whisper Listener",
+  "text": "Seal-Whisper Listener presses its ear to buried locks and repeats the thoughts of anyone standing nearby. On loss, suffer 1 Wound.",
+  "flavor": "The door has learned your voice.",
+  "severity": 1,
+  "region": "global",
+  "stat": "signal",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Seal-Whisper Listener is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "revenant",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Seal-Whisper Listener: presses its ear to buried locks and repeats the thoughts of anyone standing nearby; preserved metal bindings, worn burial fabric, and pale internal light; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

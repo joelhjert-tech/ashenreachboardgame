@@ -1,0 +1,33 @@
+{
+  "id": "cargo-scrip-fence",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Red Maw Raiders",
+  "title": "Cargo-Scrip Fence",
+  "enemyName": "Cargo-Scrip Fence",
+  "text": "Cargo-Scrip Fence swaps route permits for forged cargo claims and attacks when either document is questioned. On loss, suffer 1 Wound.",
+  "flavor": "Every seal is authentic somewhere.",
+  "severity": 1,
+  "region": "global",
+  "stat": "guile",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Cargo-Scrip Fence is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "cartel",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Cargo-Scrip Fence: swaps route permits for forged cargo claims and attacks when either document is questioned; improvised market armor, hidden tools, and portable trade marks; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

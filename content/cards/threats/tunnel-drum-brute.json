@@ -1,0 +1,33 @@
+{
+  "id": "tunnel-drum-brute",
+  "type": "threat",
+  "cardType": "enemy",
+  "faction": "Buried Maw",
+  "title": "Tunnel-Drum Brute",
+  "enemyName": "Tunnel-Drum Brute",
+  "text": "Tunnel-Drum Brute hammers its plated chest until the ground answers with a hunting tremor. On loss, suffer 1 Wound.",
+  "flavor": "The second beat always comes from below.",
+  "severity": 1,
+  "region": "global",
+  "stat": "grit",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "Tunnel-Drum Brute is defeated and its identifying marks are entered into your Trophy Pile."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "beast",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "trophy"
+  ],
+  "imagePrompt": "Original Ashen Reach enemy card art of Tunnel-Drum Brute: hammers its plated chest until the ground answers with a hunting tremor; scarred hide, route debris, predatory posture, and a clear animal silhouette; dark science-fantasy frontier, dramatic lane lighting, full-body readable silhouette, no text"
+}

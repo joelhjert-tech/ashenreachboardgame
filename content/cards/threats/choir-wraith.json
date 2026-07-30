@@ -7,10 +7,10 @@
   "enemyName": "Choir Wraith",
   "text": "A signal-wraith drifts forward carrying the note that killed it.",
   "flavor": "It hums like a funeral remembering the wrong name.",
-  "severity": 3,
+  "severity": 2,
   "stat": "signal",
-  "difficulty": 7,
-  "trophyValue": 4,
+  "difficulty": 6,
+  "trophyValue": 2,
   "defeatReward": {
     "type": "gain_note",
     "text": "You caught the wraith's killing note and folded it into a route mark."
