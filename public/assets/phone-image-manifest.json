@@ -8,10 +8,10 @@
     "metadata": "stripped"
   },
   "totals": {
-    "sources": 484,
-    "sourceBytes": 1146440390,
-    "derivativeBytes": 50118890,
-    "reductionPercent": 95.63
+    "sources": 489,
+    "sourceBytes": 1160091611,
+    "derivativeBytes": 50596338,
+    "reductionPercent": 95.64
   },
   "entries": [
     {
@@ -2187,6 +2187,18 @@
       "derivativeBytes": 100068
     },
     {
+      "sourcePath": "/assets/cards/threats/blue/deadwire-repeater.png",
+      "sourceHash": "0dbfe77b4f6a586ac19703135697332f37057babce47d99c07c8f17a4815ede0",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2655057,
+      "derivativePath": "/assets/cards/threats/blue/deadwire-repeater.phone.webp",
+      "derivativeHash": "b42c891741e71f88c6fd244fbee7f6b215e3909961f2138f6b1f42b58b00ca66",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 89938
+    },
+    {
       "sourcePath": "/assets/cards/threats/blue/deep-tremor-ear.png",
       "sourceHash": "1f8e6fc2fe8fe5f80415d581cdf2b9583d954d7edbc30469cb0edb74b1410bb3",
       "sourceWidth": 1086,
@@ -3147,6 +3159,18 @@
       "derivativeBytes": 72492
     },
     {
+      "sourcePath": "/assets/cards/threats/red/emberlung-vent.png",
+      "sourceHash": "a61b2fbf165d30fa0ef7874c73ffce925ed966b2b7f22089dd336e30e5fe899d",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2788580,
+      "derivativePath": "/assets/cards/threats/red/emberlung-vent.phone.webp",
+      "derivativeHash": "1b1a01ebf2f5dcaf729532ab0b43e65526eb5686d8bd720dadcce73c9a4a0ae8",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 102742
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/furnace-ditch-collapse.png",
       "sourceHash": "cba71bdb4bf9451e953da9cba298e3eed54c19986eeae59ae29b276d6732457f",
       "sourceWidth": 1086,
@@ -3243,6 +3267,18 @@
       "derivativeBytes": 109602
     },
     {
+      "sourcePath": "/assets/cards/threats/red/knotrail-cave-in.png",
+      "sourceHash": "46f1d00fd75895fbadfebc9789874a940eef408141a3297b93a0fee1f3ad80ed",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2795915,
+      "derivativePath": "/assets/cards/threats/red/knotrail-cave-in.phone.webp",
+      "derivativeHash": "6dbfd362cc01fb22e4b186808a366698355618ec5b8071aeeb373ce92fcdfc3e",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 94814
+    },
+    {
       "sourcePath": "/assets/cards/threats/red/lane-hook-reaver.png",
       "sourceHash": "6cd7e90b06d5c7686fa9268736def5fe33dee59d069a6c2b38a96eb081c3bb11",
       "sourceWidth": 1086,
@@ -3265,6 +3301,18 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 87608
+    },
+    {
+      "sourcePath": "/assets/cards/threats/red/latchfog-nullfield.png",
+      "sourceHash": "5f5094bc3daf63d1d1ce2faaf441335f7d1ca1b61148614c62a40b83c937330e",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2609150,
+      "derivativePath": "/assets/cards/threats/red/latchfog-nullfield.phone.webp",
+      "derivativeHash": "e743b345371d052f0de278da4233440cfe809af3bff7bb5bf736856f71330826",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 82324
     },
     {
       "sourcePath": "/assets/cards/threats/red/moth-carrier-husk.png",
@@ -3937,6 +3985,18 @@
       "derivativeWidth": 720,
       "derivativeHeight": 960,
       "derivativeBytes": 136618
+    },
+    {
+      "sourcePath": "/assets/cards/threats/yellow/ledger-mold-bloom.png",
+      "sourceHash": "b06894af049feb39c6c9df62ad1e703a0263337cd83b2449b72df263f0999c25",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2802519,
+      "derivativePath": "/assets/cards/threats/yellow/ledger-mold-bloom.phone.webp",
+      "derivativeHash": "dd4da035861a97fe5a6696011fb6985687bf8ba30f4db54cf81cffc4fdca6b70",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 107630
     },
     {
       "sourcePath": "/assets/cards/threats/yellow/locked-vault.png",
