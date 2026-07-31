@@ -2963,8 +2963,14 @@ function PhoneMovePanel({
           success={approachSuccess}
           playerTotal={approachTotal}
           targetTotal={approachTarget}
-          resolutionId={approachResolution?.id}
-          dice={approachResolution?.roll?.dice ?? []}
+          resolutionId={
+            approachResolution?.id
+            ?? (approachOutcome ? `approach:${seatId}:${approachOutcome.movedToSectorId ?? currentTile.sectorId}:${approachOutcome.checkTotal ?? "-"}` : undefined)
+          }
+          dice={
+            approachResolution?.roll?.dice
+            ?? [approachOutcome?.die1, approachOutcome?.die2].filter((die): die is number => typeof die === "number")
+          }
           modifierTotal={approachResolution?.roll?.modifierTotal ?? 0}
           playerTotalLabel="Player total"
           targetTotalLabel="Difficulty total"
@@ -3259,6 +3265,7 @@ export function PhoneActionPanel({
     patch.pendingAfflictionReactionPrivate ||
     patch.pendingForcedDestinationChoicePrivate ||
     patch.pendingDisplacementPrivate ||
+    patch.edgeHand?.reaction ||
     patch.pendingScarChoice ||
     patch.pendingScarRemovalChoice ||
     patch.pendingScarConsequence ||
@@ -3282,6 +3289,7 @@ export function PhoneActionPanel({
     !patch.pendingAfflictionReactionPrivate &&
     !patch.pendingForcedDestinationChoicePrivate &&
     !patch.pendingDisplacementPrivate &&
+    !patch.edgeHand?.reaction &&
     (
       ["outcome_summary", "awaiting_continue"].includes(activeResolution.stage) ||
       (
@@ -3352,6 +3360,10 @@ export function PhoneActionPanel({
     patch.outcomeSummary.movedToSectorId
       ? patch.outcomeSummary
       : null;
+  const compactResolutionResult = Boolean(
+    orphanResolutionOutcome
+    || activeResolution && ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage)
+  );
 
   useEffect(() => {
     if (patch.phase === "navigation") {
@@ -4796,6 +4808,7 @@ export function PhoneActionPanel({
     ]
   };
   const actionViewModel = buildPhoneActionViewModel(patch, actionViewModelSources);
+  const compactRequiredDecision = compactResolutionResult && actionViewModel.groups.required.length > 0;
   const activeTabContent =
     trialPresentationActive ? (
       <PhoneHazardChallengeView
@@ -4869,8 +4882,12 @@ export function PhoneActionPanel({
     ) : activeTurnTab === "action" ? (
       <>
         {activeResolution || orphanResolutionOutcome ? resolutionPanel : null}
-        <PhoneActionPriorityStack model={actionViewModel} onIntent={onIntent} />
-        <ResultDeltaRow deltas={visibleActionDeltas} className="phone-action-deltas phone-priority-stack__results" />
+        {compactRequiredDecision ? (
+          <PhoneActionPriorityStack model={actionViewModel} onIntent={onIntent} requiredOnly />
+        ) : !compactResolutionResult ? (
+          <PhoneActionPriorityStack model={actionViewModel} onIntent={onIntent} />
+        ) : null}
+        {!compactResolutionResult ? <ResultDeltaRow deltas={visibleActionDeltas} className="phone-action-deltas phone-priority-stack__results" /> : null}
       </>
     ) : (
       <>

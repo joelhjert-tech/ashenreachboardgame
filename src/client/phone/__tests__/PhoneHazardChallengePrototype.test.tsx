@@ -260,16 +260,10 @@ describe("PhoneHazardChallengeView", () => {
     );
 
     expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-hazard-challenge-layout", "result-gate");
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/Route broken/i);
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/Processional loses your trail/i);
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/^Total8$/i);
-    expect(screen.getByTestId("phone-roll-result")).toHaveAccessibleName("Your total 8, Challenge 4");
-    expect(screen.getByTestId("phone-resolution-card")).not.toHaveTextContent(/your total|anomaly\s*4|vs/i);
-    expect(screen.getByAltText(/operative portrait/i)).toHaveClass("phone-result-gate__portrait-art");
-    expect(screen.getByTestId("phone-resolution-card").querySelector(".phone-result-gate__environment")).toHaveAttribute(
-      "src",
-      "/assets/riftfall/ui/result-ready/verdict-gate.phone.webp"
-    );
+    expect(screen.getByTestId("phone-resolution-card")).not.toHaveTextContent(/Route broken|Processional loses your trail|your total|anomaly\s*4|vs/i);
+    expect(screen.getByLabelText("Die 1: 4")).toBeVisible();
+    expect(screen.getByLabelText("Die 2: 3")).toBeVisible();
+    expect(screen.getByTestId("phone-resolution-card").querySelector("img")).toBeNull();
     expect(screen.getByRole("button", { name: /continue/i })).toBeVisible();
     expect(screen.queryByTestId("phone-trial-cinematic-stage")).not.toBeInTheDocument();
     expect(view.container.querySelectorAll("canvas")).toHaveLength(0);

@@ -25,7 +25,9 @@ describe("SignalPhoneIdentityRail", () => {
 
     expect(screen.getByRole("heading", { name: "SigQA" })).toBeInTheDocument();
     expect(screen.getByLabelText("Character vitals")).toHaveTextContent(/Wounds1\s+Salvage4/);
-    expect(screen.getByText(/Bjornis · Ashwalk Bridge/i)).toBeInTheDocument();
+    expect(screen.getByText("Bjornis")).toBeInTheDocument();
+    expect(screen.getByText("Ashwalk Bridge")).toBeInTheDocument();
+    expect(screen.getByTestId("signal-phone-identity")).toHaveAttribute("data-connection", "online");
     expect(screen.queryByText(/connected|your turn|waiting/i)).not.toBeInTheDocument();
     expect(document.querySelector(".signal-phone-identity__sector")).not.toBeInTheDocument();
   });

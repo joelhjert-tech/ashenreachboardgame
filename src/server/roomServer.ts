@@ -8482,6 +8482,7 @@ export class GameRoomServer {
       this.state.pendingForcedDestinationChoice ||
       this.state.pendingDisplacement ||
       this.state.pendingAfflictionReaction ||
+      this.state.pendingEdgeReaction ||
       this.state.pendingFailureReaction ||
       this.state.pendingStaticIntercessionReaction ||
       this.state.cooperativeAssistance
@@ -10273,10 +10274,14 @@ export class GameRoomServer {
         this.state.pendingFailureReaction?.seatId === intent.seatId ||
         this.state.pendingStaticIntercessionReaction?.seatId === intent.seatId
       );
+    const acceptingReviewedReroll =
+      previousStage === "roll_result" &&
+      isSoloRerollResolution(this.state.activeResolution);
 
     if (
       this.state.activeResolution &&
       !acceptingFailure &&
+      !acceptingReviewedReroll &&
       previousStage !== "outcome_summary" &&
       previousStage !== "awaiting_continue"
     ) {
@@ -11867,6 +11872,16 @@ export class GameRoomServer {
 
       const previousStage = activeResolution.stage;
       const continuingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? activeResolution.playerId;
+
+      if (this.state.pendingEdgeReaction?.ownerSeatId === activeResolution.playerId) {
+        this.resolveEdgeCardReactionDecline({
+          type: "DECLINE_EDGE_CARD_REACTION",
+          seatId: activeResolution.playerId,
+          reactionId: this.state.pendingEdgeReaction.id
+        });
+        this.broadcastPatch();
+        return;
+      }
 
       this.applyAction({
         type: "CONTINUE_RESOLUTION",
@@ -15018,6 +15033,14 @@ function buildSoloRerollProjection(state: GameState, seatId: string): { availabl
   };
 }
 
+function isSoloRerollResolution(resolution: ActiveResolution | null | undefined): boolean {
+  return Boolean(
+    resolution?.stage === "roll_result"
+    && resolution.card?.id
+    && resolution.id.includes(`:${resolution.card.id}-solo-reroll:`)
+  );
+}
+
 type CardRevealProjection = import("../client/shared/types.js").CardRevealPresentation;
 
 function revealActorName(state: GameState, seatId: string | null): string {
@@ -16367,7 +16390,14 @@ export function buildRequiredActionProjection(
       && actorSeatId
       && buildSoloRerollProjection(state, actorSeatId).available
     );
-    const rollReactionAvailable = scarRerollAvailable || soloRerollAvailable;
+    const edgeReactionAvailable = Boolean(
+      rollResultPending
+      && actorSeatId
+      && state.pendingEdgeReaction?.ownerSeatId === actorSeatId
+    );
+    const rollReactionAvailable = scarRerollAvailable || soloRerollAvailable || edgeReactionAvailable;
+    const rerolledResultVisible = rollResultPending && isSoloRerollResolution(state.activeResolution);
+    const rollReviewAvailable = rollReactionAvailable || rerolledResultVisible;
     const resultVisible = rollResultPending || settledResultVisible;
     const outcomeTitle = state.activeResolution?.outcome?.title ?? (state.lastOutcomeSummary?.success === false ? "Test failed" : "Test resolved");
     const outcomeDetail = state.activeResolution?.outcome?.text ?? state.lastOutcomeSummary?.summary ?? `Review the ${title} result.`;
@@ -16379,28 +16409,38 @@ export function buildRequiredActionProjection(
       requiredTab: isMovementResolution ? "move" : isBattle ? "battle" : "action",
       label: isMovementResolution
         ? resultVisible ? outcomeTitle : "Resolve approach"
-        : rollReactionAvailable
-          ? "Choose a reroll or keep the result"
+        : rollReviewAvailable
+          ? edgeReactionAvailable
+            ? "Use Edge or keep the result"
+            : rerolledResultVisible
+              ? outcomeTitle
+              : "Choose a reroll or keep the result"
           : rollResultPending
             ? isBattle ? "Applying battle consequence" : "Applying challenge consequence"
             : resultVisible ? outcomeTitle : isBattle ? "Resolve battle" : "Resolve test",
       ownerDetail: isMovementResolution
         ? resultVisible ? outcomeDetail : `Resolve the approach to ${title}.`
-        : rollReactionAvailable
-          ? "Use an available reroll or keep the authoritative result."
+        : rollReviewAvailable
+          ? edgeReactionAvailable
+            ? "Use one eligible Edge ability or continue without Edge."
+            : rerolledResultVisible
+              ? outcomeDetail
+              : "Use an available reroll or keep the authoritative result."
           : rollResultPending
             ? "The server is applying the authoritative consequence."
             : resultVisible ? outcomeDetail : `Resolve ${title}.`,
       publicAction: ownerPrivateResolution
         ? resultVisible ? "review a private objective result" : "resolve a private objective"
-        : rollReactionAvailable
-          ? `choose a reroll or keep the ${title} result`
+        : rollReviewAvailable
+          ? rerolledResultVisible
+            ? `review the rerolled ${title} result`
+            : `choose a reroll or keep the ${title} result`
           : rollResultPending
             ? `wait while the ${title} consequence is applied`
             : resultVisible ? `review the ${title} result` : `resolve ${title}`,
       transitionStage: settledResultVisible ? "continue-available" : rollResultPending ? "result-visible" : "required-action",
-      allowedCommand: settledResultVisible || rollReactionAvailable ? "continue" : null,
-      canAct: !rollResultPending || rollReactionAvailable,
+      allowedCommand: settledResultVisible || rerolledResultVisible || (rollReactionAvailable && !edgeReactionAvailable) ? "continue" : null,
+      canAct: !rollResultPending || rollReviewAvailable,
       sourceId: ownerPrivateResolution ? undefined : sourceId
     });
   }

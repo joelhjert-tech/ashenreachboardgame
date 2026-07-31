@@ -300,15 +300,13 @@ export function PhoneHazardChallengeView({
     () => resultDeltas.filter((delta) => delta.visibility !== "hidden").slice(0, 4),
     [resultDeltas]
   );
-  const resultReady =
-    Boolean(outcome)
-    && canContinue
-    && secondaryActions.length === 0;
+  const compactResult = resultStage;
   const fullFormula = finalTotal === null
     ? "Test not yet rolled"
     : `${operativeBase} + ${rollTotal ?? 0} ${modifierTotal >= 0 ? "+" : "−"} ${Math.abs(modifierTotal)} = ${finalTotal}`;
 
-  if (resultReady) {
+  if (compactResult) {
+    const actionAvailable = Boolean(primary && !primary.disabled && !submitted);
     return (
       <section
         className={`phone-trial-shell phone-trial-shell--${kind} phone-trial-shell--result-gate`}
@@ -333,13 +331,39 @@ export function PhoneHazardChallengeView({
             success={result === "success" ? true : result === "failure" ? false : null}
             playerTotal={finalTotal}
             targetTotal={difficulty}
+            resolutionId={resolution?.id ?? identity}
+            dice={rollDice}
+            modifierTotal={modifierTotal}
             outcomeTitle={outcome?.title ?? resultLabel}
             outcomeText={outcome?.text ?? consequenceCopy(patch, resolution, result === "success")}
             outcomeEffects={visibleOutcomeEffects}
             resultDeltas={resultDeltas}
-            canContinue={canContinue}
-            onContinue={onContinue}
+            actionLabel={primary?.label ?? "Continue"}
+            actionDisabledReason={submitted ? "Waiting for server…" : primary?.detail}
+            canContinue={actionAvailable}
+            onContinue={() => {
+              if (!primary || primary.disabled || submitted) return;
+              setSubmitted(true);
+              primary.onClick();
+            }}
           />
+          {secondaryActions.length > 0 ? (
+            <section className="phone-trial-choices" aria-label="Encounter choices">
+              {secondaryActions.map((action) => (
+                <GameButton
+                  key={action.key}
+                  tone="secondary"
+                  disabled={action.disabled}
+                  disabledReason={action.detail}
+                  onClick={action.onClick}
+                  sublabel={action.detail}
+                >
+                  {action.label}
+                </GameButton>
+              ))}
+            </section>
+          ) : null}
+          {supplemental}
         </div>
       </section>
     );

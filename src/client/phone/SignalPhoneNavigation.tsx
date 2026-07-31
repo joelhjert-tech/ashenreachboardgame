@@ -88,7 +88,9 @@ export function SignalPhoneNavigation({
             className={active ? "is-active" : ""}
             onClick={() => onTab(tab)}
           >
-            <SignalPhoneTabIcon tab={tab} />
+            <span className="signal-phone-nav__icon" aria-hidden="true">
+              <SignalPhoneTabIcon tab={tab} />
+            </span>
             {tab === "inventory" ? <i className="visually-hidden" aria-hidden="true">KIT</i> : null}
             {tab === "action" ? <i className="visually-hidden" aria-hidden="true">ACT</i> : null}
             <span>{tab === "player" ? "Operative" : signalPhoneTabLabels[tab]}</span>
@@ -106,9 +108,11 @@ export function SignalPhoneNavigation({
           : `${activeLabel}, current section; show all phone sections`}
         onClick={onMore}
       >
-        {expanded
-          ? <CaretUpIcon size={23} weight="bold" aria-hidden="true" />
-          : <DotsThreeOutlineIcon size={23} weight="fill" aria-hidden="true" />}
+        <span className="signal-phone-nav__icon" aria-hidden="true">
+          {expanded
+            ? <CaretUpIcon size={23} weight="bold" />
+            : <DotsThreeOutlineIcon size={23} weight="fill" />}
+        </span>
         <span>More</span>
       </button>
     </div>

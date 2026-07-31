@@ -354,7 +354,16 @@ function authoredEligibility(scenario: ScenarioDefinition, playerCount: number):
 
 async function main(): Promise<void> {
   const cases = matrixCases();
-  if (cases.length !== 40) throw new Error(`Expected 40 authored combinations, found ${cases.length}`);
+  const expectedCombinationCount = SCENARIOS.reduce(
+    (total, scenario) => total + scenario.supportedPlayerCounts.max - scenario.supportedPlayerCounts.min + 1,
+    0
+  );
+  if (cases.length !== expectedCombinationCount) {
+    throw new Error(`Expected ${expectedCombinationCount} authored combinations, found ${cases.length}`);
+  }
+  if (new Set(cases.map((testCase) => testCase.id)).size !== cases.length) {
+    throw new Error("Scenario/player-count matrix contains duplicate case identifiers");
+  }
   const results: MatrixResult[] = [];
 
   for (const testCase of cases) {

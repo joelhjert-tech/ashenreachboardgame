@@ -41,7 +41,6 @@ import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
 import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
-import { PhoneCardReveal } from "./PhoneCardReveal.js";
 import { SignalPhoneIdentityRail } from "./SignalPhoneIdentityRail.js";
 import {
   SignalPhoneMoreHeading,
@@ -1839,6 +1838,7 @@ export function PortraitControllerView({
       className={rootClassName}
       data-phone-chrome-visible={phoneChromeVisible ? "true" : "false"}
       data-phone-bottom-dock-expanded={bottomDockExpanded ? "true" : "false"}
+      data-active-tab={activeTab}
     >
       <div className="phone-portrait-panel">
         {phoneChromeVisible ? (
@@ -1849,6 +1849,7 @@ export function PortraitControllerView({
             wounds={self.character.wounds}
             salvage={self.character.salvage ?? 0}
             sectorId={self.sectorId}
+            connectionStatus={connectionStatus}
           />
         ) : (
           <header className="signal-phone-compact-status phone-topbar--compact" aria-label="Compact player status">
@@ -2306,7 +2307,6 @@ export function PortraitControllerView({
           />
         </nav> : null}
       </div>
-      <PhoneCardReveal reveal={patch?.privateCardReveal} />
     </section>
   );
 }

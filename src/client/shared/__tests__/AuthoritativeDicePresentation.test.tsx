@@ -39,6 +39,16 @@ describe("AuthoritativeDicePresentation", () => {
     expect(screen.getByRole("status").textContent).toContain("Die 1 3, Die 2 5");
   });
 
+  it("can render dice faces without headings or calculation details on phone", () => {
+    render(<AuthoritativeDicePresentation model={model()} diceOnly />);
+
+    expect(screen.getByLabelText("Die 1: 3")).not.toBeNull();
+    expect(screen.getByLabelText("Die 2: 5")).not.toBeNull();
+    expect(screen.queryByText("Signal test")).toBeNull();
+    expect(screen.queryByLabelText("Dice calculation")).toBeNull();
+    expect(screen.getByTestId("authoritative-dice-presentation").classList.contains("authoritative-dice--dice-only")).toBe(true);
+  });
+
   it("never fabricates a face in the ready or submitting state", () => {
     render(<AuthoritativeDicePresentation model={model({ stage: "ready", dice: buildDice([], ["Movement die"]), rawTotal: null, modifiers: [], finalValue: null, target: null, outcome: null })} />);
 

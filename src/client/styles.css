@@ -10646,6 +10646,59 @@ select {
   from { opacity: 0; transform: translateY(0.8rem); }
 }
 
+/* The phone is a controller, not a second result screen. Completed checks keep
+   only the authoritative dice and the required continuation control visible. */
+.phone-result-gate.phone-result-gate--dice-only {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  grid-template-rows: auto auto;
+  gap: 0.55rem;
+  overflow: visible;
+  padding: 0.55rem;
+  border-color: rgba(111, 199, 209, 0.34);
+  border-radius: 0.65rem;
+  background: rgba(5, 8, 10, 0.92);
+  box-shadow: none;
+}
+
+.phone-result-gate--dice-only[data-has-dice="false"] {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.phone-result-gate--dice-only .phone-result-gate__dice {
+  --dice-size: clamp(3.4rem, 19vw, 4.6rem);
+  width: 100%;
+  gap: 0;
+  padding: 0.45rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.phone-result-gate--dice-only .authoritative-dice__tray {
+  min-height: 0;
+  padding: 0.35rem;
+}
+
+.phone-result-gate--dice-only .authoritative-die > small,
+.phone-result-gate--dice-only .authoritative-die > em {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.phone-result-gate--dice-only .phone-result-gate__continue {
+  width: 100%;
+  min-height: 3.25rem;
+}
+
 .phone-battle-assist {
   display: grid;
   gap: 0.55rem;

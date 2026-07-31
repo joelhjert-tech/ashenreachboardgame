@@ -400,6 +400,40 @@ describe("server required-action projection", () => {
     });
   });
 
+  it("keeps a post-roll Edge reaction actionable instead of projecting a resolving deadlock", () => {
+    const state = activateMultiplayer();
+    const ownerSeatId = state.turnOrder[0]!;
+    state.phase = "resolution";
+    state.activeResolution = {
+      id: "edge-reaction-resolution",
+      playerId: ownerSeatId,
+      source: "threat",
+      stage: "roll_result",
+      card: { id: "ash-lane-cutters", title: "Ash-Lane Cutters", type: "enemy" },
+      battle: { enemyName: "Ash-Lane Cutters", stat: "command", difficulty: 6, modifiers: [] },
+      roll: { dice: [1, 2], baseTotal: 3, modifierTotal: 2, finalTotal: 5, target: 9, success: false },
+      outcome: { title: "Edge reaction available", text: "Use one eligible Edge ability or continue without Edge.", effects: [] }
+    };
+    state.pendingEdgeReaction = {
+      id: "edge-reaction:edge-reaction-resolution",
+      ownerSeatId,
+      resolutionId: "edge-reaction-resolution",
+      sourceKind: "battle",
+      legalCardIds: ["edge-cinderline-break"],
+      originalRoll: [1, 2],
+      target: 9,
+      createdAt: "2026-07-31T12:00:00.000Z"
+    };
+
+    expect(requiredAction(createPhoneProjection(state, ownerSeatId))).toMatchObject({
+      label: "Use Edge or keep the result",
+      transitionStage: "result-visible",
+      allowedCommand: null,
+      canAct: true,
+      inputEnabled: true
+    });
+  });
+
   it("projects a public-safe, stable handoff from the authoritative turn event", () => {
     const state = activateMultiplayer();
     const fromSeatId = state.turnOrder[0]!;

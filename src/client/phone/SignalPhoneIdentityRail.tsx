@@ -12,6 +12,7 @@ interface SignalPhoneIdentityRailProps {
   wounds: number;
   salvage: number;
   sectorId: string;
+  connectionStatus?: string;
 }
 
 function titleCase(value: string): string {
@@ -26,13 +27,19 @@ export function SignalPhoneIdentityRail({
   displayName,
   wounds,
   salvage,
-  sectorId
+  sectorId,
+  connectionStatus = "Connected"
 }: SignalPhoneIdentityRailProps): ReactElement {
   const environment = getSignalTheatreEnvironment(sectorId);
   const sectorName = environment?.sectorName ?? titleCase(sectorId);
+  const connected = !/disconnected|offline|error/i.test(connectionStatus);
 
   return (
-    <header className="signal-phone-identity phone-topbar" data-testid="signal-phone-identity">
+    <header
+      className="signal-phone-identity phone-topbar"
+      data-testid="signal-phone-identity"
+      data-connection={connected ? "online" : "offline"}
+    >
       <div className="signal-phone-identity__rail">
         <div className="signal-phone-identity__portrait">
           <OperativePortraitImage
@@ -45,17 +52,22 @@ export function SignalPhoneIdentityRail({
 
         <div className="signal-phone-identity__name">
           <h1>{displayName}</h1>
-          <span>{characterName} · {sectorName}</span>
+          <span className="signal-phone-identity__name-meta">
+            <i aria-hidden="true" />
+            <b>{characterName}</b>
+            <em aria-hidden="true">/</em>
+            <span>{sectorName}</span>
+          </span>
         </div>
 
         <dl className="signal-phone-identity__vitals" aria-label="Character vitals">
           <div className="signal-phone-identity__vital signal-phone-identity__vital--wound">
             <dt><HeartbeatIcon weight="fill" aria-hidden="true" /> Wounds</dt>
-            <dd>{wounds}</dd>
+            <dd key={`wounds-${wounds}`}>{wounds}</dd>
           </div>
           <div className="signal-phone-identity__vital signal-phone-identity__vital--salvage">
             <dt><TreasureChestIcon weight="duotone" aria-hidden="true" /> Salvage</dt>
-            <dd>{salvage}</dd>
+            <dd key={`salvage-${salvage}`}>{salvage}</dd>
           </div>
         </dl>
       </div>

@@ -134,6 +134,7 @@ function isBlockingPrompt(patch: PhonePatchPayload): boolean {
     patch.pendingAfflictionReactionPrivate ||
     patch.pendingForcedDestinationChoicePrivate ||
     patch.pendingDisplacementPrivate ||
+    patch.edgeHand?.reaction ||
     patch.pendingGearEquipChoice ||
     patch.pendingEquipmentSuppressionChoice ||
     patch.pendingScarChoice ||
@@ -351,7 +352,23 @@ function ActionSection({
   return <section className="phone-priority-stack__section" data-testid={testId}><h3>{title}{actions.length > 1 ? ` · ${actions.length}` : ""}</h3>{body}</section>;
 }
 
-export function PhoneActionPriorityStack({ model, onIntent }: { model: PhoneActionViewModel; onIntent: (intent: ClientIntent) => void }): ReactElement {
+export function PhoneActionPriorityStack({
+  model,
+  onIntent,
+  requiredOnly = false
+}: {
+  model: PhoneActionViewModel;
+  onIntent: (intent: ClientIntent) => void;
+  requiredOnly?: boolean;
+}): ReactElement {
+  if (requiredOnly) {
+    return (
+      <div className="phone-priority-stack phone-priority-stack--required-only" data-testid="phone-action-priority-stack">
+        <ActionSection title="Required now" actions={model.groups.required} onIntent={onIntent} testId="priority-required" />
+      </div>
+    );
+  }
+
   const optionalCollapsed = model.groups.optional.length > 3;
   return (
     <div className="phone-priority-stack" data-testid="phone-action-priority-stack">

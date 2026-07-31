@@ -1298,6 +1298,18 @@ describe("active resolution visibility state", () => {
       available: false,
       charges: 0
     });
+    expect((createPhoneProjection(server.getState(), "seat-1") as {
+      requiredAction?: { label: string; allowedCommand?: string | null; canAct: boolean };
+    }).requiredAction).toMatchObject({
+      label: "Solo reroll passed",
+      allowedCommand: "continue",
+      canAct: true
+    });
+
+    const rejectionCountBeforeContinue = sent.filter((message) => message.type === "INTENT_REJECTED").length;
+    server.handleIntent(client, { type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
+    expect(server.getState().activeResolution?.stage).not.toBe("roll_result");
+    expect(sent.filter((message) => message.type === "INTENT_REJECTED")).toHaveLength(rejectionCountBeforeContinue);
 
     server.handleIntent(client, { type: "SOLO_REROLL_REQUESTED", seatId: "seat-1" });
     expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(true);

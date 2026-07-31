@@ -1104,7 +1104,7 @@ async function setupPhone(
   await sleep(350);
   await waitForText(surface, /choose starting Contract/i);
   await onCheckpoint?.("mission-selection");
-  await clickMatching(surface, [/^select mission$/i]);
+  await clickMatching(surface, [/^select contract$/i, /^select mission$/i]);
   for (let pick = 1; pick <= 2; pick += 1) {
     await waitForText(surface, new RegExp(`provision · pick ${pick} of 2`, "i"));
     await clickMatching(surface, [/^choose (?:follower|equipment)$/i]);
@@ -1348,7 +1348,13 @@ async function runCase(browser: Browser, campaignCase: CampaignCase): Promise<Ca
     }
     await clickMatching(s21, [/^start game$/i], 20_000);
     await waitForText(s21, /roll movement|waiting for/i, 20_000);
-      await captureEvidence(caseDirectory, "game-start", s21, tv.page, screenshots, typography);
+    await captureEvidence(caseDirectory, "game-start", s21, tv.page, screenshots, typography);
+    await clickMatching(s21, [/^more$/i], 5_000);
+    await waitForText(s21, /command sections/i, 5_000);
+    await sleep(350);
+    await captureEvidence(caseDirectory, "more-menu", s21, tv.page, screenshots, typography);
+    await clickMatching(s21, [/^more$/i], 5_000);
+    await sleep(250);
 
     const loopStarted = Date.now();
     let lastProgressAt = Date.now();

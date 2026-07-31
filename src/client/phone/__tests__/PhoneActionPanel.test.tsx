@@ -514,6 +514,7 @@ describe("PhoneActionPanel", () => {
     });
 
     render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} selectedTurnTab="battle" />);
+    expect(screen.getByTestId("phone-action-priority-stack")).not.toHaveTextContent(/passive|blocked/i);
     fireEvent.click(screen.getByRole("button", { name: /^Pay 1 Salvage/ }));
 
     expect(onIntent).toHaveBeenCalledWith({
@@ -1224,19 +1225,10 @@ describe("PhoneActionPanel", () => {
     );
 
     const result = screen.getByTestId("phone-approach-result");
-    expect(result).toHaveTextContent(/Approach Result/i);
-    expect(result).toHaveTextContent(/Glassmere Spindle/i);
-    expect(result).not.toHaveTextContent(/Player total|Difficulty total|vs/i);
-    expect(within(result).getByTestId("phone-roll-result")).toHaveTextContent(/^Total7$/i);
-    expect(within(result).getByTestId("phone-roll-result")).toHaveAccessibleName(
-      "Player total 7, Difficulty total 7"
-    );
+    expect(result).not.toHaveTextContent(/Approach Result|Glassmere Spindle|Player total|Difficulty total|vs/i);
     expect(within(result).getByTestId("authoritative-dice-presentation")).toHaveClass("is-animating");
     expect(within(result).getByLabelText("Die 1: 5")).toBeVisible();
-    expect(within(result).getByAltText(/glassmere spindle location artwork/i)).toHaveAttribute(
-      "src",
-      "/assets/riftfall/environments/signal-theatre/sectors/glassmere-spindle.png"
-    );
+    expect(within(result).queryByRole("img")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
     expect(screen.queryByText(/Enemy Movement/i)).not.toBeInTheDocument();
 
@@ -2973,7 +2965,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/failure/i);
+    expect(screen.getByLabelText("Die 1: 2")).toBeVisible();
+    expect(screen.getByLabelText("Die 2: 5")).toBeVisible();
+    expect(screen.queryByText(/failure: the signal collapses/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^continue$/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /accept consequence/i })).toBeVisible();
 
@@ -3098,7 +3092,9 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByTestId("phone-resolution-card")).toHaveAttribute("data-result-ready-gate", "true");
-    expect(screen.getByText("Reward applied")).toBeInTheDocument();
+    expect(screen.queryByText("Reward applied")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Die 1: 5")).toBeVisible();
+    expect(screen.queryByTestId("phone-action-priority-stack")).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /continue/i })).toHaveLength(1);
   });
 
@@ -3303,13 +3299,9 @@ describe("PhoneActionPanel", () => {
     );
 
     const result = screen.getByTestId("phone-approach-result");
-    expect(result).not.toHaveTextContent(/player total|difficulty total|vs/i);
-    expect(within(result).getByTestId("phone-roll-result")).toHaveTextContent(/^Total6$/i);
-    expect(within(result).getByTestId("phone-roll-result")).toHaveAccessibleName(
-      "Player total 6, Difficulty total 7"
-    );
-    expect(result).toHaveTextContent(/approach setback/i);
-    expect(screen.getAllByText(/failed to enter red march outpost/i).length).toBeGreaterThan(0);
+    expect(result).not.toHaveTextContent(/player total|difficulty total|vs|approach setback|failed to enter red march outpost/i);
+    expect(within(result).getByLabelText("Die 1: 3")).toBeVisible();
+    expect(within(result).getByLabelText("Die 2: 2")).toBeVisible();
     expect(within(result).getByTestId("phone-resolution-continue")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
@@ -3668,6 +3660,88 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByRole("button", { name: /^continue$/i })).not.toBeInTheDocument();
   });
 
+  it("keeps a post-roll Edge reaction actionable in the battle view", () => {
+    const onIntent = vi.fn();
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          phase: "resolution",
+          encounter: {
+            id: "ash-lane-cutters",
+            title: "Ash-Lane Cutters",
+            presentationType: "enemy",
+            cardType: "enemy",
+            enemyName: "Ash-Lane Cutters",
+            flavor: "The cutters close in.",
+            difficulty: 9,
+            stat: "command"
+          },
+          activeResolution: {
+            id: "edge-reaction-resolution",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "roll_result",
+            card: { id: "ash-lane-cutters", title: "Ash-Lane Cutters", type: "enemy", artType: "threat" },
+            battle: { enemyName: "Ash-Lane Cutters", stat: "command", difficulty: 9, modifiers: [] },
+            roll: { dice: [1, 2], baseTotal: 3, modifierTotal: 2, finalTotal: 5, target: 9, success: false },
+            outcome: { title: "Edge reaction available", text: "Use one eligible Edge ability or continue without Edge.", effects: [] }
+          },
+          requiredAction: {
+            id: "battle:edge-reaction-resolution:roll_result",
+            kind: "battle",
+            actorSeatId: "seat-1",
+            actorDisplayName: "Lane",
+            requiredTab: "battle",
+            label: "Use Edge or keep the result",
+            detail: "Use one eligible Edge ability or continue without Edge.",
+            canAct: true,
+            waiting: false,
+            privacy: "owner",
+            transitionStage: "result-visible",
+            allowedCommand: null,
+            inputEnabled: true
+          },
+          edgeHand: {
+            cards: [{
+              id: "edge-cinderline-break",
+              name: "Cinderline Break",
+              edgeValue: 2,
+              commitText: "Lock 2 as one die.",
+              abilityText: "Prevent 1 battle Wound.",
+              tradeoffText: "Forfeit the reward.",
+              ability: {
+                label: "Break the wound line",
+                enabled: true,
+                disabledReason: null,
+                resolutionId: "edge-reaction-resolution",
+                targets: []
+              }
+            }],
+            limit: 2,
+            awardRule: "Random awards only.",
+            canCommit: false,
+            disabledReason: "The roll is complete.",
+            resolutionId: "edge-reaction-resolution",
+            reaction: {
+              id: "edge-reaction:edge-reaction-resolution",
+              prompt: "Use one eligible Edge ability or continue with the rolled result."
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.queryByText(/Applying battle consequence/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Continue without Edge/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "DECLINE_EDGE_CARD_REACTION",
+      seatId: "seat-1",
+      reactionId: "edge-reaction:edge-reaction-resolution"
+    });
+  });
+
   it.each<Stat>(["command", "grit", "signal", "guile", "forge"])(
     "matches the phone battle frame to the authoritative %s challenge theme",
     (stat) => {
@@ -3811,11 +3885,9 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByTestId("phone-resolution-card")).toBeInTheDocument();
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/^Total12$/i);
-    expect(screen.getByTestId("phone-roll-result")).toHaveAccessibleName("Your total 12, Challenge 12");
-    expect(screen.getByText(/the gate yields/i)).toBeInTheDocument();
-    expect(screen.getByText(/^threat defeated$/i)).toBeInTheDocument();
-    expect(screen.getByText(/added to the trophy pile/i)).toBeInTheDocument();
+    expect(screen.getByLabelText("Die 1: 6")).toBeVisible();
+    expect(screen.getByLabelText("Die 2: 4")).toBeVisible();
+    expect(screen.queryByText(/the gate yields|threat defeated|added to the trophy pile/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/BattleThreatGrit/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-current-prompt")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
@@ -3883,9 +3955,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByText(/the signal breaks/i)).toBeInTheDocument();
-    expect(screen.getByText(/^operative defeated$/i)).toBeInTheDocument();
-    expect(screen.getByText(/you suffered 1 wound/i)).toBeInTheDocument();
+    expect(screen.getByLabelText("Die 1: 2")).toBeVisible();
+    expect(screen.getByLabelText("Die 2: 3")).toBeVisible();
+    expect(screen.queryByText(/the signal breaks|operative defeated|you suffered 1 wound/i)).not.toBeInTheDocument();
     expect(screen.getByTestId("phone-resolution-card")).toBeInTheDocument();
     expect(screen.getByTestId("phone-battle-shell")).toHaveClass("phone-battle-shell--result-gate", "phone-battle-shell--defeat");
     expect(screen.queryByText(/no quick actions available/i)).not.toBeInTheDocument();
@@ -4235,8 +4307,8 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByTestId("phone-resolution-card")).toHaveAttribute("data-result-ready-gate", "true");
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/scenario pressure/i);
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/doom rises by 1/i);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveAttribute("data-has-dice", "false");
+    expect(screen.getByTestId("phone-resolution-card")).not.toHaveTextContent(/scenario pressure|doom rises by 1/i);
   });
 
   it("replaces completed cooperative assistance controls with a stable result gate", () => {
@@ -4409,7 +4481,7 @@ describe("PhoneActionPanel", () => {
 
     const resolutionCard = screen.getByTestId("phone-resolution-card");
 
-    expect(within(resolutionCard).getAllByText(/you found a loophole in a dead empire tariff/i)).toHaveLength(1);
+    expect(within(resolutionCard).queryByText(/you found a loophole in a dead empire tariff/i)).not.toBeInTheDocument();
     expect(within(resolutionCard).queryByRole("listitem", { name: /you found a loophole/i })).not.toBeInTheDocument();
   });
 

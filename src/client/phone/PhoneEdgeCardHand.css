@@ -133,7 +133,7 @@
   grid-column: 2;
   align-self: start;
   color: #eaffff;
-  font: 850 2.35rem/.85 var(--font-display);
+  font: 850 2.35rem/1.12 var(--font-display);
   text-shadow: 0 0 .8rem rgb(101 224 232 / .55);
 }
 

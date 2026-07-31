@@ -40,12 +40,15 @@ export function AuthoritativeDicePresentation({
   model,
   size = "phone",
   compact = false,
+  diceOnly = false,
   animateOnMount = false,
   className = ""
 }: {
   model: AuthoritativeDiceModel;
   size?: "phone" | "host";
   compact?: boolean;
+  /** Omits headings and calculation details for the compact phone roll surface. */
+  diceOnly?: boolean;
   /** Use only for a newly received authoritative result; restored results must leave this false. */
   animateOnMount?: boolean;
   className?: string;
@@ -75,7 +78,7 @@ export function AuthoritativeDicePresentation({
 
   return (
     <section
-      className={`authoritative-dice authoritative-dice--${size}${compact ? " authoritative-dice--compact" : ""}${animating ? " is-animating" : " is-settled"}${reducedMotion ? " is-reduced-motion" : ""} ${className}`.trim()}
+      className={`authoritative-dice authoritative-dice--${size}${compact ? " authoritative-dice--compact" : ""}${diceOnly ? " authoritative-dice--dice-only" : ""}${animating ? " is-animating" : " is-settled"}${reducedMotion ? " is-reduced-motion" : ""} ${className}`.trim()}
       data-testid="authoritative-dice-presentation"
       data-context={model.context}
       data-stage={model.stage}
@@ -83,11 +86,13 @@ export function AuthoritativeDicePresentation({
       data-restored={signature && !animating ? "true" : "false"}
       aria-label={`${model.purpose} dice`}
     >
-      <header className="authoritative-dice__header">
-        <span>{model.stage === "ready" ? "Roll ready" : model.stage === "submitting" || model.stage === "rolling" ? "Rolling" : size === "host" && compact ? "Result" : "Authoritative result"}</span>
-        <strong>{model.purpose}</strong>
-        <small>{model.actorName} · {model.dice.length}d{model.dice[0]?.sides ?? 6}</small>
-      </header>
+      {!diceOnly ? (
+        <header className="authoritative-dice__header">
+          <span>{model.stage === "ready" ? "Roll ready" : model.stage === "submitting" || model.stage === "rolling" ? "Rolling" : size === "host" && compact ? "Result" : "Authoritative result"}</span>
+          <strong>{model.purpose}</strong>
+          <small>{model.actorName} · {model.dice.length}d{model.dice[0]?.sides ?? 6}</small>
+        </header>
+      ) : null}
       <div className="authoritative-dice__tray" aria-label={`${model.dice.length} dice`}>
         {model.dice.map((die) => (
           <div
@@ -105,7 +110,7 @@ export function AuthoritativeDicePresentation({
           </div>
         ))}
       </div>
-      {signature ? (
+      {!diceOnly && signature ? (
         <div className="authoritative-dice__math" aria-label="Dice calculation">
           {model.rawTotal !== null ? <span>Raw roll <strong>{model.rawTotal}</strong></span> : null}
           {model.modifiers.map((modifier, index) => (
@@ -115,10 +120,10 @@ export function AuthoritativeDicePresentation({
           {model.target !== null && model.target !== undefined ? <span>Target <strong>{model.target}</strong></span> : null}
           {model.outcome ? <span className="is-outcome">{model.outcome}</span> : null}
         </div>
-      ) : (
+      ) : !diceOnly ? (
         <p className="authoritative-dice__pending">Roll - · {model.stage === "ready" ? "Result appears after the server accepts the roll." : "Awaiting the authoritative result…"}</p>
-      )}
-      {resultText ? <p className="sr-only" role="status" aria-live="polite">{resultText}</p> : null}
+      ) : null}
+      {!diceOnly && resultText ? <p className="sr-only" role="status" aria-live="polite">{resultText}</p> : null}
     </section>
   );
 }
