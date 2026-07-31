@@ -1,4 +1,4 @@
-export const CARD_IMAGE_TYPES = ["threat", "contract", "anomaly", "artifact", "equipment", "follower", "scar", "escalation"] as const;
+export const CARD_IMAGE_TYPES = ["threat", "contract", "anomaly", "artifact", "equipment", "follower", "scar", "escalation", "edge"] as const;
 
 export type CardImageType = (typeof CARD_IMAGE_TYPES)[number];
 export type ThreatCardArtLane = "red" | "blue" | "yellow";
@@ -11,6 +11,7 @@ export type CardImageAssetType =
   | "followerCardArt"
   | "scarCardArt"
   | "escalationCardArt"
+  | "edgeCardArt"
   | "threatCardArt";
 
 export interface CardImagePromptCatalogEntry {
@@ -35,7 +36,8 @@ export const CARD_IMAGE_FALLBACK_PATHS: Record<CardImageType, string> = {
   equipment: "/assets/cards/fallbacks/equipment.svg",
   follower: "/assets/cards/fallbacks/follower.svg",
   scar: "/assets/cards/fallbacks/scar.svg",
-  escalation: "/assets/cards/fallbacks/escalation.svg"
+  escalation: "/assets/cards/fallbacks/escalation.svg",
+  edge: "/assets/cards/fallbacks/edge.svg"
 };
 
 export const CARD_IMAGE_OUTPUT_DIRECTORIES: Record<CardImageType, string> = {
@@ -46,7 +48,8 @@ export const CARD_IMAGE_OUTPUT_DIRECTORIES: Record<CardImageType, string> = {
   equipment: "/assets/cards/equipment",
   follower: "/assets/cards/followers",
   scar: "/assets/cards/scars",
-  escalation: "/assets/cards/escalations"
+  escalation: "/assets/cards/escalations",
+  edge: "/assets/cards/edge"
 };
 
 const THREAT_CARD_ART_LANES = new Set<ThreatCardArtLane>(["red", "blue", "yellow"]);
@@ -59,7 +62,8 @@ const CARD_IMAGE_ASSET_TYPES: Record<CardImageType, CardImageAssetType> = {
   equipment: "equipmentCardArt",
   follower: "followerCardArt",
   scar: "scarCardArt",
-  escalation: "escalationCardArt"
+  escalation: "escalationCardArt",
+  edge: "edgeCardArt"
 };
 
 export function getCardArtAssetType(cardType: CardImageType): CardImageAssetType {

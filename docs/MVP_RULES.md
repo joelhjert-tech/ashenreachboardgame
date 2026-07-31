@@ -98,10 +98,13 @@ Gear can be earned through combat rewards or contract completion.
 - Owning at least 1 Artifact raises the limit by 1, to a maximum of 4.
 - Awards are server-random and never present a card-selection screen.
 - If the hand is full, the award is skipped; no discard choice interrupts play.
-- During an enemy battle or Hazard setup, commit at most 1 Edge Card.
-- Its printed value becomes one die of the upcoming 2d6 roll; the server rolls the other die.
-- The committed die cannot be rerolled. The card is publicly revealed on TV and then discarded.
-- Timing-specific unique abilities are authored but are not active in the phase-one runtime.
+- Use at most 1 Edge Card in a resolution, either by committing its value or activating its ability.
+- During an enemy battle or Hazard setup, its printed value may become one die of the upcoming 2d6 roll; the server rolls the other die.
+- The committed die cannot be rerolled.
+- Pre-roll abilities are committed during the matching setup, after assistance is locked where required, or before a paid shop action.
+- Post-roll abilities open as a private blocking reaction after the authoritative dice result but before rewards, wounds, mission triggers, and scenario triggers are finalized.
+- A player may decline a post-roll reaction and keep the card.
+- The used card is publicly revealed on TV and then discarded. Unplayed cards remain owner-private.
 
 ## Scenarios
 

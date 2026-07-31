@@ -4113,6 +4113,27 @@ export function PhoneActionPanel({
             });
           }
         });
+        if (card.ability.enabled && card.ability.resolutionId) {
+          const targets = card.ability.targets.length > 0
+            ? card.ability.targets
+            : [{ id: "", label: card.ability.label }];
+          for (const target of targets) {
+            threatActions.push({
+              key: `edge-ability-${card.id}-${target.id || "activate"}`,
+              label: `${card.name} — ${target.label}`,
+              detail: `${card.abilityText}${card.tradeoffText ? ` ${card.tradeoffText}` : ""}`,
+              tone: "secondary",
+              onClick: () => onIntent({
+                type: "PLAY_EDGE_CARD",
+                seatId: self.seatId,
+                cardId: card.id,
+                resolutionId: card.ability.resolutionId!,
+                mode: "ability",
+                ...(target.id ? { targetId: target.id } : {})
+              })
+            });
+          }
+        }
       }
     }
 
@@ -4136,6 +4157,42 @@ export function PhoneActionPanel({
       disabledReason: startBlockedReason,
       command: encounterCommand,
       onClick: () => onIntent(encounterCommand)
+    });
+  }
+
+  if (patch.edgeHand?.reaction) {
+    for (const card of patch.edgeHand.cards) {
+      if (!card.ability.enabled || !card.ability.resolutionId) continue;
+      const targets = card.ability.targets.length > 0
+        ? card.ability.targets
+        : [{ id: "", label: card.ability.label }];
+      for (const target of targets) {
+        resolveActions.push({
+          key: `edge-ability-${card.id}-${target.id || "activate"}`,
+          label: `${card.name} — ${target.label}`,
+          detail: `${card.abilityText}${card.tradeoffText ? ` ${card.tradeoffText}` : ""}`,
+          tone: "secondary",
+          onClick: () => onIntent({
+            type: "PLAY_EDGE_CARD",
+            seatId: self.seatId,
+            cardId: card.id,
+            resolutionId: card.ability.resolutionId!,
+            mode: "ability",
+            ...(target.id ? { targetId: target.id } : {})
+          })
+        });
+      }
+    }
+    resolveActions.push({
+      key: "edge-reaction-decline",
+      label: "Continue without Edge",
+      detail: patch.edgeHand.reaction.prompt,
+      tone: "secondary",
+      onClick: () => onIntent({
+        type: "DECLINE_EDGE_CARD_REACTION",
+        seatId: self.seatId,
+        reactionId: patch.edgeHand!.reaction!.id
+      })
     });
   }
 

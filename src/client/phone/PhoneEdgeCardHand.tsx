@@ -3,6 +3,7 @@ import type {
   ClientIntent,
   PhoneEdgeCardHand as PhoneEdgeCardHandModel
 } from "../shared/types.js";
+import { CardArtImage } from "../shared/CardArtImage.js";
 import "./PhoneEdgeCardHand.css";
 
 export function PhoneEdgeCardHand({
@@ -28,39 +29,89 @@ export function PhoneEdgeCardHand({
         <small>{hand.cards.length}/{hand.limit}</small>
       </header> : null}
       <p>
-        Cards are awarded randomly. Commit one before an eligible enemy battle or Hazard
-        roll; it burns after use and reveals on the TV.
+        Cards are awarded randomly. Burn one either to commit its value or activate its
+        printed ability at the highlighted timing. Every play reveals on the TV.
       </p>
       <div className="phone-edge-hand__cards">
         {hand.cards.map((card) => {
-          const disabled = !hand.canCommit || !hand.resolutionId;
+          const commitDisabled = !hand.canCommit || !hand.resolutionId;
+          const abilityTargets = card.ability.targets.length > 0
+            ? card.ability.targets
+            : [{ id: "", label: card.ability.label }];
           return (
-            <button
+            <article
               key={card.id}
-              type="button"
               className="phone-edge-card"
-              disabled={disabled}
-              aria-describedby={`edge-card-detail-${card.id}`}
-              onClick={() => {
-                if (!hand.resolutionId) return;
-                onIntent({
-                  type: "PLAY_EDGE_CARD",
-                  seatId,
-                  cardId: card.id,
-                  resolutionId: hand.resolutionId,
-                  mode: "commit-value"
-                });
-              }}
             >
+              <div className="phone-edge-card__art" aria-hidden="true">
+                <CardArtImage cardType="edge" cardId={card.id} alt="" />
+              </div>
               <span>Edge</span>
               <b>{card.edgeValue}</b>
               <strong>{card.name}</strong>
-              <small id={`edge-card-detail-${card.id}`}>{card.commitText}</small>
-            </button>
+              <small>{card.abilityText}</small>
+              {card.tradeoffText ? <em>{card.tradeoffText}</em> : null}
+              <div className="phone-edge-card__actions">
+                <button
+                  type="button"
+                  className="phone-edge-card__commit"
+                  disabled={commitDisabled}
+                  onClick={() => {
+                    if (!hand.resolutionId) return;
+                    onIntent({
+                      type: "PLAY_EDGE_CARD",
+                      seatId,
+                      cardId: card.id,
+                      resolutionId: hand.resolutionId,
+                      mode: "commit-value"
+                    });
+                  }}
+                >
+                  Commit {card.edgeValue} as die
+                </button>
+                {abilityTargets.map((target) => (
+                  <button
+                    key={`${card.id}:${target.id || "ability"}`}
+                    type="button"
+                    className="phone-edge-card__ability"
+                    disabled={!card.ability.enabled || !card.ability.resolutionId}
+                    onClick={() => {
+                      if (!card.ability.resolutionId) return;
+                      onIntent({
+                        type: "PLAY_EDGE_CARD",
+                        seatId,
+                        cardId: card.id,
+                        resolutionId: card.ability.resolutionId,
+                        mode: "ability",
+                        ...(target.id ? { targetId: target.id } : {})
+                      });
+                    }}
+                  >
+                    {target.label}
+                  </button>
+                ))}
+              </div>
+              {!card.ability.enabled && card.ability.disabledReason ? (
+                <small className="phone-edge-card__reason">{card.ability.disabledReason}</small>
+              ) : null}
+            </article>
           );
         })}
       </div>
       {hand.disabledReason ? <small className="phone-edge-hand__reason">{hand.disabledReason}</small> : null}
+      {hand.reaction ? (
+        <button
+          type="button"
+          className="phone-edge-hand__pass"
+          onClick={() => onIntent({
+            type: "DECLINE_EDGE_CARD_REACTION",
+            seatId,
+            reactionId: hand.reaction!.id
+          })}
+        >
+          Continue without an Edge ability
+        </button>
+      ) : null}
     </section>
   );
 }

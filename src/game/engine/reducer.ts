@@ -18,6 +18,9 @@ import type {
   MissionRelicExchangeOpenedAction,
   DiceRollStartedAction,
   EscalationAdvancedAction,
+  EdgeCardReactionOpenedAction,
+  EdgeCardReactionResolvedAction,
+  EdgeCardReactionDeclinedAction,
   EncounterDrawnAction,
   EnemyRollAssignedAction,
   EquipGearAction,
@@ -1196,6 +1199,32 @@ function countTrophyAward(effect: EncounterEffect | null): number {
   return effect.type === "gain_trophy" ? effect.amount : 0;
 }
 
+function reduceTrophyAwardInEffect(
+  effect: EncounterEffect,
+  amount: number
+): EncounterEffect {
+  let remaining = Math.max(0, amount);
+  const visit = (entry: EncounterEffect): EncounterEffect | null => {
+    if (remaining <= 0) return entry;
+    if (entry.type === "sequence") {
+      const effects = entry.effects.flatMap((child) => {
+        const next = visit(child);
+        return next ? [next] : [];
+      });
+      return effects.length > 0 ? { ...entry, effects } : null;
+    }
+    if (entry.type !== "gain_trophy") return entry;
+    const converted = Math.min(remaining, entry.amount);
+    remaining -= converted;
+    const amountLeft = entry.amount - converted;
+    return amountLeft > 0 ? { ...entry, amount: amountLeft } : null;
+  };
+  return visit(effect) ?? {
+    type: "gain_note",
+    text: "The defeated enemy's Trophy value was converted before collection."
+  };
+}
+
 function summarizeAppliedEffects(effect: EncounterEffect, success: boolean | null, startingSalvage: number, startingWounds: number): string[] {
   let salvage = Math.max(0, startingSalvage);
   let wounds = Math.max(0, startingWounds);
@@ -1650,6 +1679,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           discardCardIds: []
         },
         pendingEdgeCommit: null,
+        pendingEdgeAbility: null,
+        pendingEdgeReaction: null,
+        resolvedEdgeReactionIds: [],
+        edgeHazardSuppressions: [],
         lastEdgeCardPlay: null,
         eventLog: [...state.eventLog, action]
       });
@@ -1740,31 +1773,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (!state.edgeDeck) {
         return reject(state, action, "The Edge deck is not initialized");
       }
-      if (
-        state.phase !== "action" ||
-        !state.currentEncounter ||
-        (state.currentEncounter.cardType !== "enemy" &&
-          state.currentEncounter.cardType !== "hazard") ||
-        state.activeResolution?.stage !== "battle_setup"
-      ) {
-        return reject(state, action, "Edge Cards may only be committed during battle or hazard setup");
-      }
-      if (
-        state.activeResolution.playerId !== action.seatId ||
-        state.activeResolution.id !== action.resolutionId
-      ) {
-        return reject(state, action, "The Edge Card resolution is stale");
-      }
-      if (state.pendingEdgeCommit || state.lastEdgeCardPlay?.resolutionId === action.resolutionId) {
-        return reject(state, action, "Only one Edge Card may be committed to a resolution");
-      }
-
       const definition = EDGE_CARD_BY_ID.get(action.cardId);
       if (
         !definition ||
         definition.name !== action.cardName ||
         definition.edgeValue !== action.edgeValue ||
-        action.mode !== EDGE_RULES.liveMode
+        (action.mode === "ability" && definition.abilityKey !== action.abilityKey)
       ) {
         return reject(state, action, "The Edge Card details do not match the authoritative deck");
       }
@@ -1773,8 +1787,60 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (!owner?.private.hand.includes(action.cardId)) {
         return reject(state, action, "The player does not own that Edge Card");
       }
+      if (state.lastEdgeCardPlay?.resolutionId === action.resolutionId) {
+        return reject(state, action, "Only one Edge Card may be played in a resolution");
+      }
+
+      if (action.mode === "commit-value") {
+        if (
+          state.phase !== "action" ||
+          !state.currentEncounter ||
+          !["enemy", "hazard"].includes(state.currentEncounter.cardType) ||
+          state.activeResolution?.stage !== "battle_setup"
+        ) {
+          return reject(state, action, "Edge values may only be committed during battle or Hazard setup");
+        }
+        if (
+          state.activeResolution.playerId !== action.seatId ||
+          state.activeResolution.id !== action.resolutionId
+        ) {
+          return reject(state, action, "The Edge Card resolution is stale");
+        }
+        if (state.pendingEdgeCommit || state.pendingEdgeAbility) {
+          return reject(state, action, "An Edge Card is already committed to this resolution");
+        }
+      } else if (
+        state.pendingEdgeReaction &&
+        (
+          state.pendingEdgeReaction.ownerSeatId !== action.seatId ||
+          state.pendingEdgeReaction.resolutionId !== action.resolutionId ||
+          !state.pendingEdgeReaction.legalCardIds.includes(action.cardId)
+        )
+      ) {
+        return reject(state, action, "This Edge ability is not legal in the pending reaction");
+      }
 
       const playId = `edge-play:${action.seatId}:${action.resolutionId}:${action.cardId}:${state.sequence + 1}`;
+      const keepsPendingAbility = action.mode === "ability" && [
+        "reduce-enemy-difficulty",
+        "boost-challenge",
+        "isolated-total",
+        "shop-discount",
+        "known-family"
+      ].includes(action.abilityKey ?? "");
+      const boostedAssistance =
+        action.mode === "ability" &&
+        action.abilityKey === "boost-helper" &&
+        state.cooperativeAssistance?.status === "locked"
+          ? {
+              ...state.cooperativeAssistance,
+              lockedContributions: state.cooperativeAssistance.lockedContributions.map((entry) =>
+                entry.seatId === action.targetId
+                  ? { ...entry, value: entry.value + 2 }
+                  : entry
+              )
+            }
+          : state.cooperativeAssistance;
       return succeed({
         ...state,
         sequence: state.sequence + 1,
@@ -1793,14 +1859,28 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           ...state.edgeDeck,
           discardCardIds: [...state.edgeDeck.discardCardIds, action.cardId]
         },
-        pendingEdgeCommit: {
-          seatId: action.seatId,
-          cardId: action.cardId,
-          cardName: action.cardName,
-          edgeValue: action.edgeValue,
-          resolutionId: action.resolutionId,
-          createdAt: action.createdAt
-        },
+        cooperativeAssistance: boostedAssistance,
+        pendingEdgeCommit: action.mode === "commit-value"
+          ? {
+              seatId: action.seatId,
+              cardId: action.cardId,
+              cardName: action.cardName,
+              edgeValue: action.edgeValue,
+              resolutionId: action.resolutionId,
+              createdAt: action.createdAt
+            }
+          : state.pendingEdgeCommit,
+        pendingEdgeAbility: keepsPendingAbility
+          ? {
+              seatId: action.seatId,
+              cardId: action.cardId,
+              cardName: action.cardName,
+              abilityKey: action.abilityKey!,
+              resolutionId: action.resolutionId,
+              targetId: action.targetId ?? null,
+              createdAt: action.createdAt
+            }
+          : state.pendingEdgeAbility,
         lastEdgeCardPlay: {
           id: playId,
           seatId: action.seatId,
@@ -1808,11 +1888,107 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           cardName: action.cardName,
           edgeValue: action.edgeValue,
           mode: action.mode,
+          abilityKey: action.abilityKey ?? null,
           resolutionId: action.resolutionId,
           publicSummary: action.publicSummary,
           createdAt: action.createdAt
         },
         eventLog: [...state.eventLog, { ...action, id: playId }]
+      });
+    }
+    case "EDGE_CARD_REACTION_OPENED": {
+      const reaction = action as EdgeCardReactionOpenedAction;
+      if (state.pendingEdgeReaction) {
+        return reject(state, action, "An Edge reaction is already pending");
+      }
+      if ((state.resolvedEdgeReactionIds ?? []).includes(reaction.reactionId)) {
+        return reject(state, action, "This Edge reaction was already resolved");
+      }
+      if (
+        state.activeResolution?.playerId !== reaction.seatId ||
+        state.activeResolution.id !== reaction.resolutionId
+      ) {
+        return reject(state, action, "The Edge reaction resolution is stale");
+      }
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingEdgeReaction: {
+          id: reaction.reactionId,
+          ownerSeatId: reaction.seatId,
+          resolutionId: reaction.resolutionId,
+          sourceKind: reaction.sourceKind,
+          legalCardIds: [...reaction.legalCardIds],
+          originalRoll: [...reaction.originalRoll] as [number, number],
+          target: reaction.target,
+          createdAt: reaction.createdAt
+        },
+        activeResolution: {
+          ...state.activeResolution,
+          stage: "roll_result",
+          roll: {
+            dice: [...reaction.pendingResult.roll.faces],
+            baseTotal: reaction.pendingResult.roll.total,
+            modifierTotal: reaction.pendingResult.statBonus,
+            finalTotal: reaction.pendingResult.total,
+            target: reaction.target,
+            success: reaction.pendingResult.success
+          },
+          outcome: {
+            title: "Edge reaction available",
+            text: "Use one eligible Edge ability or continue with the rolled result.",
+            effects: []
+          }
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "EDGE_CARD_REACTION_RESOLVED": {
+      const reaction = action as EdgeCardReactionResolvedAction;
+      if (
+        !state.pendingEdgeReaction ||
+        state.pendingEdgeReaction.id !== reaction.reactionId ||
+        state.pendingEdgeReaction.ownerSeatId !== reaction.seatId ||
+        state.pendingEdgeReaction.resolutionId !== reaction.resolutionId
+      ) {
+        return reject(state, action, "The Edge reaction is stale");
+      }
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingEdgeReaction: null,
+        resolvedEdgeReactionIds: [...(state.resolvedEdgeReactionIds ?? []), reaction.reactionId],
+        edgeHazardSuppressions: reaction.hazardSuppression
+          ? [
+              ...(state.edgeHazardSuppressions ?? []),
+              {
+                seatId: reaction.seatId,
+                cardId: state.lastEdgeCardPlay?.cardId ?? "edge-hazard-wake",
+                hazardId: reaction.hazardSuppression.hazardId,
+                sectorId: reaction.hazardSuppression.sectorId,
+                createdAt: reaction.createdAt
+              }
+            ]
+          : state.edgeHazardSuppressions,
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "EDGE_CARD_REACTION_DECLINED": {
+      const reaction = action as EdgeCardReactionDeclinedAction;
+      if (
+        !state.pendingEdgeReaction ||
+        state.pendingEdgeReaction.id !== reaction.reactionId ||
+        state.pendingEdgeReaction.ownerSeatId !== reaction.seatId ||
+        state.pendingEdgeReaction.resolutionId !== reaction.resolutionId
+      ) {
+        return reject(state, action, "The Edge reaction is stale");
+      }
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingEdgeReaction: null,
+        resolvedEdgeReactionIds: [...(state.resolvedEdgeReactionIds ?? []), reaction.reactionId],
+        eventLog: [...state.eventLog, action]
       });
     }
     case "NAMED_PLAYER_RULES_RECONCILED":
@@ -2989,6 +3165,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         resolutionSource: state.pendingTileChallenge ? "tileChallenge" : "encounter",
         pendingEnemyRoll: null,
         pendingEdgeCommit: null,
+        pendingEdgeAbility: null,
         pendingEffect: action.effect,
         pendingFailureReaction: !action.success && action.effect ? {
           id: `failure:hazard:${action.seatId}:${action.createdAt}`,
@@ -3091,7 +3268,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (state.activeResolution?.playerId !== rerollAction.seatId || state.activeResolution.roll?.success !== false) {
         return reject(state, action, "Solo emergency reroll requires a visible failed check");
       }
-      if (state.lastEdgeCardPlay?.seatId === rerollAction.seatId) {
+      if (
+        state.lastEdgeCardPlay?.seatId === rerollAction.seatId &&
+        state.lastEdgeCardPlay.mode === "commit-value"
+      ) {
         return reject(state, action, "A roll containing a committed Edge value cannot be rerolled");
       }
 
@@ -3173,8 +3353,34 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         const player = requirePlayer(state, action.seatId);
         const activeMissions = getActiveMissions(player.character);
         const explicitTrophyAward = action.success ? countTrophyAward(action.effect) : 0;
-        const trophyAward = action.success && explicitTrophyAward === 0 ? state.currentEncounter.trophyValue : 0;
-        const defeatedTrophy = action.success ? createTrophyPileEntry(state.currentEncounter) : null;
+        const rawTrophyAward = action.success && explicitTrophyAward === 0 ? state.currentEncounter.trophyValue : 0;
+        const totalTrophyAward = explicitTrophyAward > 0 ? explicitTrophyAward : rawTrophyAward;
+        const forfeitsTrophy = action.edgeForfeitTrophy || action.edgeForfeitRewards;
+        const trophyConversion = action.success && !forfeitsTrophy
+          ? Math.min(totalTrophyAward, Math.max(0, action.edgeTrophyConversion ?? 0))
+          : 0;
+        const trophyAward = forfeitsTrophy
+          ? 0
+          : explicitTrophyAward > 0
+            ? 0
+            : rawTrophyAward - trophyConversion;
+        const explicitTrophyReduction = forfeitsTrophy
+          ? explicitTrophyAward
+          : trophyConversion;
+        const resolvedEffect =
+          explicitTrophyAward > 0 && explicitTrophyReduction > 0
+            ? reduceTrophyAwardInEffect(action.effect, explicitTrophyReduction)
+            : action.effect;
+        const convertedTrophy = action.success && !forfeitsTrophy
+          ? {
+              ...createTrophyPileEntry(state.currentEncounter),
+              spentValue: trophyConversion
+            }
+          : null;
+        const defeatedTrophy =
+          convertedTrophy && getTrophyPileEntryAvailableValue(convertedTrophy) > 0
+            ? convertedTrophy
+            : null;
         const trophyPileSummary = defeatedTrophy ? `${defeatedTrophy.name} added to Trophy Pile.` : "";
         const nextActiveMissions = activeMissions.map((activeMission) => {
           const contract = state.availableContracts.find((entry) => entry.id === activeMission.contractId) ?? null;
@@ -3195,7 +3401,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         resolutionSource: "encounter",
         pendingEnemyRoll: null,
         pendingEdgeCommit: null,
-        pendingEffect: action.effect,
+        pendingEdgeAbility: null,
+        pendingEffect: resolvedEffect,
         activeResolution: buildRollResolution({
           seatId: action.seatId,
           source: "threat",
@@ -3214,14 +3421,15 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           target: action.enemyTotal,
           success: action.success,
           title: action.success ? "Combat victory" : "Combat loss",
-          text: `${summarizeEffect(action.effect, action.success)}${trophyPileSummary ? ` ${trophyPileSummary}` : ""}`,
-          effects: [...summarizeEffects(action.effect, action.success), ...(trophyPileSummary ? [trophyPileSummary] : [])]
+          text: `${summarizeEffect(resolvedEffect, action.success)}${trophyPileSummary ? ` ${trophyPileSummary}` : ""}`,
+          effects: [...summarizeEffects(resolvedEffect, action.success), ...(trophyPileSummary ? [trophyPileSummary] : [])]
         }),
         players: updateActivePlayer(state, action.seatId, (entry) => ({
           ...entry,
           character: setActiveMissions({
             ...entry.character,
             trophies: entry.character.trophies + trophyAward,
+            salvage: (entry.character.salvage ?? 0) + trophyConversion,
             trophyPile: defeatedTrophy ? [...(entry.character.trophyPile ?? []), defeatedTrophy] : entry.character.trophyPile
           }, nextActiveMissions)
         })),
@@ -3240,8 +3448,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               enemyBonus: action.enemyBonus,
               enemyTotal: action.enemyTotal,
               success: action.success,
-              summary: `${state.lastOutcomeSummary.summary} ${summarizeEffect(action.effect, action.success)}${
+              summary: `${state.lastOutcomeSummary.summary} ${summarizeEffect(resolvedEffect, action.success)}${
                 trophyAward > 0 ? ` +${trophyAward} trophies.` : ""
+              }${trophyConversion > 0 ? ` ${trophyConversion} Trophy converted to Salvage.` : ""}${
+                forfeitsTrophy ? " Trophy reward forfeited." : ""
               }${trophyPileSummary ? ` ${trophyPileSummary}` : ""}`
             }
           : null,
@@ -5259,6 +5469,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           selectedId: null,
           updatedAt: shopAction.createdAt
         },
+        pendingEdgeAbility: shopAction.edgeDiscount ? null : state.pendingEdgeAbility,
         lastOutcomeSummary: buildShopOutcomeSummary({
           seatId: shopAction.seatId,
           sectorId: updatedPlayer.sectorId,
@@ -5455,6 +5666,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           selectedId: null,
           updatedAt: purchaseAction.createdAt
         },
+        pendingEdgeAbility: purchaseAction.edgeDiscount ? null : state.pendingEdgeAbility,
         lastOutcomeSummary: buildShopOutcomeSummary({
           seatId: purchaseAction.seatId,
           sectorId: updatedPlayer.sectorId,
@@ -5503,6 +5715,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           selectedId: null,
           updatedAt: purchase.createdAt
         },
+        pendingEdgeAbility: purchase.edgeDiscount ? null : state.pendingEdgeAbility,
         lastOutcomeSummary: buildShopOutcomeSummary({
           seatId: purchase.seatId,
           sectorId: purchase.sectorId,
@@ -7055,6 +7268,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       return succeed({
         ...state,
         gateSaintSafeConduct: null,
+        edgeHazardSuppressions: [],
         scarUsage: (state.scarUsage ?? []).filter((entry) => entry.scope !== "round"),
         players: state.players.map((player) => ({
           ...player,
@@ -7275,6 +7489,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         currentEncounter: null,
         pendingEnemyRoll: null,
         pendingEffect: null,
+        pendingEdgeCommit: null,
+        pendingEdgeAbility: null,
+        pendingEdgeReaction: null,
+        lastEdgeCardPlay: null,
         activeResolution: null,
         resolutionSource: null,
         lastOutcomeSummary: null,
@@ -7326,6 +7544,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (state.pendingAfflictionReaction) {
         return reject(state, action, "Affliction reaction must be resolved before continuing");
       }
+      if (state.pendingEdgeReaction) {
+        return reject(state, action, "Edge Card reaction must be resolved before continuing");
+      }
       if (state.pendingAfflictionResolution) {
         return reject(state, action, "Affliction draw must be resolved before continuing");
       }
@@ -7357,6 +7578,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
       if (state.pendingAfflictionReaction || state.pendingAfflictionResolution) {
         return reject(state, action, "Affliction resolution must finish before advancing");
+      }
+      if (state.pendingEdgeReaction) {
+        return reject(state, action, "Edge Card reaction must finish before advancing");
       }
 
       if (!canAdvancePhase(state.phase, action.toPhase)) {
@@ -7394,6 +7618,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         pendingSutureStormConsequence: leavingResolution ? null : lifecycleCompletedState.pendingSutureStormConsequence,
         pendingFailureReaction: leavingResolution ? null : lifecycleCompletedState.pendingFailureReaction,
         pendingTileChallenge: leavingResolution ? null : lifecycleCompletedState.pendingTileChallenge,
+        pendingEdgeAbility:
+          leavingResolution || action.toPhase !== "action"
+            ? null
+            : lifecycleCompletedState.pendingEdgeAbility,
+        pendingEdgeReaction: leavingResolution ? null : lifecycleCompletedState.pendingEdgeReaction,
         lastEdgeCardPlay: leavingResolution ? null : lifecycleCompletedState.lastEdgeCardPlay,
         activeResolution:
           action.toPhase === "broadcast" && state.activeResolution

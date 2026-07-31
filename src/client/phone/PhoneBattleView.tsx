@@ -587,7 +587,7 @@ export function PhoneBattleView({
               </button>
             ) : null}
             <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
-            {resolution?.stage === "battle_setup" && patch.edgeHand ? (
+            {(resolution?.stage === "battle_setup" || patch.edgeHand?.reaction) && patch.edgeHand ? (
               <PhoneEdgeCardHand hand={patch.edgeHand} seatId={self.seatId} onIntent={onIntent} />
             ) : null}
             {result ? (

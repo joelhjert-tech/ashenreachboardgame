@@ -8,6 +8,7 @@ import { loadFollowers } from "../src/game/content/followers.js";
 import { loadGear } from "../src/game/content/gear.js";
 import { loadScarCards } from "../src/game/content/scars.js";
 import { loadThreatCards } from "../src/game/content/threats.js";
+import { EDGE_CARD_DECK } from "../src/game/data/edgeCards.js";
 import type { GearItem } from "../src/game/schema/gear.schema.js";
 import { boardTilePrompts } from "../src/game/assets/design/boardTilePrompts.js";
 import {
@@ -53,6 +54,21 @@ const severityPrompt: Record<number, string> = {
 
 const negativePrompt =
   "readable text, logo, watermark, UI, dice, card frame, board game brand, copied or recognizable external board-game imagery, copyrighted character or symbol, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette";
+
+const edgeVisualPromptById: Record<string, string> = {
+  "edge-cinderline-break": "an armored frontier operative crosses a fractured furnace causeway while a cyan signal barrier intercepts a lethal impact and abandoned salvage burns away behind it",
+  "edge-black-relay-decoy": "a dead black-iron relay projects a cyan phantom operative that draws a massive hostile away while an unclaimed trophy seal crumbles into soot",
+  "edge-ashglass-overclock": "a cracked circular ashglass challenge engine is forced beyond tolerance, blazing cyan-white while amber fractures spread toward the armored hand on its control lever",
+  "edge-closed-circuit-aid": "two armored frontier operatives across a collapsed chasm are linked by a closed cyan signal circuit as the helper braces a field anchor",
+  "edge-cinder-requisition": "an armored operative feeds two battered brass victory seals into a field requisition press that converts them into glowing amber salvage ingots",
+  "edge-static-shunt": "an armored operative grounds one branch of a failed challenge engine's violent cyan discharge while the damaged machine and unresolved danger remain",
+  "edge-echo-recast": "a suspended faceted signal core shows a dissolving failed trajectory and one irreversible second trajectory inside concentric cyan echo rings",
+  "edge-isolated-channel": "a lone armored operative advances inside a narrow cyan signal cylinder while distorted helper silhouettes remain blocked outside",
+  "edge-quiet-ledger": "a hooded field broker uses a compact black-brass ledger mechanism to quietly divert one amber salvage coin from a gear transaction",
+  "edge-known-scar-pattern": "an armored operative matches cyan fracture tracery across trophy fragments to a weak point on a looming hostile silhouette",
+  "edge-low-signal-discipline": "a kneeling armored operative calmly steadies one weak cyan pulse between two brass conductor posts in a nearly dead chamber",
+  "edge-hazard-wake": "a dangerous industrial hazard remains anchored to a ruined tower while a temporary cyan suppression wake leaves a protected route around it"
+};
 
 type PromptLike = {
   id: string;
@@ -119,6 +135,7 @@ function buildCardImagePrompts(): PromptEntryMap {
     .sort(compareById);
   const scars = [...loadScarCards().values()].sort(compareById);
   const escalations = [...loadEscalationCards().values()].sort(compareById);
+  const edgeCards = [...EDGE_CARD_DECK].sort(compareById);
 
   return {
     threat: threats.map((card) =>
@@ -164,6 +181,9 @@ function buildCardImagePrompts(): PromptEntryMap {
     ),
     escalation: escalations.map((card) =>
       buildPromptEntry("escalation", card.id, card.title, buildEscalationPrompt(card), `${card.title} escalation card art.`)
+    ),
+    edge: edgeCards.map((card) =>
+      buildPromptEntry("edge", card.id, card.name, buildEdgePrompt(card), `${card.name} Edge Card art.`)
     )
   };
 }
@@ -416,6 +436,25 @@ function hasActiveArtifactGearArt(itemId: string): boolean {
   return existsSync(publicPath);
 }
 
+function buildEdgePrompt(card: {
+  id: string;
+  name: string;
+  edgeValue: number;
+  abilityText: string;
+  tradeoffText: string | null;
+}): string {
+  return [
+    promptPrefix,
+    "original Ashen Reach Edge Card scene, tactical intervention captured at the decisive instant",
+    edgeVisualPromptById[card.id] ?? `a decisive tactical intervention representing ${card.name}`,
+    "clean premium painterly surfaces, raised midtones, readable black armor, strong subject separation, low grain, minimal airborne ash",
+    "charcoal iron, scorched brass, luminous cyan signal energy, restrained amber cost accent",
+    `Edge value ${card.edgeValue}, ${sanitizeSentence(card.abilityText)}`,
+    card.tradeoffText ? sanitizeSentence(card.tradeoffText) : "precise tactical advantage without an additional cost",
+    "clear focal hierarchy that remains readable at small phone-card size"
+  ].join(", ");
+}
+
 function hasActiveFollowerArt(cardType: "artifact" | "follower", artCardId: string): boolean {
   const outputPath = getCardArtOutputPath(cardType, artCardId);
   const publicPath = join(process.cwd(), "public", outputPath.replace(/^\//, ""));
@@ -463,7 +502,8 @@ function renderRuntimeTypeScript(entries: CardImagePromptCatalogEntry[]): string
     `    equipment: {},\n` +
     `    follower: {},\n` +
     `    scar: {},\n` +
-    `    escalation: {}\n` +
+    `    escalation: {},\n` +
+    `    edge: {}\n` +
     `  }\n` +
     `);\n\n` +
     `export function getRuntimeCardArtPath(cardType: CardImageType, cardId: string): string | undefined {\n` +

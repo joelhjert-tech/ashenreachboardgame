@@ -698,14 +698,24 @@ describe("PhoneInventoryPanel", () => {
             id: "edge-echo-recast",
             name: "Echo Recast",
             edgeValue: 4,
-            commitText: "Lock 4 as one die; the server rolls the other die."
+            commitText: "Lock 4 as one die; the server rolls the other die.",
+            abilityText: "Reroll one battle or Challenge die.",
+            tradeoffText: "Accept the second result.",
+            ability: {
+              label: "Reroll one die",
+              enabled: false,
+              disabledReason: "Available after the roll.",
+              resolutionId: null,
+              targets: []
+            }
           }
         ],
         limit: 2,
         awardRule: "Random awards only.",
         canCommit: true,
         disabledReason: null,
-        resolutionId: "resolution-1"
+        resolutionId: "resolution-1",
+        reaction: null
       }
     });
 
@@ -723,7 +733,7 @@ describe("PhoneInventoryPanel", () => {
     );
 
     const edgeHand = screen.getByLabelText("Private Edge Card hand");
-    fireEvent.click(within(edgeHand).getByRole("button", { name: /echo recast/i }));
+    fireEvent.click(within(edgeHand).getByRole("button", { name: /commit 4 as die/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "PLAY_EDGE_CARD",
       seatId: "seat-1",

@@ -8,9 +8,9 @@
     "metadata": "stripped"
   },
   "totals": {
-    "sources": 472,
-    "sourceBytes": 1114158637,
-    "derivativeBytes": 49349490,
+    "sources": 484,
+    "sourceBytes": 1149678626,
+    "derivativeBytes": 50929912,
     "reductionPercent": 95.57
   },
   "entries": [
@@ -1261,6 +1261,150 @@
       "derivativeWidth": 960,
       "derivativeHeight": 960,
       "derivativeBytes": 73862
+    },
+    {
+      "sourcePath": "/assets/cards/edge/edge-ashglass-overclock.png",
+      "sourceHash": "7db1237f9653f80a614b288e8dbad3b9cfc2fb93b637929cca58a4051baadf78",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 3305351,
+      "derivativePath": "/assets/cards/edge/edge-ashglass-overclock.phone.webp",
+      "derivativeHash": "b0c0be4c90c8da2b53c7c00e125976e180af46815286a30e63977e5cf01cb020",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 168944
+    },
+    {
+      "sourcePath": "/assets/cards/edge/edge-black-relay-decoy.png",
+      "sourceHash": "78bea8158c763b6e0f829573fcbffe994b9eae2d628a06c69e887db1a706a274",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2988115,
+      "derivativePath": "/assets/cards/edge/edge-black-relay-decoy.phone.webp",
+      "derivativeHash": "4ba41391085d1fa8ca8f4882152a0b0d7cc72bebc4a8efcf4c8ad6e43b3f56c6",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 130620
+    },
+    {
+      "sourcePath": "/assets/cards/edge/edge-cinder-requisition.png",
+      "sourceHash": "5c99b960b2e4fa8bf4fda85b5ec05769672cd5c52b54f4245e1dd1e4194d239f",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 3019300,
+      "derivativePath": "/assets/cards/edge/edge-cinder-requisition.phone.webp",
+      "derivativeHash": "a618e9eff169890526cdc5f1239ed03ca84f7ba28efdb48d96442ff8f960b639",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 139286
+    },
+    {
+      "sourcePath": "/assets/cards/edge/edge-cinderline-break.png",
+      "sourceHash": "1e01ff734c5b950dd4b49f940eb2f08a664164abe68a9d4bde9a4e4bbb7119db",
+      "sourceWidth": 1024,
+      "sourceHeight": 1536,
+      "sourceBytes": 2978959,
+      "derivativePath": "/assets/cards/edge/edge-cinderline-break.phone.webp",
+      "derivativeHash": "f61eea7279cdb7ff93dca125bc007ec26a29ba9ed3d8fdfb85b1770efdaa24f0",
+      "derivativeWidth": 640,
+      "derivativeHeight": 960,
+      "derivativeBytes": 109448
+    },
+    {
+      "sourcePath": "/assets/cards/edge/edge-closed-circuit-aid.png",
+      "sourceHash": "481adfb3d1cd8235ff319a25d3fd3b4cba3ad3b96c785fd66dbaa27b74cc9a6b",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 3059264,
+      "derivativePath": "/assets/cards/edge/edge-closed-circuit-aid.phone.webp",
+      "derivativeHash": "6b6e1efe693430aff07e550fc24cd52d33d06f81dd8be0345890638a8b5b6ed6",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 149524
+    },
+    {
+      "sourcePath": "/assets/cards/edge/edge-echo-recast.png",
+      "sourceHash": "82d13d8df79eedec154b05c2f64c00db479c53af1b2d68528f8d975994669232",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 3094750,
+      "derivativePath": "/assets/cards/edge/edge-echo-recast.phone.webp",
+      "derivativeHash": "1667211404efe8a53b78746ad9215812c0b8353e49fcb36b62ced82af9b70d4f",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 149902
+    },
+    {
+      "sourcePath": "/assets/cards/edge/edge-hazard-wake.png",
+      "sourceHash": "c356743ab688bfdad0c3dbf3c8808e0d06c841f21f4ab8824e119d32af1b30c0",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 3125186,
+      "derivativePath": "/assets/cards/edge/edge-hazard-wake.phone.webp",
+      "derivativeHash": "a7b1e0a74eaf73fdd3215671304b4f48b1a10bbf7f9dc56359715240f38d4c76",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 141462
+    },
+    {
+      "sourcePath": "/assets/cards/edge/edge-isolated-channel.png",
+      "sourceHash": "a6245934811b0b3b7a39456bf632a1c30d11c28d5d01851fa9020f87e56dac7c",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2868845,
+      "derivativePath": "/assets/cards/edge/edge-isolated-channel.phone.webp",
+      "derivativeHash": "3edd4010cfd4b05e6f16a4400565bc5659cafe89b35015a2710b3ffd2d9954f2",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 113024
+    },
+    {
+      "sourcePath": "/assets/cards/edge/edge-known-scar-pattern.png",
+      "sourceHash": "1c01b55276a775e33bb7b216a385083308b0810910428641280b2a527b519edc",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2749354,
+      "derivativePath": "/assets/cards/edge/edge-known-scar-pattern.phone.webp",
+      "derivativeHash": "e032dc070480d776705c2bd50f1f2aa160718b952227e20eb5335dd787b3d5ba",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 117968
+    },
+    {
+      "sourcePath": "/assets/cards/edge/edge-low-signal-discipline.png",
+      "sourceHash": "22ea098367cccbe71c431edb0e9f19239b6231d5e24cdbc49010db6240ded77a",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2476868,
+      "derivativePath": "/assets/cards/edge/edge-low-signal-discipline.phone.webp",
+      "derivativeHash": "d19589f34098723bcc0aa4e0398fce56a9a22332f33b97affaa6cd56f65c52f3",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 84500
+    },
+    {
+      "sourcePath": "/assets/cards/edge/edge-quiet-ledger.png",
+      "sourceHash": "eaf03ab4f1a43abdea907529027311ac729fc9a2124e42376bc63da92a64a2e7",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 2657107,
+      "derivativePath": "/assets/cards/edge/edge-quiet-ledger.phone.webp",
+      "derivativeHash": "aaaca4f9f01340277931aab1d714245879390a215bd2ffdbff323be4137452f4",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 105642
+    },
+    {
+      "sourcePath": "/assets/cards/edge/edge-static-shunt.png",
+      "sourceHash": "f8dc3ae6c3f2a9793367d19e8d10ab842595afcc28cf2c4e934b6ffcf3961d3b",
+      "sourceWidth": 1086,
+      "sourceHeight": 1448,
+      "sourceBytes": 3196890,
+      "derivativePath": "/assets/cards/edge/edge-static-shunt.phone.webp",
+      "derivativeHash": "aa29c041bb7afc4067a9dc47baef6a67c14f01e02b9a63198d582c517bb1e099",
+      "derivativeWidth": 720,
+      "derivativeHeight": 960,
+      "derivativeBytes": 170102
     },
     {
       "sourcePath": "/assets/cards/equipment/ashlock-cleaver.png",

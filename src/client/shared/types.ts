@@ -1374,7 +1374,8 @@ export interface PublicEdgeCardPlay {
   cardId: string;
   cardName: string;
   edgeValue: 1 | 2 | 3 | 4 | 5 | 6;
-  mode: "commit-value";
+  mode: "commit-value" | "ability";
+  abilityKey?: string | null;
   resolutionId: string;
   publicSummary: string;
   createdAt: string;
@@ -1386,12 +1387,25 @@ export interface PhoneEdgeCardHand {
     name: string;
     edgeValue: 1 | 2 | 3 | 4 | 5 | 6;
     commitText: string;
+    abilityText: string;
+    tradeoffText: string | null;
+    ability: {
+      label: string;
+      enabled: boolean;
+      disabledReason: string | null;
+      resolutionId: string | null;
+      targets: Array<{ id: string; label: string }>;
+    };
   }>;
   limit: number;
   awardRule: string;
   canCommit: boolean;
   disabledReason: string | null;
   resolutionId: string | null;
+  reaction: {
+    id: string;
+    prompt: string;
+  } | null;
 }
 
 export interface PublicPatchPayload {
@@ -1942,8 +1956,10 @@ export type ClientIntent =
       seatId: string;
       cardId: string;
       resolutionId: string;
-      mode: "commit-value";
+      mode: "commit-value" | "ability";
+      targetId?: string;
     }
+  | { type: "DECLINE_EDGE_CARD_REACTION"; seatId: string; reactionId: string }
   | {
       type: "START_TILE_ENCOUNTER";
       seatId: string;

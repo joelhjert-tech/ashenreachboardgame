@@ -9,6 +9,7 @@ import type { ActiveOathchainReveal, NemesisChampion, Phase } from "../schema/se
 import type { DiceRollResult } from "./dice.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import type { MemoryTaxOptionId } from "../schema/memoryTax.schema.js";
+import type { EdgeAbilityKey, EdgePlayMode } from "../data/edgeCards.js";
 
 export type CheckStat = Stat;
 
@@ -50,9 +51,38 @@ export interface EdgeCardPlayedAction extends BaseAction {
   cardId: string;
   cardName: string;
   edgeValue: 1 | 2 | 3 | 4 | 5 | 6;
-  mode: "commit-value";
+  mode: EdgePlayMode;
+  abilityKey?: EdgeAbilityKey;
+  targetId?: string;
   resolutionId: string;
   publicSummary: string;
+}
+
+export interface EdgeCardReactionOpenedAction extends BaseAction {
+  type: "EDGE_CARD_REACTION_OPENED";
+  reactionId: string;
+  resolutionId: string;
+  sourceKind: "battle" | "challenge";
+  legalCardIds: string[];
+  originalRoll: [number, number];
+  target: number;
+  pendingResult: CheckRolledAction | CombatResolvedAction;
+}
+
+export interface EdgeCardReactionResolvedAction extends BaseAction {
+  type: "EDGE_CARD_REACTION_RESOLVED";
+  reactionId: string;
+  resolutionId: string;
+  hazardSuppression?: {
+    hazardId: string;
+    sectorId: string;
+  };
+}
+
+export interface EdgeCardReactionDeclinedAction extends BaseAction {
+  type: "EDGE_CARD_REACTION_DECLINED";
+  reactionId: string;
+  resolutionId: string;
 }
 
 export interface NamedPlayerRulesReconciledAction extends BaseAction {
@@ -253,6 +283,9 @@ export interface CombatResolvedAction extends BaseAction {
   effect: EncounterEffect;
   cardId: string;
   enemyRollerSeatId: string | null;
+  edgeTrophyConversion?: number;
+  edgeForfeitTrophy?: boolean;
+  edgeForfeitRewards?: boolean;
 }
 
 export interface ResolutionAppliedAction extends BaseAction {
@@ -487,6 +520,7 @@ export interface ShopServiceResolvedAction extends BaseAction {
   shopName: string;
   sectorId: string;
   cost: ShopServiceCost;
+  edgeDiscount?: 1;
   result: ShopServiceResult;
   summary: string;
 }
@@ -518,6 +552,7 @@ export interface ShopPurchaseResolvedAction extends BaseAction {
   sectorId: string;
   cardId: string;
   cost: ShopServiceCost;
+  edgeDiscount?: 1;
   gainedGear: GearItem;
   discardedStockIds: string[];
   spentCompletedContractIds?: string[];
@@ -532,6 +567,7 @@ export interface ShopFollowerPurchaseResolvedAction extends BaseAction {
   sectorId: string;
   cardId: string;
   cost: ShopServiceCost;
+  edgeDiscount?: 1;
   gainedFollower: Follower;
   discardedStockIds: string[];
   summary: string;
@@ -868,6 +904,9 @@ export type GameAction =
   | EdgeDeckShuffledAction
   | EdgeCardAwardedAction
   | EdgeCardPlayedAction
+  | EdgeCardReactionOpenedAction
+  | EdgeCardReactionResolvedAction
+  | EdgeCardReactionDeclinedAction
   | NamedPlayerRulesReconciledAction
   | MoveRequestedAction
   | TransitionRouteAidUsedAction
@@ -1082,7 +1121,13 @@ export type ClientIntent =
       seatId: string;
       cardId: string;
       resolutionId: string;
-      mode: "commit-value";
+      mode: EdgePlayMode;
+      targetId?: string;
+    }
+  | {
+      type: "DECLINE_EDGE_CARD_REACTION";
+      seatId: string;
+      reactionId: string;
     }
   | {
       type: "START_TILE_ENCOUNTER";

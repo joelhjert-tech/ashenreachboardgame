@@ -687,7 +687,14 @@ export function PhoneInventoryPanel({
       count: edgeCards.length,
       summary: edgeCardSummary,
       cards: [] as InventoryCardViewModel[],
-      actionAvailable: Boolean(patch.edgeHand?.canCommit && patch.edgeHand.resolutionId && edgeCards.length > 0)
+      actionAvailable: Boolean(
+        edgeCards.length > 0 &&
+        (
+          (patch.edgeHand?.canCommit && patch.edgeHand.resolutionId) ||
+          patch.edgeHand?.reaction ||
+          edgeCards.some((card) => card.ability.enabled && card.ability.resolutionId)
+        )
+      )
     },
     {
       id: "artifacts" as const,
@@ -836,7 +843,16 @@ export function PhoneInventoryPanel({
                       : {
                           ...patch.edgeHand,
                           canCommit: false,
-                          disabledReason: patch.edgeHand.disabledReason ?? "Actions are unavailable in this view."
+                          disabledReason: patch.edgeHand.disabledReason ?? "Actions are unavailable in this view.",
+                          reaction: null,
+                          cards: patch.edgeHand.cards.map((card) => ({
+                            ...card,
+                            ability: {
+                              ...card.ability,
+                              enabled: false,
+                              disabledReason: "Actions are unavailable in this view."
+                            }
+                          }))
                         }
                   }
                   seatId={self.seatId}

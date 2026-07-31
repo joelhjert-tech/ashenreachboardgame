@@ -1,19 +1,67 @@
 const cards = [
-  { value: 1, name: "Cinderline Break" },
-  { value: 2, name: "Ashglass Overclock" },
-  { value: 3, name: "Static Shunt" },
-  { value: 4, name: "Echo Recast" },
-  { value: 5, name: "Quiet Ledger" },
-  { value: 6, name: "Low-Signal Discipline" }
+  {
+    id: "edge-cinderline-break",
+    value: 1,
+    name: "Cinderline Break",
+    timing: "After a battle roll",
+    ability: "Prevent 1 pending Wound from your enemy battle.",
+    tradeoff: "Forfeit every reward from that battle."
+  },
+  {
+    id: "edge-ashglass-overclock",
+    value: 2,
+    name: "Ashglass Overclock",
+    timing: "Before a Challenge roll",
+    ability: "Add +3 to one Hazard, Anomaly, or sector Challenge total.",
+    tradeoff: "If the Challenge still fails, suffer 1 additional Wound."
+  },
+  {
+    id: "edge-static-shunt",
+    value: 3,
+    name: "Static Shunt",
+    timing: "After a failed Challenge roll",
+    ability: "Choose and ignore one pending non-Wound failure effect.",
+    tradeoff: "The Challenge still counts as failed."
+  },
+  {
+    id: "edge-echo-recast",
+    value: 4,
+    name: "Echo Recast",
+    timing: "After a battle or Challenge roll",
+    ability: "Reroll one die from your battle or Challenge.",
+    tradeoff: "Accept the second result."
+  },
+  {
+    id: "edge-quiet-ledger",
+    value: 5,
+    name: "Quiet Ledger",
+    timing: "Before a paid shop action",
+    ability: "Reduce one Gear purchase or service by 1 Salvage.",
+    tradeoff: "The final cost cannot be lower than 1 Salvage."
+  },
+  {
+    id: "edge-low-signal-discipline",
+    value: 6,
+    name: "Low-Signal Discipline",
+    timing: "After a battle or Challenge roll",
+    ability: "Change one natural result of 1 to a 2.",
+    tradeoff: "This is not a reroll and cannot trigger roll-based bonuses."
+  }
 ];
 
 const grid = document.querySelector("#edge-grid");
 const filters = [...document.querySelectorAll("[data-filter]")];
 const commitButton = document.querySelector("#commit-mode");
+const abilityButton = document.querySelector("#ability-mode");
 const phoneValue = document.querySelector("#phone-value");
+const phoneArt = document.querySelector("#phone-art");
+const phoneValueLabel = document.querySelector("#phone-value-label");
+const phoneValueNote = document.querySelector("#phone-value-note");
 const phoneTitle = document.querySelector("#phone-title");
 const phoneTiming = document.querySelector("#phone-timing");
 const phoneAbility = document.querySelector("#phone-ability");
+const phoneModeLabel = document.querySelector("#phone-mode-label");
+const phoneTradeoff = document.querySelector("#phone-tradeoff");
 const phoneConfirm = document.querySelector(".phone-confirm");
 const tvPreview = document.querySelector("#tv-preview");
 const tvClose = document.querySelector(".tv-preview__close");
@@ -21,8 +69,13 @@ const tvValue = document.querySelector("#tv-preview-value");
 const tvTitle = document.querySelector("#tv-preview-title");
 const tvResult = document.querySelector("#tv-preview-result");
 const tvResultName = document.querySelector("#tv-preview-result-name");
+const tvArt = document.querySelector("#tv-preview-art");
+const tvAction = document.querySelector("#tv-preview-action");
+const tvMode = document.querySelector("#tv-preview-mode");
+const tvResultCopy = document.querySelector("#tv-preview-result-copy");
 
 let selectedCard = cards[3];
+let selectedMode = "commit";
 let previewTimers = [];
 
 function calibrationSpine(value) {
@@ -61,16 +114,17 @@ function renderCards() {
               <span>Private reserve</span>
               <span class="edge-card__value"><b>${card.value}</b></span>
             </span>
+            <img class="edge-card__art" src="/assets/cards/edge/${card.id}.phone.webp" alt="" />
             <h3>${card.name}</h3>
-            <span class="edge-card__timing">Before an eligible roll</span>
+            <span class="edge-card__timing">${card.timing}</span>
             <span class="edge-card__ability">
-              Lock this value as one die. The server rolls the second die.
+              ${card.ability}
             </span>
             <span class="edge-card__tradeoff">
-              Burn after use. The locked die cannot be rerolled.
+              ${card.tradeoff}
             </span>
             <span class="edge-card__footer">
-              <span>Edge deck · live</span>
+              <span>Both modes · live</span>
               <span>Random award</span>
             </span>
           </span>
@@ -82,6 +136,7 @@ function renderCards() {
   grid.querySelectorAll(".edge-card").forEach((element) => {
     element.addEventListener("click", () => {
       selectedCard = cards.find((card) => card.name === element.dataset.card) ?? cards[0];
+      selectedMode = "commit";
       renderCards();
       updatePhone();
     });
@@ -92,11 +147,24 @@ function renderCards() {
 
 function updatePhone() {
   phoneValue.textContent = String(selectedCard.value);
+  phoneArt.src = `/assets/cards/edge/${selectedCard.id}.phone.webp`;
   phoneTitle.textContent = selectedCard.name;
-  phoneTiming.textContent = "Before an eligible roll";
+  phoneTiming.textContent =
+    selectedMode === "commit" ? "Before an eligible roll" : selectedCard.timing;
+  phoneValueLabel.textContent = selectedMode === "commit" ? "Commit value" : "Printed value";
+  phoneValueNote.textContent = selectedMode === "commit"
+    ? "No explosion · no reroll"
+    : "Ability mode · card consumed";
   commitButton.textContent = `Commit ${selectedCard.value}`;
-  phoneAbility.textContent =
-    `Use ${selectedCard.value} as one die in your next enemy battle or Hazard Challenge.`;
+  commitButton.classList.toggle("is-active", selectedMode === "commit");
+  abilityButton.classList.toggle("is-active", selectedMode === "ability");
+  phoneModeLabel.textContent = selectedMode === "commit" ? "COMMIT MODE" : "ABILITY MODE";
+  phoneAbility.textContent = selectedMode === "commit"
+    ? `Use ${selectedCard.value} as one die in your next enemy battle or Hazard Challenge.`
+    : selectedCard.ability;
+  phoneTradeoff.textContent = selectedMode === "commit"
+    ? "The committed result cannot explode or be rerolled."
+    : selectedCard.tradeoff;
 }
 
 function clearPreviewTimers() {
@@ -116,6 +184,14 @@ function previewTvReveal() {
   tvTitle.textContent = selectedCard.name;
   tvResult.textContent = String(selectedCard.value);
   tvResultName.textContent = selectedCard.name;
+  tvArt.src = `/assets/cards/edge/${selectedCard.id}.png`;
+  tvAction.textContent = selectedMode === "commit"
+    ? "Private reserve committed"
+    : "Private reserve activated";
+  tvMode.textContent = selectedMode === "commit" ? "One die locked" : "Ability activated";
+  tvResultCopy.textContent = selectedMode === "commit"
+    ? "One die locked at the revealed value."
+    : selectedCard.ability;
   tvPreview.hidden = false;
   tvPreview.dataset.stage = "sealed";
 
@@ -147,7 +223,14 @@ filters.forEach((filter) => {
   });
 });
 
-commitButton.addEventListener("click", updatePhone);
+commitButton.addEventListener("click", () => {
+  selectedMode = "commit";
+  updatePhone();
+});
+abilityButton.addEventListener("click", () => {
+  selectedMode = "ability";
+  updatePhone();
+});
 phoneConfirm.addEventListener("click", previewTvReveal);
 tvClose.addEventListener("click", closePreview);
 

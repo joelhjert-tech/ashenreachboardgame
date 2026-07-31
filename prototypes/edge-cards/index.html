@@ -23,7 +23,7 @@
           <small>Mechanics laboratory</small>
         </span>
       </a>
-      <span class="wip-stamp">Phase one · Live</span>
+      <span class="wip-stamp">Both modes · Live</span>
     </header>
 
     <main id="prototype" class="prototype-shell">
@@ -33,7 +33,7 @@
           <h1>Draw blind.<br /><em>Burn the certainty.</em></h1>
           <p class="hero__lede">
             Each player starts with one random Edge Card. Commit its hidden value
-            before an eligible roll; the shared screen reveals and burns the signal.
+            or activate its precisely timed ability; the shared screen reveals and burns the signal.
           </p>
         </div>
 
@@ -41,7 +41,7 @@
           <span class="hero__rule-number">1</span>
           <div>
             <strong>One Edge per resolution</strong>
-            <p>Lock one die before the roll. The server rolls the other die and discards the card.</p>
+            <p>Commit one die or activate one ability. The server validates timing, resolves it, and discards the card.</p>
           </div>
         </div>
       </section>
@@ -76,6 +76,10 @@
             <div>
               <span class="mode-key__icon mode-key__icon--signal" aria-hidden="true"></span>
               <p><strong>Commit</strong> Lock one of the upcoming two dice at the card value.</p>
+            </div>
+            <div>
+              <span class="mode-key__icon mode-key__icon--signal" aria-hidden="true"></span>
+              <p><strong>Ability</strong> Activate only in the private timing window enabled by the server.</p>
             </div>
             <div>
               <span class="mode-key__icon mode-key__icon--brass" aria-hidden="true"></span>
@@ -126,15 +130,22 @@
               <span id="phone-band" class="band-badge">Private reserve</span>
             </div>
 
+            <img
+              id="phone-art"
+              class="phone-edge-art"
+              src="/assets/cards/edge/edge-echo-recast.phone.webp"
+              alt=""
+            />
+
             <div class="phone-edge-value">
-              <span>Commit value</span>
+              <span id="phone-value-label">Commit value</span>
               <strong id="phone-value">4</strong>
-              <small>No explosion · no reroll</small>
+              <small id="phone-value-note">No explosion · no reroll</small>
             </div>
 
             <div class="phone-choice" role="group" aria-label="Preview Edge Card mode">
               <button id="commit-mode" class="is-active" type="button">Commit 4</button>
-              <button id="ability-mode" type="button" disabled>Ability · later</button>
+              <button id="ability-mode" type="button">Use ability</button>
             </div>
 
             <div class="phone-copy">
@@ -175,27 +186,28 @@
     <section id="tv-preview" class="tv-preview" data-stage="idle" hidden aria-live="assertive">
       <img
         class="tv-preview__charge"
-        src="../../public/assets/riftfall/ui/signal-theatre/edge-card/edge-card-charge.png"
+        src="/assets/riftfall/ui/signal-theatre/edge-card/edge-card-charge.png"
         alt=""
       />
       <img
         class="tv-preview__detonation"
-        src="../../public/assets/riftfall/ui/signal-theatre/edge-card/edge-card-detonation.png"
+        src="/assets/riftfall/ui/signal-theatre/edge-card/edge-card-detonation.png"
         alt=""
       />
       <button class="tv-preview__close" type="button" aria-label="Close TV animation preview">Close</button>
-      <p class="tv-preview__actor">Private reserve committed · <strong>Warden</strong></p>
+      <p class="tv-preview__actor"><span id="tv-preview-action">Private reserve committed</span> · <strong>Warden</strong></p>
       <article class="tv-preview__card" aria-label="Revealed Edge Card">
+        <img id="tv-preview-art" class="tv-preview__card-art" src="/assets/cards/edge/edge-echo-recast.png" alt="" />
         <span>Edge Card</span>
         <strong id="tv-preview-value">4</strong>
         <h2 id="tv-preview-title">Echo Recast</h2>
-        <small>One die locked</small>
+        <small id="tv-preview-mode">One die locked</small>
       </article>
       <div class="tv-preview__shockwave" aria-hidden="true"></div>
       <footer class="tv-preview__result">
         <span>Signal burned</span>
         <strong id="tv-preview-result">4</strong>
-        <p><b id="tv-preview-result-name">Echo Recast</b><br />One die locked at the revealed value.</p>
+        <p><b id="tv-preview-result-name">Echo Recast</b><br /><span id="tv-preview-result-copy">One die locked at the revealed value.</span></p>
       </footer>
     </section>
 

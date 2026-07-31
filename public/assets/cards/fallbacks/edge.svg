@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 1024">
+  <defs>
+    <linearGradient id="edge-bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#18333a"/>
+      <stop offset="52%" stop-color="#0a171c"/>
+      <stop offset="100%" stop-color="#040708"/>
+    </linearGradient>
+    <radialGradient id="edge-core" cx="50%" cy="42%" r="32%">
+      <stop offset="0%" stop-color="#eaffff"/>
+      <stop offset="34%" stop-color="#6df7ff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#6df7ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="768" height="1024" fill="url(#edge-bg)"/>
+  <rect x="30" y="30" width="708" height="964" rx="22" fill="none" stroke="#b4864f" stroke-width="8"/>
+  <circle cx="384" cy="430" r="210" fill="url(#edge-core)"/>
+  <circle cx="384" cy="430" r="154" fill="none" stroke="#83f5fb" stroke-width="10"/>
+  <circle cx="384" cy="430" r="92" fill="none" stroke="#d7ffff" stroke-width="6"/>
+  <path d="M384 228V632M182 430H586M241 287L527 573M527 287L241 573" stroke="#6df7ff" stroke-width="6" stroke-linecap="round"/>
+  <path d="M274 742H494" stroke="#b4864f" stroke-width="18" stroke-linecap="round"/>
+</svg>

@@ -1771,6 +1771,66 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "escalation-webglass-afterimage",
     "cardType": "escalation",
     "outputPath": "/assets/cards/escalations/escalation-webglass-afterimage.png"
+  },
+  {
+    "cardId": "edge-ashglass-overclock",
+    "cardType": "edge",
+    "outputPath": "/assets/cards/edge/edge-ashglass-overclock.png"
+  },
+  {
+    "cardId": "edge-black-relay-decoy",
+    "cardType": "edge",
+    "outputPath": "/assets/cards/edge/edge-black-relay-decoy.png"
+  },
+  {
+    "cardId": "edge-cinder-requisition",
+    "cardType": "edge",
+    "outputPath": "/assets/cards/edge/edge-cinder-requisition.png"
+  },
+  {
+    "cardId": "edge-cinderline-break",
+    "cardType": "edge",
+    "outputPath": "/assets/cards/edge/edge-cinderline-break.png"
+  },
+  {
+    "cardId": "edge-closed-circuit-aid",
+    "cardType": "edge",
+    "outputPath": "/assets/cards/edge/edge-closed-circuit-aid.png"
+  },
+  {
+    "cardId": "edge-echo-recast",
+    "cardType": "edge",
+    "outputPath": "/assets/cards/edge/edge-echo-recast.png"
+  },
+  {
+    "cardId": "edge-hazard-wake",
+    "cardType": "edge",
+    "outputPath": "/assets/cards/edge/edge-hazard-wake.png"
+  },
+  {
+    "cardId": "edge-isolated-channel",
+    "cardType": "edge",
+    "outputPath": "/assets/cards/edge/edge-isolated-channel.png"
+  },
+  {
+    "cardId": "edge-known-scar-pattern",
+    "cardType": "edge",
+    "outputPath": "/assets/cards/edge/edge-known-scar-pattern.png"
+  },
+  {
+    "cardId": "edge-low-signal-discipline",
+    "cardType": "edge",
+    "outputPath": "/assets/cards/edge/edge-low-signal-discipline.png"
+  },
+  {
+    "cardId": "edge-quiet-ledger",
+    "cardType": "edge",
+    "outputPath": "/assets/cards/edge/edge-quiet-ledger.png"
+  },
+  {
+    "cardId": "edge-static-shunt",
+    "cardType": "edge",
+    "outputPath": "/assets/cards/edge/edge-static-shunt.png"
   }
 ] as RuntimeCardArtCatalogEntry[];
 
@@ -1787,7 +1847,8 @@ const cardArtPathByType = cardArtRuntimeCatalog.reduce<Record<CardImageType, Rec
     equipment: {},
     follower: {},
     scar: {},
-    escalation: {}
+    escalation: {},
+    edge: {}
   }
 );
 

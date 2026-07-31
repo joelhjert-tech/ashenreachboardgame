@@ -20,6 +20,13 @@ export function hasPersistentHazard(
   sectorId: string,
   hazardId: string
 ): boolean {
+  if (
+    (state.edgeHazardSuppressions ?? []).some(
+      (entry) => entry.sectorId === sectorId && entry.hazardId === hazardId
+    )
+  ) {
+    return false;
+  }
   return state.sectors
     .find((sector) => sector.id === sectorId)
     ?.persistentThreatIds?.includes(hazardId) ?? false;

@@ -29,6 +29,8 @@ describe("SignalEdgeCardBurst", () => {
 
     expect(screen.getByTestId("signal-edge-card-burst")).toHaveAttribute("data-stage", "charge");
     expect(screen.getByRole("heading", { name: "Echo Recast", level: 1 })).toBeInTheDocument();
+    expect(document.querySelector<HTMLImageElement>(".signal-edge-burst__face-art img")?.src)
+      .toContain("/assets/cards/edge/edge-echo-recast.png");
     expect(document.querySelector<HTMLImageElement>(".signal-edge-burst__charge-art")?.src)
       .toContain("/assets/riftfall/ui/signal-theatre/edge-card/edge-card-charge.png");
   });
@@ -49,5 +51,23 @@ describe("SignalEdgeCardBurst", () => {
     expect(screen.getByTestId("signal-edge-card-burst")).toHaveAttribute("data-stage", "result");
     expect(screen.getAllByText("4").length).toBeGreaterThan(0);
     expect(screen.getByText("One die locked")).toBeInTheDocument();
+  });
+
+  it("labels ability-mode reveals without describing a locked die", () => {
+    render(
+      <SignalEdgeCardBurst
+        play={{
+          ...play,
+          id: `${play.id}:ability`,
+          mode: "ability",
+          abilityKey: "reroll-die",
+          publicSummary: "Joel activated Echo Recast and rerolled one die."
+        }}
+        forcedStage="result"
+      />
+    );
+    expect(screen.getByText("Ability activated")).toBeInTheDocument();
+    expect(screen.getByText("Ability burned")).toBeInTheDocument();
+    expect(screen.queryByText("One die locked")).not.toBeInTheDocument();
   });
 });

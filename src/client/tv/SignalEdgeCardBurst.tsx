@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactElement } from "react";
 import { getSignalTheatreEdgeCardPaths } from "../shared/assetPaths.js";
+import { CardArtImage } from "../shared/CardArtImage.js";
 import type { PublicEdgeCardPlay } from "../shared/types.js";
 import "./SignalEdgeCardBurst.css";
 
@@ -108,7 +109,7 @@ export function SignalEdgeCardBurst({
       <div className="signal-edge-burst__shockwave" aria-hidden="true"><i /><i /><i /></div>
 
       <header className="signal-edge-burst__header">
-        <span>Private reserve committed</span>
+        <span>{activePlay.mode === "ability" ? "Edge ability activated" : "Private reserve committed"}</span>
         <strong>{activePlay.actorDisplayName}</strong>
       </header>
 
@@ -118,16 +119,20 @@ export function SignalEdgeCardBurst({
             <img src={assets.cardBack} width={720} height={1080} alt="" aria-hidden="true" />
           </div>
           <div className="signal-edge-burst__card-face">
+            <div className="signal-edge-burst__face-art" aria-hidden="true">
+              <CardArtImage cardType="edge" cardId={activePlay.cardId} quality="full" alt="" />
+            </div>
+            <div className="signal-edge-burst__face-veil" aria-hidden="true" />
             <span>Edge Card</span>
             <strong>{activePlay.edgeValue}</strong>
             <h1 id="signal-edge-burst-title">{activePlay.cardName}</h1>
-            <p>One die locked</p>
+            <p>{activePlay.mode === "ability" ? "Ability activated" : "One die locked"}</p>
           </div>
         </div>
       </article>
 
       <footer className="signal-edge-burst__result">
-        <span>Signal burned</span>
+        <span>{activePlay.mode === "ability" ? "Ability burned" : "Signal burned"}</span>
         <strong>{activePlay.edgeValue}</strong>
         <div>
           <h2>{activePlay.cardName}</h2>

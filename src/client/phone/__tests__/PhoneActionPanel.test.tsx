@@ -524,6 +524,63 @@ describe("PhoneActionPanel", () => {
       optionId: "pay-levy"
     });
   });
+
+  it("offers a staged Hazard Edge ability before the roll", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "action",
+      activeResolution: {
+        id: "edge-hazard-setup",
+        playerId: "seat-1",
+        source: "threat",
+        stage: "battle_setup",
+        card: { id: "glass-chime-swarm", title: "Glass Chime Swarm", type: "hazard", artType: "threat" },
+        battle: { stat: "signal", difficulty: 6, modifiers: [] }
+      },
+      edgeHand: {
+        cards: [{
+          id: "edge-ashglass-overclock",
+          name: "Ashglass Overclock",
+          edgeValue: 2,
+          commitText: "Lock 2 as one die.",
+          abilityText: "Add +3 to one Hazard, Anomaly, or sector Challenge total.",
+          tradeoffText: "If the Challenge still fails, suffer 1 additional Wound.",
+          ability: {
+            label: "Add +3 to check",
+            enabled: true,
+            disabledReason: null,
+            resolutionId: "edge-hazard-setup",
+            targets: []
+          }
+        }],
+        limit: 2,
+        awardRule: "Random awards only.",
+        canCommit: true,
+        disabledReason: null,
+        resolutionId: "edge-hazard-setup",
+        reaction: null
+      }
+    });
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={patch}
+        selectedTurnTab="battle"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Ashglass Overclock.*Add \+3 to check/ }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "PLAY_EDGE_CARD",
+      seatId: "seat-1",
+      cardId: "edge-ashglass-overclock",
+      resolutionId: "edge-hazard-setup",
+      mode: "ability"
+    });
+  });
+
   afterEach(() => {
     cleanup();
     window.history.replaceState({}, "", "/");

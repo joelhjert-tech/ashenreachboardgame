@@ -105,6 +105,7 @@ function getDefaultPriority(assetType: string): number {
     assetType === "contractCardArt" ||
     assetType === "anomalyCardArt" ||
     assetType === "artifactCardArt" ||
+    assetType === "edgeCardArt" ||
     assetType === "followerCardArt"
   ) {
     return 75;
@@ -369,7 +370,8 @@ const cardImageSummary = CARD_IMAGE_TYPES.reduce<Record<CardImageType, { total: 
     equipment: { total: 0, present: 0, missing: 0 },
     follower: { total: 0, present: 0, missing: 0 },
     scar: { total: 0, present: 0, missing: 0 },
-    escalation: { total: 0, present: 0, missing: 0 }
+    escalation: { total: 0, present: 0, missing: 0 },
+    edge: { total: 0, present: 0, missing: 0 }
   }
 );
 

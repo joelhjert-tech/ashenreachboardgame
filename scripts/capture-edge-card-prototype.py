@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -5,6 +6,10 @@ from playwright.sync_api import sync_playwright
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 PROTOTYPE = REPOSITORY / "prototypes" / "edge-cards" / "index.html"
+PROTOTYPE_URL = os.environ.get(
+    "ASHEN_REACH_EDGE_PROTOTYPE_URL",
+    "http://127.0.0.1:5173/prototypes/edge-cards/",
+)
 OUTPUT = REPOSITORY / "reports" / "ui" / "edge-card-prototype"
 
 
@@ -24,8 +29,7 @@ def capture() -> None:
 
         desktop = browser.new_page(viewport={"width": 1440, "height": 1100})
         attach_console_guard(desktop, console_errors)
-        desktop.goto(PROTOTYPE.as_uri())
-        desktop.wait_for_load_state("load")
+        desktop.goto(PROTOTYPE_URL, wait_until="networkidle")
         desktop.locator('[data-card="Echo Recast"]').click()
         desktop.evaluate("window.scrollTo(0, 0)")
         desktop.screenshot(
@@ -35,8 +39,7 @@ def capture() -> None:
 
         mobile = browser.new_page(viewport={"width": 390, "height": 844})
         attach_console_guard(mobile, console_errors)
-        mobile.goto(PROTOTYPE.as_uri())
-        mobile.wait_for_load_state("load")
+        mobile.goto(PROTOTYPE_URL, wait_until="networkidle")
         mobile.locator('[data-card="Static Shunt"]').click()
         mobile.locator(".phone-lab").screenshot(
             path=str(OUTPUT / "edge-card-phone-390x844.png"),
@@ -44,8 +47,7 @@ def capture() -> None:
 
         tv = browser.new_page(viewport={"width": 1920, "height": 1080})
         attach_console_guard(tv, console_errors)
-        tv.goto(PROTOTYPE.as_uri())
-        tv.wait_for_load_state("load")
+        tv.goto(PROTOTYPE_URL, wait_until="networkidle")
         tv.wait_for_function(
             """() => [...document.querySelectorAll('.tv-preview img')]
                 .every((image) => image.complete && image.naturalWidth > 0)"""
@@ -74,7 +76,9 @@ def capture() -> None:
                 horizontalOverflow:
                     document.documentElement.scrollWidth > document.documentElement.clientWidth,
                 canvasCount: document.querySelectorAll('canvas').length,
-                abilityDisabled: document.querySelector('#ability-mode')?.disabled
+                abilityDisabled: document.querySelector('#ability-mode')?.disabled,
+                artLoaded: [...document.querySelectorAll('.edge-card__art')]
+                    .every((image) => image.complete && image.naturalWidth > 0)
             })"""
         )
         mobile_metrics = mobile.evaluate(
@@ -82,7 +86,9 @@ def capture() -> None:
                 horizontalOverflow:
                     document.documentElement.scrollWidth > document.documentElement.clientWidth,
                 phoneTitle: document.querySelector('#phone-title')?.textContent,
-                previewEnabled: !document.querySelector('.phone-confirm')?.disabled
+                previewEnabled: !document.querySelector('.phone-confirm')?.disabled,
+                artLoaded: document.querySelector('#phone-art')?.complete &&
+                    document.querySelector('#phone-art')?.naturalWidth > 0
             })"""
         )
         tv_metrics = tv.evaluate(
@@ -106,12 +112,14 @@ def capture() -> None:
         "selected": 1,
         "horizontalOverflow": False,
         "canvasCount": 0,
-        "abilityDisabled": True,
+        "abilityDisabled": False,
+        "artLoaded": True,
     }, desktop_metrics
     assert mobile_metrics == {
         "horizontalOverflow": False,
         "phoneTitle": "Static Shunt",
         "previewEnabled": True,
+        "artLoaded": True,
     }, mobile_metrics
     assert tv_metrics == {
         "stage": "result",
@@ -119,6 +127,7 @@ def capture() -> None:
         "images": [
             {"loaded": True, "width": 1672, "height": 941},
             {"loaded": True, "width": 1672, "height": 941},
+            {"loaded": True, "width": 1086, "height": 1448},
         ],
         "canvasCount": 0,
     }, tv_metrics

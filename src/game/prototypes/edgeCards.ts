@@ -1,9 +1,9 @@
 /**
- * WIP approval prototype only.
+ * Historical executable design mirror.
  *
- * The phase-one commit-value mode is now wired into production. This module
- * retains the proposed timing-specific abilities as an executable design
- * reference for later implementation.
+ * Both Edge play modes are now wired into production through
+ * `src/game/data/edgeCards.ts` and the server-authoritative room lifecycle.
+ * This module remains as design-math coverage for the original proposal.
  */
 
 export const EDGE_VALUES = [1, 2, 3, 4, 5, 6] as const;
@@ -213,7 +213,7 @@ export const EDGE_CARD_PROTOTYPE: readonly EdgeCardDefinition[] = [
 ] as const;
 
 export const EDGE_PROTOTYPE_RULES = {
-  status: "phase-one-commit-value-runtime-wired",
+  status: "full-runtime-wired",
   startingHand: 1,
   baseHandLimit: 2,
   maximumHandLimit: 4,

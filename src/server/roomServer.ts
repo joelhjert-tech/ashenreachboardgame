@@ -38,7 +38,9 @@ import {
   EDGE_CARD_BY_ID,
   EDGE_CARD_DECK,
   EDGE_RULES,
-  getEdgeHandLimit
+  getEdgeHandLimit,
+  type EdgeAbilityKey,
+  type EdgeCardDefinition
 } from "../game/data/edgeCards.js";
 import {
   advanceContractObjectiveProgress,
@@ -223,6 +225,9 @@ import type {
   DiceRollStartedAction,
   EdgeCardAwardedAction,
   EdgeCardPlayedAction,
+  EdgeCardReactionOpenedAction,
+  EdgeCardReactionResolvedAction,
+  EdgeCardReactionDeclinedAction,
   EdgeDeckInitializedAction,
   EdgeDeckShuffledAction,
   EscalationAdvancedAction,
@@ -338,6 +343,228 @@ export const ESCALATION_FEEDERS = {
 const RAISE_STAT_FEEDS_ESCALATION = false;
 const RAISE_STAT_ESCALATION_REASON = "forged in fire";
 const ENEMY_ROLL_TIMEOUT_MS = 30_000;
+const EDGE_THREAT_CATALOG = loadThreatCards();
+
+interface EdgeAbilityAvailability {
+  enabled: boolean;
+  resolutionId: string | null;
+  disabledReason: string | null;
+  targets: Array<{ id: string; label: string }>;
+}
+
+function encounterEffectContains(
+  effect: EncounterEffect | null | undefined,
+  predicate: (candidate: EncounterEffect) => boolean
+): boolean {
+  if (!effect) return false;
+  if (predicate(effect)) return true;
+  return effect.type === "sequence"
+    ? effect.effects.some((candidate) => encounterEffectContains(candidate, predicate))
+    : false;
+}
+
+function collectNonWoundFailureEffectTargets(
+  effect: EncounterEffect,
+  path = "root"
+): Array<{ id: string; label: string }> {
+  if (effect.type === "sequence") {
+    return effect.effects.flatMap((entry, index) =>
+      collectNonWoundFailureEffectTargets(entry, path === "root" ? String(index) : `${path}.${index}`)
+    );
+  }
+  if (effect.type === "take_wound" || effect.type === "gain_note") return [];
+  const effectName = effect.type
+    .split("_")
+    .map((word) => `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
+  return [{ id: path, label: `Ignore ${effectName}` }];
+}
+
+function getOpenedEdgeReaction(
+  state: GameState,
+  reactionId: string
+): EdgeCardReactionOpenedAction | undefined {
+  return [...state.eventLog].reverse().find((entry) => {
+    const candidate = entry as Partial<EdgeCardReactionOpenedAction>;
+    return candidate.type === "EDGE_CARD_REACTION_OPENED" && candidate.reactionId === reactionId;
+  }) as EdgeCardReactionOpenedAction | undefined;
+}
+
+function hasKnownEnemyFamilyTrophy(
+  state: GameState,
+  player: PlayerState,
+  enemyFamily: string | undefined
+): boolean {
+  if (!enemyFamily) return false;
+  return (player.character.trophyPile ?? []).some((entry) =>
+    EDGE_THREAT_CATALOG.get(entry.cardId)?.enemyFamily === enemyFamily &&
+    Math.max(0, entry.trophyValue - (entry.spentValue ?? 0)) > 0
+  );
+}
+
+function getEdgeAbilityAvailability(
+  state: GameState,
+  seatId: string,
+  definition: EdgeCardDefinition
+): EdgeAbilityAvailability {
+  const player = state.players.find((entry) => entry.seatId === seatId);
+  const activeSeatId = state.turnOrder[state.activeSeatIndex];
+  const encounter = state.currentEncounter;
+  const resolution = state.activeResolution;
+  const unavailable = (disabledReason: string): EdgeAbilityAvailability => ({
+    enabled: false,
+    resolutionId: null,
+    disabledReason,
+    targets: []
+  });
+
+  if (!player || activeSeatId !== seatId || player.character.status !== "active") {
+    return unavailable("Only the active operative can use this Edge ability.");
+  }
+  if (state.pendingEdgeCommit || state.pendingEdgeAbility) {
+    return unavailable("Another Edge Card is already committed.");
+  }
+
+  const reaction = state.pendingEdgeReaction;
+  if (reaction) {
+    if (
+      reaction.ownerSeatId !== seatId ||
+      !reaction.legalCardIds.includes(definition.id)
+    ) {
+      return unavailable("This ability does not match the pending result.");
+    }
+    const opened = getOpenedEdgeReaction(state, reaction.id);
+    const targets =
+      definition.abilityKey === "reroll-die"
+        ? reaction.originalRoll.map((face, index) => ({
+            id: String(index),
+            label: `Reroll die ${index + 1} (${face})`
+          }))
+        : definition.abilityKey === "raise-natural-one"
+          ? reaction.originalRoll.flatMap((face, index) =>
+              face === 1 ? [{ id: String(index), label: `Raise die ${index + 1} from 1 to 2` }] : []
+            )
+          : definition.abilityKey === "convert-trophy"
+            ? Array.from(
+                {
+                  length: Math.min(
+                    2,
+                    state.currentEncounter?.cardType === "enemy"
+                      ? state.currentEncounter.trophyValue
+                      : 0
+                  )
+                },
+                (_, index) => ({
+                  id: String(index + 1),
+                  label: `Convert ${index + 1} Trophy to ${index + 1} Salvage`
+                })
+              )
+            : definition.abilityKey === "shunt-failure-effect" &&
+                opened?.pendingResult.type === "CHECK_ROLLED" &&
+                opened.pendingResult.effect
+              ? collectNonWoundFailureEffectTargets(opened.pendingResult.effect)
+              : [];
+    const requiresTarget = [
+      "reroll-die",
+      "raise-natural-one",
+      "convert-trophy",
+      "shunt-failure-effect"
+    ].includes(definition.abilityKey);
+    return {
+      enabled: targets.length > 0 || !requiresTarget,
+      resolutionId: reaction.resolutionId,
+      disabledReason: targets.length === 0 && requiresTarget
+        ? "No legal target is available."
+        : null,
+      targets
+    };
+  }
+
+  if (definition.abilityKey === "boost-helper") {
+    const assistance = state.cooperativeAssistance;
+    if (
+      assistance?.activeSeatId !== seatId ||
+      assistance.status !== "locked" ||
+      assistance.lockedContributions.length === 0 ||
+      resolution?.playerId !== seatId ||
+      resolution.stage !== "battle_setup" ||
+      !encounter ||
+      assistance.sourceId !== encounter.id
+    ) {
+      return unavailable("Available after accepted assistance is locked and before the roll.");
+    }
+    return {
+      enabled: true,
+      resolutionId: resolution.id,
+      disabledReason: null,
+      targets: assistance.lockedContributions.map((entry) => ({
+        id: entry.seatId,
+        label: `Boost ${state.seats.find((seat) => seat.seatId === entry.seatId)?.displayName ?? entry.seatId} by +2`
+      }))
+    };
+  }
+
+  if (definition.abilityKey === "shop-discount") {
+    const boardSpace = getBoardSpace(player.character.currentSpaceId);
+    const shopReady =
+      state.phase === "action" &&
+      !encounter &&
+      !state.pendingEffect &&
+      Boolean(boardSpace && isBoardSpaceShopCapable(boardSpace)) &&
+      getServiceThreatGate(state, seatId, player.character.currentSpaceId).allowed;
+    if (!shopReady) {
+      return unavailable("Available at an open shop before a purchase or paid service.");
+    }
+    return {
+      enabled: true,
+      resolutionId: `edge-shop:${seatId}:${player.character.currentSpaceId}:${state.sequence + 1}`,
+      disabledReason: null,
+      targets: []
+    };
+  }
+
+  const isSetup =
+    state.phase === "action" &&
+    resolution?.playerId === seatId &&
+    resolution.stage === "battle_setup" &&
+    Boolean(encounter) &&
+    resolution.id.length > 0;
+  if (!isSetup || !encounter || !resolution) {
+    return unavailable(
+      definition.abilityTimings.includes("after-battle-roll") ||
+      definition.abilityTimings.includes("after-challenge-roll")
+        ? "Available after the matching roll, before its result is finalized."
+        : "Available during the matching pre-roll setup."
+    );
+  }
+
+  if (definition.abilityKey === "reduce-enemy-difficulty") {
+    return encounter.cardType === "enemy"
+      ? { enabled: true, resolutionId: resolution.id, disabledReason: null, targets: [] }
+      : unavailable("Requires an enemy battle.");
+  }
+  if (definition.abilityKey === "boost-challenge") {
+    return encounter.cardType === "hazard"
+      ? { enabled: true, resolutionId: resolution.id, disabledReason: null, targets: [] }
+      : unavailable("Requires a Hazard, Anomaly, or sector Challenge.");
+  }
+  if (definition.abilityKey === "isolated-total") {
+    if (state.cooperativeAssistance) {
+      return unavailable("Cancel or finish the current assistance request first.");
+    }
+    return ["enemy", "hazard"].includes(encounter.cardType)
+      ? { enabled: true, resolutionId: resolution.id, disabledReason: null, targets: [] }
+      : unavailable("Requires a battle or Challenge setup.");
+  }
+  if (definition.abilityKey === "known-family") {
+    if (encounter.cardType !== "enemy") return unavailable("Requires an enemy battle.");
+    return hasKnownEnemyFamilyTrophy(state, player, encounter.enemyFamily)
+      ? { enabled: true, resolutionId: resolution.id, disabledReason: null, targets: [] }
+      : unavailable("No unspent Trophy from this enemy family is recorded.");
+  }
+
+  return unavailable("This ability is outside its printed timing window.");
+}
 const RESOLUTION_AUTO_CONTINUE_MS = process.env.VITEST ? 1 : 10000;
 const VISIBLE_DICE_ROLL_MS = process.env.VITEST ? 0 : 650;
 const FANDIABLOS_ID = "fandiablos";
@@ -492,6 +719,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "CHECK_REQUESTED",
   "COMBAT_REQUESTED",
   "PLAY_EDGE_CARD",
+  "DECLINE_EDGE_CARD_REACTION",
   "ENEMY_ROLL_REQUESTED",
   "SOLO_REROLL_REQUESTED",
   "AFFLICTION_STAT_CHOSEN",
@@ -1261,6 +1489,18 @@ export class GameRoomServer {
         return;
       }
 
+      if (intent.type === "PLAY_EDGE_CARD") {
+        this.resolveEdgeCardIntent(intent);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "DECLINE_EDGE_CARD_REACTION") {
+        this.resolveEdgeCardReactionDecline(intent);
+        this.broadcastPatch();
+        return;
+      }
+
       if (intent.type === "RESOLVE_SPACE_TEXT") {
         this.resolveSpaceTextIntent(intent);
         const shouldCompleteTurn =
@@ -1308,10 +1548,6 @@ export class GameRoomServer {
       }
       const action = this.intentToAction(intent);
       this.applyAction(action);
-      if (action.type === "EDGE_CARD_PLAYED") {
-        this.broadcastPatch();
-        return;
-      }
       if (action.type === "COMPLETE_CONTRACT") {
         this.awardRandomEdgeCard(action.seatId, "contract", action.contractId);
         this.queueReplacementMissionSelection(action.seatId, action.contractId);
@@ -2449,7 +2685,11 @@ export class GameRoomServer {
       case "PLAY_EDGE_CARD":
         requireStringField(message, "cardId", type);
         requireStringField(message, "resolutionId", type);
-        requireEnumField(message, "mode", new Set(["commit-value"]), type);
+        requireEnumField(message, "mode", new Set(["commit-value", "ability"]), type);
+        if (message.targetId !== undefined) requireStringField(message, "targetId", type);
+        break;
+      case "DECLINE_EDGE_CARD_REACTION":
+        requireStringField(message, "reactionId", type);
         break;
       case "BROKEN_CONCORDANCE_NODE_REQUESTED":
         requireStringField(message, "nodeId", type);
@@ -3724,7 +3964,16 @@ export class GameRoomServer {
       throw new Error(`Unknown shop service ${intent.serviceId}`);
     }
 
-    if (!service.enabled) {
+    const discountedService = this.applyQuietLedgerDiscount(
+      intent.seatId,
+      player.character.currentSpaceId,
+      service.cost
+    );
+    const discountMakesAffordable =
+      service.disabledReason === SHOP_FAILURE_REASONS.insufficientSalvage &&
+      discountedService.edgeDiscount === 1 &&
+      (player.character.salvage ?? 0) >= (discountedService.cost.salvage ?? 0);
+    if (!service.enabled && !discountMakesAffordable) {
       throw new Error(service.disabledReason ?? `${service.label} is not available`);
     }
 
@@ -3737,7 +3986,8 @@ export class GameRoomServer {
       serviceLabel: service.label,
       shopName,
       sectorId: player.character.currentSpaceId,
-      cost: service.cost,
+      cost: discountedService.cost,
+      edgeDiscount: discountedService.edgeDiscount,
       createdAt
     };
 
@@ -3807,7 +4057,7 @@ export class GameRoomServer {
             repairGearInstanceId: repairTarget.instanceId,
             note: `${shopName}: ${repairTarget.name} restored to full use.`
           },
-          summary: `${actorName} used ${shopName}. Paid ${service.cost.salvage ?? 0} Salvage to restore ${repairTarget.name}.`
+          summary: `${actorName} used ${shopName}. Paid ${discountedService.cost.salvage ?? 0} Salvage to restore ${repairTarget.name}.`
         };
         }
       case "buy-supplies":
@@ -3904,6 +4154,28 @@ export class GameRoomServer {
       default:
         throw new Error(`Unsupported shop service ${service.id}`);
     }
+  }
+
+  private applyQuietLedgerDiscount(
+    seatId: string,
+    sectorId: string,
+    cost: ShopServiceCost
+  ): { cost: ShopServiceCost; edgeDiscount?: 1 } {
+    const pending = this.state.pendingEdgeAbility;
+    const salvageCost = cost.salvage ?? 0;
+    if (
+      !pending ||
+      pending.seatId !== seatId ||
+      pending.abilityKey !== "shop-discount" ||
+      !pending.resolutionId.startsWith(`edge-shop:${seatId}:${sectorId}:`) ||
+      salvageCost <= 1
+    ) {
+      return { cost };
+    }
+    return {
+      cost: { ...cost, salvage: Math.max(1, salvageCost - 1) },
+      edgeDiscount: 1
+    };
   }
 
   private pickShopGearStock(player: PlayerState, count: number, mode: "standard" | "risk", category: ShopCategory): GearItem[] {
@@ -4038,8 +4310,13 @@ export class GameRoomServer {
       if ((player.character.followers ?? []).some((owned) => owned.id === follower.id)) {
         throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
       }
-      const cost = { salvage: 4 };
-      if ((player.character.salvage ?? 0) < cost.salvage) {
+      const discounted = this.applyQuietLedgerDiscount(
+        intent.seatId,
+        player.character.currentSpaceId,
+        { salvage: 4 }
+      );
+      const cost = discounted.cost;
+      if ((player.character.salvage ?? 0) < (cost.salvage ?? 0)) {
         throw new Error(SHOP_FAILURE_REASONS.insufficientSalvage);
       }
       return {
@@ -4050,13 +4327,14 @@ export class GameRoomServer {
         sectorId: player.character.currentSpaceId,
         cardId: follower.id,
         cost,
+        edgeDiscount: discounted.edgeDiscount,
         gainedFollower: {
           ...follower,
           instanceId: `${follower.id}:${intent.seatId}:${this.state.sequence + 1}`,
           currentCharges: follower.startingCharges ?? 2
         },
         discardedStockIds: reveal.stockIds.filter((cardId) => cardId !== follower.id),
-        summary: `${player.character.name} recruited ${follower.name} for 4 Salvage.`,
+        summary: `${player.character.name} recruited ${follower.name} for ${cost.salvage ?? 0} Salvage.`,
         createdAt
       };
     }
@@ -4082,11 +4360,17 @@ export class GameRoomServer {
     }
 
     const isArtifactExchange = reveal.serviceId === "trade-missions-for-artifact";
-    const cost = isRouteAid
+    const baseCost = isRouteAid
       ? { salvage: 5 }
       : isArtifactExchange
       ? { completedContracts: ARTIFACT_EXCHANGE_CONTRACT_COST }
       : { salvage: getShopGearCost(gear) };
+    const discounted = this.applyQuietLedgerDiscount(
+      intent.seatId,
+      player.character.currentSpaceId,
+      baseCost
+    );
+    const cost = discounted.cost;
 
     if (isArtifactExchange && gear.tier !== "artifact") {
       throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
@@ -4111,6 +4395,7 @@ export class GameRoomServer {
       sectorId: player.character.currentSpaceId,
       cardId: gear.id,
       cost,
+      edgeDiscount: discounted.edgeDiscount,
       gainedGear: gear,
       discardedStockIds,
       spentCompletedContractIds,
@@ -4285,7 +4570,10 @@ export class GameRoomServer {
     if (!encounter || encounter.cardType !== "hazard") {
       throw new Error("Solo emergency reroll requires a failed hazard check");
     }
-    if (this.state.lastEdgeCardPlay?.seatId === intent.seatId) {
+    if (
+      this.state.lastEdgeCardPlay?.seatId === intent.seatId &&
+      this.state.lastEdgeCardPlay.mode === "commit-value"
+    ) {
       throw new Error("A roll containing a committed Edge value cannot be rerolled");
     }
 
@@ -4390,7 +4678,11 @@ export class GameRoomServer {
       if (!resolution?.roll || !encounter) throw new IntentRejectedError(intent.type, "The roll is no longer available");
       const index = intent.rollIndex ?? 0;
       if (index >= resolution.roll.dice.length) throw new IntentRejectedError(intent.type, "The selected die is unavailable");
-      if (this.state.lastEdgeCardPlay?.seatId === intent.seatId && index === 0) {
+      if (
+        this.state.lastEdgeCardPlay?.seatId === intent.seatId &&
+        this.state.lastEdgeCardPlay.mode === "commit-value" &&
+        index === 0
+      ) {
         throw new IntentRejectedError(intent.type, "The committed Edge die is locked and cannot be rerolled");
       }
       const faces = [...resolution.roll.dice];
@@ -4551,11 +4843,19 @@ export class GameRoomServer {
           cardName: definition.name,
           edgeValue: definition.edgeValue,
           mode: intent.mode,
+          abilityKey: intent.mode === "ability" ? definition.abilityKey : undefined,
+          targetId: intent.targetId,
           resolutionId: intent.resolutionId,
-          publicSummary: `${displayName} burned ${definition.name}. ${definition.edgeValue} is locked as one die.`,
+          publicSummary: intent.mode === "commit-value"
+            ? `${displayName} burned ${definition.name}. ${definition.edgeValue} is locked as one die.`
+            : `${displayName} activated ${definition.name}. ${definition.abilityText}${
+                definition.tradeoffText ? ` ${definition.tradeoffText}` : ""
+              }`,
           createdAt
         } satisfies EdgeCardPlayedAction;
       }
+      case "DECLINE_EDGE_CARD_REACTION":
+        throw new Error("Edge Card reactions are resolved directly");
       case "COMBAT_REQUESTED":
         return {
           type: "COMBAT_REQUESTED",
@@ -5337,6 +5637,436 @@ export class GameRoomServer {
     } satisfies EdgeCardAwardedAction);
   }
 
+  private getPendingEdgeReactionResult(
+    reactionId: string
+  ): CheckRolledAction | CombatResolvedAction {
+    const opened = [...this.state.eventLog].reverse().find((entry) => {
+      const candidate = entry as Partial<EdgeCardReactionOpenedAction>;
+      return candidate.type === "EDGE_CARD_REACTION_OPENED" && candidate.reactionId === reactionId;
+    }) as EdgeCardReactionOpenedAction | undefined;
+    if (!opened?.pendingResult) {
+      throw new Error("The authoritative Edge reaction result is unavailable");
+    }
+    return opened.pendingResult;
+  }
+
+  private removeSelectedNonWoundFailureEffect(
+    effect: EncounterEffect,
+    targetPath: string,
+    path = "root"
+  ): EncounterEffect | null {
+    if (path === targetPath) {
+      return ["take_wound", "gain_note", "sequence"].includes(effect.type) ? effect : null;
+    }
+    if (effect.type !== "sequence") return effect;
+    const effects = effect.effects.flatMap((entry, index) => {
+      const childPath = path === "root" ? String(index) : `${path}.${index}`;
+      const next = this.removeSelectedNonWoundFailureEffect(entry, targetPath, childPath);
+      return next ? [next] : [];
+    });
+    return effects.length > 0 ? { ...effect, effects } : null;
+  }
+
+  private stripBattleRewardsForCinderline(effect: EncounterEffect): EncounterEffect {
+    const rewardTypes = new Set([
+      "gain_trophy",
+      "gain_salvage",
+      "gain_gear",
+      "draw_artifact",
+      "gain_follower",
+      "heal_wound"
+    ]);
+    if (effect.type !== "sequence") {
+      return rewardTypes.has(effect.type)
+        ? { type: "gain_note", text: "Cinderline Break forfeited the battle reward." }
+        : effect;
+    }
+    return {
+      ...effect,
+      effects: [
+        ...effect.effects.filter((entry) => !rewardTypes.has(entry.type)),
+        { type: "gain_note", text: "Cinderline Break forfeited every battle reward." }
+      ]
+    };
+  }
+
+  private applyAfflictionCombatWoundPrevention(
+    seatId: string,
+    stat: CombatResolvedAction["stat"],
+    success: boolean,
+    effect: EncounterEffect
+  ): EncounterEffect {
+    if (success) return effect;
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    if (!player) return effect;
+    const faceupAfflictionIds = new Set(
+      (player.faceupAfflictions ?? []).map((affliction) => affliction.cardId)
+    );
+    const hasMatchingPreventionAffliction =
+      (stat === "command" && faceupAfflictionIds.has("iron-nerve")) ||
+      (stat === "grit" && faceupAfflictionIds.has("metal-hide"));
+    if (!hasMatchingPreventionAffliction) return effect;
+    const roll = this.randomSource.nextInt(6) + 1;
+    const prevention = getAfflictionWoundPrevention(
+      player,
+      stat,
+      roll,
+      getAfflictionCatalog(this.state)
+    );
+    return prevention.prevented > 0
+      ? this.makeEffectSequence([
+          preventWoundInEffect(effect, prevention.prevented),
+          {
+            type: "gain_note",
+            text: `${prevention.source} reaction rolled ${roll}: prevented ${prevention.prevented} wound.`
+          }
+        ])
+      : effect;
+  }
+
+  private rebuildThreatResultWithFaces(
+    pendingResult: CheckRolledAction | CombatResolvedAction,
+    faces: [number, number]
+  ): CheckRolledAction | CombatResolvedAction {
+    const encounter = this.state.currentEncounter;
+    if (!encounter || encounter.id !== pendingResult.cardId) {
+      throw new Error("The encounter changed before the Edge ability resolved");
+    }
+    const roll = { faces, total: faces[0] + faces[1] };
+    const total = roll.total + pendingResult.statBonus;
+    const target = pendingResult.type === "COMBAT_RESOLVED"
+      ? pendingResult.enemyTotal
+      : pendingResult.difficulty;
+    const success = total >= target;
+    if (success === pendingResult.success) {
+      return {
+        ...pendingResult,
+        roll,
+        total,
+        createdAt: new Date().toISOString()
+      };
+    }
+    const keyedModifiers = this.resolveThreatEffectKeys(
+      pendingResult.seatId,
+      encounter,
+      encounter.combatEffectKeys,
+      "beforeCombat"
+    );
+    const authoredEffect =
+      encounter.cardType === "enemy"
+        ? success
+          ? encounter.defeatReward
+          : encounter.woundOnLoss
+        : this.getHazardOutcomeEffect(encounter, success);
+    const baseEffect = this.combineEffects(
+      [keyedModifiers.effect, authoredEffect].filter(
+        (entry): entry is EncounterEffect => Boolean(entry)
+      )
+    ) ?? authoredEffect ?? { type: "sequence", effects: [] };
+    const resolvedEffect = this.resolveThreatOutcomeEffect(
+      pendingResult.seatId,
+      encounter,
+      baseEffect,
+      success
+        ? encounter.cardType === "enemy"
+          ? encounter.defeatEffectKey
+          : encounter.successEffectKey
+        : encounter.failEffectKey,
+      success ? (encounter.cardType === "enemy" ? "onDefeat" : "onSuccess") : "onFailure"
+    );
+    const afflictionProtectedEffect =
+      pendingResult.type === "COMBAT_RESOLVED"
+        ? this.applyAfflictionCombatWoundPrevention(
+            pendingResult.seatId,
+            pendingResult.stat,
+            success,
+            resolvedEffect
+          )
+        : resolvedEffect;
+    const effect = this.maybeApplyKerWoundPrevention(
+      pendingResult.seatId,
+      this.maybeApplyFandiablosWoundPrevention(
+        pendingResult.seatId,
+        afflictionProtectedEffect
+      )
+    );
+    return {
+      ...pendingResult,
+      roll,
+      total,
+      success,
+      effect: effect ?? (pendingResult.type === "COMBAT_RESOLVED"
+        ? { type: "sequence", effects: [] }
+        : null),
+      createdAt: new Date().toISOString()
+    } as CheckRolledAction | CombatResolvedAction;
+  }
+
+  private finishPendingEdgeResult(
+    result: CheckRolledAction | CombatResolvedAction
+  ): void {
+    if (this.maybeOpenAfflictionRollReaction(result.seatId, result)) return;
+    if (result.type === "COMBAT_RESOLVED") {
+      this.finishResolvedCombat(result);
+    } else {
+      this.finishResolvedCheck(result);
+    }
+  }
+
+  private getPostRollEdgeCardIds(
+    seatId: string,
+    result: CheckRolledAction | CombatResolvedAction
+  ): string[] {
+    const encounter = this.state.currentEncounter;
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const resolutionId = this.state.activeResolution?.id;
+    if (
+      !encounter ||
+      !player ||
+      !resolutionId ||
+      this.state.lastEdgeCardPlay?.resolutionId === resolutionId ||
+      (this.state.resolvedEdgeReactionIds ?? []).includes(`edge-reaction:${resolutionId}`)
+    ) {
+      return [];
+    }
+    const cards = player.private.hand
+      .map((cardId) => EDGE_CARD_BY_ID.get(cardId))
+      .filter((card): card is EdgeCardDefinition => Boolean(card));
+    return cards.flatMap((card) => {
+      if (
+        card.abilityKey === "prevent-battle-wound" &&
+        result.type === "COMBAT_RESOLVED" &&
+        encounterEffectContains(result.effect, (effect) => effect.type === "take_wound" && effect.amount > 0)
+      ) return [card.id];
+      if (
+        card.abilityKey === "convert-trophy" &&
+        result.type === "COMBAT_RESOLVED" &&
+        result.success &&
+        encounter.cardType === "enemy" &&
+        encounter.trophyValue > 0
+      ) return [card.id];
+      if (
+        card.abilityKey === "shunt-failure-effect" &&
+        result.type === "CHECK_ROLLED" &&
+        !result.success &&
+        encounterEffectContains(
+          result.effect,
+          (effect) => !["sequence", "take_wound", "gain_note"].includes(effect.type)
+        )
+      ) return [card.id];
+      if (
+        card.abilityKey === "reroll-die" &&
+        !threatBlocksRerolls(encounter)
+      ) return [card.id];
+      if (
+        card.abilityKey === "raise-natural-one" &&
+        result.roll.faces.includes(1)
+      ) return [card.id];
+      if (
+        card.abilityKey === "suppress-persistent-hazard" &&
+        result.type === "CHECK_ROLLED" &&
+        !result.success &&
+        encounter.cardType === "hazard" &&
+        Boolean(encounter.persistentRule) &&
+        encounterEffectContains(result.effect, (effect) => effect.type === "return_threat_to_space")
+      ) return [card.id];
+      return [];
+    });
+  }
+
+  private maybeOpenEdgeReaction(
+    seatId: string,
+    result: CheckRolledAction | CombatResolvedAction
+  ): boolean {
+    const resolution = this.state.activeResolution;
+    if (!resolution || resolution.playerId !== seatId || this.state.pendingEdgeReaction) {
+      return false;
+    }
+    const reactionId = `edge-reaction:${resolution.id}`;
+    if ((this.state.resolvedEdgeReactionIds ?? []).includes(reactionId)) {
+      return false;
+    }
+    const legalCardIds = this.getPostRollEdgeCardIds(seatId, result);
+    if (legalCardIds.length === 0 || result.roll.faces.length < 2) {
+      return false;
+    }
+    this.applyAction({
+      type: "EDGE_CARD_REACTION_OPENED",
+      seatId,
+      reactionId,
+      resolutionId: resolution.id,
+      sourceKind: result.type === "COMBAT_RESOLVED" ? "battle" : "challenge",
+      legalCardIds,
+      originalRoll: [result.roll.faces[0]!, result.roll.faces[1]!],
+      target: result.type === "COMBAT_RESOLVED" ? result.enemyTotal : result.difficulty,
+      pendingResult: result,
+      createdAt: new Date().toISOString()
+    } satisfies EdgeCardReactionOpenedAction);
+    return true;
+  }
+
+  private resolveEdgeCardReactionDecline(
+    intent: Extract<ClientIntent, { type: "DECLINE_EDGE_CARD_REACTION" }>
+  ): void {
+    const pending = this.state.pendingEdgeReaction;
+    if (!pending || pending.id !== intent.reactionId || pending.ownerSeatId !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "This Edge reaction is stale or belongs to another operative");
+    }
+    const result = this.getPendingEdgeReactionResult(pending.id);
+    this.applyAction({
+      type: "EDGE_CARD_REACTION_DECLINED",
+      seatId: intent.seatId,
+      reactionId: pending.id,
+      resolutionId: pending.resolutionId,
+      createdAt: new Date().toISOString()
+    } satisfies EdgeCardReactionDeclinedAction);
+    this.finishPendingEdgeResult(result);
+  }
+
+  private resolveEdgeCardIntent(
+    intent: Extract<ClientIntent, { type: "PLAY_EDGE_CARD" }>
+  ): void {
+    const definition = EDGE_CARD_BY_ID.get(intent.cardId);
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+    if (!definition || !player?.private.hand.includes(intent.cardId)) {
+      throw new IntentRejectedError(intent.type, "The operative does not own that Edge Card");
+    }
+
+    if (intent.mode === "ability") {
+      const availability = getEdgeAbilityAvailability(this.state, intent.seatId, definition);
+      if (!availability.enabled || availability.resolutionId !== intent.resolutionId) {
+        throw new IntentRejectedError(
+          intent.type,
+          availability.disabledReason ?? "This Edge ability is outside its timing window"
+        );
+      }
+      if (
+        availability.targets.length > 0 &&
+        (!intent.targetId || !availability.targets.some((target) => target.id === intent.targetId))
+      ) {
+        throw new IntentRejectedError(intent.type, "Choose one of the current legal Edge targets");
+      }
+    }
+
+    const pendingReaction = this.state.pendingEdgeReaction;
+    const action = this.intentToAction(intent);
+    if (action.type !== "EDGE_CARD_PLAYED") {
+      throw new IntentRejectedError(intent.type, "Edge Card play could not be prepared");
+    }
+    this.applyAction(action);
+
+    if (intent.mode !== "ability" || !pendingReaction) return;
+
+    let result = this.getPendingEdgeReactionResult(pendingReaction.id);
+    let hazardSuppression: EdgeCardReactionResolvedAction["hazardSuppression"];
+    switch (definition.abilityKey) {
+      case "prevent-battle-wound":
+        if (result.type !== "COMBAT_RESOLVED") {
+          throw new IntentRejectedError(intent.type, "Cinderline Break requires an enemy battle result");
+        }
+        result = {
+          ...result,
+          effect: this.stripBattleRewardsForCinderline(
+            preventWoundInEffect(result.effect, 1)
+          ),
+          edgeForfeitRewards: true
+        };
+        break;
+      case "convert-trophy":
+        if (result.type !== "COMBAT_RESOLVED" || !result.success) {
+          throw new IntentRejectedError(intent.type, "Cinder Requisition requires a victorious enemy battle");
+        }
+        {
+          const conversion = Number(intent.targetId);
+          const maximum = Math.min(
+            2,
+            this.state.currentEncounter?.cardType === "enemy"
+              ? this.state.currentEncounter.trophyValue
+              : 0
+          );
+          if (!Number.isInteger(conversion) || conversion < 1 || conversion > maximum) {
+            throw new IntentRejectedError(intent.type, "Choose how much Trophy value to convert");
+          }
+        result = {
+          ...result,
+            edgeTrophyConversion: conversion
+        };
+        }
+        break;
+      case "shunt-failure-effect":
+        if (result.type !== "CHECK_ROLLED" || result.success || !result.effect) {
+          throw new IntentRejectedError(intent.type, "Static Shunt requires a failed Challenge consequence");
+        }
+        {
+          const legalTarget = collectNonWoundFailureEffectTargets(result.effect).some(
+            (target) => target.id === intent.targetId
+          );
+          if (!intent.targetId || !legalTarget) {
+            throw new IntentRejectedError(intent.type, "Choose one pending non-Wound effect");
+          }
+          const selected = this.removeSelectedNonWoundFailureEffect(
+            result.effect,
+            intent.targetId
+          );
+          result = {
+            ...result,
+            effect: this.makeEffectSequence([
+              ...(selected ? [selected] : []),
+              {
+                type: "gain_note",
+                text: "Static Shunt suppressed one selected non-Wound failure effect."
+              }
+            ])
+          };
+        }
+        break;
+      case "reroll-die": {
+        const index = Number(intent.targetId);
+        if (index !== 0 && index !== 1) {
+          throw new IntentRejectedError(intent.type, "Choose one die to reroll");
+        }
+        const faces = [...result.roll.faces] as [number, number];
+        faces[index] = this.randomSource.nextInt(6) + 1;
+        result = this.rebuildThreatResultWithFaces(result, faces);
+        break;
+      }
+      case "raise-natural-one": {
+        const index = Number(intent.targetId);
+        if ((index !== 0 && index !== 1) || result.roll.faces[index] !== 1) {
+          throw new IntentRejectedError(intent.type, "Low-Signal Discipline requires a natural 1");
+        }
+        const faces = [...result.roll.faces] as [number, number];
+        faces[index] = 2;
+        result = this.rebuildThreatResultWithFaces(result, faces);
+        break;
+      }
+      case "suppress-persistent-hazard": {
+        const encounter = this.state.currentEncounter;
+        const playerState = this.state.players.find((entry) => entry.seatId === intent.seatId);
+        if (!encounter || encounter.cardType !== "hazard" || !playerState) {
+          throw new IntentRejectedError(intent.type, "Hazard Wake requires a persistent Hazard result");
+        }
+        hazardSuppression = {
+          hazardId: encounter.id,
+          sectorId: playerState.character.currentSpaceId
+        };
+        break;
+      }
+      default:
+        throw new IntentRejectedError(intent.type, "This Edge ability is not a post-roll reaction");
+    }
+
+    this.applyAction({
+      type: "EDGE_CARD_REACTION_RESOLVED",
+      seatId: intent.seatId,
+      reactionId: pendingReaction.id,
+      resolutionId: pendingReaction.resolutionId,
+      hazardSuppression,
+      createdAt: new Date().toISOString()
+    } satisfies EdgeCardReactionResolvedAction);
+    this.finishPendingEdgeResult(result);
+  }
+
   private rollPlayerDiceWithEdgeCommit(seatId: string): ReturnType<typeof rollDice> {
     const pending = this.state.pendingEdgeCommit;
     if (
@@ -5439,6 +6169,8 @@ export class GameRoomServer {
       recentEncounterCardIds: this.getRecentEncounterCardIdsAfterDraw(encounter.id),
       pendingEnemyRoll: null,
       pendingEdgeCommit: null,
+      pendingEdgeAbility: null,
+      pendingEdgeReaction: null,
       lastEdgeCardPlay: null,
       pendingEffect: null,
       activeResolution: {
@@ -7357,10 +8089,21 @@ export class GameRoomServer {
         this.state.pendingEdgeCommit?.seatId === targetSeatId
           ? null
           : this.state.pendingEdgeCommit,
+      pendingEdgeAbility:
+        this.state.pendingEdgeAbility?.seatId === targetSeatId
+          ? null
+          : this.state.pendingEdgeAbility,
+      pendingEdgeReaction:
+        this.state.pendingEdgeReaction?.ownerSeatId === targetSeatId
+          ? null
+          : this.state.pendingEdgeReaction,
       lastEdgeCardPlay:
         this.state.lastEdgeCardPlay?.seatId === targetSeatId
           ? null
           : this.state.lastEdgeCardPlay,
+      edgeHazardSuppressions: (this.state.edgeHazardSuppressions ?? []).filter(
+        (entry) => entry.seatId !== targetSeatId
+      ),
       edgeDeck:
         this.state.edgeDeck && kickedEdgeCardIds.length > 0
           ? {
@@ -7484,6 +8227,10 @@ export class GameRoomServer {
       pendingEnemyRoll: null,
       edgeDeck: null,
       pendingEdgeCommit: null,
+      pendingEdgeAbility: null,
+      pendingEdgeReaction: null,
+      resolvedEdgeReactionIds: [],
+      edgeHazardSuppressions: [],
       lastEdgeCardPlay: null,
       pendingEffect: null,
       lastOutcomeSummary: null,
@@ -8706,6 +9453,13 @@ export class GameRoomServer {
     if (this.state.cooperativeAssistance) {
       throw new IntentRejectedError(intent.type, "An assistance request is already active");
     }
+    if (
+      this.state.pendingEdgeAbility?.seatId === intent.seatId &&
+      this.state.pendingEdgeAbility.abilityKey === "isolated-total" &&
+      this.state.pendingEdgeAbility.resolutionId === this.state.activeResolution.id
+    ) {
+      throw new IntentRejectedError(intent.type, "Isolated Channel disables assistance for this resolution");
+    }
 
     const helperSeatIds = Array.from(new Set(intent.helperSeatIds));
     if (helperSeatIds.length < 1 || helperSeatIds.length > MAX_COOPERATIVE_HELPERS) {
@@ -9200,7 +9954,7 @@ export class GameRoomServer {
     this.finishAssistedRoll(action.seatId, encounter.id, action.success);
     this.markFirstEligibleCharacterAbility(action.seatId, action.stat, "battle", encounter);
     if (action.success) {
-      if (encounter.missionReward) {
+      if (encounter.missionReward && !action.edgeForfeitRewards) {
         this.queueMissionReward({
           ownerSeatId: action.seatId,
           sourceKind: "battle",
@@ -9208,7 +9962,9 @@ export class GameRoomServer {
           sourceTitle: encounter.title
         });
       }
-      this.maybeTriggerAbilityOnCombatVictory(action.seatId);
+      if (!action.edgeForfeitRewards) {
+        this.maybeTriggerAbilityOnCombatVictory(action.seatId);
+      }
       this.applyScenarioOnEnemyDefeat(action.seatId);
       this.applyScenarioObjectiveTrigger(action.seatId, {
         type: "threatDefeated",
@@ -9266,7 +10022,12 @@ export class GameRoomServer {
     const pendingResult = opened.pendingResult;
     if (!pendingResult) throw new IntentRejectedError(intent.type, "The authoritative reroll result is unavailable");
     const dieIndex = intent.dieIndex ?? (pending.originalRoll[0] <= (pending.originalRoll[1] ?? 7) ? 0 : 1);
-    if (intent.use && this.state.lastEdgeCardPlay?.seatId === intent.seatId && dieIndex === 0) {
+    if (
+      intent.use &&
+      this.state.lastEdgeCardPlay?.seatId === intent.seatId &&
+      this.state.lastEdgeCardPlay.mode === "commit-value" &&
+      dieIndex === 0
+    ) {
       throw new IntentRejectedError(intent.type, "The committed Edge die is locked and cannot be rerolled");
     }
     const reroll = intent.use ? this.randomSource.nextInt(6) + 1 : undefined;
@@ -9348,6 +10109,9 @@ export class GameRoomServer {
       } as CheckRolledAction | CombatResolvedAction;
     }
 
+    if (this.maybeOpenEdgeReaction(intent.seatId, finalResult)) {
+      return;
+    }
     if (this.maybeOpenAfflictionRollReaction(intent.seatId, finalResult)) {
       return;
     }
@@ -9379,6 +10143,11 @@ export class GameRoomServer {
     const keyedModifiers = this.resolveThreatEffectKeys(intent.seatId, encounter, encounter.combatEffectKeys, "beforeCombat");
     const nextNonBattleTestModifiers = getNextNonBattleTestModifierSource(this.state, intent.seatId, intent.stat);
     const assistance = this.assertAssistanceReadyForRoll(intent.seatId, encounter.id, intent.stat, false);
+    const edgeAbility =
+      this.state.pendingEdgeAbility?.seatId === intent.seatId &&
+      this.state.pendingEdgeAbility.resolutionId === this.state.activeResolution?.id
+        ? this.state.pendingEdgeAbility
+        : null;
     const modifierSources = [
       ...this.buildStatModifierSources(player, intent.stat, "check", {
       scenarioModifier: this.getScenarioSkillModifier(intent.seatId),
@@ -9389,7 +10158,12 @@ export class GameRoomServer {
       ...assistance.map(({ seatId, value }) => ({
         label: `${this.state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? seatId} assisted`,
         value
-      }))
+      })),
+      ...(edgeAbility?.abilityKey === "boost-challenge"
+        ? [{ label: "Ashglass Overclock", value: 3 }]
+        : edgeAbility?.abilityKey === "isolated-total"
+          ? [{ label: "Isolated Channel", value: 2 }]
+          : [])
     ];
     const roll = this.rollPlayerDiceWithEdgeCommit(intent.seatId);
     const statBonus = this.sumModifierSources(modifierSources);
@@ -9418,10 +10192,18 @@ export class GameRoomServer {
       success ? encounter.successEffectKey : encounter.failEffectKey,
       success ? "onSuccess" : "onFailure"
     );
-    const outcomeEffect = this.maybeApplyKerWoundPrevention(
+    const protectedOutcomeEffect = this.maybeApplyKerWoundPrevention(
       intent.seatId,
       this.maybeApplyFandiablosWoundPrevention(intent.seatId, resolvedOutcomeEffect)
     );
+    const outcomeEffect =
+      edgeAbility?.abilityKey === "boost-challenge" && !success
+        ? this.combineEffects(
+            [protectedOutcomeEffect, { type: "take_wound", amount: 1 }].filter(
+              (effect): effect is EncounterEffect => Boolean(effect)
+            )
+          )
+        : protectedOutcomeEffect;
 
     const action = {
       type: "CHECK_ROLLED",
@@ -9438,6 +10220,7 @@ export class GameRoomServer {
       cardId: encounter.id,
       createdAt: new Date().toISOString()
     } satisfies CheckRolledAction;
+    if (this.maybeOpenEdgeReaction(intent.seatId, action)) return;
     if (this.maybeOpenAfflictionRollReaction(intent.seatId, action)) return;
     this.finishResolvedCheck(action);
   }
@@ -11181,6 +11964,11 @@ export class GameRoomServer {
       this.state,
       player.character.currentSpaceId
     );
+    const edgeAbility =
+      this.state.pendingEdgeAbility?.seatId === fighterSeatId &&
+      this.state.pendingEdgeAbility.resolutionId === this.state.activeResolution?.id
+        ? this.state.pendingEdgeAbility
+        : null;
     const modifierSources = this.buildStatModifierSources(player, stat, "battle", {
       scenarioModifier: this.getScenarioBattleModifier(fighterSeatId),
       keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0,
@@ -11188,6 +11976,12 @@ export class GameRoomServer {
     });
     if (player.character.followers?.some((follower) => follower.abilityId === "battle_support")) {
       modifierSources.push({ label: "Votive Gunner", value: 1 });
+    }
+    if (edgeAbility?.abilityKey === "isolated-total") {
+      modifierSources.push({ label: "Isolated Channel", value: 2 });
+    }
+    if (edgeAbility?.abilityKey === "known-family") {
+      modifierSources.push({ label: "Known Scar Pattern", value: 1 });
     }
     const assistance = this.assertAssistanceReadyForRoll(fighterSeatId, encounter.id, stat, false);
     modifierSources.push(...assistance.map(({ seatId, value }) => ({
@@ -11201,7 +11995,8 @@ export class GameRoomServer {
         escalationModifier +
         (keyedModifiers.difficultyModifier ?? 0) +
         persistentHazardEnemyModifier -
-        soloCombatEase
+        soloCombatEase -
+        (edgeAbility?.abilityKey === "reduce-enemy-difficulty" ? 3 : 0)
     );
     const enemyBonus = easedEncounterDifficulty;
     const scenarioEnemyBonus = this.getScenarioEnemyBattleModifier();
@@ -11212,6 +12007,9 @@ export class GameRoomServer {
       : [];
     if (persistentHazardEnemyModifier > 0) {
       oppositionModifierSources.push({ label: "Emberlung Vent", value: persistentHazardEnemyModifier });
+    }
+    if (edgeAbility?.abilityKey === "reduce-enemy-difficulty") {
+      oppositionModifierSources.push({ label: "Black Relay Decoy", value: -3 });
     }
     const total = playerRoll.total + statBonus;
     const enemyTotal = enemyRoll.total + enemyBonus + scenarioEnemyBonus + keyedEnemyBonus + namedEnemyModifier;
@@ -11229,25 +12027,12 @@ export class GameRoomServer {
       success ? encounter.defeatEffectKey : encounter.failEffectKey,
       success ? "onDefeat" : "onFailure"
     );
-    const faceupAfflictionIds = new Set((player.faceupAfflictions ?? []).map((affliction) => affliction.cardId));
-    const hasMatchingPreventionAffliction =
-      !success &&
-      ((stat === "command" && faceupAfflictionIds.has("iron-nerve")) ||
-        (stat === "grit" && faceupAfflictionIds.has("metal-hide")));
-    const afflictionPreventionRoll = hasMatchingPreventionAffliction ? this.randomSource.nextInt(6) + 1 : 0;
-    const afflictionPrevention = !hasMatchingPreventionAffliction
-      ? { prevented: 0, source: null }
-      : getAfflictionWoundPrevention(player, stat, afflictionPreventionRoll, getAfflictionCatalog(this.state));
-    const afflictionOutcomeEffect =
-      afflictionPrevention.prevented > 0
-        ? this.makeEffectSequence([
-            preventWoundInEffect(resolvedOutcomeEffect, afflictionPrevention.prevented),
-            {
-              type: "gain_note",
-              text: `${afflictionPrevention.source} reaction rolled ${afflictionPreventionRoll}: prevented ${afflictionPrevention.prevented} wound.`
-            }
-          ])
-        : resolvedOutcomeEffect;
+    const afflictionOutcomeEffect = this.applyAfflictionCombatWoundPrevention(
+      fighterSeatId,
+      stat,
+      success,
+      resolvedOutcomeEffect
+    );
     const outcomeEffect = this.maybeApplyKerWoundPrevention(
       fighterSeatId,
       this.maybeApplyFandiablosWoundPrevention(fighterSeatId, afflictionOutcomeEffect)
@@ -11270,8 +12055,10 @@ export class GameRoomServer {
       effect: outcomeEffect,
       cardId: encounter.id,
       enemyRollerSeatId,
+      edgeForfeitTrophy: edgeAbility?.abilityKey === "reduce-enemy-difficulty",
       createdAt: new Date().toISOString()
     } satisfies CombatResolvedAction;
+    if (this.maybeOpenEdgeReaction(fighterSeatId, action)) return;
     if (this.maybeOpenAfflictionRollReaction(fighterSeatId, action)) return;
     this.finishResolvedCombat(action);
   }
@@ -14218,7 +15005,10 @@ function buildSoloRerollProjection(state: GameState, seatId: string): { availabl
     state.currentEncounter?.cardType === "hazard" &&
     activeResolution?.playerId === seatId &&
     activeResolution.roll?.success === false &&
-    state.lastEdgeCardPlay?.seatId !== seatId &&
+    (
+      state.lastEdgeCardPlay?.seatId !== seatId ||
+      state.lastEdgeCardPlay.mode !== "commit-value"
+    ) &&
     ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
 
   return {
@@ -15966,8 +16756,7 @@ export function createTvProjection(
     activeResolution: projectActiveResolutionForViewer(state, null),
     battlePresentation: buildBattlePresentation(state, null),
     edgeCardPlay:
-      state.pendingEdgeCommit &&
-      state.lastEdgeCardPlay?.resolutionId === state.pendingEdgeCommit.resolutionId
+      state.lastEdgeCardPlay
         ? {
             id: state.lastEdgeCardPlay.id,
             actorSeatId: state.lastEdgeCardPlay.seatId,
@@ -15979,6 +16768,7 @@ export function createTvProjection(
             cardName: state.lastEdgeCardPlay.cardName,
             edgeValue: state.lastEdgeCardPlay.edgeValue,
             mode: state.lastEdgeCardPlay.mode,
+            abilityKey: state.lastEdgeCardPlay.abilityKey ?? null,
             resolutionId: state.lastEdgeCardPlay.resolutionId,
             publicSummary: state.lastEdgeCardPlay.publicSummary,
             createdAt: state.lastEdgeCardPlay.createdAt
@@ -16311,7 +17101,9 @@ export function createPhoneProjection(
       : null;
   const edgeCommitDisabledReason = !edgeResolutionId
     ? "Available during your battle or hazard setup."
-    : state.pendingEdgeCommit || state.lastEdgeCardPlay?.resolutionId === edgeResolutionId
+    : state.pendingEdgeCommit ||
+        state.pendingEdgeAbility ||
+        state.lastEdgeCardPlay?.resolutionId === edgeResolutionId
       ? "One Edge Card is already committed to this roll."
       : edgeCards.length === 0
         ? "No Edge Cards in hand."
@@ -16425,7 +17217,8 @@ export function createPhoneProjection(
           originalRoll: pendingAfflictionReaction.originalRoll,
           lockedDieIndices:
             pendingAfflictionReaction.kind !== "arrivalWound" &&
-            state.lastEdgeCardPlay?.seatId === seatId
+            state.lastEdgeCardPlay?.seatId === seatId &&
+            state.lastEdgeCardPlay.mode === "commit-value"
               ? [0]
               : [],
           targetSeatId: pendingAfflictionReaction.targetSeatId,
@@ -16642,17 +17435,36 @@ export function createPhoneProjection(
     privateRivalry,
     soloReroll: buildSoloRerollProjection(state, seatId),
     edgeHand: {
-      cards: edgeCards.map((card) => ({
-        id: card.id,
-        name: card.name,
-        edgeValue: card.edgeValue,
-        commitText: `Lock ${card.edgeValue} as one die; the server rolls the other die.`
-      })),
+      cards: edgeCards.map((card) => {
+        const ability = getEdgeAbilityAvailability(state, seatId, card);
+        return {
+          id: card.id,
+          name: card.name,
+          edgeValue: card.edgeValue,
+          commitText: `Lock ${card.edgeValue} as one die; the server rolls the other die.`,
+          abilityText: card.abilityText,
+          tradeoffText: card.tradeoffText,
+          ability: {
+            label: card.abilityLabel,
+            enabled: ability.enabled,
+            disabledReason: ability.disabledReason,
+            resolutionId: ability.resolutionId,
+            targets: ability.targets
+          }
+        };
+      }),
       limit: edgeHandLimit,
       awardRule: EDGE_RULES.awardRule,
       canCommit: edgeCommitDisabledReason === null,
       disabledReason: edgeCommitDisabledReason,
-      resolutionId: edgeResolutionId
+      resolutionId: edgeResolutionId,
+      reaction:
+        state.pendingEdgeReaction?.ownerSeatId === seatId
+          ? {
+              id: state.pendingEdgeReaction.id,
+              prompt: "Use one eligible Edge ability or continue with the rolled result."
+            }
+          : null
     },
     boundNemesis: (publicProjection.nemesisChampions as Array<{ boundPlayerId: string }>).find(
       (champion) => champion.boundPlayerId === seatId

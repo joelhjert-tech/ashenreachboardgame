@@ -10,7 +10,7 @@ import {
   validateEdgePrototypeDeck
 } from "../edgeCards.js";
 
-describe("WIP Edge Card prototype", () => {
+describe("Edge Card design mirror", () => {
   it("keeps a balanced two-card distribution across values 1 through 6", () => {
     expect(EDGE_CARD_PROTOTYPE).toHaveLength(12);
     expect(validateEdgePrototypeDeck()).toEqual([]);

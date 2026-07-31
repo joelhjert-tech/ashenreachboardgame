@@ -492,13 +492,61 @@ export const pendingEdgeCommitSchema = z.object({
   createdAt: z.string().min(1)
 }).strict();
 
+export const edgeAbilityKeySchema = z.enum([
+  "prevent-battle-wound",
+  "reduce-enemy-difficulty",
+  "boost-challenge",
+  "boost-helper",
+  "convert-trophy",
+  "shunt-failure-effect",
+  "reroll-die",
+  "isolated-total",
+  "shop-discount",
+  "known-family",
+  "raise-natural-one",
+  "suppress-persistent-hazard"
+]);
+
+export const pendingEdgeAbilitySchema = z.object({
+  seatId: z.string().min(1),
+  cardId: z.string().min(1),
+  cardName: z.string().min(1),
+  abilityKey: edgeAbilityKeySchema,
+  resolutionId: z.string().min(1),
+  targetId: z.string().min(1).nullable(),
+  createdAt: z.string().min(1)
+}).strict();
+
+export const pendingEdgeReactionSchema = z.object({
+  id: z.string().min(1),
+  ownerSeatId: z.string().min(1),
+  resolutionId: z.string().min(1),
+  sourceKind: z.enum(["battle", "challenge"]),
+  legalCardIds: z.array(z.string().min(1)).min(1),
+  originalRoll: z.tuple([
+    z.number().int().min(1).max(6),
+    z.number().int().min(1).max(6)
+  ]),
+  target: z.number().int(),
+  createdAt: z.string().min(1)
+}).strict();
+
+export const edgeHazardSuppressionSchema = z.object({
+  seatId: z.string().min(1),
+  cardId: z.string().min(1),
+  hazardId: z.string().min(1),
+  sectorId: z.string().min(1),
+  createdAt: z.string().min(1)
+}).strict();
+
 export const edgeCardPlaySchema = z.object({
   id: z.string().min(1),
   seatId: z.string().min(1),
   cardId: z.string().min(1),
   cardName: z.string().min(1),
   edgeValue: z.number().int().min(1).max(6),
-  mode: z.literal("commit-value"),
+  mode: z.enum(["commit-value", "ability"]),
+  abilityKey: edgeAbilityKeySchema.nullable().optional(),
   resolutionId: z.string().min(1),
   publicSummary: z.string().min(1),
   createdAt: z.string().min(1)
@@ -555,6 +603,10 @@ export const gameStateSchema = z.object({
   eventLog: z.array(z.unknown()),
   edgeDeck: edgeDeckStateSchema.nullable().optional(),
   pendingEdgeCommit: pendingEdgeCommitSchema.nullable().optional(),
+  pendingEdgeAbility: pendingEdgeAbilitySchema.nullable().optional(),
+  pendingEdgeReaction: pendingEdgeReactionSchema.nullable().optional(),
+  resolvedEdgeReactionIds: z.array(z.string().min(1)).optional(),
+  edgeHazardSuppressions: z.array(edgeHazardSuppressionSchema).optional(),
   lastEdgeCardPlay: edgeCardPlaySchema.nullable().optional(),
   recentEncounterCardIds: z.array(z.string().min(1)).optional(),
   threatDrawBags: z.record(

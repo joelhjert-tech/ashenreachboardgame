@@ -30,6 +30,7 @@ describe("card art paths", () => {
     );
     expect(getCardArtPath("threat", "cinder-veil-stalker")).toBe("/assets/cards/threats/red/cinder-veil-stalker.png");
     expect(getCardArtPath("anomaly", "anomaly-ashfall-murmur")).toBe("/assets/cards/anomalies/anomaly-ashfall-murmur.png");
+    expect(getCardArtPath("edge", "edge-echo-recast")).toBe("/assets/cards/edge/edge-echo-recast.png");
   });
 
   it("selects active battle card backs from encounter lane and card family", () => {
@@ -164,6 +165,13 @@ describe("CardArtImage", () => {
       "src",
       "/assets/cards/artifacts/artifact-oathchain-lens.phone.webp"
     );
+  });
+
+  it("treats Edge Cards as first-class generated card art", () => {
+    expect(CARD_IMAGE_TYPES).toContain("edge");
+    expect(getCardArtOutputPath("edge", "edge-hazard-wake")).toBe("/assets/cards/edge/edge-hazard-wake.png");
+    expect(getCardFallbackArtPath("edge")).toBe("/assets/cards/fallbacks/edge.svg");
+    expect(getRuntimeCardArtPath("edge", "edge-echo-recast")).toBe("/assets/cards/edge/edge-echo-recast.png");
   });
 
   it("uses dedicated Follower art and falls back through the Follower category", () => {

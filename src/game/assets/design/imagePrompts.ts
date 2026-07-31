@@ -33,6 +33,7 @@ export type ImagePromptSpec = {
     | "followerCardArt"
     | "scarCardArt"
     | "escalationCardArt"
+    | "edgeCardArt"
     | "powerCardArt"
     | "corruptionCardArt"
     | "relicCardArt"
@@ -72,6 +73,7 @@ export const requiredImageGenerationChecklist = [
   "4 private objective category emblems",
   "1 private result-ready verdict gate",
   "2 Signal Theatre Edge Card animation frames",
+  "12 Edge Card art images",
   "1 admin Lore Bible event overview",
   "6 printable scenario sheet illustrations"
 ] as const;
