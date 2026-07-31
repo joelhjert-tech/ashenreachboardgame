@@ -511,6 +511,15 @@ function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminC
           return;
         }
 
+        const authenticatedSeat = roomServer.getState().seats.find(
+          (seat) => seat.seatId === tokenPayload.seatId && seat.joinToken === body.seatToken && !seat.kicked
+        );
+
+        if (!authenticatedSeat) {
+          sendJson(response, 403, { error: "Invalid seat token" });
+          return;
+        }
+
         if (body.scenarioId !== undefined && !getScenarioDefinition(body.scenarioId)) {
           sendJson(response, 400, { error: "Invalid scenario id" });
           return;

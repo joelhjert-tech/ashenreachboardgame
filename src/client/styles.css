@@ -2979,6 +2979,25 @@ body {
   margin-top: 0;
 }
 
+.phone-host-reconfigure-warning {
+  display: grid;
+  gap: 0.28rem;
+  margin-top: 0.7rem;
+  padding: 0.72rem 0.78rem;
+  border-left: 3px solid #d19449;
+  background: rgba(78, 42, 19, 0.36);
+  color: #bdc6ca;
+  font-size: 0.72rem;
+  line-height: 1.38;
+}
+
+.phone-host-reconfigure-warning strong {
+  color: #f0c47c;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 /* P5 keeps setup choice and its single confirmation inside a short phone viewport. */
 .phone-portrait-controller-empty .phone-lobby-waiting-scroll[aria-label="Host Phone game type"] {
   padding-bottom: calc(4.4rem + env(safe-area-inset-bottom));
@@ -7356,6 +7375,13 @@ select {
   font-size: 1rem;
 }
 
+.phone-lobby-reconfigure-action {
+  width: 100%;
+  min-height: 2.8rem;
+  border-color: rgba(209, 148, 73, 0.48);
+  color: #e6c995;
+}
+
 .phone-character-waiting-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr);
@@ -8792,6 +8818,37 @@ select {
     0;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
+}
+
+/*
+ * A blocking Scar comparison is taller than the phone viewport. Keep its
+ * vertical gesture on the established phone content scroller instead of the
+ * normally nested action-panel scroller. Mobile browsers can strand that
+ * nested scroller after their fullscreen or address-bar viewport changes.
+ */
+.phone-shell--scar-choice-active .phone-portrait-scroll:has(.phone-action-panel) {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.phone-shell--scar-choice-active .phone-portrait-screen-command {
+  min-height: 100%;
+  flex: 0 0 auto;
+}
+
+.phone-shell--scar-choice-active .phone-sheet-actions.phone-action-panel {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+
+.phone-shell--scar-choice-active .phone-action-content-root {
+  overflow: visible;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  scrollbar-gutter: auto;
 }
 
 .phone-action-active-panel {

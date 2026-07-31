@@ -1096,6 +1096,63 @@ describe("roomServer websocket integration", () => {
     expect(configuredState.seats[0]?.characterSelected).toBe(false);
   });
 
+  it("lets the Host Phone replace a configured pre-game lobby and resets every retained seat", async () => {
+    const state = createInitialSessionState("session-alpha", "multiplayer", undefined, "rivalry", "standard", undefined, {
+      lobbyConfigured: false
+    });
+    harness = await startHarness([0, 0, 0, 0], state);
+
+    const host = harness.roomServer.joinSeat("Joel");
+    const second = harness.roomServer.joinSeat("Anna");
+    const third = harness.roomServer.joinSeat("Mira");
+    harness.roomServer.configureLobbyFromHostPhone(host.seatId, {
+      sessionMode: "multiplayer",
+      interactionMode: "rivalry",
+      gameMode: "standard",
+      playerCount: 3,
+      scenarioId: "scenario_throne_of_ash"
+    });
+
+    harness.roomServer.selectSeatCharacter(host.seatId, "void-marshal");
+    harness.roomServer.selectSeatCharacter(second.seatId, "signal-witch");
+    harness.roomServer.selectSeatCharacter(third.seatId, "grave-engineer");
+    for (const seatId of [host.seatId, second.seatId, third.seatId]) {
+      selectFirstStartingContract(harness.roomServer, seatId);
+      harness.roomServer.setSeatReady(seatId, true);
+    }
+
+    const configured = harness.roomServer.getState();
+    expect(configured.seats.every((seat) => seat.ready)).toBe(true);
+    const retainedTokens = configured.seats.slice(0, 2).map((seat) => seat.joinToken);
+
+    harness.roomServer.configureLobbyFromHostPhone(host.seatId, {
+      sessionMode: "multiplayer",
+      interactionMode: "co-op",
+      gameMode: "standard",
+      playerCount: 2,
+      scenarioId: "scenario_broken_seal"
+    });
+
+    const corrected = harness.roomServer.getState();
+    expect(corrected.status).toBe("lobby");
+    expect(corrected.lobbyConfigured).toBe(true);
+    expect(corrected.setupHostSeatId).toBe(host.seatId);
+    expect(corrected.sessionMode).toBe("multiplayer");
+    expect(corrected.interactionMode).toBe("co-op");
+    expect(corrected.activeScenarioId).toBe("scenario_broken_seal");
+    expect(corrected.seats).toHaveLength(2);
+    expect(corrected.seats.map((seat) => seat.displayName)).toEqual(["Joel", "Anna"]);
+    expect(corrected.seats.map((seat) => seat.joinToken)).toEqual(retainedTokens);
+    expect(corrected.seats.every((seat) =>
+      seat.characterSelected === false
+      && seat.startingContractOptions.length === 0
+      && seat.selectedStartingContractId === null
+      && (seat.startingBonusSelections?.length ?? 0) === 0
+      && seat.ready === false
+    )).toBe(true);
+    expect(corrected.seats.some((seat) => seat.seatId === third.seatId)).toBe(false);
+  });
+
   it("rejects missing and invalid join tokens before session state changes", async () => {
     harness = await startHarness();
 

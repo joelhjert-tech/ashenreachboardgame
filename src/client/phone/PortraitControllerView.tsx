@@ -69,6 +69,7 @@ interface PortraitControllerViewProps {
   onLeave: () => void;
   onLobbyBack?: () => void;
   onStartSession?: () => void;
+  onChangeLobbySetup?: () => void;
   startSubmitting?: boolean;
 }
 
@@ -956,6 +957,7 @@ export function PortraitControllerView({
   onLeave,
   onLobbyBack,
   onStartSession,
+  onChangeLobbySetup,
   startSubmitting = false
 }: PortraitControllerViewProps): ReactElement {
   const [activeTab, setActiveTab] = useState<PortraitTab>("player");
@@ -1652,6 +1654,17 @@ export function PortraitControllerView({
                   </button>
                 ) : null}
               </div> : null}
+              {patch?.selfIsSetupHost && onChangeLobbySetup && !isLateJoinPending ? (
+                <button
+                  type="button"
+                  className="phone-button phone-button-secondary phone-lobby-reconfigure-action"
+                  data-testid="phone-setup-change-action"
+                  disabled={startSubmitting}
+                  onClick={onChangeLobbySetup}
+                >
+                  Change Scenario or Mode
+                </button>
+              ) : null}
               {setupSubmissionRecovery ? <p className="phone-submission-recovery" role="status">{setupSubmissionRecovery}</p> : null}
               {patch?.selfIsSetupHost ? (
                 <section className="phone-setup-blockers" aria-live="polite">
@@ -1728,7 +1741,8 @@ export function PortraitControllerView({
     bottomDockExpanded ? "phone-shell--bottomdock-expanded" : "phone-shell--bottomdock-compact",
     focusedResolutionActive ? "phone-shell--battle-active" : "",
     challengeTrialActive ? "phone-shell--trial-active" : "",
-    movementFlowActive ? "phone-shell--movement-active" : ""
+    movementFlowActive ? "phone-shell--movement-active" : "",
+    scarSelectorActive ? "phone-shell--scar-choice-active" : ""
   ]
     .filter(Boolean)
     .join(" ");
@@ -1744,7 +1758,8 @@ export function PortraitControllerView({
     "phone-portrait-scroll",
     "signal-phone-shell__content",
     phoneChromeHidden ? "phone-content--expanded" : "",
-    focusedResolutionActive ? "phone-battle-content" : ""
+    focusedResolutionActive ? "phone-battle-content" : "",
+    scarSelectorActive ? "phone-scar-choice-content" : ""
   ]
     .filter(Boolean)
     .join(" ");

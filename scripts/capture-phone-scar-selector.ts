@@ -87,6 +87,65 @@ async function shot(page: Page, fileName: string): Promise<void> {
   await page.screenshot({ path: join(output, fileName), fullPage: false });
 }
 
+async function assertScrollAfterViewportTransition(page: Page, auth: Auth): Promise<void> {
+  await openSelector(page, auth, 390, 844);
+  await page.setViewportSize({ width: 390, height: 640 });
+  await page.waitForTimeout(120);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(180);
+
+  const metrics = await page.evaluate(() => {
+    const scroller = document.querySelector<HTMLElement>(".phone-scar-choice-content");
+    const inner = document.querySelector<HTMLElement>(".phone-action-content-root");
+    if (!scroller || !inner) return null;
+    scroller.scrollTop = scroller.scrollHeight;
+    const acceptButtons = Array.from(document.querySelectorAll<HTMLElement>(".accept-scar-button"));
+    const secondAccept = acceptButtons[1]?.getBoundingClientRect() ?? null;
+    const ancestry: Array<Record<string, string | number>> = [];
+    let ancestor: HTMLElement | null = document.querySelector<HTMLElement>(".scar-prototype");
+    while (ancestor && ancestry.length < 8) {
+      const style = getComputedStyle(ancestor);
+      const rect = ancestor.getBoundingClientRect();
+      ancestry.push({
+        element: `${ancestor.tagName.toLowerCase()}.${ancestor.className}`,
+        height: rect.height,
+        scrollHeight: ancestor.scrollHeight,
+        clientHeight: ancestor.clientHeight,
+        overflowY: style.overflowY,
+        display: style.display,
+        position: style.position
+      });
+      ancestor = ancestor.parentElement;
+    }
+    return {
+      outerOverflowY: getComputedStyle(scroller).overflowY,
+      innerOverflowY: getComputedStyle(inner).overflowY,
+      scrollTop: scroller.scrollTop,
+      scrollHeight: scroller.scrollHeight,
+      clientHeight: scroller.clientHeight,
+      secondAccept: secondAccept ? { top: secondAccept.top, bottom: secondAccept.bottom } : null,
+      viewportHeight: innerHeight,
+      ancestry
+    };
+  });
+
+  if (!metrics) throw new Error("Scar comparison scroll owners were not rendered");
+  if (metrics.outerOverflowY !== "auto") throw new Error(`Scar comparison outer overflow is ${metrics.outerOverflowY}`);
+  if (metrics.innerOverflowY !== "visible") throw new Error(`Scar comparison retained nested overflow ${metrics.innerOverflowY}`);
+  if (metrics.scrollHeight <= metrics.clientHeight || metrics.scrollTop <= 0) {
+    throw new Error(`Scar comparison did not remain scrollable after viewport transition: ${JSON.stringify(metrics)}`);
+  }
+  if (
+    !metrics.secondAccept ||
+    metrics.secondAccept.top < 0 ||
+    metrics.secondAccept.bottom > metrics.viewportHeight
+  ) {
+    throw new Error(`Second Scar acceptance action could not be reached: ${JSON.stringify(metrics)}`);
+  }
+
+  await page.screenshot({ path: join(output, "scar-selector-after-viewport-transition-scroll-390x844.png"), fullPage: false });
+}
+
 async function main(): Promise<void> {
   await mkdir(output, { recursive: true });
   const browser = await chromium.launch({ headless: true });
@@ -111,6 +170,7 @@ async function main(): Promise<void> {
     await shot(phone, `scar-selector-${width}x${height}.png`);
   }
 
+  await assertScrollAfterViewportTransition(phone, auth);
   await openSelector(phone, auth, 390, 844);
   await phone.getByRole("button", { name: /inspect /i }).first().click();
   const inspector = phone.getByRole("dialog");
@@ -135,7 +195,7 @@ async function main(): Promise<void> {
 
   await browser.close();
   if (errors.length) throw new Error(`Browser errors: ${errors.join(" | ")}`);
-  console.log(JSON.stringify({ output, captures: 6, authoritativeChoiceResolved: true, errors: 0 }, null, 2));
+  console.log(JSON.stringify({ output, captures: 7, viewportTransitionScrollVerified: true, authoritativeChoiceResolved: true, errors: 0 }, null, 2));
 }
 
 void main();

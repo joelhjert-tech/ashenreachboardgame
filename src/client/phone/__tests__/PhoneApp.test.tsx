@@ -1185,6 +1185,70 @@ describe("PhoneApp", () => {
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
   });
 
+  it("lets the Host Phone correct mode, player count, and scenario before starting", async () => {
+    storeControllerAuth();
+    const patch = createConfirmedCharacterPatch("void-marshal");
+    patch.payload.sessionMode = "multiplayer";
+    patch.payload.interactionMode = "rivalry";
+    patch.payload.setup = {
+      id: "setup:mission-selection:seat-1:7",
+      stage: "mission-selection",
+      actorSeatId: "seat-1",
+      actorDisplayName: "Joel",
+      title: "Choose Starting Contract",
+      publicInstruction: "Joel is choosing a Contract.",
+      activeInstruction: "Choose a starting Contract.",
+      waitingInstruction: "Waiting for Joel.",
+      allowedCommand: "select-mission",
+      inputEnabled: true,
+      canStart: false,
+      startReason: "Complete setup first.",
+      startBlockers: ["Joel must choose a Contract."],
+      connectedCount: 1,
+      readyCount: 0,
+      seatCapacity: 3,
+      revision: 7
+    };
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<PhoneApp />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /change scenario or mode/i }));
+    expect(screen.getByRole("heading", { name: /change mode/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /rivalry/i })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText(/players/i)).toHaveValue("3");
+    expect(networkMocks.configureSessionFromPhone).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+    expect(await screen.findByRole("button", { name: /change scenario or mode/i })).toBeInTheDocument();
+    expect(networkMocks.configureSessionFromPhone).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /change scenario or mode/i }));
+    fireEvent.click(screen.getByRole("button", { name: /multiplayer co-op/i }));
+    fireEvent.change(screen.getByLabelText(/players/i), { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: /continue to scenario/i }));
+
+    expect(await screen.findByRole("heading", { name: /change scenario/i })).toBeInTheDocument();
+    expect(screen.getByRole("note", { name: /setup change warning/i })).toHaveTextContent(/resets pre-game choices/i);
+    expect(screen.getByRole("note", { name: /setup change warning/i })).toHaveTextContent(/removes seats above the new limit/i);
+    fireEvent.click(screen.getByRole("radio", { name: /ashen crown/i }));
+    fireEvent.click(screen.getByRole("button", { name: /confirm setup change/i }));
+
+    await waitFor(() => {
+      expect(networkMocks.configureSessionFromPhone).toHaveBeenCalledWith(
+        expect.objectContaining({ roomCode: "RT7P4", seatId: "seat-1" }),
+        { mode: "co-op", playerCount: 2, scenarioId: "scenario_ashen_crown" }
+      );
+    });
+  });
+
   it("enforces the eight-character player-name boundary before joining", async () => {
     render(<PhoneApp />);
     const name = await screen.findByLabelText(/player name/i);

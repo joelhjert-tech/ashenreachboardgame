@@ -589,6 +589,11 @@
   flex-direction: column;
 }
 
+.signal-phone-shell.phone-shell--scar-choice-active .phone-action-panel,
+.signal-phone-shell.phone-shell--scar-choice-active .phone-action-content-root {
+  overflow: visible;
+}
+
 .signal-phone-shell .phone-action-content-root {
   flex: 1 1 auto;
 }

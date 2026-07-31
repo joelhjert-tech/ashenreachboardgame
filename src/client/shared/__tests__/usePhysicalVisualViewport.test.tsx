@@ -22,6 +22,7 @@ describe("physical Visual Viewport subscription", () => {
     cleanup();
     vi.restoreAllMocks();
     document.documentElement.style.removeProperty("--physical-visual-viewport-height");
+    document.documentElement.style.removeProperty("--phone-usable-height");
     delete document.documentElement.dataset.keyboardConstrained;
   });
 
@@ -40,12 +41,14 @@ describe("physical Visual Viewport subscription", () => {
     act(() => callbacks.shift()?.(0));
     expect(screen.getByTestId("viewport")).toHaveTextContent('"height":722');
     expect(document.documentElement.style.getPropertyValue("--physical-visual-viewport-height")).toBe("722px");
+    expect(document.documentElement.style.getPropertyValue("--phone-usable-height")).toBe("722px");
 
     visualViewport.height = 302;
     visualViewport.offsetTop = 226;
     act(() => visualViewport.dispatchEvent(new Event("resize")));
     act(() => callbacks.shift()?.(16));
     expect(screen.getByTestId("viewport")).toHaveTextContent('"keyboardConstrained":true');
+    expect(document.documentElement.style.getPropertyValue("--phone-usable-height")).toBe("302px");
     expect(document.documentElement.dataset.keyboardConstrained).toBe("true");
   });
 });

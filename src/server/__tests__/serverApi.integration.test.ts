@@ -446,6 +446,37 @@ describe("server API scenario flow", () => {
     expect(harness.roomServer.getState().seats.filter((seat) => seat.displayName)).toHaveLength(2);
   });
 
+  it("requires the exact server-issued Host Phone token when configuring or correcting a lobby", async () => {
+    harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
+    const roomCode = harness.roomServer.getState().sessionId;
+    const joined = await postJson<{ seatId: string; seatToken: string }>(baseUrl, "/api/session/join", {
+      roomCode,
+      displayName: "Joel"
+    });
+
+    const forged = await postJson<{ error: string }>(baseUrl, "/api/session/configure", {
+      roomCode,
+      seatToken: `seat:${roomCode}:${joined.payload.seatId}:wrong-secret`,
+      mode: "co-op",
+      playerCount: 2,
+      scenarioId: "scenario_broken_seal"
+    });
+
+    expect(forged).toMatchObject({ status: 403, payload: { error: "Invalid seat token" } });
+    expect(harness.roomServer.getState().lobbyConfigured).toBe(false);
+
+    const configured = await postJson<{ lobbyConfigured: boolean; playerCount: number }>(baseUrl, "/api/session/configure", {
+      roomCode,
+      seatToken: joined.payload.seatToken,
+      mode: "co-op",
+      playerCount: 2,
+      scenarioId: "scenario_broken_seal"
+    });
+
+    expect(configured).toMatchObject({ status: 200, payload: { lobbyConfigured: true, playerCount: 2 } });
+  });
+
   it("starts the selected scenario without losing the chosen seed", async () => {
     harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
     const baseUrl = `http://127.0.0.1:${harness.port}`;

@@ -172,6 +172,19 @@ function getCharacterSelectionRank(character: CharacterCatalogEntry): number {
 type CharacterSelectionFilter = "recommended" | "all" | "advanced";
 type SetupSelectionStep = "piece" | "operative";
 type HostSetupStep = "mode" | "scenario";
+type HostSetupMode = "single-player" | "co-op" | "rivalry" | "nemesis";
+
+function getConfiguredHostMode(patch: PhonePatchPayload): HostSetupMode {
+  if (patch.gameMode === "nemesis_relay") {
+    return "nemesis";
+  }
+
+  if (patch.sessionMode === "single-player") {
+    return "single-player";
+  }
+
+  return patch.interactionMode === "rivalry" ? "rivalry" : "co-op";
+}
 
 function matchesCharacterFilter(character: CharacterCatalogEntry, filter: CharacterSelectionFilter): boolean {
   if (filter === "all") {
@@ -247,8 +260,10 @@ export function PhoneApp(): ReactElement {
   const [characters, setCharacters] = useState<CharacterCatalogEntry[]>([]);
   const [scenarios, setScenarios] = useState<ScenarioCatalogEntry[]>([]);
   const [selectedScenarioId, setSelectedScenarioId] = useState("");
-  const [selectedSetupMode, setSelectedSetupMode] = useState<"single-player" | "co-op" | "rivalry" | "nemesis" | null>(null);
+  const [selectedSetupMode, setSelectedSetupMode] = useState<HostSetupMode | null>(null);
   const [hostSetupStep, setHostSetupStep] = useState<HostSetupStep>("mode");
+  const [editingLobbySetup, setEditingLobbySetup] = useState(false);
+  const [configuringLobby, setConfiguringLobby] = useState(false);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
   const [characterFilter, setCharacterFilter] = useState<CharacterSelectionFilter>("all");
   const [joiningRoom, setJoiningRoom] = useState(false);
@@ -345,7 +360,7 @@ export function PhoneApp(): ReactElement {
     if (selectedSetupMode === "single-player") return scenario.supportedModes.includes("solo");
     if (selectedSetupMode === "co-op") return scenario.supportedModes.includes("co-op");
     if (selectedSetupMode === "rivalry") return scenario.supportedModes.includes("rivalry") || scenario.supportedModes.includes("competitive");
-    return false;
+    return scenario.supportedModes.includes("co-op");
   };
   const selectedScenarioIsValid = scenarios.some((scenario) => scenario.id === selectedScenarioId && isScenarioSelectable(scenario));
   const takenSignalPieceIds = useMemo(() => new Set(
@@ -440,10 +455,10 @@ export function PhoneApp(): ReactElement {
   };
 
   const handleConfigureLobby = async () => {
-    if (!auth || !selectedSetupMode) {
+    if (!auth || !selectedSetupMode || configuringLobby) {
       return;
     }
-    if (takenSignalPieceIds.has(selectedSignalPieceId)) {
+    if (!editingLobbySetup && takenSignalPieceIds.has(selectedSignalPieceId)) {
       const replacement = getFirstAvailableSignalPiece(takenSignalPieceIds);
       setSelectedSignalPieceId(replacement);
       setSignalPieceAnnouncement(`${selectedSignalPieceId} became occupied. ${replacement} is now selected.`);
@@ -452,6 +467,7 @@ export function PhoneApp(): ReactElement {
     }
 
     setJoinError(null);
+    setConfiguringLobby(true);
 
     try {
       await configureSessionFromPhone(auth, {
@@ -459,8 +475,14 @@ export function PhoneApp(): ReactElement {
         playerCount: selectedSetupMode === "single-player" ? 1 : selectedSetupMode === "nemesis" ? Math.min(configuredPlayerCount, 4) : configuredPlayerCount,
         ...(selectedScenarioId ? { scenarioId: selectedScenarioId } : {})
       });
+      if (editingLobbySetup) {
+        setEditingLobbySetup(false);
+        setHostSetupStep("mode");
+      }
     } catch (configureFailure) {
       setJoinError(configureFailure instanceof Error ? configureFailure.message : "Could not configure lobby");
+    } finally {
+      setConfiguringLobby(false);
     }
   };
 
@@ -533,6 +555,29 @@ export function PhoneApp(): ReactElement {
   const activeContractCard = phonePatch?.payload.activeContractCard ?? null;
   const ownSeat = phonePatch?.payload.seats.find((seat) => seat.seatId === auth?.seatId) ?? null;
   const isSetupHost = Boolean(phonePatch?.payload.selfIsSetupHost);
+  const selectHostSetupMode = (mode: HostSetupMode): void => {
+    setSelectedSetupMode(mode);
+    if (mode !== "single-player") {
+      setConfiguredPlayerCount((current) => Math.min(Math.max(current, 2), mode === "nemesis" ? 4 : 6));
+    }
+  };
+  const openLobbySetupEditor = (): void => {
+    if (!phonePatch || !isSetupHost || phonePatch.payload.status !== "lobby") {
+      return;
+    }
+
+    setSelectedSetupMode(getConfiguredHostMode(phonePatch.payload));
+    setConfiguredPlayerCount(phonePatch.payload.setup?.seatCapacity ?? Math.max(phonePatch.payload.seats.length, 1));
+    setSelectedScenarioId(phonePatch.payload.activeScenario?.id ?? selectedScenarioId);
+    setHostSetupStep("mode");
+    setJoinError(null);
+    setEditingLobbySetup(true);
+  };
+  const cancelLobbySetupEditor = (): void => {
+    setEditingLobbySetup(false);
+    setHostSetupStep("mode");
+    setJoinError(null);
+  };
   const previousTurnRef = useRef<{ activeSeatId: string | null; status: PhonePatchPayload["status"] } | null>(null);
 
   useEffect(() => {
@@ -540,7 +585,7 @@ export function PhoneApp(): ReactElement {
       !auth ||
       !isSetupHost ||
       phonePatch?.payload.status !== "lobby" ||
-      phonePatch.payload.lobbyConfigured !== false ||
+      (phonePatch.payload.lobbyConfigured !== false && !editingLobbySetup) ||
       !selectedSetupMode ||
       !selectedScenarioId ||
       !selectedScenarioIsValid
@@ -561,6 +606,7 @@ export function PhoneApp(): ReactElement {
   }, [
     auth,
     configuredPlayerCount,
+    editingLobbySetup,
     isSetupHost,
     phonePatch?.payload.lobbyConfigured,
     phonePatch?.payload.status,
@@ -912,7 +958,12 @@ export function PhoneApp(): ReactElement {
     );
   }
 
-  if (auth && phonePatch?.payload.status === "lobby" && isSetupHost && phonePatch.payload.lobbyConfigured === false) {
+  if (
+    auth &&
+    phonePatch?.payload.status === "lobby" &&
+    isSetupHost &&
+    (phonePatch.payload.lobbyConfigured === false || editingLobbySetup)
+  ) {
     return (
       <main className="phone-page phone-page-controller">
         <section className="phone-portrait-controller phone-portrait-controller-empty">
@@ -924,27 +975,37 @@ export function PhoneApp(): ReactElement {
                   <span>Host Phone</span>
                   <span>{status}</span>
                 </div>
-                <p className="phone-panel-kicker">{hostSetupStep === "mode" ? "Step 1 of 2" : "Step 2 of 2"} · Configure Expedition</p>
-                <h1>{hostSetupStep === "mode" ? "Choose Mode" : "Choose Scenario"}</h1>
+                <p className="phone-panel-kicker">
+                  {hostSetupStep === "mode" ? "Step 1 of 2" : "Step 2 of 2"} · {editingLobbySetup ? "Correct Game Setup" : "Configure Expedition"}
+                </p>
+                <h1>
+                  {hostSetupStep === "mode"
+                    ? editingLobbySetup ? "Change Mode" : "Choose Mode"
+                    : editingLobbySetup ? "Change Scenario" : "Choose Scenario"}
+                </h1>
                 {hostSetupStep === "mode" ? (
                   <>
-                    <p className="phone-muted-copy">Choose how this expedition will be played.</p>
+                    <p className="phone-muted-copy">
+                      {editingLobbySetup
+                        ? "Review the current mode and player limit. Nothing changes until you confirm the new setup."
+                        : "Choose how this expedition will be played."}
+                    </p>
                     <section className="phone-host-mode-section" aria-labelledby="phone-setup-mode-title">
                   <div className="phone-host-scenario-heading">
                     <span id="phone-setup-mode-title">Mode</span>
                     <small>Only the Host Phone can change this.</small>
                   </div>
                   <div className="phone-host-mode-grid">
-                    <button type="button" aria-label="Single Player" aria-pressed={selectedSetupMode === "single-player"} className={`phone-setup-mode-card ${selectedSetupMode === "single-player" ? "is-selected" : ""}`} onClick={() => setSelectedSetupMode("single-player")}>
+                    <button type="button" aria-label="Single Player" aria-pressed={selectedSetupMode === "single-player"} className={`phone-setup-mode-card ${selectedSetupMode === "single-player" ? "is-selected" : ""}`} onClick={() => selectHostSetupMode("single-player")}>
                       <strong>Solo Run</strong><span>One operative. Shared scenario, no private agenda.</span>
                     </button>
-                    <button type="button" aria-label="Multiplayer Co-op" aria-pressed={selectedSetupMode === "co-op"} className={`phone-setup-mode-card ${selectedSetupMode === "co-op" ? "is-selected" : ""}`} onClick={() => setSelectedSetupMode("co-op")}>
+                    <button type="button" aria-label="Multiplayer Co-op" aria-pressed={selectedSetupMode === "co-op"} className={`phone-setup-mode-card ${selectedSetupMode === "co-op" ? "is-selected" : ""}`} onClick={() => selectHostSetupMode("co-op")}>
                       <strong>Co-op</strong><span>Operatives share the public victory condition.</span>
                     </button>
-                    <button type="button" aria-pressed={selectedSetupMode === "rivalry"} className={`phone-setup-mode-card ${selectedSetupMode === "rivalry" ? "is-selected" : ""}`} onClick={() => setSelectedSetupMode("rivalry")}>
+                    <button type="button" aria-pressed={selectedSetupMode === "rivalry"} className={`phone-setup-mode-card ${selectedSetupMode === "rivalry" ? "is-selected" : ""}`} onClick={() => selectHostSetupMode("rivalry")}>
                       <strong>Rivalry</strong><span>Private agendas stay on their owners' phones.</span>
                     </button>
-                    <button type="button" aria-pressed={selectedSetupMode === "nemesis"} className={`phone-setup-mode-card ${selectedSetupMode === "nemesis" ? "is-selected" : ""}`} onClick={() => setSelectedSetupMode("nemesis")}>
+                    <button type="button" aria-pressed={selectedSetupMode === "nemesis"} className={`phone-setup-mode-card ${selectedSetupMode === "nemesis" ? "is-selected" : ""}`} onClick={() => selectHostSetupMode("nemesis")}>
                       <strong>Nemesis Relay</strong><span>Limited competitive pursuit for up to four players.</span>
                     </button>
                   </div>
@@ -963,14 +1024,28 @@ export function PhoneApp(): ReactElement {
                         </select>
                       </label>
                     ) : null}
-                    <button
-                      type="button"
-                      className="phone-button phone-button-primary phone-host-setup-confirm"
-                      disabled={!selectedSetupMode}
-                      onClick={() => setHostSetupStep("scenario")}
-                    >
-                      Continue to Scenario
-                    </button>
+                    {editingLobbySetup ? (
+                      <div className="phone-host-setup-actions">
+                        <button type="button" className="phone-button" onClick={cancelLobbySetupEditor}>Cancel</button>
+                        <button
+                          type="button"
+                          className="phone-button phone-button-primary phone-host-setup-confirm"
+                          disabled={!selectedSetupMode}
+                          onClick={() => setHostSetupStep("scenario")}
+                        >
+                          Continue to Scenario
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="phone-button phone-button-primary phone-host-setup-confirm"
+                        disabled={!selectedSetupMode}
+                        onClick={() => setHostSetupStep("scenario")}
+                      >
+                        Continue to Scenario
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>
@@ -1017,16 +1092,23 @@ export function PhoneApp(): ReactElement {
                     })}
                   </div>
                     </section>
+                    {editingLobbySetup ? (
+                      <section className="phone-host-reconfigure-warning" role="note" aria-label="Setup change warning">
+                        <strong>Confirming resets pre-game choices</strong>
+                        <span>Every player will choose their operative, Contract, provisions, and Ready state again.</span>
+                        <span>Reducing the player count removes seats above the new limit from this room.</span>
+                      </section>
+                    ) : null}
                     <div className="phone-host-setup-actions">
                       <button type="button" className="phone-button" onClick={() => setHostSetupStep("mode")}>Back</button>
                       <button
                         type="button"
-                        aria-label="Confirm Setup"
+                        aria-label={editingLobbySetup ? "Confirm Setup Change" : "Confirm Setup"}
                         className="phone-button phone-button-primary phone-host-setup-confirm"
-                        disabled={!selectedScenarioId || !selectedSetupMode || !selectedScenarioIsValid}
+                        disabled={!selectedScenarioId || !selectedSetupMode || !selectedScenarioIsValid || configuringLobby}
                         onClick={() => void handleConfigureLobby()}
                       >
-                        Confirm Scenario
+                        {configuringLobby ? "Applying..." : editingLobbySetup ? "Apply New Setup" : "Confirm Scenario"}
                       </button>
                     </div>
                   </>
@@ -1291,6 +1373,7 @@ export function PhoneApp(): ReactElement {
             onLeave={roomBackGuard.requestLeave}
             onLobbyBack={() => void backToCharacterSelect()}
             onStartSession={isSetupHost ? handleStartFromPhone : undefined}
+            onChangeLobbySetup={isSetupHost ? openLobbySetupEditor : undefined}
             startSubmitting={startingGame}
           />
         )}

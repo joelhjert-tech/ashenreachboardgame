@@ -3130,4 +3130,64 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByLabelText(/private lens reading/i)).toHaveTextContent(/votive engine room/i);
     expect(screen.getByText(/until end of turn/i)).toBeInTheDocument();
   });
+
+  it("promotes a blocking Scar comparison to the phone's primary scroll region", () => {
+    const patch = createPatch({
+      phase: "resolution",
+      encounter: null,
+      activeResolution: null,
+      pendingScarChoice: {
+        selectionId: "scar-choice:seat-1:mind",
+        source: "mind",
+        sourceCardId: "qa-mind-scar",
+        currentCount: 0,
+        thirdScarWarning: false,
+        cards: [
+          {
+            id: "scar-wound-12",
+            title: "Relay Ghost",
+            text: "The relay follows you.",
+            trigger: "Remote signal tests strain the operative.",
+            penalty: "Remote Signal -1.",
+            relief: "Return to a relay.",
+            source: "mind",
+            burdenText: "The first remote Signal test each round suffers -1.",
+            adaptationText: "Inspect the next Blue Threat at a relay."
+          },
+          {
+            id: "scar-wound-13",
+            title: "Choir Static",
+            text: "The chorus never quiets.",
+            trigger: "Escalation strains the operative.",
+            penalty: "The first Escalation advance inflicts 1 Wound.",
+            relief: "Silence the chorus.",
+            source: "mind",
+            burdenText: "The first Escalation advance inflicts 1 Wound.",
+            adaptationText: "Gain +1 Signal against an Escalation test."
+          }
+        ]
+      }
+    });
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        patchSequence={4}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    const shell = screen.getByRole("region", { name: /compare scar choices/i }).closest(".phone-portrait-controller");
+    expect(shell).toHaveClass("phone-shell--scar-choice-active");
+    expect(screen.getByLabelText("Phone content")).toHaveClass("phone-scar-choice-content");
+    expect(screen.queryByRole("tablist", { name: /phone navigation/i })).not.toBeInTheDocument();
+  });
 });

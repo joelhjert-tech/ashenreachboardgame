@@ -34,6 +34,7 @@ function applyViewportVariables(next: PhysicalVisualViewportSnapshot): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   root.style.setProperty("--physical-visual-viewport-height", `${next.height}px`);
+  root.style.setProperty("--phone-usable-height", `${next.height}px`);
   root.style.setProperty("--physical-visual-viewport-offset-top", `${next.offsetTop}px`);
   root.style.setProperty("--physical-visual-viewport-offset-left", `${next.offsetLeft}px`);
   root.dataset.keyboardConstrained = next.keyboardConstrained ? "true" : "false";
