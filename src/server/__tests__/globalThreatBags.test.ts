@@ -77,7 +77,7 @@ describe("server-owned global Threat bags", () => {
     }
   });
 
-  it("uses one dedicated Pallid Retinue minion for each printed lane in The Grinning Tithe", () => {
+  it("adds one dedicated Pallid Retinue minion to each complete normal lane in The Grinning Tithe", () => {
     const server = createBagServer(3306, "scenario_grinning_tithe");
     const laneCards = [
       ["red", GRINNING_TITHE_MINION_IDS[0]],
@@ -87,16 +87,35 @@ describe("server-owned global Threat bags", () => {
 
     for (const [lane, cardId] of laneCards) {
       server.prepareThreatBag(lane, "seat-1");
-      expect(server.getState().threatDrawBags?.[lane]?.remainingCardIds).toEqual([cardId]);
-      expect(server.peekGlobalThreatId(lane, "seat-6")).toBe(cardId);
+      const firstCycle = server.getState().threatDrawBags?.[lane]?.remainingCardIds ?? [];
+      const normalLaneCardIds = [...catalog.values()]
+        .filter(
+          (card) =>
+            card.threatLane === lane &&
+            !GRINNING_TITHE_ASSAULT_CARD_IDS.includes(
+              card.id as typeof GRINNING_TITHE_ASSAULT_CARD_IDS[number]
+            )
+        )
+        .map((card) => card.id);
+
+      expect(firstCycle).toHaveLength(normalLaneCardIds.length + 1);
+      expect(new Set(firstCycle)).toEqual(new Set([...normalLaneCardIds, cardId]));
+      expect(
+        firstCycle.some(
+          (drawnId) =>
+            !GRINNING_TITHE_MINION_IDS.includes(
+              drawnId as typeof GRINNING_TITHE_MINION_IDS[number]
+            )
+        )
+      ).toBe(true);
+      expect(firstCycle).not.toContain(GRINNING_TITHE_ASSAULT_CARD_IDS[3]);
       expect(catalog.get(cardId)?.threatLane).toBe(lane);
 
       server.getState().threatDrawBags![lane]!.remainingCardIds = [];
       server.prepareThreatBag(lane, "seat-1");
-      expect(server.getState().threatDrawBags?.[lane]).toMatchObject({
-        cycle: 2,
-        remainingCardIds: [cardId]
-      });
+      const secondCycle = server.getState().threatDrawBags?.[lane];
+      expect(secondCycle?.cycle).toBe(2);
+      expect(new Set(secondCycle?.remainingCardIds)).toEqual(new Set([...normalLaneCardIds, cardId]));
     }
   });
 

@@ -146,7 +146,7 @@ describe("The Grinning Tithe", () => {
       victoryThreshold: 6,
       nemesis: "The Pallid Curator"
     });
-    expect(scenario?.threatLaneOverrides).toEqual({
+    expect(scenario?.threatLaneAdditions).toEqual({
       red: [GRINNING_TITHE_MINION_IDS[0]],
       blue: [GRINNING_TITHE_MINION_IDS[1]],
       yellow: [GRINNING_TITHE_MINION_IDS[2]]

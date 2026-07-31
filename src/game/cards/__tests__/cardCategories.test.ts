@@ -38,7 +38,7 @@ describe("canonical card category boundary", () => {
     const scenarioThreatIds = new Set(
       SCENARIOS.flatMap((scenario) =>
         [
-          ...Object.values(scenario.threatLaneOverrides ?? {}).flatMap((cardIds) => cardIds ?? []),
+          ...Object.values(scenario.threatLaneAdditions ?? {}).flatMap((cardIds) => cardIds ?? []),
           ...(scenario.randomAssault?.cardIds ?? [])
         ]
       )

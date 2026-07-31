@@ -616,7 +616,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
     buildTelemetry: (state) => [
       { label: "Pallid Curator", value: `${state.scenarioProgress.curatorWounds ?? 0}/6 wounds` },
       { label: "Loss Pressure", value: "Disabled" },
-      { label: "Lane Minions", value: "Red / Blue / Yellow" },
+      { label: "Threat Lanes", value: "Normal pool + Retinue" },
       { label: "Round Assault", value: "Random card + random operative" }
     ]
   },

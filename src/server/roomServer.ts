@@ -350,7 +350,7 @@ function createPrivateSetupSeed(value: string): number {
 const SCENARIO_OWNED_THREAT_IDS = new Set(
   SCENARIOS.flatMap((scenario) =>
     [
-      ...Object.values(scenario.threatLaneOverrides ?? {}).flatMap((cardIds) => cardIds ?? []),
+      ...Object.values(scenario.threatLaneAdditions ?? {}).flatMap((cardIds) => cardIds ?? []),
       ...(scenario.randomAssault?.cardIds ?? [])
     ]
   )
@@ -5441,12 +5441,12 @@ export class GameRoomServer {
     const existing = this.state.threatDrawBags?.[lane];
     if (existing && existing.remainingCardIds.length > 0) return;
 
-    const scenarioLaneOverride = getScenarioDefinition(this.state.activeScenarioId)?.threatLaneOverrides?.[lane];
-    const laneCardIds = scenarioLaneOverride
-      ? [...scenarioLaneOverride]
-      : [...this.threats.values()]
-          .filter((card) => card.threatLane === lane && !SCENARIO_OWNED_THREAT_IDS.has(card.id))
-          .map((card) => card.id);
+    const normalLaneCardIds = [...this.threats.values()]
+      .filter((card) => card.threatLane === lane && !SCENARIO_OWNED_THREAT_IDS.has(card.id))
+      .map((card) => card.id);
+    const scenarioLaneAdditions =
+      getScenarioDefinition(this.state.activeScenarioId)?.threatLaneAdditions?.[lane] ?? [];
+    const laneCardIds = [...new Set([...normalLaneCardIds, ...scenarioLaneAdditions])];
     const shuffled = this.shuffleThreatIds(laneCardIds);
     const recent = new Set(this.state.recentEncounterCardIds ?? []);
     const orderedCardIds = existing

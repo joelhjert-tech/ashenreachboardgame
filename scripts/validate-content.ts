@@ -618,13 +618,13 @@ function validateScenarioCoverage(): void {
       errors.push(`Scenario ${scenario.id} has no supportedModes`);
     }
 
-    for (const [lane, cardIds] of Object.entries(scenario.threatLaneOverrides ?? {})) {
+    for (const [lane, cardIds] of Object.entries(scenario.threatLaneAdditions ?? {})) {
       if (!cardIds || cardIds.length === 0) {
-        errors.push(`Scenario ${scenario.id} has an empty ${lane} threatLaneOverride`);
+        errors.push(`Scenario ${scenario.id} has an empty ${lane} threatLaneAddition`);
         continue;
       }
       if (new Set(cardIds).size !== cardIds.length) {
-        errors.push(`Scenario ${scenario.id} repeats a card in its ${lane} threatLaneOverride`);
+        errors.push(`Scenario ${scenario.id} repeats a card in its ${lane} threatLaneAddition`);
       }
       for (const cardId of cardIds) {
         const threat = threats.get(cardId);
@@ -737,7 +737,7 @@ function validateCanonicalDecks(): void {
   };
   const scenarioThreatIds = new Set(
     SCENARIOS.flatMap((scenario) =>
-      Object.values(scenario.threatLaneOverrides ?? {}).flatMap((cardIds) => cardIds ?? [])
+      Object.values(scenario.threatLaneAdditions ?? {}).flatMap((cardIds) => cardIds ?? [])
     )
   );
   const tileChallengeArtIds = new Set([...tileChallenges.values()].map((challenge) => challenge.artCardId));

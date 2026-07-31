@@ -586,7 +586,7 @@ describe("canonical sector graph", () => {
       ...sectors.flatMap((sector) => sector.encounterDecks.threat),
       ...SCENARIOS.flatMap((scenario) =>
         [
-          ...Object.values(scenario.threatLaneOverrides ?? {}).flatMap((cardIds) => cardIds ?? []),
+          ...Object.values(scenario.threatLaneAdditions ?? {}).flatMap((cardIds) => cardIds ?? []),
           ...(scenario.randomAssault?.cardIds ?? [])
         ]
       ),
@@ -1483,7 +1483,7 @@ describe("canonical sector graph", () => {
       scenario_devourer_beneath: ["Doom Tokens", "Devourer", "Collapse Pulse"],
       scenario_labyrinth_engine: ["Engine Mode", "Rotation", "Shutdown"],
       scenario_dying_star: ["Starfire", "Wound Burn", "Ignition"],
-      scenario_grinning_tithe: ["Pallid Curator", "Loss Pressure", "Lane Minions", "Round Assault"],
+      scenario_grinning_tithe: ["Pallid Curator", "Loss Pressure", "Threat Lanes", "Round Assault"],
       scenario_broken_concordance: ["Concordance Nodes", "Core Stages", "Assistance"]
     };
 

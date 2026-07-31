@@ -99,8 +99,8 @@ export interface ScenarioDefinition {
   lossCondition: string;
   pressureTrack: ScenarioPressureTrack;
   boardHooks: ScenarioBoardHooks;
-  /** Scenario-owned Threat lane contents. Cards listed here stay out of normal global lane bags. */
-  threatLaneOverrides?: Partial<Record<"red" | "blue" | "yellow", string[]>>;
+  /** Scenario-owned Threats shuffled into the matching normal global lane once per bag cycle. */
+  threatLaneAdditions?: Partial<Record<"red" | "blue" | "yellow", string[]>>;
   /** Optional server-owned assault deck that interrupts the round boundary before the next operative begins. */
   randomAssault?: ScenarioRandomAssaultDefinition;
   progressSources: string[];
@@ -986,13 +986,13 @@ export const SCENARIOS: ScenarioDefinition[] = [
       collapseRule: "This scenario cannot fail from Global Escalation or round pressure."
     },
     boardHooks: {
-      redThreat: "Every Red Threat icon reveals the Tithe Gnawer.",
-      blueThreat: "Every Blue Threat icon reveals the Bell-Ear Stalker.",
-      yellowThreat: "Every Yellow Threat icon reveals the Copper-Snout Bailiff.",
+      redThreat: "Red Threats use the normal pool with the Tithe Gnawer added once per bag cycle.",
+      blueThreat: "Blue Threats use the normal pool with the Bell-Ear Stalker added once per bag cycle.",
+      yellowThreat: "Yellow Threats use the normal pool with the Copper-Snout Bailiff added once per bag cycle.",
       shop: "Services remain available under their normal successful-clear rules and do not advance the boss hunt.",
       anomaly: "Anomalies remain optional preparation and do not gate the final confrontation."
     },
-    threatLaneOverrides: {
+    threatLaneAdditions: {
       red: [GRINNING_TITHE_MINION_IDS[0]],
       blue: [GRINNING_TITHE_MINION_IDS[1]],
       yellow: [GRINNING_TITHE_MINION_IDS[2]]
@@ -1038,7 +1038,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Normal shops, healing, recruitment, and repair remain available but never gate or advance the boss confrontation."
     ],
     tileEventHooks: [
-      "Red, Blue, and Yellow Threat icons reveal the Tithe Gnawer, Bell-Ear Stalker, and Copper-Snout Bailiff respectively.",
+      "Each normal Threat lane adds its matching Retinue minion once per bag cycle: Tithe Gnawer to Red, Bell-Ear Stalker to Blue, and Copper-Snout Bailiff to Yellow.",
       "At each round end, the Curator draws from its four-card assault deck and attacks one randomly selected active operative.",
       "The assault deck includes all three minions and Tithe-Lock Audit, draws without replacement, and reshuffles only after exhaustion."
     ],
@@ -1049,13 +1049,13 @@ export const SCENARIOS: ScenarioDefinition[] = [
     },
     setup: [
       "Set Global Escalation to 0 and disable all positive loss-pressure gains.",
-      "Assign Tithe Gnawer to Red Threats, Bell-Ear Stalker to Blue Threats, and Copper-Snout Bailiff to Yellow Threats.",
+      "Shuffle Tithe Gnawer into the normal Red pool, Bell-Ear Stalker into the normal Blue pool, and Copper-Snout Bailiff into the normal Yellow pool.",
       "Prepare the four-card Pallid Retinue assault deck, including Tithe-Lock Audit.",
       "Place the Pallid Curator at the Cinder Gate with 6 life."
     ],
     specialRules: [
       "Global Escalation cannot increase and cannot cause defeat.",
-      "Each printed Threat lane has one dedicated Pallid Retinue minion.",
+      "Normal global Threats remain active. Each lane also includes one dedicated Pallid Retinue minion per bag cycle.",
       "Retinue cards resolve as normal public enemy battles and keep their printed rewards and wounds.",
       "At each round end, one random card from the shared assault deck attacks one server-selected random active operative.",
       "The assault deck draws without replacement and reshuffles only after all three minions and Tithe-Lock Audit have appeared.",
@@ -1071,7 +1071,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Boss damage persists between operatives and visits."
     ],
     victoryText: "When the shared boss track reaches 6 wounds, the Pallid Curator is defeated and every operative wins.",
-    designFeel: "A direct, pressure-free hunt with lane-specific minions, random round-end assaults, and a persistent cooperative boss health track.",
+    designFeel: "A direct, pressure-free hunt where the normal Threat pool remains active beside lane-specific minions, random round-end assaults, and a persistent cooperative boss health track.",
     difficulty: "medium",
     recommendedRolloutOrder: 8,
     confrontationText:
