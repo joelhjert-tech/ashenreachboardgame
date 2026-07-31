@@ -11,10 +11,10 @@
   "region": "inner",
   "stat": "guile",
   "difficulty": 11,
-  "trophyValue": 3,
+  "trophyValue": 7,
   "defeatReward": {
     "type": "gain_trophy",
-    "amount": 3
+    "amount": 7
   },
   "woundOnLoss": {
     "type": "take_wound",

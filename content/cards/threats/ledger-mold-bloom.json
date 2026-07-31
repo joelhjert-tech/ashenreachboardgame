@@ -11,7 +11,7 @@
   "difficulty": 7,
   "clearReward": {
     "type": "gain_salvage",
-    "amount": 1
+    "amount": 2
   },
   "persistentRule": {
     "type": "service_lock"

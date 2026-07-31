@@ -9,6 +9,10 @@
   "severity": 4,
   "stat": "forge",
   "difficulty": 9,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 3
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You braced the lattice mouth and marked the load-bearing teeth."

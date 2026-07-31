@@ -10,6 +10,10 @@
   "region": "outer",
   "stat": "grit",
   "difficulty": 8,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 2
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You marked the fallen mast as a dangerous but usable route break."

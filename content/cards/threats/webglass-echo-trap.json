@@ -9,6 +9,10 @@
   "severity": 3,
   "stat": "signal",
   "difficulty": 8,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 2
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You collapsed the echo before it learned your name."

@@ -10,7 +10,7 @@
   "severity": 2,
   "stat": "forge",
   "difficulty": 6,
-  "trophyValue": 5,
+  "trophyValue": 4,
   "defeatReward": {
     "type": "gain_note",
     "text": "You dispersed the pilgrims without turning the road into a grave."

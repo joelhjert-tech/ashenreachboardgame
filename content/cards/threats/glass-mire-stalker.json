@@ -11,7 +11,7 @@
   "region": "middle",
   "stat": "guile",
   "difficulty": 8,
-  "trophyValue": 2,
+  "trophyValue": 5,
   "defeatReward": {
     "type": "gain_note",
     "text": "You cracked the stalker's mirror-bone and marked a safer route through the mire."

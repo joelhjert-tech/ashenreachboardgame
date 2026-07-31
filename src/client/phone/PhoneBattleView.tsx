@@ -340,6 +340,7 @@ export function PhoneBattleView({
     : null;
   const outcomeFlavor = resultStage ? presentation?.publicConsequence ?? outcome?.text ?? null : null;
   const usableGearCount = assist?.usableCards.length ?? 0;
+  const victoryReward = !roll ? presentation?.encounter.victoryReward ?? null : null;
   const failureStakes = !roll ? presentation?.encounter.failureStakes ?? null : null;
 
   useEffect(() => {
@@ -571,6 +572,7 @@ export function PhoneBattleView({
               operativeValue={operativeValue}
               opponentTotal={opponentTotal}
               finalTotal={finalTotal}
+              victoryReward={victoryReward}
               failureStakes={failureStakes}
             />
             {usableGearCount > 0 && !roll ? (

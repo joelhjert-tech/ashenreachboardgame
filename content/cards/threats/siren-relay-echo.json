@@ -10,6 +10,10 @@
   "region": "outer",
   "stat": "command",
   "difficulty": 6,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
   "successEffect": {
     "type": "next_non_battle_test_modifier",
     "amount": 1,

@@ -497,7 +497,7 @@ export const STANDARD_HAZARD_CLEAR_REWARD = {
 
 export const hazardClearRewardSchema = z.object({
   type: z.literal("gain_salvage"),
-  amount: z.literal(1)
+  amount: z.number().int().min(1).max(3)
 }).strict();
 
 export const persistentHazardRuleSchema = z.discriminatedUnion("type", [
@@ -532,11 +532,18 @@ function effectReturnsThreatToSpace(effect: AuthoredEncounterEffect): boolean {
 export const authoredHazardThreatCardSchema = threatBaseSchema.extend({
   cardType: z.literal("hazard"),
   faction: threatFactionSchema,
-  clearReward: hazardClearRewardSchema.default(STANDARD_HAZARD_CLEAR_REWARD),
+  clearReward: hazardClearRewardSchema.optional(),
   persistentRule: persistentHazardRuleSchema.optional(),
   successEffect: authoredEffectSchema.optional(),
   failEffect: authoredEffectSchema
 }).superRefine((card, context) => {
+  if (!card.resolutionType && !card.clearReward) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Hazard presentation cards require a difficulty-scaled clear reward",
+      path: ["clearReward"]
+    });
+  }
   if (card.id === "gateblind-pulse" && card.failEffect.type !== "gain_global_escalation_guarded") {
     context.addIssue({
       code: z.ZodIssueCode.custom,

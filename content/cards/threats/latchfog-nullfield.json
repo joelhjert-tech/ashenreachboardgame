@@ -11,7 +11,7 @@
   "difficulty": 8,
   "clearReward": {
     "type": "gain_salvage",
-    "amount": 1
+    "amount": 2
   },
   "persistentRule": {
     "type": "equipment_nullfield",

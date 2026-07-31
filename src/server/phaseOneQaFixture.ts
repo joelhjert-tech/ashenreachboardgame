@@ -1375,8 +1375,8 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
     if (fixture.stage === "trophies") {
       player.character.trophies = 6;
       player.character.trophyPile = [{
-        cardId: "cinder-veil-stalker",
-        name: "Cinder-Veil Stalker",
+        cardId: "hearth-ruin-behemoth",
+        name: "Hearth-Ruin Behemoth",
         trophyValue: 6,
         spentValue: 0,
         stat: "grit",

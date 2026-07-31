@@ -194,7 +194,7 @@ describe("Phase 1 QA fixture", () => {
     const player = state.players.find((entry) => entry.seatId === "seat-1")!;
     expect(player.character.trophies).toBe(6);
     expect(player.character.trophyPile).toEqual([
-      expect.objectContaining({ cardId: "cinder-veil-stalker", trophyValue: 6, spentValue: 0, stat: "grit" })
+      expect.objectContaining({ cardId: "hearth-ruin-behemoth", trophyValue: 6, spentValue: 0, stat: "grit" })
     ]);
   });
 

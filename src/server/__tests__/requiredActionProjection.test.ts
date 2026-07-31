@@ -555,6 +555,7 @@ describe("server required-action projection", () => {
 
     const tv = battlePresentation(createTvProjection(state));
     const owner = battlePresentation(createPhoneProjection(state, ownerSeatId));
+    expect(tv.encounter.victoryReward).toBe("8 Trophies / Artifact recovered");
     expect(tv.encounter.failureStakes).toMatch(/1 Wound suffered.*Threat remains on this space.*Rerolls blocked/i);
     expect(owner.encounter.failureStakes).toBe(tv.encounter.failureStakes);
     expect(JSON.stringify(tv.encounter)).not.toMatch(/notes|hand|agenda|message|credential/i);

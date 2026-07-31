@@ -11,10 +11,10 @@
   "region": "middle",
   "stat": "grit",
   "difficulty": 9,
-  "trophyValue": 3,
+  "trophyValue": 5,
   "defeatReward": {
     "type": "gain_trophy",
-    "amount": 3
+    "amount": 5
   },
   "woundOnLoss": {
     "type": "take_wound",

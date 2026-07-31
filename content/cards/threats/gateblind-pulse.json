@@ -10,6 +10,10 @@
   "region": "inner",
   "stat": "signal",
   "difficulty": 10,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 3
+  },
   "successEffect": {
     "type": "advance_scenario",
     "progressKey": "gateblindPulsesRead",

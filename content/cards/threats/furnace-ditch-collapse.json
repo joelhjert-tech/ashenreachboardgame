@@ -9,6 +9,10 @@
   "severity": 2,
   "stat": "grit",
   "difficulty": 6,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You crossed the ditch and flagged the weak ground behind you."

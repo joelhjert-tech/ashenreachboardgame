@@ -102,7 +102,7 @@ describe("Heat-to-Salvage reward batch 1", () => {
       cardType: "enemy",
       severity: 2,
       difficulty: 6,
-      trophyValue: 6,
+      trophyValue: 4,
       threatLane: "yellow",
       region: "outer",
       defeatReward: { type: "gain_salvage", amount: 1 },
@@ -130,7 +130,7 @@ describe("Heat-to-Salvage reward batch 1", () => {
     expect(loseHeat).toHaveLength(0);
     expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(2);
     expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(7);
-    expect(collectEffects("gain_salvage")).toHaveLength(18);
+    expect(collectEffects("gain_salvage")).toHaveLength(42);
     expect(TARGET_IDS.every((id) => !heatIds.has(id))).toBe(true);
   });
 
@@ -181,7 +181,7 @@ describe("Heat-to-Salvage reward batch 1", () => {
     if (!result.ok) return;
     expect(result.state.players[0]!.character.salvage).toBe(2);
     expect(result.state.players[0]!.character.wounds).toBe(1);
-    expect(raider.trophyValue).toBe(6);
+    expect(raider.trophyValue).toBe(4);
   });
 
   it("Equipment Requisition pays only through canonical completion and cannot replay", () => {

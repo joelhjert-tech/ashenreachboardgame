@@ -9,6 +9,10 @@
   "severity": 2,
   "stat": "guile",
   "difficulty": 6,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
   "successEffect": {
     "type": "gain_salvage",
     "amount": 1
@@ -19,7 +23,6 @@
   },
   "enemyFamily": "hazard",
   "threatLane": "yellow",
-  "resolutionType": "event",
   "region": "outer",
   "rarity": "common",
   "tempo": "neutral",

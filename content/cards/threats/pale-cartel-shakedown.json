@@ -10,7 +10,7 @@
   "severity": 2,
   "stat": "guile",
   "difficulty": 6,
-  "trophyValue": 5,
+  "trophyValue": 3,
   "defeatReward": {
     "type": "gain_gear",
     "gearId": "marshal-seal"

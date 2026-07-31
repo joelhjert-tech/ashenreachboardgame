@@ -9,6 +9,10 @@
   "severity": 1,
   "stat": "signal",
   "difficulty": 5,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
   "failEffect": {
     "type": "take_wound",
     "amount": 1

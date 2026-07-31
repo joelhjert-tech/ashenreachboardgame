@@ -22,7 +22,7 @@ describe("canonical card category boundary", () => {
     }, {});
 
     expect(threats).toHaveLength(204);
-    expect(categories).toEqual({ enemy: 150, hazard: 26, event: 10, encounter: 6, asset: 12 });
+    expect(categories).toEqual({ enemy: 150, hazard: 29, event: 8, encounter: 5, asset: 12 });
     const discoveries = threats.filter((card) => getThreatPresentationCategory(card) === "asset");
     expect(discoveries.filter((card) => card.resourceTags?.includes("gear"))).toHaveLength(7);
     expect(discoveries.filter((card) => card.resourceTags?.includes("follower"))).toHaveLength(5);

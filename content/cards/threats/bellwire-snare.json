@@ -10,6 +10,10 @@
   "region": "outer",
   "stat": "guile",
   "difficulty": 7,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 2
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You mapped the bellwire before it called anything worse."

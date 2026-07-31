@@ -9,6 +9,10 @@
   "severity": 3,
   "stat": "guile",
   "difficulty": 8,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 2
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You mapped the splice before it could close behind you."
@@ -26,7 +30,6 @@
   },
   "enemyFamily": "hazard",
   "threatLane": "yellow",
-  "resolutionType": "event",
   "region": "middle",
   "rarity": "uncommon",
   "tempo": "stall",

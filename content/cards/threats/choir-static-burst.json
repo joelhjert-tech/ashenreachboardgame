@@ -10,6 +10,10 @@
   "region": "middle",
   "stat": "signal",
   "difficulty": 9,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 3
+  },
   "successEffect": {
     "type": "advance_scenario",
     "progressKey": "choirStaticContained",

@@ -9,6 +9,10 @@
   "severity": 1,
   "stat": "grit",
   "difficulty": 5,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You stamped out the clutch before it marked your trail."

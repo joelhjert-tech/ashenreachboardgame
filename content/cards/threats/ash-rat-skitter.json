@@ -9,6 +9,10 @@
   "severity": 1,
   "stat": "grit",
   "difficulty": 4,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You scattered the ash rats and marked their nest as a future salvage pocket."

@@ -10,6 +10,10 @@
   "region": "middle",
   "stat": "guile",
   "difficulty": 9,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 3
+  },
   "failEffect": {
     "type": "sequence",
     "effects": [

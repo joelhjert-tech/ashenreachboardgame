@@ -9,6 +9,10 @@
   "severity": 2,
   "stat": "signal",
   "difficulty": 7,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 2
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You timed the sparkfall and found a quiet count between bursts."

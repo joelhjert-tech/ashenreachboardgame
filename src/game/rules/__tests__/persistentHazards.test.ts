@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadThreatCards } from "../../content/threats.js";
+import { getThreatPresentationCategory } from "../../cards/cardCategories.js";
 import type { GameState } from "../../schema/session.schema.js";
 import { getMovementStepBlockReason } from "../movementPlanner.js";
 import { getServiceThreatGate } from "../tileFunctions.js";
@@ -23,12 +24,16 @@ function stateWithHazard(hazardId: string) {
 }
 
 describe("persistent Hazard rules", () => {
-  it("gives every authored Hazard the standard one-Salvage clear reward", () => {
-    const hazards = [...loadThreatCards().values()].filter((card) => card.cardType === "hazard");
-    expect(hazards).toHaveLength(54);
-    expect(hazards.every((card) =>
-      card.clearReward?.type === "gain_salvage" && card.clearReward.amount === 1
-    )).toBe(true);
+  it("gives true Hazards a difficulty-scaled Salvage reward only", () => {
+    const testedCards = [...loadThreatCards().values()].filter((card) => card.cardType === "hazard");
+    const hazards = testedCards.filter((card) => getThreatPresentationCategory(card) === "hazard");
+    const otherCategories = testedCards.filter((card) => getThreatPresentationCategory(card) !== "hazard");
+    expect(hazards).toHaveLength(29);
+    expect(hazards.every((card) => {
+      const expectedAmount = card.difficulty <= 6 ? 1 : card.difficulty <= 8 ? 2 : 3;
+      return card.clearReward?.type === "gain_salvage" && card.clearReward.amount === expectedAmount;
+    })).toBe(true);
+    expect(otherCategories.every((card) => card.clearReward === undefined)).toBe(true);
   });
 
   it("registers all five new cards as fail-persistent hazards", () => {

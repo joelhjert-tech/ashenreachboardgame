@@ -14323,6 +14323,29 @@ function classifyBattleModifier(label: string): "permanent" | "equipment" | "sta
   return "other";
 }
 
+function summarizeEnemyBonusRewards(effect: unknown): string[] {
+  if (!effect || typeof effect !== "object") return [];
+  const candidate = effect as { type?: string; effects?: unknown[] };
+  if (candidate.type === "sequence") {
+    return (candidate.effects ?? []).flatMap((entry) => summarizeEnemyBonusRewards(entry));
+  }
+  if (candidate.type === "gain_note" || candidate.type === "gain_trophy") return [];
+  const summary = summarizePublicHandoffEffect(effect);
+  return summary ? [summary] : [];
+}
+
+function summarizeEnemyVictoryReward(encounter: ThreatCard | null | undefined): string | null {
+  if (!encounter || encounter.cardType !== "enemy") return null;
+  const rewards = encounter.trophyValue > 0
+    ? [`${encounter.trophyValue} ${encounter.trophyValue === 1 ? "Trophy" : "Trophies"}`]
+    : [];
+  rewards.push(...summarizeEnemyBonusRewards(encounter.defeatReward));
+  if (encounter.defeatEffectKey === "threat_defeat_gain_salvage") {
+    rewards.push("1 Salvage gained");
+  }
+  return [...new Set(rewards)].join(" / ") || null;
+}
+
 function buildBattlePresentation(state: GameState, viewerSeatId: string | null): Record<string, unknown> | null {
   const resolution = state.activeResolution;
   const encounter = state.currentEncounter;
@@ -14331,6 +14354,11 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
   const actor = actorSeatId ? state.players.find((player) => player.seatId === actorSeatId) ?? null : null;
   const battle = resolution?.battle;
   const isBattle = encounter?.cardType === "enemy" || resolution?.card?.type === "enemy" || Boolean(pendingEnemyRoll);
+  const enemyEncounter = encounter?.cardType === "enemy"
+    ? encounter
+    : resolution?.card?.type === "enemy"
+      ? PROJECTION_THREAT_CATALOG.get(resolution.card.id) ?? null
+      : null;
 
   if (!actorSeatId || !actor || (!battle && !encounter && !pendingEnemyRoll)) return null;
 
@@ -14449,11 +14477,14 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
       : stage === "rolling" || stage === "resolving" ? "resolve the current roll"
         : "review the result and continue";
   const effects = resultStage ? resolution?.outcome?.effects ?? [] : [];
-  const rewardSummary = effects.find((effect) => /\bgain\b|\btroph|\breward|\bsalvage|\bequipment|\bfollower/i.test(effect)) ?? null;
-  const failureStakes = isBattle && encounter?.cardType === "enemy"
+  const victoryReward = summarizeEnemyVictoryReward(enemyEncounter);
+  const rewardSummary = success === true && victoryReward
+    ? victoryReward
+    : effects.find((effect) => /\bgain\b|\btroph|\breward|\bsalvage|\bequipment|\bfollower/i.test(effect)) ?? null;
+  const failureStakes = isBattle && enemyEncounter?.cardType === "enemy"
     ? [
-        summarizePublicHandoffEffect(encounter.woundOnLoss),
-        threatBlocksRerolls(encounter) ? "Rerolls blocked" : null
+        summarizePublicHandoffEffect(enemyEncounter.woundOnLoss),
+        threatBlocksRerolls(enemyEncounter) ? "Rerolls blocked" : null
       ].filter((entry): entry is string => Boolean(entry)).join(" / ") || null
     : null;
 
@@ -14468,6 +14499,7 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
       category: isBattle ? "Battle" : state.pendingTileChallenge?.challengeType === "anomaly" ? "Anomaly" : encounter?.cardType === "hazard" ? "Hazard" : "Challenge",
       imageKey: resolution?.card?.id ?? encounter?.id ?? pendingEnemyRoll?.encounterCardId ?? null,
       publicSummary: resolution?.card?.flavor ?? encounter?.flavor ?? null,
+      victoryReward,
       failureStakes
     },
     test: { stat, label: CHALLENGE_LABELS[stat], opposed: isBattle },

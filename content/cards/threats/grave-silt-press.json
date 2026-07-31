@@ -9,6 +9,10 @@
   "severity": 1,
   "stat": "command",
   "difficulty": 5,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You forced a path through the sink line and marked it for later."

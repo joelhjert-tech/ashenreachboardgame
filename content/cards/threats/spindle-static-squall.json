@@ -9,6 +9,10 @@
   "severity": 2,
   "stat": "signal",
   "difficulty": 6,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You tuned the squall into a stable bearing."

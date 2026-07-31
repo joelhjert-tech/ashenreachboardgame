@@ -14,6 +14,7 @@ interface PhoneBattleDuelStageProps {
   operativeValue: number;
   opponentTotal: number;
   finalTotal: number | null;
+  victoryReward?: string | null;
   failureStakes?: string | null;
 }
 
@@ -32,6 +33,7 @@ export function PhoneBattleDuelStage({
   operativeValue,
   opponentTotal,
   finalTotal,
+  victoryReward,
   failureStakes
 }: PhoneBattleDuelStageProps): ReactElement {
   const operativeScore = finalTotal ?? operativeValue;
@@ -80,6 +82,12 @@ export function PhoneBattleDuelStage({
           </div>
         </figure>
       </div>
+      {victoryReward ? (
+        <aside className="phone-battle-duel__intent" role="note" aria-label="Victory reward">
+          <span>Victory reward</span>
+          <strong>On victory: {victoryReward}</strong>
+        </aside>
+      ) : null}
       {failureStakes ? (
         <aside className="phone-battle-duel__intent" role="note" aria-label="Enemy intent">
           <span>Enemy intent</span>

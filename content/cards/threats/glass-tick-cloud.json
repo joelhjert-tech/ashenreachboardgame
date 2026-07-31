@@ -10,6 +10,10 @@
   "region": "outer",
   "stat": "forge",
   "difficulty": 6,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 1
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You sealed the glass tick vent and marked the casing as a salvage warning."
@@ -20,7 +24,6 @@
   },
   "enemyFamily": "vermin",
   "threatLane": "yellow",
-  "resolutionType": "encounter",
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [

@@ -10,6 +10,10 @@
   "region": "middle",
   "stat": "grit",
   "difficulty": 8,
+  "clearReward": {
+    "type": "gain_salvage",
+    "amount": 2
+  },
   "successEffect": {
     "type": "gain_note",
     "text": "You charted the shardwind break and found the quiet second behind it."
