@@ -83,7 +83,9 @@ Remaining legacy files:
 - Signal Cartography player coins reuse the six stable Signal Piece IDs under `markers/players/`; public objective coins use `route`, `challenge`, `hunt`, and `service` under `markers/objectives/`.
 - The TV-only opening video uses the stable filename `ashenreach-intro.mp4` under the Signal Theatre intro root. Keep it H.264/AAC MP4 for browser and television compatibility.
 - Edge Card TV frames use the stable names `edge-card-charge.png` and `edge-card-detonation.png`; both preserve the card-reveal chamber camera for a clean CSS crossfade.
-- Edge Card illustrations use their stable card IDs under `public/assets/cards/edge/`; phone cards and the TV burn reveal resolve them through the shared card-art catalog.
+- Edge Card faces use their stable card IDs under `public/assets/cards/edge/`; each
+  face carries the printed value above one original alternate-use icon. Phone
+  cards and the TV burn reveal resolve them through the shared card-art catalog.
 - Private phone inventory category emblems use `edge-cards`, `artifacts`, `equipment`, `followers`, `status`, and `progression` under `public/assets/riftfall/ui/inventory-categories/`.
 - Public Host TV shop-category emblems use `items`, `equipment`, `artifacts`, `route-aids`, `services`, and `sell` under `public/assets/riftfall/ui/shop/categories/`.
 - Card art generated from content uses the card ID as the PNG filename under `public/assets/cards/<type>/`.

@@ -46,11 +46,12 @@ export function PhoneEdgeCardHand({
               <div className="phone-edge-card__art" aria-hidden="true">
                 <CardArtImage cardType="edge" cardId={card.id} alt="" />
               </div>
-              <span>Edge</span>
-              <b>{card.edgeValue}</b>
-              <strong>{card.name}</strong>
-              <small>{card.abilityText}</small>
-              {card.tradeoffText ? <em>{card.tradeoffText}</em> : null}
+              <div className="phone-edge-card__details">
+                <span>Value {card.edgeValue} or icon ability</span>
+                <strong>{card.name}</strong>
+                <small>{card.abilityText}</small>
+                {card.tradeoffText ? <em>{card.tradeoffText}</em> : null}
+              </div>
               <div className="phone-edge-card__actions">
                 <button
                   type="button"
@@ -67,7 +68,7 @@ export function PhoneEdgeCardHand({
                     });
                   }}
                 >
-                  Commit {card.edgeValue} as die
+                  Use number {card.edgeValue} as die
                 </button>
                 {abilityTargets.map((target) => (
                   <button
@@ -87,7 +88,7 @@ export function PhoneEdgeCardHand({
                       });
                     }}
                   >
-                    {target.label}
+                    Use icon · {target.label}
                   </button>
                 ))}
               </div>

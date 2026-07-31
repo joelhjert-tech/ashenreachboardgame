@@ -55,19 +55,25 @@ const severityPrompt: Record<number, string> = {
 const negativePrompt =
   "readable text, logo, watermark, UI, dice, card frame, board game brand, copied or recognizable external board-game imagery, copyrighted character or symbol, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette";
 
-const edgeVisualPromptById: Record<string, string> = {
-  "edge-cinderline-break": "an armored frontier operative crosses a fractured furnace causeway while a cyan signal barrier intercepts a lethal impact and abandoned salvage burns away behind it",
-  "edge-black-relay-decoy": "a dead black-iron relay projects a cyan phantom operative that draws a massive hostile away while an unclaimed trophy seal crumbles into soot",
-  "edge-ashglass-overclock": "a cracked circular ashglass challenge engine is forced beyond tolerance, blazing cyan-white while amber fractures spread toward the armored hand on its control lever",
-  "edge-closed-circuit-aid": "two armored frontier operatives across a collapsed chasm are linked by a closed cyan signal circuit as the helper braces a field anchor",
-  "edge-cinder-requisition": "an armored operative feeds two battered brass victory seals into a field requisition press that converts them into glowing amber salvage ingots",
-  "edge-static-shunt": "an armored operative grounds one branch of a failed challenge engine's violent cyan discharge while the damaged machine and unresolved danger remain",
-  "edge-echo-recast": "a suspended faceted signal core shows a dissolving failed trajectory and one irreversible second trajectory inside concentric cyan echo rings",
-  "edge-isolated-channel": "a lone armored operative advances inside a narrow cyan signal cylinder while distorted helper silhouettes remain blocked outside",
-  "edge-quiet-ledger": "a hooded field broker uses a compact black-brass ledger mechanism to quietly divert one amber salvage coin from a gear transaction",
-  "edge-known-scar-pattern": "an armored operative matches cyan fracture tracery across trophy fragments to a weak point on a looming hostile silhouette",
-  "edge-low-signal-discipline": "a kneeling armored operative calmly steadies one weak cyan pulse between two brass conductor posts in a nearly dead chamber",
-  "edge-hazard-wake": "a dangerous industrial hazard remains anchored to a ruined tower while a temporary cyan suppression wake leaves a protected route around it"
+const edgeCardPromptPrefix =
+  "original Ashen Reach Edge Card face, straight-on 5:7 portrait game UI asset, one physical charcoal-iron frame split into two equal stacked panels, warm pale bone enamel upper field, black basalt lower field, thin scorched-brass divider, one small cold-cyan signal gem centered on the divider, clean premium layered metal and enamel, controlled midtones, subtle wear, minimal grain, perfectly centered and readable at phone size";
+
+const edgeCardNegativePrompt =
+  "words, letters, card name, rules text, extra numbers, people, scene illustration, map, location pin, skull, wings, weapon, faction mark, logo, watermark, copied or recognizable external board-game imagery, copyrighted character or symbol, clutter, heavy grain, blurry icon, crooked card, perspective view, cropped frame";
+
+const edgeAbilityGlyphPromptById: Record<string, string> = {
+  "edge-cinderline-break": "a broad signal shield intercepting one jagged incoming wound spike, with a small broken reward ring beneath the shield",
+  "edge-black-relay-decoy": "a central signal lure projecting a hollow phantom silhouette while threat chevrons bend away from a crossed empty trophy ring",
+  "edge-ashglass-overclock": "a triangular challenge gauge driven past its limit by an upward lightning pulse, with one controlled fracture at the base",
+  "edge-closed-circuit-aid": "two equal signal nodes joined by one complete closed circuit loop, with a bright shared pulse at the center",
+  "edge-cinder-requisition": "a cracked trophy seal entering a compact converter and emerging as two clean salvage ingots",
+  "edge-static-shunt": "a damaged signal line dividing into two bypass paths around a fractured central node and reconnecting",
+  "edge-echo-recast": "two opposing circular arrows orbiting one faceted die-like diamond with two small pips",
+  "edge-isolated-channel": "one central signal node enclosed in a sealed vertical channel while two outside helper nodes are stopped by barriers",
+  "edge-quiet-ledger": "an open ledger frame containing one salvage coin with a clean cost wedge removed",
+  "edge-known-scar-pattern": "three cracked trophy fragments aligned into one known hostile pattern inside a precise targeting ring",
+  "edge-low-signal-discipline": "one weak low pulse rising through a restrained step into two stable signal nodes held between conductor rails",
+  "edge-hazard-wake": "an anchored hazard triangle crossed by one horizontal damping wave inside an open containment ring"
 };
 
 type PromptLike = {
@@ -206,7 +212,7 @@ function buildPromptEntry(
     outputPath: getCardArtOutputPath(cardType, cardId, threatLane),
     fallbackPath: getCardFallbackArtPath(cardType),
     prompt,
-    negativePrompt,
+    negativePrompt: cardType === "edge" ? edgeCardNegativePrompt : negativePrompt,
     usage
   };
 }
@@ -444,14 +450,12 @@ function buildEdgePrompt(card: {
   tradeoffText: string | null;
 }): string {
   return [
-    promptPrefix,
-    "original Ashen Reach Edge Card scene, tactical intervention captured at the decisive instant",
-    edgeVisualPromptById[card.id] ?? `a decisive tactical intervention representing ${card.name}`,
-    "clean premium painterly surfaces, raised midtones, readable black armor, strong subject separation, low grain, minimal airborne ash",
-    "charcoal iron, scorched brass, luminous cyan signal energy, restrained amber cost accent",
-    `Edge value ${card.edgeValue}, ${sanitizeSentence(card.abilityText)}`,
-    card.tradeoffText ? sanitizeSentence(card.tradeoffText) : "precise tactical advantage without an additional cost",
-    "clear focal hierarchy that remains readable at small phone-card size"
+    edgeCardPromptPrefix,
+    `upper field contains only one enormous black numeral \"${card.edgeValue}\"`,
+    `lower field contains only one centered pale-bone emblem: ${edgeAbilityGlyphPromptById[card.id] ?? `an original tactical emblem representing ${card.name}`}`,
+    "the lower emblem is a simple bold icon rather than a scene",
+    `text verbatim: only the single numeral \"${card.edgeValue}\"; no words and no other numbers`,
+    "preserve clear separation between the number use and icon ability"
   ].join(", ");
 }
 

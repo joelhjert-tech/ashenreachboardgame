@@ -122,11 +122,7 @@ export function SignalEdgeCardBurst({
             <div className="signal-edge-burst__face-art" aria-hidden="true">
               <CardArtImage cardType="edge" cardId={activePlay.cardId} quality="full" alt="" />
             </div>
-            <div className="signal-edge-burst__face-veil" aria-hidden="true" />
-            <span>Edge Card</span>
-            <strong>{activePlay.edgeValue}</strong>
-            <h1 id="signal-edge-burst-title">{activePlay.cardName}</h1>
-            <p>{activePlay.mode === "ability" ? "Ability activated" : "One die locked"}</p>
+            <h1 id="signal-edge-burst-title" className="signal-edge-burst__sr-only">{activePlay.cardName}</h1>
           </div>
         </div>
       </article>

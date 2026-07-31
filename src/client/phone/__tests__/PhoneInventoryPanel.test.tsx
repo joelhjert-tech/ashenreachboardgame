@@ -769,7 +769,7 @@ describe("PhoneInventoryPanel", () => {
     );
 
     const edgeHand = screen.getByLabelText("Private Edge Card hand");
-    fireEvent.click(within(edgeHand).getByRole("button", { name: /commit 4 as die/i }));
+    fireEvent.click(within(edgeHand).getByRole("button", { name: /use number 4 as die/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "PLAY_EDGE_CARD",
       seatId: "seat-1",

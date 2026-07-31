@@ -54,7 +54,6 @@
 }
 
 .signal-edge-burst__header span,
-.signal-edge-burst__card-face > span,
 .signal-edge-burst__result > span {
   color: var(--edge-cyan);
   font-size: clamp(.65rem, .8vw, .9rem);
@@ -69,7 +68,7 @@
 
 .signal-edge-burst__card {
   width: min(24vw, 19rem);
-  aspect-ratio: 2 / 3;
+  aspect-ratio: 5 / 7;
   perspective: 1400px;
   opacity: 0;
   transform: translateY(48vh) scale(.55) rotateZ(-4deg);
@@ -105,19 +104,12 @@
 
 .signal-edge-burst__card-face {
   position: relative;
-  grid-template-rows: auto 1fr auto auto;
-  gap: .6rem;
-  padding: 1.2rem;
-  text-align: center;
+  padding: 0;
   transform: rotateY(180deg);
-  background:
-    radial-gradient(circle at 50% 40%, rgb(57 225 237 / .32), transparent 37%),
-    repeating-radial-gradient(circle at 50% 40%, transparent 0 1.2rem, rgb(109 247 255 / .08) 1.25rem 1.32rem),
-    linear-gradient(160deg, #102127, #03080b 62%);
+  background: #020405;
 }
 
-.signal-edge-burst__face-art,
-.signal-edge-burst__face-veil {
+.signal-edge-burst__face-art {
   position: absolute;
   inset: 0;
 }
@@ -129,46 +121,19 @@
 }
 
 .signal-edge-burst__face-art > .artwork-frame > img {
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
 }
 
-.signal-edge-burst__face-veil {
-  z-index: 1;
-  background:
-    linear-gradient(180deg, rgb(2 7 9 / .7), transparent 22% 52%, rgb(2 7 9 / .92) 78%),
-    radial-gradient(circle at 50% 44%, transparent 24%, rgb(1 5 7 / .42) 76%);
-}
-
-.signal-edge-burst__card-face > span,
-.signal-edge-burst__card-face > strong,
-.signal-edge-burst__card-face > h1,
-.signal-edge-burst__card-face > p {
-  position: relative;
-  z-index: 2;
-}
-
-.signal-edge-burst__card-face strong {
-  align-self: end;
-  color: #efffff;
-  font: 850 clamp(5rem, 10vw, 10rem)/.75 var(--font-display);
-  text-shadow: 0 0 1.2rem var(--edge-cyan);
-}
-
-.signal-edge-burst__card-face h1 {
-  margin: 0;
-  font: 800 clamp(1rem, 1.7vw, 1.7rem)/1.02 var(--font-display);
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-
-.signal-edge-burst__card-face p {
-  margin: 0;
-  color: #a9bec1;
-  font-size: .78rem;
-  font-weight: 900;
-  letter-spacing: .12em;
-  text-transform: uppercase;
+.signal-edge-burst__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .signal-edge-burst__shockwave {

@@ -52,7 +52,7 @@ def capture() -> None:
             """() => [...document.querySelectorAll('.tv-preview img')]
                 .every((image) => image.complete && image.naturalWidth > 0)"""
         )
-        tv.locator('[data-card="Echo Recast"]').click()
+        tv.locator('[data-card="Static Shunt"]').click()
         tv.locator(".phone-confirm").click()
         tv.locator("#tv-preview").wait_for(state="visible")
         tv.wait_for_function(
@@ -77,8 +77,7 @@ def capture() -> None:
                     document.documentElement.scrollWidth > document.documentElement.clientWidth,
                 canvasCount: document.querySelectorAll('canvas').length,
                 abilityDisabled: document.querySelector('#ability-mode')?.disabled,
-                artLoaded: [...document.querySelectorAll('.edge-card__art')]
-                    .every((image) => image.complete && image.naturalWidth > 0)
+                generatedFaces: document.querySelectorAll('.edge-card__generated-face').length
             })"""
         )
         mobile_metrics = mobile.evaluate(
@@ -87,8 +86,11 @@ def capture() -> None:
                     document.documentElement.scrollWidth > document.documentElement.clientWidth,
                 phoneTitle: document.querySelector('#phone-title')?.textContent,
                 previewEnabled: !document.querySelector('.phone-confirm')?.disabled,
-                artLoaded: document.querySelector('#phone-art')?.complete &&
-                    document.querySelector('#phone-art')?.naturalWidth > 0
+                glyphPresent: Boolean(document.querySelector('#phone-ability-glyph svg')),
+                generatedCardLoaded:
+                    !document.querySelector('#phone-generated-card')?.hidden &&
+                    document.querySelector('#phone-generated-card')?.complete &&
+                    document.querySelector('#phone-generated-card')?.naturalWidth > 0
             })"""
         )
         tv_metrics = tv.evaluate(
@@ -108,18 +110,19 @@ def capture() -> None:
         browser.close()
 
     assert desktop_metrics == {
-        "cards": 6,
+        "cards": 12,
         "selected": 1,
         "horizontalOverflow": False,
         "canvasCount": 0,
         "abilityDisabled": False,
-        "artLoaded": True,
+        "generatedFaces": 12,
     }, desktop_metrics
     assert mobile_metrics == {
         "horizontalOverflow": False,
         "phoneTitle": "Static Shunt",
         "previewEnabled": True,
-        "artLoaded": True,
+        "glyphPresent": True,
+        "generatedCardLoaded": True,
     }, mobile_metrics
     assert tv_metrics == {
         "stage": "result",
@@ -127,7 +130,7 @@ def capture() -> None:
         "images": [
             {"loaded": True, "width": 1672, "height": 941},
             {"loaded": True, "width": 1672, "height": 941},
-            {"loaded": True, "width": 1086, "height": 1448},
+            {"loaded": True, "width": 1054, "height": 1492},
         ],
         "canvasCount": 0,
     }, tv_metrics

@@ -44,8 +44,8 @@ describe("PhoneEdgeCardHand", () => {
     expect(screen.getByText("Edge Cards")).toBeInTheDocument();
     expect(document.querySelector<HTMLImageElement>(".phone-edge-card__art img"))
       .toHaveAttribute("src", "/assets/cards/edge/edge-echo-recast.phone.webp");
-    expect(screen.getByRole("button", { name: /commit 4 as die/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /reroll one die/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /use number 4 as die/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /use icon.*reroll one die/i })).toBeDisabled();
     expect(screen.getByText("1/2")).toBeInTheDocument();
   });
 
@@ -67,7 +67,7 @@ describe("PhoneEdgeCardHand", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /commit 4 as die/i }));
+    fireEvent.click(screen.getByRole("button", { name: /use number 4 as die/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "PLAY_EDGE_CARD",
       seatId: "seat-1",
@@ -104,7 +104,7 @@ describe("PhoneEdgeCardHand", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Reroll die 2 (1)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Use icon · Reroll die 2 (1)" }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "PLAY_EDGE_CARD",
       seatId: "seat-1",

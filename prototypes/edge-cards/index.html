@@ -30,10 +30,10 @@
       <section class="hero">
         <div class="hero__copy">
           <p class="eyebrow">Private tactical hand · server awarded</p>
-          <h1>Draw blind.<br /><em>Burn the certainty.</em></h1>
+          <h1>Read the number.<br /><em>See the other move.</em></h1>
           <p class="hero__lede">
-            Each player starts with one random Edge Card. Commit its hidden value
-            or activate its precisely timed ability; the shared screen reveals and burns the signal.
+            The revised face makes both uses visible at a glance: lock the upper number
+            as one die, or burn the card for the original ability glyph below it.
           </p>
         </div>
 
@@ -75,11 +75,11 @@
           <div class="mode-key">
             <div>
               <span class="mode-key__icon mode-key__icon--signal" aria-hidden="true"></span>
-              <p><strong>Commit</strong> Lock one of the upcoming two dice at the card value.</p>
+              <p><strong>Number</strong> Lock one of the upcoming two dice at the printed value.</p>
             </div>
             <div>
               <span class="mode-key__icon mode-key__icon--signal" aria-hidden="true"></span>
-              <p><strong>Ability</strong> Activate only in the private timing window enabled by the server.</p>
+              <p><strong>Glyph</strong> The lower symbol identifies the card's other-use ability.</p>
             </div>
             <div>
               <span class="mode-key__icon mode-key__icon--brass" aria-hidden="true"></span>
@@ -95,8 +95,8 @@
         <section class="deck-stage" aria-labelledby="deck-title">
           <div class="deck-stage__header">
             <div>
-              <p class="eyebrow">Calibration spread</p>
-              <h2 id="deck-title">Six value samples</h2>
+              <p class="eyebrow">Face-system check</p>
+              <h2 id="deck-title">Twelve dual-use cards</h2>
             </div>
             <div class="value-filter" role="group" aria-label="Filter cards by Edge value">
               <button type="button" class="is-active" data-filter="all">All</button>
@@ -125,35 +125,42 @@
             </div>
 
             <div class="phone-prompt">
-              <p id="phone-timing">Before your roll</p>
+              <p>Choose how to burn this card</p>
               <h2 id="phone-title">Echo Recast</h2>
               <span id="phone-band" class="band-badge">Private reserve</span>
             </div>
 
-            <img
-              id="phone-art"
-              class="phone-edge-art"
-              src="/assets/cards/edge/edge-echo-recast.phone.webp"
-              alt=""
-            />
-
-            <div class="phone-edge-value">
-              <span id="phone-value-label">Commit value</span>
-              <strong id="phone-value">4</strong>
-              <small id="phone-value-note">No explosion · no reroll</small>
+            <div id="phone-edge-face" class="phone-edge-face" data-active-mode="commit">
+              <img
+                id="phone-generated-card"
+                class="phone-edge-face__generated"
+                src="/assets/cards/edge/edge-static-shunt.phone.webp"
+                alt=""
+                aria-hidden="true"
+                hidden
+              />
+              <div class="phone-edge-face__number">
+                <strong id="phone-value">4</strong>
+              </div>
+              <span class="phone-edge-face__divider" aria-hidden="true"></span>
+              <div class="phone-edge-face__ability">
+                <span id="phone-ability-glyph" class="phone-edge-face__glyph" aria-hidden="true"></span>
+              </div>
             </div>
 
             <div class="phone-choice" role="group" aria-label="Preview Edge Card mode">
-              <button id="commit-mode" class="is-active" type="button">Commit 4</button>
-              <button id="ability-mode" type="button">Use ability</button>
+              <button id="commit-mode" class="is-active" type="button">Use number 4</button>
+              <button id="ability-mode" type="button">Use icon ability</button>
             </div>
 
             <div class="phone-copy">
-              <span id="phone-mode-label">COMMIT MODE</span>
+              <span id="phone-mode-label">NUMBER USE</span>
+              <strong id="phone-ability-label">Reroll one die</strong>
+              <small id="phone-timing" class="phone-copy__timing">Before an eligible roll</small>
               <p id="phone-ability">
                 Use 4 as one die in your next enemy battle or Hazard Challenge.
               </p>
-              <small id="phone-tradeoff">The committed result cannot explode or be rerolled.</small>
+              <small id="phone-tradeoff">The locked result cannot explode or be rerolled.</small>
             </div>
 
             <button class="phone-confirm" type="button">
