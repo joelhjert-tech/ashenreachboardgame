@@ -236,6 +236,30 @@ describe("SignalTheatreHost", () => {
     expect(mission).not.toHaveTextContent(/objective|reward:|contract id/i);
   });
 
+  it("shows a public deck draw in the card-flip theatre", () => {
+    renderSignal(makePatch({
+      movementPlanner: null,
+      publicCardReveal: {
+        id: "public-card:anomaly:1",
+        revision: 16,
+        kind: "draw",
+        category: "anomaly",
+        title: "Glasswake Chorus",
+        summary: "The relay sings with a borrowed voice.",
+        sourceLabel: "Anomaly deck",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Nera",
+        visibility: "public",
+        artType: "anomaly",
+        artCardId: "glasswake-chorus"
+      }
+    }, 16));
+
+    expect(screen.getByTestId("signal-card-reveal")).toHaveAttribute("data-card-category", "anomaly");
+    expect(screen.getByRole("heading", { name: "Glasswake Chorus" })).toBeVisible();
+    expect(screen.queryByText(/private contract|scar|affliction/i)).not.toBeInTheDocument();
+  });
+
   it("displays only server-authored totals without exposing the arithmetic breakdown", () => {
     const rendered = renderSignal(makePatch({
       movementPlanner: null,

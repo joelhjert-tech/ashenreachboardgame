@@ -507,6 +507,43 @@ export interface ResultDelta {
   severity: ResultDeltaSeverity;
 }
 
+export type CardRevealKind = "draw" | "reward";
+export type CardRevealCategory =
+  | "anomaly"
+  | "artifact"
+  | "escalation"
+  | "contract"
+  | "scar"
+  | "affliction"
+  | "equipment"
+  | "follower";
+export type CardRevealArtType =
+  | "contract"
+  | "anomaly"
+  | "artifact"
+  | "equipment"
+  | "follower"
+  | "scar"
+  | "escalation";
+
+/** Presentation-safe card identity emitted by the authoritative server. */
+export interface CardRevealPresentation {
+  id: string;
+  revision: number;
+  kind: CardRevealKind;
+  category: CardRevealCategory;
+  title: string;
+  summary: string;
+  sourceLabel: string;
+  actorSeatId: string | null;
+  actorDisplayName: string;
+  visibility: "public" | "owner";
+  artType: CardRevealArtType | null;
+  artCardId: string | null;
+  detail?: string | null;
+  die?: number | null;
+}
+
 export interface SectorNode {
   id: string;
   name: string;
@@ -1481,6 +1518,8 @@ export interface PublicPatchPayload {
   rivalryAgendaCompletion?: PublicRivalryAgendaCompletion | null;
   rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;
   publicResultDeltas?: ResultDelta[];
+  /** Public, server-authored card presentation. It never contains owner-only card text. */
+  publicCardReveal?: CardRevealPresentation | null;
   activeResolution?: ActiveResolution | null;
   battlePresentation?: BattlePresentation | null;
   edgeCardPlay?: PublicEdgeCardPlay | null;
@@ -1688,6 +1727,8 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   readyDisabledReason?: string | null;
   privateRivalry?: PrivateRivalryPayload | null;
   playerResultDeltas?: ResultDelta[];
+  /** Owner-only card presentation for newly received private cards and rewards. */
+  privateCardReveal?: CardRevealPresentation | null;
   soloReroll?: {
     available: boolean;
     charges: number;

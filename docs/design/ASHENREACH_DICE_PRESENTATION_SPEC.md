@@ -102,6 +102,12 @@ dice remain separate and labelled. Fixed-difficulty tests do not fabricate an
 opponent die. Raw totals, modifier sources, final totals, target, and outcome use
 the existing auditable P3 arithmetic.
 
+Hazards, Anomalies, sector tests, Tile Challenges, and movement-approach checks
+use the same authoritative face reveal as battles. On TV the operative dice fly
+into the result chamber while the authored fixed target remains static. On phone
+the result gate shows the ordered server faces before the consequence. A seen
+result settles immediately after reconnect instead of replaying its tumble.
+
 ## Multi-die and rerolls
 
 Every die keeps its projected order and a text label (`Die 1`, `Die 2`, or a

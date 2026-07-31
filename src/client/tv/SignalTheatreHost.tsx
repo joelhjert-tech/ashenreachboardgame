@@ -19,6 +19,7 @@ import { OperativeChessPiece } from "./OperativeChessPiece.js";
 import { SignalActionCoin, type SignalActionCoinKind } from "./SignalActionCoin.js";
 import {
   buildSignalCardRevealModel,
+  buildSignalPublicCardRevealModel,
   isSignalCardRevealStage,
   SignalCardReveal
 } from "./SignalCardReveal.js";
@@ -320,9 +321,19 @@ export function SignalTheatreHost({
       ? null
     : getSignalSectorResolutionDevFixture(search, payload)
       ?? buildSignalSectorResolutionModel(payload);
-  const cardReveal = isSignalCardRevealStage(sectorResolution)
+  const encounterCardReveal = isSignalCardRevealStage(sectorResolution)
     ? buildSignalCardRevealModel(sectorResolution)
     : null;
+  const revealActorSectorId = payload.publicCardReveal?.actorSeatId
+    ? payload.players.find((player) => player.seatId === payload.publicCardReveal?.actorSeatId)?.sectorId ?? null
+    : null;
+  const publicCardReveal = payload.publicCardReveal?.visibility === "public"
+    ? buildSignalPublicCardRevealModel(
+        payload.publicCardReveal,
+        getBoardSpace(revealActorSectorId ?? "")?.name ?? "Ashen Reach"
+      )
+    : null;
+  const cardReveal = encounterCardReveal ?? (sectorResolution ? null : publicCardReveal);
   const missionSelectionActive = !youtubeLayoutFixture && payload.pendingMissionSelectionStatus?.status === "awaitingSelection";
   const missionOwner = missionSelectionActive
     ? payload.seats.find((seat) => seat.seatId === payload.pendingMissionSelectionStatus?.ownerSeatId) ?? null

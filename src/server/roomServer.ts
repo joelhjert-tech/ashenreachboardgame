@@ -14580,11 +14580,11 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
         sign: "neutral",
         targetScope: "personal",
         targetSeatId: seatId,
-        visibility: "public",
+        visibility: "ownerPrivate",
         source,
         reason: "Affliction reveal",
-        publicText: typeof entry.publicSummary === "string" ? entry.publicSummary : `Affliction drawn: ${afflictionName}.`,
-        privateText: typeof entry.privateSummary === "string" ? entry.privateSummary : undefined,
+        publicText: "An operative received a private Affliction.",
+        privateText: typeof entry.privateSummary === "string" ? entry.privateSummary : `Affliction drawn: ${afflictionName}.`,
         severity: "danger"
       }));
 
@@ -14597,10 +14597,11 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
           sign: "neutral",
           targetScope: "personal",
           targetSeatId: seatId,
-          visibility: "public",
+          visibility: "ownerPrivate",
           source,
           reason: "Immediate Affliction resolved",
-          publicText: `${afflictionName} resolved and flipped facedown.`,
+          publicText: "A private Affliction resolved and flipped facedown.",
+          privateText: `${afflictionName} resolved and flipped facedown.`,
           severity: "neutral"
         }));
       }
@@ -15015,6 +15016,272 @@ function buildSoloRerollProjection(state: GameState, seatId: string): { availabl
     available,
     charges
   };
+}
+
+type CardRevealProjection = import("../client/shared/types.js").CardRevealPresentation;
+
+function revealActorName(state: GameState, seatId: string | null): string {
+  if (!seatId) return "The expedition";
+  return state.seats.find((seat) => seat.seatId === seatId)?.displayName
+    ?? state.players.find((player) => player.seatId === seatId)?.character.name
+    ?? "An operative";
+}
+
+function revealEventId(entry: Record<string, unknown>, fallback: string): string {
+  return typeof entry.createdAt === "string" && entry.createdAt.length > 0
+    ? entry.createdAt
+    : fallback;
+}
+
+function rewardGearReveal(
+  state: GameState,
+  seatId: string | null,
+  gear: Partial<GearItem> & { id: string; name: string },
+  eventId: string,
+  sourceLabel: string,
+  visibility: "public" | "owner"
+): CardRevealProjection {
+  const artifact = gear.tier === "artifact" || gear.id.startsWith("artifact-");
+  const artCardId = artifact && !gear.id.startsWith("artifact-") ? `artifact-${gear.id}` : gear.id;
+  const bonus = gear.statBonus
+    ? `+${gear.statBonus.amount} ${CHALLENGE_LABELS[gear.statBonus.stat]}`
+    : gear.activeText ?? gear.flavor ?? "Added to the operative inventory.";
+  return {
+    id: `card-reveal:gear:${eventId}:${gear.id}`,
+    revision: state.sequence,
+    kind: "reward",
+    category: "equipment",
+    title: gear.name,
+    summary: bonus,
+    sourceLabel,
+    actorSeatId: seatId,
+    actorDisplayName: revealActorName(state, seatId),
+    visibility,
+    artType: artifact ? "artifact" : "equipment",
+    artCardId
+  };
+}
+
+function rewardFollowerReveal(
+  state: GameState,
+  seatId: string | null,
+  follower: Partial<Follower> & { id: string; name: string },
+  eventId: string,
+  sourceLabel: string,
+  visibility: "public" | "owner"
+): CardRevealProjection {
+  const artCardId = follower.artCardId ?? follower.id;
+  return {
+    id: `card-reveal:follower:${eventId}:${follower.id}`,
+    revision: state.sequence,
+    kind: "reward",
+    category: "follower",
+    title: follower.name,
+    summary: follower.text ?? follower.flavor ?? "Joined the operative's route.",
+    sourceLabel,
+    actorSeatId: seatId,
+    actorDisplayName: revealActorName(state, seatId),
+    visibility,
+    artType: artCardId.startsWith("artifact-") ? "artifact" : "follower",
+    artCardId
+  };
+}
+
+function rewardRevealFromEffect(
+  state: GameState,
+  seatId: string | null,
+  effect: unknown,
+  eventId: string,
+  sourceLabel: string,
+  visibility: "public" | "owner"
+): CardRevealProjection | null {
+  if (!effect || typeof effect !== "object") return null;
+  const entry = effect as Record<string, unknown>;
+  if (entry.type === "sequence" && Array.isArray(entry.effects)) {
+    for (let index = entry.effects.length - 1; index >= 0; index -= 1) {
+      const reveal = rewardRevealFromEffect(state, seatId, entry.effects[index], `${eventId}:${index}`, sourceLabel, visibility);
+      if (reveal) return reveal;
+    }
+  }
+  if (entry.type === "gain_gear" && typeof entry.gearId === "string") {
+    const authored = entry.gear && typeof entry.gear === "object"
+      ? entry.gear as GearItem
+      : PROJECTION_GEAR_CATALOG.get(entry.gearId);
+    if (authored) return rewardGearReveal(state, seatId, authored, eventId, sourceLabel, visibility);
+  }
+  if (entry.type === "gain_follower" && typeof entry.followerId === "string") {
+    const authored = entry.follower && typeof entry.follower === "object"
+      ? entry.follower as Follower
+      : PROJECTION_FOLLOWER_CATALOG.get(entry.followerId);
+    if (authored) return rewardFollowerReveal(state, seatId, authored, eventId, sourceLabel, visibility);
+  }
+  return null;
+}
+
+function recentRewardReveal(
+  state: GameState,
+  ownerSeatId: string | null,
+  visibility: "public" | "owner"
+): CardRevealProjection | null {
+  const recent = state.eventLog.slice(-12);
+  for (let index = recent.length - 1; index >= 0; index -= 1) {
+    const entry = recent[index] as Record<string, unknown>;
+    const seatId = typeof entry.seatId === "string" ? entry.seatId : null;
+    if (ownerSeatId && seatId !== ownerSeatId) continue;
+    const eventId = revealEventId(entry, `${state.sequence}:${index}`);
+    if (entry.type === "SHOP_PURCHASE_RESOLVED" && entry.gainedGear && typeof entry.gainedGear === "object") {
+      return rewardGearReveal(state, seatId, entry.gainedGear as GearItem, eventId, "Equipment acquired", visibility);
+    }
+    if (entry.type === "SHOP_FOLLOWER_PURCHASE_RESOLVED" && entry.gainedFollower && typeof entry.gainedFollower === "object") {
+      return rewardFollowerReveal(state, seatId, entry.gainedFollower as Follower, eventId, "Follower recruited", visibility);
+    }
+    if (entry.type === "MISSION_RELIC_CLAIMED" && entry.artifact && typeof entry.artifact === "object") {
+      return rewardGearReveal(state, seatId, entry.artifact as GearItem, eventId, "Mission reward claimed", visibility);
+    }
+    if (entry.type === "COMPLETE_CONTRACT" && entry.contract && typeof entry.contract === "object") {
+      const reward = (entry.contract as ContractCard).reward;
+      for (let rewardIndex = reward.effects.length - 1; rewardIndex >= 0; rewardIndex -= 1) {
+        const reveal = rewardRevealFromEffect(
+          state,
+          seatId,
+          reward.effects[rewardIndex],
+          `${eventId}:contract:${rewardIndex}`,
+          "Contract reward",
+          visibility
+        );
+        if (reveal) return reveal;
+      }
+    }
+    if (entry.type === "SHOP_SERVICE_RESOLVED" && entry.result && typeof entry.result === "object") {
+      const gainedGear = (entry.result as Record<string, unknown>).gainGear;
+      if (gainedGear && typeof gainedGear === "object") {
+        return rewardGearReveal(state, seatId, gainedGear as GearItem, eventId, "Service reward", visibility);
+      }
+    }
+    const reveal = rewardRevealFromEffect(state, seatId, entry.effect, eventId, "Encounter reward", visibility);
+    if (reveal) return reveal;
+  }
+  return null;
+}
+
+function buildPublicCardReveal(state: GameState): CardRevealProjection | null {
+  const resolution = state.activeResolution;
+  const category = resolution?.card?.type;
+  if (
+    resolution?.card
+    && resolution.origin?.privacy !== "owner"
+    && (category === "anomaly" || category === "artifact" || category === "escalation")
+  ) {
+    return {
+      id: `card-reveal:public:${resolution.id}`,
+      revision: state.sequence,
+      kind: "draw",
+      category,
+      title: resolution.card.title,
+      summary: resolution.outcome?.text ?? resolution.card.flavor ?? "The revealed card resolves immediately.",
+      sourceLabel: `${category[0]!.toUpperCase()}${category.slice(1)} deck`,
+      actorSeatId: resolution.playerId,
+      actorDisplayName: revealActorName(state, resolution.playerId),
+      visibility: "public",
+      artType: category,
+      artCardId: resolution.card.id,
+      detail: resolution.outcome?.effects.join(" ") ?? null
+    };
+  }
+  if (resolution || state.currentEncounter || state.pendingTileChallenge) return null;
+  return recentRewardReveal(state, null, "public");
+}
+
+function buildPrivateCardReveal(state: GameState, seatId: string): CardRevealProjection | null {
+  const resolution = state.activeResolution;
+  if (
+    resolution?.playerId === seatId
+    && resolution.card?.type === "contract"
+    && resolution.origin?.privacy === "owner"
+  ) {
+    return {
+      id: `card-reveal:private:${resolution.id}`,
+      revision: state.sequence,
+      kind: "draw",
+      category: "contract",
+      title: resolution.card.title,
+      summary: resolution.outcome?.text ?? resolution.card.flavor ?? "A private mission lead has been received.",
+      sourceLabel: "Private Contract draw",
+      actorSeatId: seatId,
+      actorDisplayName: revealActorName(state, seatId),
+      visibility: "owner",
+      artType: "contract",
+      artCardId: resolution.card.id,
+      detail: resolution.outcome?.effects.join(" ") ?? null
+    };
+  }
+
+  const recent = state.eventLog.slice(-12);
+  for (let index = recent.length - 1; index >= 0; index -= 1) {
+    const entry = recent[index] as Record<string, unknown>;
+    if (entry.seatId !== seatId) continue;
+    const eventId = revealEventId(entry, `${state.sequence}:${index}`);
+    if (entry.type === "AFFLICTION_DRAWN") {
+      const affliction = entry.affliction as AfflictionCard | undefined;
+      if (!affliction) continue;
+      return {
+        id: `card-reveal:affliction:${eventId}:${affliction.id}`,
+        revision: state.sequence,
+        kind: "draw",
+        category: "affliction",
+        title: affliction.name,
+        summary: affliction.rulesText,
+        sourceLabel: "Affliction drawn",
+        actorSeatId: seatId,
+        actorDisplayName: revealActorName(state, seatId),
+        visibility: "owner",
+        artType: null,
+        artCardId: null,
+        detail: `${affliction.trigger} · Severity ${affliction.severity}`,
+        die: typeof entry.die === "number" ? entry.die : null
+      };
+    }
+    if (entry.type === "SCAR_SELECTED" && typeof entry.scarId === "string") {
+      const scar = getScarCard(entry.scarId);
+      if (!scar) continue;
+      return {
+        id: `card-reveal:scar:${eventId}:${scar.id}`,
+        revision: state.sequence,
+        kind: "draw",
+        category: "scar",
+        title: scar.title,
+        summary: scar.burdenText,
+        sourceLabel: "Scar gained",
+        actorSeatId: seatId,
+        actorDisplayName: revealActorName(state, seatId),
+        visibility: "owner",
+        artType: "scar",
+        artCardId: scar.id,
+        detail: `Adaptation: ${scar.adaptationText}`
+      };
+    }
+    if (entry.type === "ACCEPT_CONTRACT") {
+      const contract = entry.contract as ContractCard | undefined;
+      if (!contract) continue;
+      return {
+        id: `card-reveal:contract:${eventId}:${contract.id}`,
+        revision: state.sequence,
+        kind: "draw",
+        category: "contract",
+        title: contract.name,
+        summary: contract.text,
+        sourceLabel: `${contract.factionGiver} Contract`,
+        actorSeatId: seatId,
+        actorDisplayName: revealActorName(state, seatId),
+        visibility: "owner",
+        artType: "contract",
+        artCardId: contract.id,
+        detail: contract.reward.displayText ?? contract.reward.completionText ?? null
+      };
+    }
+  }
+  if (resolution || state.currentEncounter || state.pendingTileChallenge) return null;
+  return recentRewardReveal(state, seatId, "owner");
 }
 
 type RivalryProjectionMode = Extract<InteractionMode, "rivalry" | "ruthless">;
@@ -16412,6 +16679,7 @@ export function createTvProjection(
   const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
   const shopEncounter = buildPublicShopEncounter(state, visiblePlayers);
   const publicResultDeltas = buildPublicResultDeltas(state, shopEncounter as Record<string, unknown> | null);
+  const publicCardReveal = buildPublicCardReveal(state);
   const matchProgress = buildMatchProgressPresentation(state, publicResultDeltas);
   const recentAbilityTriggers = state.eventLog
     .filter(
@@ -16753,6 +17021,7 @@ export function createTvProjection(
     rivalryAgendaCompletion: buildPublicRivalryAgendaCompletion(state),
     rivalryAgendaReveal: buildPublicRivalryAgendaReveal(state),
     publicResultDeltas,
+    publicCardReveal,
     activeResolution: projectActiveResolutionForViewer(state, null),
     battlePresentation: buildBattlePresentation(state, null),
     edgeCardPlay:
@@ -17065,6 +17334,7 @@ export function createPhoneProjection(
     };
   })();
   const phoneShopEncounter = buildPublicShopEncounter(state, state.players, seatId);
+  const privateCardReveal = buildPrivateCardReveal(state, seatId);
   const privateRivalry = buildPrivateRivalryProjection(state, player) as import("../client/shared/types.js").PrivateRivalryPayload | null;
   const ownerPrivateResult: import("../client/shared/types.js").OwnerPrivateMatchResult | null =
     state.status === "ended" && privateRivalry
@@ -17416,12 +17686,14 @@ export function createPhoneProjection(
     rivalryAgendaCompletion: publicProjection.rivalryAgendaCompletion,
     rivalryAgendaReveal: publicProjection.rivalryAgendaReveal,
     publicResultDeltas: publicProjection.publicResultDeltas,
+    publicCardReveal: publicProjection.publicCardReveal,
     playerResultDeltas: buildPlayerResultDeltas(
       state,
       seatId,
       (publicProjection.publicResultDeltas as ResultDelta[] | undefined) ?? [],
       publicProjection.shopEncounter as Record<string, unknown> | null
     ),
+    privateCardReveal,
     activeResolution: projectActiveResolutionForViewer(state, seatId),
     battlePresentation: buildBattlePresentation(state, seatId),
     shopEncounter: phoneShopEncounter,

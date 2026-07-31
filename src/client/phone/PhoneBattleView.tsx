@@ -535,6 +535,9 @@ export function PhoneBattleView({
           success={result === "success" ? true : result === "defeat" ? false : null}
           playerTotal={finalTotal}
           targetTotal={opponentTotal}
+          resolutionId={resolution?.id ?? identity ?? undefined}
+          dice={resolution?.roll?.dice ?? []}
+          modifierTotal={resolution?.roll?.modifierTotal ?? 0}
           outcomeTitle={outcome?.title ?? resultLabel}
           outcomeText={outcome?.text ?? outcomeFlavor ?? "The authoritative battle result is complete."}
           outcomeEffects={outcome?.effects ?? []}

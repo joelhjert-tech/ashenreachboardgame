@@ -1,10 +1,11 @@
-import { useState, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 import { getCharacterPortraitPath, getResultReadyGatePath } from "../shared/assetPaths.js";
 import type { ResultDelta } from "../shared/types.js";
+import { AuthoritativeDicePresentation, buildDice } from "../shared/AuthoritativeDicePresentation.js";
 
 export interface PhoneResultReadyGateProps {
   actorName: string;
@@ -21,6 +22,10 @@ export interface PhoneResultReadyGateProps {
   targetTotal: number | null;
   playerTotalLabel?: string;
   targetTotalLabel?: string;
+  resolutionId?: string;
+  dice?: number[];
+  modifierTotal?: number;
+  modifierLabel?: string;
   outcomeTitle: string;
   outcomeText: string;
   outcomeEffects: string[];
@@ -50,6 +55,10 @@ export function PhoneResultReadyGate({
   targetTotal,
   playerTotalLabel = "Your total",
   targetTotalLabel = "Challenge",
+  resolutionId,
+  dice = [],
+  modifierTotal = 0,
+  modifierLabel = "Modifiers",
   outcomeTitle,
   outcomeText,
   outcomeEffects,
@@ -58,6 +67,21 @@ export function PhoneResultReadyGate({
   onContinue
 }: PhoneResultReadyGateProps): ReactElement {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const diceRevealId = resolutionId && dice.length > 0
+    ? `${resolutionId}:${dice.join(",")}:${playerTotal ?? "-"}`
+    : null;
+  const diceSeenKey = diceRevealId ? `ashenreach:phone-result-dice-seen:${diceRevealId}` : null;
+  const animateDice = Boolean(
+    diceSeenKey
+    && typeof window !== "undefined"
+    && window.sessionStorage.getItem(diceSeenKey) !== "1"
+  );
+
+  useEffect(() => {
+    if (diceSeenKey && typeof window !== "undefined") {
+      window.sessionStorage.setItem(diceSeenKey, "1");
+    }
+  }, [diceSeenKey]);
   const outcomeTone = success === true ? "success" : success === false ? "defeat" : "neutral";
   const visibleChanges = [
     ...outcomeEffects,
@@ -145,6 +169,29 @@ export function PhoneResultReadyGate({
           <strong>{playerTotal ?? "—"}</strong>
         </div>
       </div>
+
+      {diceRevealId ? (
+        <AuthoritativeDicePresentation
+          key={diceRevealId}
+          className="phone-result-gate__dice"
+          compact
+          animateOnMount={animateDice}
+          model={{
+            id: resolutionId ?? diceRevealId,
+            revision: 0,
+            stage: "result",
+            context: "test",
+            actorName,
+            purpose: challengeTitle,
+            dice: buildDice(dice),
+            rawTotal: dice.reduce((total, die) => total + die, 0),
+            modifiers: modifierTotal !== 0 ? [{ label: modifierLabel, value: modifierTotal }] : [],
+            finalValue: playerTotal,
+            target: targetTotal,
+            outcome: success === null ? null : success ? "Success" : "Failure"
+          }}
+        />
+      ) : null}
 
       <section className="phone-result-gate__consequence" aria-label="Authoritative consequence">
         <div className="phone-result-gate__consequence-copy">

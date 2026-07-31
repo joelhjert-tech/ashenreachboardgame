@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SignalSectorResolutionModel } from "../signalSectorResolutionPresentation.js";
 import {
   buildSignalCardRevealModel,
+  buildSignalPublicCardRevealModel,
   isSignalCardRevealStage,
   SignalCardReveal
 } from "../SignalCardReveal.js";
@@ -88,6 +89,45 @@ describe("SignalCardReveal", () => {
 
     expect(screen.getByText("Joel must test Guile")).toBeInTheDocument();
     expect(screen.getByTestId("signal-card-reveal").style.getPropertyValue("--challenge-color")).toBe("#4FBF78");
+  });
+
+  it("reuses the card-flip theatre for public deck draws and acquired rewards", () => {
+    const draw = buildSignalPublicCardRevealModel({
+      id: "public-anomaly:1",
+      revision: 8,
+      kind: "draw",
+      category: "anomaly",
+      title: "Glasswake Chorus",
+      summary: "The relay sings with a borrowed voice.",
+      sourceLabel: "Anomaly deck",
+      actorSeatId: "seat-1",
+      actorDisplayName: "Joel",
+      visibility: "public",
+      artType: "anomaly",
+      artCardId: "glasswake-chorus"
+    }, "Ashwalk Bridge");
+    const first = render(<SignalCardReveal model={draw} forcedStage="ready" />);
+    expect(screen.getByText("The deck answers")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Glasswake Chorus" })).toBeVisible();
+    first.unmount();
+
+    const reward = buildSignalPublicCardRevealModel({
+      id: "reward:1",
+      revision: 9,
+      kind: "reward",
+      category: "equipment",
+      title: "Rift Anchor Spike",
+      summary: "+1 Forge",
+      sourceLabel: "Encounter reward",
+      actorSeatId: "seat-1",
+      actorDisplayName: "Joel",
+      visibility: "public",
+      artType: "equipment",
+      artCardId: "rift-anchor-spike"
+    }, "Ashwalk Bridge");
+    render(<SignalCardReveal model={reward} forcedStage="ready" />);
+    expect(screen.getByText("Reward secured")).toBeVisible();
+    expect(screen.getByText("Joel receives Rift Anchor Spike")).toBeVisible();
   });
 
   it("animates once and restores the stable reveal without replay", () => {

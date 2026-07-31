@@ -40,30 +40,34 @@ export function AuthoritativeDicePresentation({
   model,
   size = "phone",
   compact = false,
+  animateOnMount = false,
   className = ""
 }: {
   model: AuthoritativeDiceModel;
   size?: "phone" | "host";
   compact?: boolean;
+  /** Use only for a newly received authoritative result; restored results must leave this false. */
+  animateOnMount?: boolean;
   className?: string;
 }): ReactElement {
   const reducedMotion = useReducedMotion();
   const signature = resultSignature(model);
   const prior = useRef<{ id: string; signature: string | null }>({ id: model.id, signature });
-  const [animating, setAnimating] = useState(false);
+  const [animating, setAnimating] = useState(Boolean(animateOnMount && signature));
 
   useEffect(() => {
     const previous = prior.current;
     const isLiveReceipt = previous.id === model.id && previous.signature === null && signature !== null;
     prior.current = { id: model.id, signature };
-    if (!isLiveReceipt || reducedMotion) {
+    if (reducedMotion) {
       setAnimating(false);
       return;
     }
+    if (!isLiveReceipt && !animating) return;
     setAnimating(true);
     const timer = window.setTimeout(() => setAnimating(false), 980);
     return () => window.clearTimeout(timer);
-  }, [model.id, reducedMotion, signature]);
+  }, [animating, model.id, reducedMotion, signature]);
 
   const resultText = signature
     ? `${model.purpose}. ${model.dice.map((die) => `${die.role} ${die.value}`).join(", ")}. ${model.rawTotal !== null ? `Raw total ${model.rawTotal}. ` : ""}${model.finalValue !== null ? `Final value ${model.finalValue}.` : ""}`

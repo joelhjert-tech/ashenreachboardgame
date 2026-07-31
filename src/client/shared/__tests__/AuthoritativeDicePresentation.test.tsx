@@ -70,4 +70,12 @@ describe("AuthoritativeDicePresentation", () => {
     expect(screen.getByTestId("authoritative-dice-presentation").classList.contains("is-settled")).toBe(true);
     expect(screen.getByTestId("authoritative-dice-presentation").getAttribute("data-restored")).toBe("true");
   });
+
+  it("can animate a newly mounted authoritative result when the caller knows it is unseen", () => {
+    vi.useFakeTimers();
+    render(<AuthoritativeDicePresentation model={model()} animateOnMount />);
+    expect(screen.getByTestId("authoritative-dice-presentation").classList.contains("is-animating")).toBe(true);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(screen.getByTestId("authoritative-dice-presentation").classList.contains("is-settled")).toBe(true);
+  });
 });

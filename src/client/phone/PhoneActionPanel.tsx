@@ -947,6 +947,9 @@ function ActiveResolutionCard({
         success={resolution.roll?.success ?? null}
         playerTotal={resolution.roll?.finalTotal ?? null}
         targetTotal={resolution.roll?.target ?? resolution.battle?.difficulty ?? null}
+        resolutionId={resolution.id}
+        dice={resolution.roll?.dice ?? []}
+        modifierTotal={resolution.roll?.modifierTotal ?? 0}
         playerTotalLabel={resolution.source === "movement" ? "Player total" : undefined}
         targetTotalLabel={resolution.source === "movement" ? "Difficulty total" : undefined}
         outcomeTitle={outcome?.title ?? "Applying consequence"}
@@ -2960,6 +2963,9 @@ function PhoneMovePanel({
           success={approachSuccess}
           playerTotal={approachTotal}
           targetTotal={approachTarget}
+          resolutionId={approachResolution?.id}
+          dice={approachResolution?.roll?.dice ?? []}
+          modifierTotal={approachResolution?.roll?.modifierTotal ?? 0}
           playerTotalLabel="Player total"
           targetTotalLabel="Difficulty total"
           outcomeTitle={approachSuccess ? "Approach held" : "Approach setback"}

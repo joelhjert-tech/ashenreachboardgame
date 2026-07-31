@@ -15,6 +15,14 @@ Every card-like record is data interpreted by the server. A client may request a
 7. The owning system consumes, persists, resets, or recurs the record.
 8. Reconnect restores the stable state and does not repeat completed effects.
 
+## Reveal surfaces
+
+- TV card flips are limited to public Anomaly, Artifact, and Escalation draws, plus public-safe Equipment and Follower acquisition rewards.
+- Contract, selected Scar, and Affliction identity and rules are projected only to the owning phone.
+- Affliction result deltas are owner-private; the public state may report only that a private condition changed.
+- Every reveal uses a stable server-derived ID. Session-local seen markers suppress replay after reconnect, and reduced motion enters the readable final pose immediately.
+- Reveals are presentation only: dismissing or completing an animation never applies, delays, or acknowledges a gameplay effect.
+
 ## Family rules
 
 | Family | Trigger | Resolver | Persistence / cleanup | Visibility |

@@ -195,7 +195,7 @@ describe("SignalSectorResolution", () => {
     expect(rendered.container).not.toHaveTextContent(/Hollow Reflection|remaining use|reroll die/i);
   });
 
-  it("presents a Hazard as a total-only Trial Theatre confrontation", () => {
+  it("presents a Hazard with its authoritative dice cinema and fixed target", () => {
     const rendered = render(<SignalSectorResolution model={model({
       id: "hazard-review",
       mode: "sector-test",
@@ -236,6 +236,8 @@ describe("SignalSectorResolution", () => {
       "/assets/riftfall/ui/signal-theatre/stat-seals/guile.png"
     );
     expect(screen.getAllByText("Total")).toHaveLength(2);
+    expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-dice-cinema", "playing");
+    expect(screen.getByRole("img", { name: "Authoritative roll 7. Guile total 12." })).toBeVisible();
     expect(screen.queryByText("Base")).not.toBeInTheDocument();
     expect(screen.queryByText("Dice")).not.toBeInTheDocument();
   });

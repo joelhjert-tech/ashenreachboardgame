@@ -1231,6 +1231,8 @@ describe("PhoneActionPanel", () => {
     expect(within(result).getByTestId("phone-roll-result")).toHaveAccessibleName(
       "Player total 7, Difficulty total 7"
     );
+    expect(within(result).getByTestId("authoritative-dice-presentation")).toHaveClass("is-animating");
+    expect(within(result).getByLabelText("Die 1: 5")).toBeVisible();
     expect(within(result).getByAltText(/glassmere spindle location artwork/i)).toHaveAttribute(
       "src",
       "/assets/riftfall/environments/signal-theatre/sectors/glassmere-spindle.png"

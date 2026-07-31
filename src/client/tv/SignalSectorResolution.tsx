@@ -178,8 +178,7 @@ export function SignalSectorResolution({
     : null;
   const oppositionArt = oppositionArtPath(model);
   const resultVisible = model.outcomeLabel !== "RESOLVING";
-  const showDiceCinema = model.mode === "battle"
-    && !restored
+  const showDiceCinema = !restored
     && model.operative.rawDice.length > 0
     && model.operative.finalTotal !== null;
   const resolutionRole = model.mode === "battle"

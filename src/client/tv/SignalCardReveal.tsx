@@ -6,6 +6,7 @@ import {
   getSignalTheatreCardRevealPaths
 } from "../shared/assetPaths.js";
 import { ArtworkFrame } from "../shared/ArtworkFrame.js";
+import type { CardRevealPresentation } from "../shared/types.js";
 import type { SignalSectorResolutionModel } from "./signalSectorResolutionPresentation.js";
 import "./SignalCardReveal.css";
 
@@ -14,7 +15,8 @@ export type SignalCardRevealStage = "sealed" | "eject" | "turn" | "identify" | "
 export interface SignalCardRevealModel {
   id: string;
   title: string;
-  category: "Enemy" | "Hazard" | "Anomaly" | "Challenge";
+  category: "Enemy" | "Hazard" | "Anomaly" | "Challenge" | "Artifact" | "Escalation" | "Equipment" | "Follower";
+  revealKind: "draw" | "reward";
   sourceLabel: string;
   locationName: string;
   actorDisplayName: string;
@@ -60,6 +62,7 @@ export function buildSignalCardRevealModel(
     id: model.id,
     title: model.title,
     category,
+    revealKind: "draw",
     sourceLabel: model.mode === "tile-challenge"
       ? "Recurring sector challenge"
       : model.mode === "battle"
@@ -72,6 +75,28 @@ export function buildSignalCardRevealModel(
     statLabel: model.statLabel,
     artPath: artPathFor(model),
     restored: model.restored
+  };
+}
+
+export function buildSignalPublicCardRevealModel(
+  reveal: CardRevealPresentation,
+  locationName: string,
+  restored = false
+): SignalCardRevealModel {
+  const category = `${reveal.category[0]!.toUpperCase()}${reveal.category.slice(1)}` as SignalCardRevealModel["category"];
+  return {
+    id: reveal.id,
+    title: reveal.title,
+    category,
+    revealKind: reveal.kind,
+    sourceLabel: reveal.sourceLabel,
+    locationName,
+    actorDisplayName: reveal.actorDisplayName,
+    publicSummary: reveal.summary,
+    stat: "signal",
+    statLabel: reveal.kind === "reward" ? "Acquired" : "Revealed",
+    artPath: reveal.artType && reveal.artCardId ? getCardArtPath(reveal.artType, reveal.artCardId) : null,
+    restored
   };
 }
 
@@ -125,6 +150,7 @@ export function SignalCardReveal({
   }, [forcedStage, model.id, model.restored]);
 
   const actionVerb = model.category === "Enemy" ? "roll" : "test";
+  const isReward = model.revealKind === "reward";
   const themeStyle = getChallengeThemeStyle(model.stat) as CSSProperties;
 
   return (
@@ -154,18 +180,18 @@ export function SignalCardReveal({
           <strong>{model.locationName}</strong>
         </div>
         <div className="signal-card-reveal__heading">
-          <span>Authoritative encounter</span>
-          <h1>The deck answers</h1>
+          <span>{isReward ? "Authoritative acquisition" : "Authoritative encounter"}</span>
+          <h1>{isReward ? "Reward secured" : "The deck answers"}</h1>
         </div>
         <div className="signal-card-reveal__queue">
-          <span>Arrival queue</span>
-          <strong>Card revealed</strong>
+          <span>{isReward ? "Inventory relay" : "Arrival queue"}</span>
+          <strong>{isReward ? "Reward revealed" : "Card revealed"}</strong>
         </div>
       </header>
 
       <div className="signal-card-reveal__theatre">
         <aside className="signal-card-reveal__classification signal-card-reveal__classification--left">
-          <span>Drawn from</span>
+          <span>{isReward ? "Awarded by" : "Drawn from"}</span>
           <strong>{model.sourceLabel}</strong>
           <small>Server-confirmed</small>
         </aside>
@@ -200,7 +226,7 @@ export function SignalCardReveal({
         <aside className="signal-card-reveal__classification signal-card-reveal__classification--right">
           <span>Card type</span>
           <strong>{model.category}</strong>
-          <small>Resolve once before continuing</small>
+          <small>{isReward ? "Added by the server" : "Resolve once before continuing"}</small>
         </aside>
 
         <div className="signal-card-reveal__identity">
@@ -217,12 +243,12 @@ export function SignalCardReveal({
         </div>
         <div className="signal-card-reveal__command-copy">
           <span>What happens now</span>
-          <strong>{model.actorDisplayName} must {actionVerb} {model.statLabel}</strong>
-          <small>The authoritative result and consequences appear only after the roll.</small>
+          <strong>{isReward ? `${model.actorDisplayName} receives ${model.title}` : `${model.actorDisplayName} must ${actionVerb} ${model.statLabel}`}</strong>
+          <small>{isReward ? "The card is now available in the operative inventory." : "The authoritative result and consequences appear only after the roll."}</small>
         </div>
         <div className="signal-card-reveal__phone">
-          <span>Private control</span>
-          <strong>{actionVerb === "roll" ? "Roll" : "Test"} on player phone</strong>
+          <span>{isReward ? "Owner inventory" : "Private control"}</span>
+          <strong>{isReward ? "Review on player phone" : `${actionVerb === "roll" ? "Roll" : "Test"} on player phone`}</strong>
         </div>
       </footer>
     </section>

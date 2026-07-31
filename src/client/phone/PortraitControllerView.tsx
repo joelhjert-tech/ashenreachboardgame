@@ -41,6 +41,7 @@ import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
 import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
+import { PhoneCardReveal } from "./PhoneCardReveal.js";
 import { SignalPhoneIdentityRail } from "./SignalPhoneIdentityRail.js";
 import {
   SignalPhoneMoreHeading,
@@ -2305,6 +2306,7 @@ export function PortraitControllerView({
           />
         </nav> : null}
       </div>
+      <PhoneCardReveal reveal={patch?.privateCardReveal} />
     </section>
   );
 }
