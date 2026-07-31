@@ -1367,6 +1367,33 @@ export interface MatchProgressPresentation {
   allowedCommands: Array<"return_to_lobby" | "leave_room">;
 }
 
+export interface PublicEdgeCardPlay {
+  id: string;
+  actorSeatId: string;
+  actorDisplayName: string;
+  cardId: string;
+  cardName: string;
+  edgeValue: 1 | 2 | 3 | 4 | 5 | 6;
+  mode: "commit-value";
+  resolutionId: string;
+  publicSummary: string;
+  createdAt: string;
+}
+
+export interface PhoneEdgeCardHand {
+  cards: Array<{
+    id: string;
+    name: string;
+    edgeValue: 1 | 2 | 3 | 4 | 5 | 6;
+    commitText: string;
+  }>;
+  limit: number;
+  awardRule: string;
+  canCommit: boolean;
+  disabledReason: string | null;
+  resolutionId: string | null;
+}
+
 export interface PublicPatchPayload {
   status: SessionStatus;
   sessionMode: SessionMode;
@@ -1442,6 +1469,7 @@ export interface PublicPatchPayload {
   publicResultDeltas?: ResultDelta[];
   activeResolution?: ActiveResolution | null;
   battlePresentation?: BattlePresentation | null;
+  edgeCardPlay?: PublicEdgeCardPlay | null;
   shopEncounter?: PublicShopEncounterState | null;
   movementPlanner?: PublicMovementPlannerState | null;
   innerApproach?: PublicInnerApproachState | null;
@@ -1650,6 +1678,7 @@ export interface PhonePatchPayload extends PublicPatchPayload {
     available: boolean;
     charges: number;
   };
+  edgeHand?: PhoneEdgeCardHand;
   boundNemesis?: NemesisChampionSummary | null;
   crownKeyFragments?: number;
   eligibleNemesisAssistSeatIds?: string[];
@@ -1719,6 +1748,7 @@ export interface PhonePatchPayload extends PublicPatchPayload {
     afflictionId: "blood-fury" | "future-sickness" | "bile-spit";
     kind: "battleReroll" | "turnReroll" | "arrivalWound";
     originalRoll: number[];
+    lockedDieIndices?: number[];
     targetSeatId: string | null;
     targetName: string | null;
   } | null;
@@ -1906,6 +1936,13 @@ export type ClientIntent =
       type: "CHECK_REQUESTED";
       seatId: string;
       stat: Stat;
+    }
+  | {
+      type: "PLAY_EDGE_CARD";
+      seatId: string;
+      cardId: string;
+      resolutionId: string;
+      mode: "commit-value";
     }
   | {
       type: "START_TILE_ENCOUNTER";

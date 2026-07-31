@@ -20,6 +20,7 @@ Lose if escalation reaches the collapse threshold for the current session mode.
 3. Join available seats from phones.
 4. Start the session from the host screen.
 5. The default scenario is `The Broken Seal` unless changed in code.
+6. The server shuffles the private Edge deck and deals exactly 1 random Edge Card to every starting player. Players never choose an awarded card.
 
 ## Turn Structure
 
@@ -44,6 +45,7 @@ During play, a seat can:
 - complete a contract if its objective is met
 - stabilize escalation when the action window is clear
 - attempt the scenario confrontation from the core chamber
+- commit an Edge Card during battle or Hazard setup
 
 ## Movement
 
@@ -86,6 +88,20 @@ Gear can be earned through combat rewards or contract completion.
 - Each contract has a defeat-count objective in the current MVP.
 - Seats can hold one active contract at a time.
 - Completing a contract grants its defined reward.
+- Completing a contract also awards the next random Edge Card if the player's Edge hand has room.
+
+## Edge Cards
+
+- Start with exactly 1 random card.
+- Base hand limit: 2.
+- Completing 2 Contracts raises the limit to 3.
+- Owning at least 1 Artifact raises the limit by 1, to a maximum of 4.
+- Awards are server-random and never present a card-selection screen.
+- If the hand is full, the award is skipped; no discard choice interrupts play.
+- During an enemy battle or Hazard setup, commit at most 1 Edge Card.
+- Its printed value becomes one die of the upcoming 2d6 roll; the server rolls the other die.
+- The committed die cannot be rerolled. The card is publicly revealed on TV and then discarded.
+- Timing-specific unique abilities are authored but are not active in the phase-one runtime.
 
 ## Scenarios
 

@@ -477,6 +477,33 @@ export function createEmptyScenarioResultState() {
   };
 }
 
+export const edgeDeckStateSchema = z.object({
+  cycle: z.number().int().min(1),
+  remainingCardIds: z.array(z.string().min(1)),
+  discardCardIds: z.array(z.string().min(1))
+}).strict();
+
+export const pendingEdgeCommitSchema = z.object({
+  seatId: z.string().min(1),
+  cardId: z.string().min(1),
+  cardName: z.string().min(1),
+  edgeValue: z.number().int().min(1).max(6),
+  resolutionId: z.string().min(1),
+  createdAt: z.string().min(1)
+}).strict();
+
+export const edgeCardPlaySchema = z.object({
+  id: z.string().min(1),
+  seatId: z.string().min(1),
+  cardId: z.string().min(1),
+  cardName: z.string().min(1),
+  edgeValue: z.number().int().min(1).max(6),
+  mode: z.literal("commit-value"),
+  resolutionId: z.string().min(1),
+  publicSummary: z.string().min(1),
+  createdAt: z.string().min(1)
+}).strict();
+
 export const gameStateSchema = z.object({
   sessionId: z.string().min(1),
   status: sessionStatusSchema,
@@ -526,6 +553,9 @@ export const gameStateSchema = z.object({
   gateSaintSafeConduct: z.object({ id: z.string(), sourceInstanceId: z.string(), usedSeatIds: z.array(z.string()) }).nullable().optional(),
   soloRerollCharges: z.record(z.string(), z.number().int().min(0)).optional(),
   eventLog: z.array(z.unknown()),
+  edgeDeck: edgeDeckStateSchema.nullable().optional(),
+  pendingEdgeCommit: pendingEdgeCommitSchema.nullable().optional(),
+  lastEdgeCardPlay: edgeCardPlaySchema.nullable().optional(),
   recentEncounterCardIds: z.array(z.string().min(1)).optional(),
   threatDrawBags: z.record(
     z.enum(["red", "blue", "yellow"]),

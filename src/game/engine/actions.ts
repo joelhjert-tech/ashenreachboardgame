@@ -27,6 +27,34 @@ export interface SessionStartedAction extends BaseAction {
   type: "SESSION_STARTED";
 }
 
+export interface EdgeDeckInitializedAction extends BaseAction {
+  type: "EDGE_DECK_INITIALIZED";
+  orderedCardIds: string[];
+}
+
+export interface EdgeDeckShuffledAction extends BaseAction {
+  type: "EDGE_DECK_SHUFFLED";
+  cycle: number;
+  orderedCardIds: string[];
+}
+
+export interface EdgeCardAwardedAction extends BaseAction {
+  type: "EDGE_CARD_AWARDED";
+  cardId: string;
+  source: "setup" | "contract";
+  sourceId?: string;
+}
+
+export interface EdgeCardPlayedAction extends BaseAction {
+  type: "EDGE_CARD_PLAYED";
+  cardId: string;
+  cardName: string;
+  edgeValue: 1 | 2 | 3 | 4 | 5 | 6;
+  mode: "commit-value";
+  resolutionId: string;
+  publicSummary: string;
+}
+
 export interface NamedPlayerRulesReconciledAction extends BaseAction {
   type: "NAMED_PLAYER_RULES_RECONCILED";
   changes: string[];
@@ -836,6 +864,10 @@ export interface ContinueScarConsequenceAction extends BaseAction {
 
 export type GameAction =
   | SessionStartedAction
+  | EdgeDeckInitializedAction
+  | EdgeDeckShuffledAction
+  | EdgeCardAwardedAction
+  | EdgeCardPlayedAction
   | NamedPlayerRulesReconciledAction
   | MoveRequestedAction
   | TransitionRouteAidUsedAction
@@ -1044,6 +1076,13 @@ export type ClientIntent =
       type: "CHECK_REQUESTED";
       seatId: string;
       stat: CheckStat;
+    }
+  | {
+      type: "PLAY_EDGE_CARD";
+      seatId: string;
+      cardId: string;
+      resolutionId: string;
+      mode: "commit-value";
     }
   | {
       type: "START_TILE_ENCOUNTER";

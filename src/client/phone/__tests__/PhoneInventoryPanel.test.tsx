@@ -670,10 +670,11 @@ describe("PhoneInventoryPanel", () => {
     }
   });
 
-  it("uses the six custom category emblems and opens one useful drawer by default", () => {
+  it("uses the seven custom category emblems and opens one useful drawer by default", () => {
     render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
 
     const iconPaths = [
+      "/assets/riftfall/ui/inventory-categories/edge-cards.phone.webp",
       "/assets/riftfall/ui/inventory-categories/artifacts.phone.webp",
       "/assets/riftfall/ui/inventory-categories/equipment.phone.webp",
       "/assets/riftfall/ui/inventory-categories/followers.phone.webp",
@@ -686,6 +687,54 @@ describe("PhoneInventoryPanel", () => {
     expect(icons.map((icon) => icon.getAttribute("src"))).toEqual(iconPaths);
     expect(icons.every((icon) => icon.alt === "" && icon.getAttribute("aria-hidden") === "true")).toBe(true);
     expect(screen.getAllByRole("button", { name: /records/i }).filter((toggle) => toggle.getAttribute("aria-expanded") === "true")).toHaveLength(1);
+  });
+
+  it("renders private Edge Cards as a standard collapsible inventory category", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      edgeHand: {
+        cards: [
+          {
+            id: "edge-echo-recast",
+            name: "Echo Recast",
+            edgeValue: 4,
+            commitText: "Lock 4 as one die; the server rolls the other die."
+          }
+        ],
+        limit: 2,
+        awardRule: "Random awards only.",
+        canCommit: true,
+        disabledReason: null,
+        resolutionId: "resolution-1"
+      }
+    });
+
+    render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
+
+    const label = screen.getByText("Edge Cards", { selector: ".phone-inventory-group-label" });
+    const toggle = label.closest("button");
+    expect(toggle).not.toBeNull();
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveTextContent(/echo recast/i);
+    expect(toggle).toHaveTextContent(/action available/i);
+    expect(toggle?.querySelector(".phone-inventory-group-icon")).toHaveAttribute(
+      "src",
+      "/assets/riftfall/ui/inventory-categories/edge-cards.phone.webp"
+    );
+
+    const edgeHand = screen.getByLabelText("Private Edge Card hand");
+    fireEvent.click(within(edgeHand).getByRole("button", { name: /echo recast/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "PLAY_EDGE_CARD",
+      seatId: "seat-1",
+      cardId: "edge-echo-recast",
+      resolutionId: "resolution-1",
+      mode: "commit-value"
+    });
+
+    fireEvent.click(toggle!);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByLabelText("Private Edge Card hand")).not.toBeInTheDocument();
   });
 
   it("collapses content so its item actions are no longer keyboard reachable, then restores them", () => {

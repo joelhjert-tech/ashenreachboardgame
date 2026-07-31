@@ -19,6 +19,7 @@ reports/**/*.jpg
 reports/**/*.jpeg
 reports/**/*.log
 reports/**/*.webm
+reports/**/*.mp4
 reports/**/*.pid
 docs/qa/**/*.png
 docs/qa/**/*.webm
@@ -32,6 +33,8 @@ docs/research/P20_REFERENCE_CODE_*.md
 docs/research/P20_REFERENCE_ASHENREACH_MOTION_COMPARISON.md
 docs/plans/P20_REFERENCE_CODE_REUSE_PLAN.md
 scripts/capture_p20_device_matrix.py
+**/__pycache__/
+*.pyc
 .idea/
 tmp/
 admin-revisions/

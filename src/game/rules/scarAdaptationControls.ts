@@ -85,7 +85,13 @@ function currentContext(state: GameState, player: PlayerState, timing: string): 
 
 function targetsFor(state: GameState, player: PlayerState, ruleKey: ScarRuleKey): ScarAdaptationTarget[] {
   if (["guile-reroll", "grit-hazard-reroll", "rift-signal-reroll", "guile-anomaly-reroll"].includes(ruleKey)) {
-    return (state.activeResolution?.roll?.dice ?? []).map((face, index) => ({ id: String(index), label: `Die ${index + 1} (${face})` }));
+    const committedEdgeDieIndex =
+      state.lastEdgeCardPlay?.seatId === player.seatId ? 0 : null;
+    return (state.activeResolution?.roll?.dice ?? []).flatMap((face, index) =>
+      index === committedEdgeDieIndex
+        ? []
+        : [{ id: String(index), label: `Die ${index + 1} (${face})` }]
+    );
   }
   if (ruleKey === "forge-charge-restore") {
     return player.character.heldGear.flatMap((item) => {

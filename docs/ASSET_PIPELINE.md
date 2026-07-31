@@ -10,6 +10,7 @@ Assets are runtime data. Do not delete an asset just because TypeScript does not
 - Signal Theatre selectable player pieces: `public/assets/riftfall/ui/signal-theatre/player-pieces/`
 - Signal Cartography marker coins: `public/assets/riftfall/ui/signal-cartography/markers/`
 - Signal Theatre host intro video: `public/assets/riftfall/ui/signal-theatre/intro/`
+- Signal Theatre Edge Card animation frames: `public/assets/riftfall/ui/signal-theatre/edge-card/`
 - Host TV shop-category emblems: `public/assets/riftfall/ui/shop/categories/`
 - Current generated card art: `public/assets/cards/`
 - Active card backs: `public/assets/cards/backs/`
@@ -67,6 +68,7 @@ Remaining legacy files:
 - Inventory category emblem prompt catalog: `src/game/assets/design/inventoryCategoryIconPrompts.ts`
 - Objective category emblem prompt catalog: `src/game/assets/design/objectiveCategoryIconPrompts.ts`
 - Result-ready verdict gate prompt catalog: `src/game/assets/design/resultReadyVisualPrompts.ts`
+- Edge Card animation prompt catalog: `src/game/assets/design/edgeCardAnimationPrompts.ts`
 - Generated card image prompt catalog: `src/game/assets/design/generatedCardImagePrompts.ts`
 - Card fallback and output directories: `src/game/assets/design/cardImageCatalog.ts`
 - Phone derivative generator: `scripts/generate-phone-images.ts`
@@ -79,7 +81,8 @@ Remaining legacy files:
 - Signal Piece PNGs use the six stable catalog IDs: `beacon`, `bastion`, `lantern`, `harrow`, `reliquary`, and `compass`.
 - Signal Cartography player coins reuse the six stable Signal Piece IDs under `markers/players/`; public objective coins use `route`, `challenge`, `hunt`, and `service` under `markers/objectives/`.
 - The TV-only opening video uses the stable filename `ashenreach-intro.mp4` under the Signal Theatre intro root. Keep it H.264/AAC MP4 for browser and television compatibility.
-- Private phone inventory category emblems use `artifacts`, `equipment`, `followers`, `status`, and `progression` under `public/assets/riftfall/ui/inventory-categories/`.
+- Edge Card TV frames use the stable names `edge-card-charge.png` and `edge-card-detonation.png`; both preserve the card-reveal chamber camera for a clean CSS crossfade.
+- Private phone inventory category emblems use `edge-cards`, `artifacts`, `equipment`, `followers`, `status`, and `progression` under `public/assets/riftfall/ui/inventory-categories/`.
 - Public Host TV shop-category emblems use `items`, `equipment`, `artifacts`, `route-aids`, `services`, and `sell` under `public/assets/riftfall/ui/shop/categories/`.
 - Card art generated from content uses the card ID as the PNG filename under `public/assets/cards/<type>/`.
 - Ordinary Followers use `public/assets/cards/followers/` and the dedicated Follower fallback. Artifact-deck Followers keep their existing Artifact presentation.
@@ -105,7 +108,7 @@ npm run audit:assets
 
 The asset audit validates the generated phone manifest, source and derivative hashes, byte counts, dimensions, maximum edge, no-upscale rule, and no-growth rule. SVG, animation, TV-only Signal Theatre environments, the TV-only intro video, shop interiors, cartography assets, and admin-only Lore Bible art are excluded from phone-image derivative generation. The intro MP4 remains registered and existence-checked through `getRuntimeAssetPaths()`.
 
-The asset audit is the source of truth for the current expected count. Signal Theatre adds 49 distinct sector environments and 6 selectable player-piece renders. Signal Cartography adds 6 public player coins and 4 public objective coins. The phone inventory adds 5 original category emblems.
+The asset audit is the source of truth for the current expected count. Signal Theatre adds 49 distinct sector environments, 6 selectable player-piece renders, and 2 Edge Card animation frames. Signal Cartography adds 6 public player coins and 4 public objective coins. The phone inventory adds 6 original category emblems.
 
 The runtime also includes six original SVG shop-category emblems. These are code-native UI vectors rather than card or environment artwork and must remain registered through `getRuntimeAssetPaths()`.
 

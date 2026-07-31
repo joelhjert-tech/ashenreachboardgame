@@ -46,6 +46,7 @@ In Rivalry, the session still uses the public scenario. Private agenda scoring a
 7. Safe permanent Equipment may auto-equip into an empty slot. Followers remain owned separately. The selected provisions are authoritative, persist through reconnect, and cannot be claimed twice.
 8. Each occupied seat marks Ready only after both provision picks are complete.
 9. The host starts only after the server accepts the setup.
+10. After the start is accepted, the server shuffles the Edge deck and privately deals exactly one random Edge Card to every occupied seat. No player chooses an awarded Edge Card.
 
 An invalid, stale, or unauthorized start request changes nothing.
 
@@ -82,6 +83,17 @@ Other tracked values include:
 - **Global Escalation:** round pressure that raises difficulty and contributes to collapse.
 - **Win Progress:** progress toward the scenario objective.
 - **Loss Pressure:** progress toward session defeat.
+- **Edge Cards:** owner-private, one-use cards that can lock one die before an eligible roll.
+
+## 7A. Edge Cards
+
+Every operative starts with exactly one server-randomized Edge Card. The base hand limit is two. After an operative completes two Contracts, that limit becomes three. Owning at least one Artifact adds one further slot. The absolute maximum is four.
+
+Completing a Contract awards the next random card from the server-owned deck if the operative has room. A full hand skips the award; no card choice or discard interruption appears. When the deck is empty, the server shuffles its discard pile into a new private cycle. Reconnecting restores the exact hand and deck state without drawing again.
+
+During the setup stage of the active operative's enemy battle or Hazard check, the owner may commit one Edge Card. Its printed value becomes one of the two operative dice, and the server rolls the other die normally. The card is discarded immediately, cannot be used twice, and its committed die cannot be rerolled. The TV reveals only the played card, player name, value, and public-safe summary; it never receives unplayed hands or deck order.
+
+The twelve cards also carry authored timing-specific ability concepts. Those unique ability modes are not active in the phase-one runtime and must not be resolved by table agreement. Only the phone's enabled **Commit** control has rules authority.
 
 ## 8. Reading the host display
 

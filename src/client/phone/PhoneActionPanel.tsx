@@ -3861,6 +3861,7 @@ export function PhoneActionPanel({
       });
     } else {
       reaction.originalRoll.forEach((face, dieIndex) => {
+        if ((reaction.lockedDieIndices ?? []).includes(dieIndex)) return;
         resolveActions.push({
           key: `affliction-reroll-${reaction.reactionId}-${dieIndex}`,
           label: `Reroll die ${dieIndex + 1} (${face})`,
@@ -4088,6 +4089,32 @@ export function PhoneActionPanel({
     const checkIsStaged =
       activeResolution?.stage === "battle_setup" &&
       activeResolution.playerId === self.seatId;
+
+    if (checkIsStaged && patch.edgeHand) {
+      for (const card of patch.edgeHand.cards) {
+        const disabled = !patch.edgeHand.canCommit || !patch.edgeHand.resolutionId;
+        threatActions.push({
+          key: `edge-card-${card.id}`,
+          label: `Commit ${card.name} — lock ${card.edgeValue}`,
+          detail: disabled
+            ? patch.edgeHand.disabledReason ?? "Edge Card unavailable."
+            : `${card.commitText} The card burns and reveals on the TV.`,
+          tone: "secondary",
+          disabled,
+          disabledReason: disabled ? patch.edgeHand.disabledReason ?? undefined : undefined,
+          onClick: () => {
+            if (!patch.edgeHand?.resolutionId) return;
+            onIntent({
+              type: "PLAY_EDGE_CARD",
+              seatId: self.seatId,
+              cardId: card.id,
+              resolutionId: patch.edgeHand.resolutionId,
+              mode: "commit-value"
+            });
+          }
+        });
+      }
+    }
 
     const encounterCommand: ClientIntent = !checkIsStaged && activeResolution?.stage === "card_reveal"
       ? { type: "START_TILE_ENCOUNTER", seatId: self.seatId, encounterId: patch.encounter.id, resolutionId: activeResolution.id }

@@ -21,6 +21,7 @@ import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel }
 import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 import { PhoneResultReadyGate } from "./PhoneResultReadyGate.js";
 import { PhoneBattleDuelStage } from "./PhoneBattleDuelStage.js";
+import { PhoneEdgeCardHand } from "./PhoneEdgeCardHand.js";
 
 export interface PhoneBattleChoiceAction {
   key: string;
@@ -586,6 +587,9 @@ export function PhoneBattleView({
               </button>
             ) : null}
             <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
+            {resolution?.stage === "battle_setup" && patch.edgeHand ? (
+              <PhoneEdgeCardHand hand={patch.edgeHand} seatId={self.seatId} onIntent={onIntent} />
+            ) : null}
             {result ? (
               <section className={`phone-battle-outcome phone-battle-outcome--${result}`} data-testid="phone-battle-outcome">
                 <span>{result === "success" ? "Threat defeated" : result === "draw" ? "Totals tied" : "Test failed"}</span>

@@ -12,6 +12,7 @@ const negativePrompt = [
 ].join(" ");
 
 const categories = [
+  ["edge-cards", "two slightly offset sealed tactical card plates with a central faceted cyan signal diamond and symmetrical ember calibration lights"],
   ["artifacts", "faceted eight-point relic star surrounding a small signal lens"],
   ["equipment", "angular forge key crossed with a compact industrial breach blade"],
   ["followers", "faceless hooded companion bust held inside a broken oath ring"],

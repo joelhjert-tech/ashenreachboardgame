@@ -19,6 +19,7 @@ const excludedFragments = [
   "/lore-bible/",
   "/signal-cartography/",
   "/signal-theatre/card-reveal/",
+  "/signal-theatre/edge-card/",
   "/signal-theatre/dice/",
   "/signal-theatre/shops/",
   "/signal-theatre/shopkeeper-establishment."

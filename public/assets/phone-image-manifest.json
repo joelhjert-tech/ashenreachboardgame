@@ -8,9 +8,9 @@
     "metadata": "stripped"
   },
   "totals": {
-    "sources": 471,
-    "sourceBytes": 1114060667,
-    "derivativeBytes": 49340504,
+    "sources": 472,
+    "sourceBytes": 1114158637,
+    "derivativeBytes": 49349490,
     "reductionPercent": 95.57
   },
   "entries": [
@@ -5185,6 +5185,18 @@
       "derivativeWidth": 256,
       "derivativeHeight": 256,
       "derivativeBytes": 10334
+    },
+    {
+      "sourcePath": "/assets/riftfall/ui/inventory-categories/edge-cards.png",
+      "sourceHash": "053fe04d82127b3da9083749c2d9cf299669eff5967e2270d38f558eae9a71d7",
+      "sourceWidth": 256,
+      "sourceHeight": 256,
+      "sourceBytes": 97970,
+      "derivativePath": "/assets/riftfall/ui/inventory-categories/edge-cards.phone.webp",
+      "derivativeHash": "023ff5811a006d5496ebef4f96d873e45bce9c460003700edae6ab1e5abeb047",
+      "derivativeWidth": 256,
+      "derivativeHeight": 256,
+      "derivativeBytes": 8986
     },
     {
       "sourcePath": "/assets/riftfall/ui/inventory-categories/equipment.png",

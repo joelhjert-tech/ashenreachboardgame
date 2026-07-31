@@ -3,6 +3,7 @@ import { cardArtPrompts } from "./cardArtPrompts.js";
 import { cardTemplatePrompts } from "./cardTemplatePrompts.js";
 import { characterPortraitPrompts } from "./characterPortraitPrompts.js";
 import { generatedCardImagePrompts } from "./generatedCardImagePrompts.js";
+import { edgeCardAnimationPrompts } from "./edgeCardAnimationPrompts.js";
 import { inventoryCategoryIconPrompts } from "./inventoryCategoryIconPrompts.js";
 import { loreBibleVisualPrompts } from "./loreBibleVisualPrompts.js";
 import { objectiveCategoryIconPrompts } from "./objectiveCategoryIconPrompts.js";
@@ -67,9 +68,10 @@ export const requiredImageGenerationChecklist = [
   "49 Signal Theatre sector environments",
   "6 selectable Signal Theatre player pieces",
   "10 Signal Cartography player and objective coins",
-  "5 private inventory category emblems",
+  "6 private inventory category emblems",
   "4 private objective category emblems",
   "1 private result-ready verdict gate",
+  "2 Signal Theatre Edge Card animation frames",
   "1 admin Lore Bible event overview",
   "6 printable scenario sheet illustrations"
 ] as const;
@@ -96,6 +98,7 @@ export const imagePrompts: ImagePromptSpec[] = [
   ...inventoryCategoryIconPrompts,
   ...objectiveCategoryIconPrompts,
   ...resultReadyVisualPrompts,
+  ...edgeCardAnimationPrompts,
   ...loreBibleVisualPrompts,
   ...uiPrompts
 ];

@@ -14,6 +14,7 @@ import type { AfflictionSummary, ClientIntent, PhonePatchPayload, ScarSummary, S
 import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
 import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
+import { PhoneEdgeCardHand } from "./PhoneEdgeCardHand.js";
 import {
   getInventoryPresentation,
   statLabelById,
@@ -655,7 +656,8 @@ export function PhoneInventoryPanel({
     ? presentation.relevantNow
     : allCards.filter((card) => card.canUseNow)
   ).filter((card) => onlyUsable ? card.canUseNow : true);
-  const visibleItemCount = onlyUsable ? relevantCards.length : allCards.length;
+  const edgeCards = patch.edgeHand?.cards ?? [];
+  const visibleItemCount = onlyUsable ? relevantCards.length : allCards.length + edgeCards.length;
   const artifactCards = allCards.filter((card) => card.group === "Artifacts / Relics");
   const followerCards = allCards.filter((card) => card.group === "Followers");
   const equipmentCards = allCards.filter((card) => card.group !== "Artifacts / Relics" && card.group !== "Followers");
@@ -675,7 +677,18 @@ export function PhoneInventoryPanel({
     cards.length === 0
       ? empty
       : `${cards.slice(0, 2).map((card) => card.name).join(" · ")}${cards.length > 2 ? ` +${cards.length - 2}` : ""}`;
+  const edgeCardSummary = edgeCards.length === 0
+    ? "No cards held · Random awards only"
+    : `${edgeCards.slice(0, 2).map((card) => card.name).join(" · ")}${edgeCards.length > 2 ? ` +${edgeCards.length - 2}` : ""} · ${edgeCards.length}/${patch.edgeHand?.limit ?? 2} held`;
   const categories = [
+    {
+      id: "edge-cards" as const,
+      label: "Edge Cards",
+      count: edgeCards.length,
+      summary: edgeCardSummary,
+      cards: [] as InventoryCardViewModel[],
+      actionAvailable: Boolean(patch.edgeHand?.canCommit && patch.edgeHand.resolutionId && edgeCards.length > 0)
+    },
     {
       id: "artifacts" as const,
       label: "Artifacts",
@@ -766,7 +779,7 @@ export function PhoneInventoryPanel({
           <div><dt>Wounds</dt><dd>{presentation.operative.wounds}</dd></div>
           <div><dt>Scars</dt><dd>{presentation.operative.scars}</dd></div>
           <div><dt>Salvage</dt><dd>{presentation.operative.salvage}</dd></div>
-          <div><dt>Owned</dt><dd>{presentation.operative.heldCount}</dd></div>
+          <div><dt>Owned</dt><dd>{presentation.operative.heldCount + edgeCards.length}</dd></div>
         </dl>
         {presentation.context.requiredAction ? <p>{presentation.context.requiredAction}</p> : null}
         {onReturnToAction && patch.requiredAction?.requiredTab ? (
@@ -812,6 +825,24 @@ export function PhoneInventoryPanel({
                   <InventoryCard key={`${card.source}-${card.instanceId ?? card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} canManageEquipment={canManageEquipment} />
                 ))}
               </div>
+            ) : null}
+            {category.id === "edge-cards" ? (
+              patch.edgeHand && edgeCards.length > 0 ? (
+                <PhoneEdgeCardHand
+                  embedded
+                  hand={
+                    onIntent
+                      ? patch.edgeHand
+                      : {
+                          ...patch.edgeHand,
+                          canCommit: false,
+                          disabledReason: patch.edgeHand.disabledReason ?? "Actions are unavailable in this view."
+                        }
+                  }
+                  seatId={self.seatId}
+                  onIntent={onIntent ?? (() => undefined)}
+                />
+              ) : <p className="phone-sheet-action-empty">No Edge Cards held. New cards are always awarded randomly.</p>
             ) : null}
             {category.id === "artifacts" && patch.activeOathchainReveal ? (
               <section className="phone-inventory-oathchain-reveal" aria-label="Private Lens Reading">

@@ -35,6 +35,12 @@ import {
 import { getScenarioSheetArtPath } from "../game/data/scenarioSheetArt.js";
 import { getCharacterPresentation, type CharacterPresentation } from "../game/data/characterPresentation.js";
 import {
+  EDGE_CARD_BY_ID,
+  EDGE_CARD_DECK,
+  EDGE_RULES,
+  getEdgeHandLimit
+} from "../game/data/edgeCards.js";
+import {
   advanceContractObjectiveProgress,
   advanceContractObjectiveState,
   describeContractObjective,
@@ -215,6 +221,10 @@ import type {
   CombatRequestedAction,
   CompleteContractAction,
   DiceRollStartedAction,
+  EdgeCardAwardedAction,
+  EdgeCardPlayedAction,
+  EdgeDeckInitializedAction,
+  EdgeDeckShuffledAction,
   EscalationAdvancedAction,
   ClientIntent,
   CombatResolvedAction,
@@ -481,6 +491,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "START_TILE_ENCOUNTER",
   "CHECK_REQUESTED",
   "COMBAT_REQUESTED",
+  "PLAY_EDGE_CARD",
   "ENEMY_ROLL_REQUESTED",
   "SOLO_REROLL_REQUESTED",
   "AFFLICTION_STAT_CHOSEN",
@@ -1297,7 +1308,12 @@ export class GameRoomServer {
       }
       const action = this.intentToAction(intent);
       this.applyAction(action);
+      if (action.type === "EDGE_CARD_PLAYED") {
+        this.broadcastPatch();
+        return;
+      }
       if (action.type === "COMPLETE_CONTRACT") {
+        this.awardRandomEdgeCard(action.seatId, "contract", action.contractId);
         this.queueReplacementMissionSelection(action.seatId, action.contractId);
       }
 
@@ -2087,6 +2103,7 @@ export class GameRoomServer {
             : player
         )
       };
+      this.awardRandomEdgeCard(seatId, "setup", "late-join-setup");
       return;
     }
 
@@ -2224,6 +2241,7 @@ export class GameRoomServer {
       seatId: activeSeatId,
       createdAt: new Date().toISOString()
     });
+    this.initializeEdgeDeck(activeSeatId);
 
     if (this.state.gameMode === "nemesis_relay") {
       this.applyAction({
@@ -2427,6 +2445,11 @@ export class GameRoomServer {
         break;
       case "COOPERATIVE_TEST_ROLL_REQUESTED":
         requireStringField(message, "testId", type);
+        break;
+      case "PLAY_EDGE_CARD":
+        requireStringField(message, "cardId", type);
+        requireStringField(message, "resolutionId", type);
+        requireEnumField(message, "mode", new Set(["commit-value"]), type);
         break;
       case "BROKEN_CONCORDANCE_NODE_REQUESTED":
         requireStringField(message, "nodeId", type);
@@ -4262,6 +4285,9 @@ export class GameRoomServer {
     if (!encounter || encounter.cardType !== "hazard") {
       throw new Error("Solo emergency reroll requires a failed hazard check");
     }
+    if (this.state.lastEdgeCardPlay?.seatId === intent.seatId) {
+      throw new Error("A roll containing a committed Edge value cannot be rerolled");
+    }
 
     if (activeResolution.card?.id && activeResolution.card.id !== encounter.id) {
       throw new Error("Solo emergency reroll no longer matches the active encounter");
@@ -4364,6 +4390,9 @@ export class GameRoomServer {
       if (!resolution?.roll || !encounter) throw new IntentRejectedError(intent.type, "The roll is no longer available");
       const index = intent.rollIndex ?? 0;
       if (index >= resolution.roll.dice.length) throw new IntentRejectedError(intent.type, "The selected die is unavailable");
+      if (this.state.lastEdgeCardPlay?.seatId === intent.seatId && index === 0) {
+        throw new IntentRejectedError(intent.type, "The committed Edge die is locked and cannot be rerolled");
+      }
       const faces = [...resolution.roll.dice];
       const previousFace = faces[index]!;
       const nextFace = this.randomSource.nextInt(6) + 1;
@@ -4506,6 +4535,27 @@ export class GameRoomServer {
           stat: intent.stat,
           createdAt
         } satisfies CheckRequestedAction;
+      case "PLAY_EDGE_CARD": {
+        const definition = EDGE_CARD_BY_ID.get(intent.cardId);
+        if (!definition) {
+          throw new IntentRejectedError(intent.type, "Unknown Edge Card");
+        }
+        const displayName =
+          this.state.seats.find((seat) => seat.seatId === intent.seatId)?.displayName ??
+          this.state.players.find((player) => player.seatId === intent.seatId)?.character.name ??
+          "An operative";
+        return {
+          type: "EDGE_CARD_PLAYED",
+          seatId: intent.seatId,
+          cardId: definition.id,
+          cardName: definition.name,
+          edgeValue: definition.edgeValue,
+          mode: intent.mode,
+          resolutionId: intent.resolutionId,
+          publicSummary: `${displayName} burned ${definition.name}. ${definition.edgeValue} is locked as one die.`,
+          createdAt
+        } satisfies EdgeCardPlayedAction;
+      }
       case "COMBAT_REQUESTED":
         return {
           type: "COMBAT_REQUESTED",
@@ -5234,6 +5284,76 @@ export class GameRoomServer {
     return shuffled;
   }
 
+  private initializeEdgeDeck(authorSeatId: string): void {
+    const orderedCardIds = this.shuffleThreatIds(EDGE_CARD_DECK.map((card) => card.id));
+    this.applyAction({
+      type: "EDGE_DECK_INITIALIZED",
+      seatId: authorSeatId,
+      orderedCardIds,
+      createdAt: new Date().toISOString()
+    } satisfies EdgeDeckInitializedAction);
+  }
+
+  private reshuffleEdgeDiscard(authorSeatId: string): void {
+    const edgeDeck = this.state.edgeDeck;
+    if (!edgeDeck || edgeDeck.remainingCardIds.length > 0 || edgeDeck.discardCardIds.length === 0) {
+      return;
+    }
+    this.applyAction({
+      type: "EDGE_DECK_SHUFFLED",
+      seatId: authorSeatId,
+      cycle: edgeDeck.cycle + 1,
+      orderedCardIds: this.shuffleThreatIds(edgeDeck.discardCardIds),
+      createdAt: new Date().toISOString()
+    } satisfies EdgeDeckShuffledAction);
+  }
+
+  private awardRandomEdgeCard(
+    seatId: string,
+    source: EdgeCardAwardedAction["source"],
+    sourceId?: string
+  ): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    if (!player || !this.state.edgeDeck) return;
+
+    const handCount = player.private.hand.filter((cardId) => EDGE_CARD_BY_ID.has(cardId)).length;
+    const handLimit = getEdgeHandLimit({
+      completedContracts: player.character.completedContracts?.length ?? 0,
+      ownedArtifacts: player.character.heldGear.filter((item) => item.tier === "artifact").length
+    });
+    if (handCount >= handLimit) return;
+
+    this.reshuffleEdgeDiscard(seatId);
+    const cardId = this.state.edgeDeck?.remainingCardIds[0];
+    if (!cardId) return;
+
+    this.applyAction({
+      type: "EDGE_CARD_AWARDED",
+      seatId,
+      cardId,
+      source,
+      sourceId,
+      createdAt: new Date().toISOString()
+    } satisfies EdgeCardAwardedAction);
+  }
+
+  private rollPlayerDiceWithEdgeCommit(seatId: string): ReturnType<typeof rollDice> {
+    const pending = this.state.pendingEdgeCommit;
+    if (
+      !pending ||
+      pending.seatId !== seatId ||
+      pending.resolutionId !== this.state.activeResolution?.id
+    ) {
+      return rollDice(2, 6, this.randomSource);
+    }
+
+    const randomDie = rollDice(1, 6, this.randomSource);
+    return {
+      faces: [pending.edgeValue, randomDie.faces[0]!],
+      total: pending.edgeValue + randomDie.total
+    };
+  }
+
   private maybeStartRandomScenarioAssault(): boolean {
     const scenario = getScenarioDefinition(this.state.activeScenarioId);
     const assault = scenario?.randomAssault;
@@ -5318,6 +5438,8 @@ export class GameRoomServer {
       currentEncounter: encounter,
       recentEncounterCardIds: this.getRecentEncounterCardIdsAfterDraw(encounter.id),
       pendingEnemyRoll: null,
+      pendingEdgeCommit: null,
+      lastEdgeCardPlay: null,
       pendingEffect: null,
       activeResolution: {
         id: `${targetSeat.seatId}:scenario-assault:${cardId}:${createdAt}`,
@@ -7209,6 +7331,9 @@ export class GameRoomServer {
     const nextActivePlayer = nextActiveSeatId
       ? this.state.players.find((player) => player.seatId === nextActiveSeatId)
       : null;
+    const kickedEdgeCardIds = this.state.players
+      .find((player) => player.seatId === targetSeatId)
+      ?.private.hand.filter((cardId) => EDGE_CARD_BY_ID.has(cardId)) ?? [];
 
     this.state = {
       ...this.state,
@@ -7228,6 +7353,21 @@ export class GameRoomServer {
       currentEncounter: targetWasActive || remainingAfterKick.length === 1 ? null : this.state.currentEncounter,
       pendingEnemyRoll: targetWasActive || remainingAfterKick.length === 1 ? null : this.state.pendingEnemyRoll,
       pendingEffect: targetWasActive || remainingAfterKick.length === 1 ? null : this.state.pendingEffect,
+      pendingEdgeCommit:
+        this.state.pendingEdgeCommit?.seatId === targetSeatId
+          ? null
+          : this.state.pendingEdgeCommit,
+      lastEdgeCardPlay:
+        this.state.lastEdgeCardPlay?.seatId === targetSeatId
+          ? null
+          : this.state.lastEdgeCardPlay,
+      edgeDeck:
+        this.state.edgeDeck && kickedEdgeCardIds.length > 0
+          ? {
+              ...this.state.edgeDeck,
+              discardCardIds: [...this.state.edgeDeck.discardCardIds, ...kickedEdgeCardIds]
+            }
+          : this.state.edgeDeck,
       resolutionSource: targetWasActive || remainingAfterKick.length === 1 ? null : this.state.resolutionSource,
       lastOutcomeSummary:
         remainingAfterKick.length === 1
@@ -7288,6 +7428,17 @@ export class GameRoomServer {
             }
           : entry
       ),
+      players: this.state.players.map((player) =>
+        player.seatId === targetSeatId && kickedEdgeCardIds.length > 0
+          ? {
+              ...player,
+              private: {
+                ...player.private,
+                hand: player.private.hand.filter((cardId) => !EDGE_CARD_BY_ID.has(cardId))
+              }
+            }
+          : player
+      ),
       eventLog: [...this.state.eventLog, { type: "KICK_SEAT", targetSeatId, createdAt: new Date().toISOString() }]
     };
 
@@ -7331,6 +7482,9 @@ export class GameRoomServer {
       tileArrivalThreatProgress: null,
       tileChallengeProgress: null,
       pendingEnemyRoll: null,
+      edgeDeck: null,
+      pendingEdgeCommit: null,
+      lastEdgeCardPlay: null,
       pendingEffect: null,
       lastOutcomeSummary: null,
       seats: this.state.seats.map((seat) =>
@@ -9112,6 +9266,9 @@ export class GameRoomServer {
     const pendingResult = opened.pendingResult;
     if (!pendingResult) throw new IntentRejectedError(intent.type, "The authoritative reroll result is unavailable");
     const dieIndex = intent.dieIndex ?? (pending.originalRoll[0] <= (pending.originalRoll[1] ?? 7) ? 0 : 1);
+    if (intent.use && this.state.lastEdgeCardPlay?.seatId === intent.seatId && dieIndex === 0) {
+      throw new IntentRejectedError(intent.type, "The committed Edge die is locked and cannot be rerolled");
+    }
     const reroll = intent.use ? this.randomSource.nextInt(6) + 1 : undefined;
     this.applyAction({
       type: "AFFLICTION_REACTION_RESOLVED",
@@ -9234,7 +9391,7 @@ export class GameRoomServer {
         value
       }))
     ];
-    const roll = rollDice(2, 6, this.randomSource);
+    const roll = this.rollPlayerDiceWithEdgeCommit(intent.seatId);
     const statBonus = this.sumModifierSources(modifierSources);
     const characterDifficultyModifier = this.getCharacterDifficultyModifier(player, encounter);
     const namedEnemyModifier = this.state.pendingTileChallenge?.sourceTags.includes("enemy")
@@ -11014,7 +11171,7 @@ export class GameRoomServer {
       throw new Error(`Missing player for seat ${fighterSeatId}`);
     }
 
-    const playerRoll = rollDice(2, 6, this.randomSource);
+    const playerRoll = this.rollPlayerDiceWithEdgeCommit(fighterSeatId);
     const enemyRoll = rollDice(2, 6, this.randomSource);
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const keyedModifiers = this.resolveThreatEffectKeys(fighterSeatId, encounter, encounter.combatEffectKeys, "beforeCombat");
@@ -14061,6 +14218,7 @@ function buildSoloRerollProjection(state: GameState, seatId: string): { availabl
     state.currentEncounter?.cardType === "hazard" &&
     activeResolution?.playerId === seatId &&
     activeResolution.roll?.success === false &&
+    state.lastEdgeCardPlay?.seatId !== seatId &&
     ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
 
   return {
@@ -15807,6 +15965,25 @@ export function createTvProjection(
     publicResultDeltas,
     activeResolution: projectActiveResolutionForViewer(state, null),
     battlePresentation: buildBattlePresentation(state, null),
+    edgeCardPlay:
+      state.pendingEdgeCommit &&
+      state.lastEdgeCardPlay?.resolutionId === state.pendingEdgeCommit.resolutionId
+        ? {
+            id: state.lastEdgeCardPlay.id,
+            actorSeatId: state.lastEdgeCardPlay.seatId,
+            actorDisplayName:
+              state.seats.find((seat) => seat.seatId === state.lastEdgeCardPlay?.seatId)?.displayName ??
+              state.players.find((player) => player.seatId === state.lastEdgeCardPlay?.seatId)?.character.name ??
+              "An operative",
+            cardId: state.lastEdgeCardPlay.cardId,
+            cardName: state.lastEdgeCardPlay.cardName,
+            edgeValue: state.lastEdgeCardPlay.edgeValue,
+            mode: state.lastEdgeCardPlay.mode,
+            resolutionId: state.lastEdgeCardPlay.resolutionId,
+            publicSummary: state.lastEdgeCardPlay.publicSummary,
+            createdAt: state.lastEdgeCardPlay.createdAt
+          }
+        : null,
     shopEncounter,
     movementPresentationGate: state.movementPresentationGate
       ? {
@@ -16114,6 +16291,31 @@ export function createPhoneProjection(
           pointsAwarded: privateRivalry.scoring?.pointsAwarded ?? null
         }
       : null;
+  const edgeCards = (player?.private.hand ?? [])
+    .map((cardId) => EDGE_CARD_BY_ID.get(cardId))
+    .filter((card): card is NonNullable<typeof card> => Boolean(card));
+  const edgeHandLimit = player
+    ? getEdgeHandLimit({
+        completedContracts: player.character.completedContracts?.length ?? 0,
+        ownedArtifacts: player.character.heldGear.filter((item) => item.tier === "artifact").length
+      })
+    : EDGE_RULES.baseHandLimit;
+  const edgeResolutionId =
+    state.phase === "action" &&
+    state.turnOrder[state.activeSeatIndex] === seatId &&
+    state.activeResolution?.playerId === seatId &&
+    state.activeResolution.stage === "battle_setup" &&
+    (state.currentEncounter?.cardType === "enemy" ||
+      state.currentEncounter?.cardType === "hazard")
+      ? state.activeResolution.id
+      : null;
+  const edgeCommitDisabledReason = !edgeResolutionId
+    ? "Available during your battle or hazard setup."
+    : state.pendingEdgeCommit || state.lastEdgeCardPlay?.resolutionId === edgeResolutionId
+      ? "One Edge Card is already committed to this roll."
+      : edgeCards.length === 0
+        ? "No Edge Cards in hand."
+        : null;
 
   return stripLegacyHeatProjection({
     phase: state.phase,
@@ -16221,6 +16423,11 @@ export function createPhoneProjection(
           afflictionId: pendingAfflictionReaction.afflictionId,
           kind: pendingAfflictionReaction.kind,
           originalRoll: pendingAfflictionReaction.originalRoll,
+          lockedDieIndices:
+            pendingAfflictionReaction.kind !== "arrivalWound" &&
+            state.lastEdgeCardPlay?.seatId === seatId
+              ? [0]
+              : [],
           targetSeatId: pendingAfflictionReaction.targetSeatId,
           targetName: pendingAfflictionReaction.targetSeatId
             ? getProjectedPlayerName(state, pendingAfflictionReaction.targetSeatId)
@@ -16434,6 +16641,19 @@ export function createPhoneProjection(
     sectorExplorationSummary: buildPublicSectorExplorationSummary(state, seatId),
     privateRivalry,
     soloReroll: buildSoloRerollProjection(state, seatId),
+    edgeHand: {
+      cards: edgeCards.map((card) => ({
+        id: card.id,
+        name: card.name,
+        edgeValue: card.edgeValue,
+        commitText: `Lock ${card.edgeValue} as one die; the server rolls the other die.`
+      })),
+      limit: edgeHandLimit,
+      awardRule: EDGE_RULES.awardRule,
+      canCommit: edgeCommitDisabledReason === null,
+      disabledReason: edgeCommitDisabledReason,
+      resolutionId: edgeResolutionId
+    },
     boundNemesis: (publicProjection.nemesisChampions as Array<{ boundPlayerId: string }>).find(
       (champion) => champion.boundPlayerId === seatId
     ) ?? null,

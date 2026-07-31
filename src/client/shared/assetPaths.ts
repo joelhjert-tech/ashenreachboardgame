@@ -83,13 +83,20 @@ const signalTheatreCardRevealPaths = {
   cardBack: "/assets/riftfall/ui/signal-theatre/card-reveal/reliquary-card-back.webp"
 } as const;
 
+const signalTheatreEdgeCardPaths = {
+  charge: "/assets/riftfall/ui/signal-theatre/edge-card/edge-card-charge.png",
+  detonation: "/assets/riftfall/ui/signal-theatre/edge-card/edge-card-detonation.png",
+  cardBack: signalTheatreCardRevealPaths.cardBack
+} as const;
+
 const hostGameIntroVideoPath =
   "/assets/riftfall/ui/signal-theatre/intro/ashenreach-intro.mp4";
 
-export type InventoryCategoryIcon = "artifacts" | "equipment" | "followers" | "missions" | "status" | "progression";
+export type InventoryCategoryIcon = "edge-cards" | "artifacts" | "equipment" | "followers" | "missions" | "status" | "progression";
 export type ObjectiveCategoryIcon = "shared-mission" | "contract" | "rivalry" | "completed";
 
 const inventoryCategoryIconByCategory: Record<InventoryCategoryIcon, string> = {
+  "edge-cards": "/assets/riftfall/ui/inventory-categories/edge-cards.png",
   artifacts: "/assets/riftfall/ui/inventory-categories/artifacts.png",
   equipment: "/assets/riftfall/ui/inventory-categories/equipment.png",
   followers: "/assets/riftfall/ui/inventory-categories/followers.png",
@@ -120,6 +127,8 @@ const uiAssetPaths = [
   ...Object.values(signalTheatreResultCrestByOutcome),
   signalTheatreDieFacePath,
   ...Object.values(signalTheatreCardRevealPaths),
+  signalTheatreEdgeCardPaths.charge,
+  signalTheatreEdgeCardPaths.detonation,
   hostGameIntroVideoPath,
   ...Object.values(inventoryCategoryIconByCategory),
   ...Object.values(objectiveCategoryIconByCategory),
@@ -219,6 +228,10 @@ export function getSignalTheatreDieFacePath(): string {
 
 export function getSignalTheatreCardRevealPaths(): typeof signalTheatreCardRevealPaths {
   return signalTheatreCardRevealPaths;
+}
+
+export function getSignalTheatreEdgeCardPaths(): typeof signalTheatreEdgeCardPaths {
+  return signalTheatreEdgeCardPaths;
 }
 
 export function getHostGameIntroVideoPath(): string {

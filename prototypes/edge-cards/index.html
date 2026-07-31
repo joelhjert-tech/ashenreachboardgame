@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Ashen Reach Edge Card random-award and TV reveal prototype."
+    />
+    <title>Ashen Reach — Edge Deck</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="signal-grain" aria-hidden="true"></div>
+
+    <header class="top-rail">
+      <a class="brand-lockup" href="#prototype">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+        <span>
+          <strong>Ashen Reach</strong>
+          <small>Mechanics laboratory</small>
+        </span>
+      </a>
+      <span class="wip-stamp">Phase one · Live</span>
+    </header>
+
+    <main id="prototype" class="prototype-shell">
+      <section class="hero">
+        <div class="hero__copy">
+          <p class="eyebrow">Private tactical hand · server awarded</p>
+          <h1>Draw blind.<br /><em>Burn the certainty.</em></h1>
+          <p class="hero__lede">
+            Each player starts with one random Edge Card. Commit its hidden value
+            before an eligible roll; the shared screen reveals and burns the signal.
+          </p>
+        </div>
+
+        <div class="hero__rule" aria-label="Core Edge Card rule">
+          <span class="hero__rule-number">1</span>
+          <div>
+            <strong>One Edge per resolution</strong>
+            <p>Lock one die before the roll. The server rolls the other die and discards the card.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="workbench" aria-label="Edge Card prototype workbench">
+        <aside class="rules-rail">
+          <div class="rail-heading">
+            <span>Rule spine</span>
+            <strong>Private hand</strong>
+          </div>
+
+          <dl class="rule-list">
+            <div>
+              <dt>Start</dt>
+              <dd>1 random</dd>
+            </div>
+            <div>
+              <dt>Hand limit</dt>
+              <dd>2 → 4</dd>
+            </div>
+            <div>
+              <dt>Value range</dt>
+              <dd>1–6</dd>
+            </div>
+            <div>
+              <dt>Live deck</dt>
+              <dd>12 cards</dd>
+            </div>
+          </dl>
+
+          <div class="mode-key">
+            <div>
+              <span class="mode-key__icon mode-key__icon--signal" aria-hidden="true"></span>
+              <p><strong>Commit</strong> Lock one of the upcoming two dice at the card value.</p>
+            </div>
+            <div>
+              <span class="mode-key__icon mode-key__icon--brass" aria-hidden="true"></span>
+              <p><strong>Award</strong> Complete a Contract for another random card if room remains.</p>
+            </div>
+          </div>
+
+          <p class="privacy-note">
+            Card contents remain on the owner's phone. The TV receives only the public result.
+          </p>
+        </aside>
+
+        <section class="deck-stage" aria-labelledby="deck-title">
+          <div class="deck-stage__header">
+            <div>
+              <p class="eyebrow">Calibration spread</p>
+              <h2 id="deck-title">Six value samples</h2>
+            </div>
+            <div class="value-filter" role="group" aria-label="Filter cards by Edge value">
+              <button type="button" class="is-active" data-filter="all">All</button>
+              <button type="button" data-filter="1">1</button>
+              <button type="button" data-filter="2">2</button>
+              <button type="button" data-filter="3">3</button>
+              <button type="button" data-filter="4">4</button>
+              <button type="button" data-filter="5">5</button>
+              <button type="button" data-filter="6">6</button>
+            </div>
+          </div>
+
+          <div id="edge-grid" class="edge-grid" aria-live="polite"></div>
+        </section>
+
+        <aside class="phone-lab" aria-labelledby="phone-title">
+          <div class="phone-lab__label">
+            <span>Owner phone</span>
+            <span>390 px target</span>
+          </div>
+
+          <div class="phone-frame">
+            <div class="phone-status">
+              <span>EDGE WINDOW</span>
+              <span>1 / 2</span>
+            </div>
+
+            <div class="phone-prompt">
+              <p id="phone-timing">Before your roll</p>
+              <h2 id="phone-title">Echo Recast</h2>
+              <span id="phone-band" class="band-badge">Private reserve</span>
+            </div>
+
+            <div class="phone-edge-value">
+              <span>Commit value</span>
+              <strong id="phone-value">4</strong>
+              <small>No explosion · no reroll</small>
+            </div>
+
+            <div class="phone-choice" role="group" aria-label="Preview Edge Card mode">
+              <button id="commit-mode" class="is-active" type="button">Commit 4</button>
+              <button id="ability-mode" type="button" disabled>Ability · later</button>
+            </div>
+
+            <div class="phone-copy">
+              <span id="phone-mode-label">COMMIT MODE</span>
+              <p id="phone-ability">
+                Use 4 as one die in your next enemy battle or Hazard Challenge.
+              </p>
+              <small id="phone-tradeoff">The committed result cannot explode or be rerolled.</small>
+            </div>
+
+            <button class="phone-confirm" type="button">
+              Preview TV reveal
+            </button>
+          </div>
+
+          <p class="phone-lab__note">
+            Select a card, then preview the public TV animation. No game action is sent.
+          </p>
+        </aside>
+      </section>
+
+      <section class="decision-strip" aria-label="Implemented decisions">
+        <div>
+          <span>Starting hand</span>
+          <strong>Exactly 1 random card</strong>
+        </div>
+        <div>
+          <span>Authority</span>
+          <strong>Server draw, timing, discard</strong>
+        </div>
+        <div>
+          <span>Hand growth</span>
+          <strong>2 Contracts → limit 3</strong>
+        </div>
+      </section>
+    </main>
+
+    <section id="tv-preview" class="tv-preview" data-stage="idle" hidden aria-live="assertive">
+      <img
+        class="tv-preview__charge"
+        src="../../public/assets/riftfall/ui/signal-theatre/edge-card/edge-card-charge.png"
+        alt=""
+      />
+      <img
+        class="tv-preview__detonation"
+        src="../../public/assets/riftfall/ui/signal-theatre/edge-card/edge-card-detonation.png"
+        alt=""
+      />
+      <button class="tv-preview__close" type="button" aria-label="Close TV animation preview">Close</button>
+      <p class="tv-preview__actor">Private reserve committed · <strong>Warden</strong></p>
+      <article class="tv-preview__card" aria-label="Revealed Edge Card">
+        <span>Edge Card</span>
+        <strong id="tv-preview-value">4</strong>
+        <h2 id="tv-preview-title">Echo Recast</h2>
+        <small>One die locked</small>
+      </article>
+      <div class="tv-preview__shockwave" aria-hidden="true"></div>
+      <footer class="tv-preview__result">
+        <span>Signal burned</span>
+        <strong id="tv-preview-result">4</strong>
+        <p><b id="tv-preview-result-name">Echo Recast</b><br />One die locked at the revealed value.</p>
+      </footer>
+    </section>
+
+    <script src="./prototype.js"></script>
+  </body>
+</html>

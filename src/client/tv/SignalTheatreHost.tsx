@@ -23,6 +23,7 @@ import {
   SignalCardReveal
 } from "./SignalCardReveal.js";
 import { SignalSectorResolution } from "./SignalSectorResolution.js";
+import { SignalEdgeCardBurst } from "./SignalEdgeCardBurst.js";
 import { SignalJourneyTrack } from "./SignalJourneyTrack.js";
 import {
   getDevPieceVariant,
@@ -611,6 +612,8 @@ export function SignalTheatreHost({
       ) : sectorResolution ? (
         <SignalSectorResolution model={sectorResolution} />
       ) : null}
+
+      <SignalEdgeCardBurst play={payload.edgeCardPlay ?? null} />
 
       {!synchronized ? (
         <section className="signal-theatre__network" role="status" aria-live="polite">

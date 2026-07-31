@@ -97,6 +97,12 @@ import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/aff
 import { buildPendingScarConsequences, getMatchingScarTriggers } from "../rules/scarTriggers.js";
 import { NAMED_PLAYER_FANDIABLOS_ID, requiresBoundFandiablos } from "../rules/namedPlayerRules.js";
 import {
+  EDGE_CARD_BY_ID,
+  EDGE_RULES,
+  getEdgeHandLimit,
+  validateEdgeDeck
+} from "../data/edgeCards.js";
+import {
   applyLegacyCompatibilityNoop,
   isLegacyCompatibilityNoopEffect,
   summarizeLegacyCompatibilityNoop
@@ -1592,6 +1598,223 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         sequence: state.sequence + 1,
         eventLog: [...state.eventLog, action]
       });
+    case "EDGE_DECK_INITIALIZED": {
+      if (state.status !== "active") {
+        return reject(state, action, "Edge Cards may only be dealt after the session starts");
+      }
+      if (state.edgeDeck) {
+        return reject(state, action, "The Edge deck is already initialized");
+      }
+
+      const deckErrors = validateEdgeDeck(action.orderedCardIds);
+      if (deckErrors.length > 0) {
+        return reject(state, action, deckErrors[0] ?? "The Edge deck is invalid");
+      }
+
+      const participantSeatIds = state.turnOrder.filter((seatId) =>
+        state.players.some((player) => player.seatId === seatId)
+      );
+      const dealCount = participantSeatIds.length * EDGE_RULES.startingHand;
+      if (dealCount > action.orderedCardIds.length) {
+        return reject(state, action, "The Edge deck does not contain enough starting cards");
+      }
+
+      const dealtCardBySeatId = new Map(
+        participantSeatIds.map((seatId, index) => [
+          seatId,
+          action.orderedCardIds[index * EDGE_RULES.startingHand]
+        ])
+      );
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players: state.players.map((player) => {
+          const startingCardId = dealtCardBySeatId.get(player.seatId);
+          return startingCardId
+            ? {
+                ...player,
+                private: {
+                  ...player.private,
+                  hand: [
+                    ...player.private.hand.filter((cardId) => !EDGE_CARD_BY_ID.has(cardId)),
+                    startingCardId
+                  ]
+                }
+              }
+            : player;
+        }),
+        edgeDeck: {
+          cycle: 1,
+          remainingCardIds: action.orderedCardIds.slice(dealCount),
+          discardCardIds: []
+        },
+        pendingEdgeCommit: null,
+        lastEdgeCardPlay: null,
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "EDGE_DECK_SHUFFLED": {
+      if (!state.edgeDeck) {
+        return reject(state, action, "The Edge deck is not initialized");
+      }
+      if (state.edgeDeck.remainingCardIds.length > 0) {
+        return reject(state, action, "The Edge deck may only reshuffle when empty");
+      }
+      if (action.cycle !== state.edgeDeck.cycle + 1) {
+        return reject(state, action, "The Edge deck cycle is stale");
+      }
+      const expectedIds = [...state.edgeDeck.discardCardIds].sort();
+      const submittedIds = [...action.orderedCardIds].sort();
+      if (
+        expectedIds.length !== submittedIds.length ||
+        expectedIds.some((cardId, index) => cardId !== submittedIds[index])
+      ) {
+        return reject(state, action, "The shuffled Edge deck does not match its discard pile");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        edgeDeck: {
+          cycle: action.cycle,
+          remainingCardIds: [...action.orderedCardIds],
+          discardCardIds: []
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "EDGE_CARD_AWARDED": {
+      if (!state.edgeDeck) {
+        return reject(state, action, "The Edge deck is not initialized");
+      }
+      const player = state.players.find((entry) => entry.seatId === action.seatId);
+      if (!player) {
+        return reject(state, action, "The Edge Card recipient does not exist");
+      }
+      if (state.edgeDeck.remainingCardIds[0] !== action.cardId) {
+        return reject(state, action, "Edge Cards must be awarded from the top of the server deck");
+      }
+      if (!EDGE_CARD_BY_ID.has(action.cardId)) {
+        return reject(state, action, "Unknown Edge Card");
+      }
+
+      const edgeHand = player.private.hand.filter((cardId) => EDGE_CARD_BY_ID.has(cardId));
+      const handLimit = getEdgeHandLimit({
+        completedContracts: player.character.completedContracts?.length ?? 0,
+        ownedArtifacts: player.character.heldGear.filter((item) => item.tier === "artifact").length
+      });
+      if (edgeHand.length >= handLimit) {
+        return reject(state, action, "The player's Edge Card hand is full");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players: state.players.map((entry) =>
+          entry.seatId === action.seatId
+            ? {
+                ...entry,
+                private: {
+                  ...entry.private,
+                  hand: [...entry.private.hand, action.cardId]
+                }
+              }
+            : entry
+        ),
+        edgeDeck: {
+          ...state.edgeDeck,
+          remainingCardIds: state.edgeDeck.remainingCardIds.slice(1)
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "EDGE_CARD_PLAYED": {
+      try {
+        ensureSeatTurn(state, action.seatId);
+        ensureSeatCanTakeNormalTurnAction(state, action.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot play an Edge Card");
+      }
+
+      if (!state.edgeDeck) {
+        return reject(state, action, "The Edge deck is not initialized");
+      }
+      if (
+        state.phase !== "action" ||
+        !state.currentEncounter ||
+        (state.currentEncounter.cardType !== "enemy" &&
+          state.currentEncounter.cardType !== "hazard") ||
+        state.activeResolution?.stage !== "battle_setup"
+      ) {
+        return reject(state, action, "Edge Cards may only be committed during battle or hazard setup");
+      }
+      if (
+        state.activeResolution.playerId !== action.seatId ||
+        state.activeResolution.id !== action.resolutionId
+      ) {
+        return reject(state, action, "The Edge Card resolution is stale");
+      }
+      if (state.pendingEdgeCommit || state.lastEdgeCardPlay?.resolutionId === action.resolutionId) {
+        return reject(state, action, "Only one Edge Card may be committed to a resolution");
+      }
+
+      const definition = EDGE_CARD_BY_ID.get(action.cardId);
+      if (
+        !definition ||
+        definition.name !== action.cardName ||
+        definition.edgeValue !== action.edgeValue ||
+        action.mode !== EDGE_RULES.liveMode
+      ) {
+        return reject(state, action, "The Edge Card details do not match the authoritative deck");
+      }
+
+      const owner = state.players.find((player) => player.seatId === action.seatId);
+      if (!owner?.private.hand.includes(action.cardId)) {
+        return reject(state, action, "The player does not own that Edge Card");
+      }
+
+      const playId = `edge-play:${action.seatId}:${action.resolutionId}:${action.cardId}:${state.sequence + 1}`;
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players: state.players.map((player) =>
+          player.seatId === action.seatId
+            ? {
+                ...player,
+                private: {
+                  ...player.private,
+                  hand: player.private.hand.filter((cardId) => cardId !== action.cardId)
+                }
+              }
+            : player
+        ),
+        edgeDeck: {
+          ...state.edgeDeck,
+          discardCardIds: [...state.edgeDeck.discardCardIds, action.cardId]
+        },
+        pendingEdgeCommit: {
+          seatId: action.seatId,
+          cardId: action.cardId,
+          cardName: action.cardName,
+          edgeValue: action.edgeValue,
+          resolutionId: action.resolutionId,
+          createdAt: action.createdAt
+        },
+        lastEdgeCardPlay: {
+          id: playId,
+          seatId: action.seatId,
+          cardId: action.cardId,
+          cardName: action.cardName,
+          edgeValue: action.edgeValue,
+          mode: action.mode,
+          resolutionId: action.resolutionId,
+          publicSummary: action.publicSummary,
+          createdAt: action.createdAt
+        },
+        eventLog: [...state.eventLog, { ...action, id: playId }]
+      });
+    }
     case "NAMED_PLAYER_RULES_RECONCILED":
       return succeed({
         ...state,
@@ -2765,6 +2988,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         phase: "resolution",
         resolutionSource: state.pendingTileChallenge ? "tileChallenge" : "encounter",
         pendingEnemyRoll: null,
+        pendingEdgeCommit: null,
         pendingEffect: action.effect,
         pendingFailureReaction: !action.success && action.effect ? {
           id: `failure:hazard:${action.seatId}:${action.createdAt}`,
@@ -2867,6 +3091,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (state.activeResolution?.playerId !== rerollAction.seatId || state.activeResolution.roll?.success !== false) {
         return reject(state, action, "Solo emergency reroll requires a visible failed check");
       }
+      if (state.lastEdgeCardPlay?.seatId === rerollAction.seatId) {
+        return reject(state, action, "A roll containing a committed Edge value cannot be rerolled");
+      }
 
       return succeed(consumeTemporaryAllStatBoost({
         ...state,
@@ -2967,6 +3194,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         phase: "resolution",
         resolutionSource: "encounter",
         pendingEnemyRoll: null,
+        pendingEdgeCommit: null,
         pendingEffect: action.effect,
         activeResolution: buildRollResolution({
           seatId: action.seatId,
@@ -7166,6 +7394,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         pendingSutureStormConsequence: leavingResolution ? null : lifecycleCompletedState.pendingSutureStormConsequence,
         pendingFailureReaction: leavingResolution ? null : lifecycleCompletedState.pendingFailureReaction,
         pendingTileChallenge: leavingResolution ? null : lifecycleCompletedState.pendingTileChallenge,
+        lastEdgeCardPlay: leavingResolution ? null : lifecycleCompletedState.lastEdgeCardPlay,
         activeResolution:
           action.toPhase === "broadcast" && state.activeResolution
             ? {
