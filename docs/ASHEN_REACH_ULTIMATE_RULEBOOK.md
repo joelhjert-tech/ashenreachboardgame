@@ -243,6 +243,8 @@ Modifiers do not alter resting/base values unless an effect explicitly grants a 
 
 Equipment uses weapon, armor, and utility slots. **Equipped** items can contribute where their typed rule permits. **Carried** items remain owned but are not automatically active. Artifacts, consumables, followers, and completed missions are presented separately.
 
+The active operative may change equipped Gear during setup, during their open Action phase, and in the pre-roll loadout window for a battle or Challenge. That pre-roll window covers card reveal and battle setup, and closes as soon as the server accepts the roll. Equipment changes made after rolling begins are rejected without changing the loadout. The exact equipped copies persist through reconnect and are the copies used when the server builds the final test formula.
+
 The sixteen standard passive Equipment cards with a printed +1 bonus now use one rule: **while equipped, gain the printed +1 stat bonus**. Their old situational flavor phrases do not create extra conditions. Unequipped, sold, or suppressed copies contribute nothing.
 
 No general carried-inventory limit is currently verified. Do not discard items because another game has an object limit.
@@ -266,6 +268,8 @@ Viewing or declining a prompt spends nothing. A rejected stale, wrong-seat, inva
 ## 24. Followers
 
 Followers are owned separately from gear. Passive followers apply only through their typed rule. Exhaust followers show Ready/Exhausted and refresh in their authored window. A follower is not Equipment unless its runtime definition explicitly says so.
+
+Followers appear beside Gear in the pre-roll loadout so the active operative can review them and use any ability whose authored timing is currently eligible. Followers do not occupy weapon, armor, or utility slots, so opening the loadout does not create a general equip/unequip choice for them; all owned followers remain attached unless a specific rule removes one.
 
 No general follower limit is currently verified.
 

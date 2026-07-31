@@ -213,6 +213,7 @@ import {
 import {
   getStatUpgradeCost,
   getStatUpgradeDisabledReason,
+  getStatUpgradeWindow,
   isUpgradeableStat,
   NORMAL_STAT_UPGRADE_CAP
 } from "../game/rules/statUpgrades.js";
@@ -11452,8 +11453,8 @@ export class GameRoomServer {
       throw new Error(`Missing player for seat ${intent.seatId}`);
     }
 
-    if (this.state.status !== "active" || (this.state.phase !== "action" && this.state.phase !== "broadcast")) {
-      throw new Error("Stat upgrades are only available during a safe action or broadcast window");
+    if (this.state.status !== "active" || !getStatUpgradeWindow(this.state.phase)) {
+      throw new Error("Stat upgrades are only available during Setup or Experience");
     }
 
     if (this.state.turnOrder[this.state.activeSeatIndex] !== intent.seatId) {

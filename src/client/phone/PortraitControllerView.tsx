@@ -15,7 +15,7 @@ import {
 } from "../shared/objectivePresentation.js";
 import { useFocusOnRevision } from "../shared/useFocusOnRevision.js";
 import { usePhoneFullscreen } from "../shared/usePhoneFullscreen.js";
-import { getMissionTargetClue } from "../shared/missionRelevance.js";
+import { getMissionObjectiveCategory, getMissionTargetClue } from "../shared/missionRelevance.js";
 import { formatSeatLabel, gearSlotLabelById, statLabelById, statOrder } from "../shared/statLabels.js";
 import type {
   CharacterCatalogEntry,
@@ -77,7 +77,6 @@ type PortraitTab = SignalPhoneTab;
 
 const turnActionTabs: TurnActionTab[] = ["move", "battle", "shop", "action"];
 const gearSlots: GearSlot[] = ["weapon", "armor", "utility"];
-const phoneChromeStorageKey = "ashenreach.phoneChromeVisible";
 
 function PhoneScenarioArt({ path, title }: { path?: string | null; title: string }): ReactElement | null {
   const [failed, setFailed] = useState(false);
@@ -186,31 +185,6 @@ function getPhoneActionGuidance(patch: PhonePatchPayload | null, self: PhoneSelf
   }
 
   return { requiredTab: null, title: "Turn in progress", detail: "Follow the current table state.", canAct: false };
-}
-
-function readStoredPhoneChromeVisible(): boolean {
-  if (typeof window === "undefined") {
-    return true;
-  }
-
-  try {
-    const stored = window.localStorage.getItem(phoneChromeStorageKey);
-    return stored === null ? true : stored !== "false" && stored !== "0";
-  } catch {
-    return true;
-  }
-}
-
-function writeStoredPhoneChromeVisible(visible: boolean): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(phoneChromeStorageKey, visible ? "true" : "false");
-  } catch {
-    // Local storage can be unavailable in private browser contexts.
-  }
 }
 
 function getCompactStatSummary(self: PhoneSelfState, stat: Stat, suppressedInstanceIds: ReadonlySet<string>): string {
@@ -495,7 +469,7 @@ function ContractMissionCard({
         <strong>{contract.name}</strong>
       </div>
       <div className="phone-starting-mission-footer">
-        <span>{contract.objective.type === "defeatCount" ? "Threat lane" : "Sector action"}</span>
+        <span>{getMissionObjectiveCategory(contract)}</span>
         {onSelect ? (
           <button
             type="button"
@@ -778,7 +752,7 @@ function ActiveMissionQuestCard({
         <p>{presentation.lore}</p>
       </details>
       <div className="phone-portrait-chip-row phone-active-mission-chip-row">
-        <span>{contract.objective.type === "defeatCount" ? "Threat lane" : "Sector action"}</span>
+        <span>{getMissionObjectiveCategory(contract)}</span>
         <span>Personal</span>
       </div>
     </article>
@@ -961,7 +935,6 @@ export function PortraitControllerView({
   startSubmitting = false
 }: PortraitControllerViewProps): ReactElement {
   const [activeTab, setActiveTab] = useState<PortraitTab>("player");
-  const [phoneChromeVisible, setPhoneChromeVisible] = useState(readStoredPhoneChromeVisible);
   const [bottomDockExpanded, setBottomDockExpanded] = useState(false);
   const bottomDockCollapseTimerRef = useRef<number | null>(null);
   const bottomDockRef = useRef<HTMLElement | null>(null);
@@ -1000,7 +973,6 @@ export function PortraitControllerView({
   const phoneScrollRef = useRef<HTMLElement | null>(null);
   const pendingTabScrollRef = useRef<"top" | "required" | null>(null);
   const lastAutoRoutedActionRef = useRef<string | null>(null);
-  const phoneChromeHidden = !phoneChromeVisible;
   const actionGuidance = self ? getPhoneActionGuidance(patch, self) : null;
 
   const scrollPhoneContent = (target: "top" | "required"): void => {
@@ -1040,6 +1012,14 @@ export function PortraitControllerView({
     scrollPhoneContent(pending);
   }, [activeTab]);
 
+  useLayoutEffect(() => {
+    if (patch?.status !== "active" || typeof document === "undefined") return;
+    const scrollingElement = document.scrollingElement;
+    if (scrollingElement) scrollingElement.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [activeTab, patch?.status, patchSequence]);
+
   usePhoneBackDismissal(true, () => {
     if (bottomDockExpanded) {
       setBottomDockExpanded(false);
@@ -1060,37 +1040,9 @@ export function PortraitControllerView({
   });
 
   useEffect(() => {
-    writeStoredPhoneChromeVisible(phoneChromeVisible);
-  }, [phoneChromeVisible]);
-
-  useEffect(() => {
     if (!patch?.setup?.stage) return;
     lobbyScrollRef.current?.scrollTo?.({ top: 0, behavior: "auto" });
   }, [patch?.setup?.stage]);
-
-  useEffect(() => {
-    if (phoneChromeVisible || typeof window === "undefined") {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setPhoneChromeVisible(true);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [phoneChromeVisible]);
-
-  const hidePhoneChrome = () => {
-    setPhoneChromeVisible(false);
-  };
-
-  const showPhoneChrome = () => {
-    setPhoneChromeVisible(true);
-  };
 
   const showBottomDock = () => {
     if (bottomDockCollapseTimerRef.current !== null) window.clearTimeout(bottomDockCollapseTimerRef.current);
@@ -1392,8 +1344,6 @@ export function PortraitControllerView({
   );
 
   const handleLeave = () => {
-    writeStoredPhoneChromeVisible(true);
-    setPhoneChromeVisible(true);
     onLeave();
   };
 
@@ -1444,7 +1394,7 @@ export function PortraitControllerView({
   );
   const focusedResolutionTab: TurnActionTab = opposedBattleActive ? "battle" : "action";
   const matchEnded = patch?.status === "ended";
-  const focusedResolutionActive = matchEnded || opposedBattleActive || challengeTrialActive || cooperativeAssistanceActive;
+  const focusedResolutionActive = matchEnded || challengeTrialActive || cooperativeAssistanceActive;
   const suppressedEquipmentInstanceIds = new Set(
     (patch?.equipmentSuppressions ?? [])
       .filter((suppression) => suppression.active)
@@ -1737,7 +1687,7 @@ export function PortraitControllerView({
     "phone-portrait-controller",
     "phone-ui-streamlined",
     "signal-phone-shell",
-    phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--immersive",
+    "phone-shell--chrome-visible",
     bottomDockExpanded ? "phone-shell--bottomdock-expanded" : "phone-shell--bottomdock-compact",
     focusedResolutionActive ? "phone-shell--battle-active" : "",
     challengeTrialActive ? "phone-shell--trial-active" : "",
@@ -1757,7 +1707,6 @@ export function PortraitControllerView({
   const contentClassName = [
     "phone-portrait-scroll",
     "signal-phone-shell__content",
-    phoneChromeHidden ? "phone-content--expanded" : "",
     focusedResolutionActive ? "phone-battle-content" : "",
     scarSelectorActive ? "phone-scar-choice-content" : ""
   ]
@@ -1836,29 +1785,20 @@ export function PortraitControllerView({
   return (
     <section
       className={rootClassName}
-      data-phone-chrome-visible={phoneChromeVisible ? "true" : "false"}
+      data-phone-chrome-visible="true"
       data-phone-bottom-dock-expanded={bottomDockExpanded ? "true" : "false"}
       data-active-tab={activeTab}
     >
       <div className="phone-portrait-panel">
-        {phoneChromeVisible ? (
-          <SignalPhoneIdentityRail
-            characterId={self.character.id}
-            characterName={self.character.name}
-            displayName={displayName}
-            wounds={self.character.wounds}
-            salvage={self.character.salvage ?? 0}
-            sectorId={self.sectorId}
-            connectionStatus={connectionStatus}
-          />
-        ) : (
-          <header className="signal-phone-compact-status phone-topbar--compact" aria-label="Compact player status">
-            <strong>{self.character.name}</strong>
-            <span>
-              {self.character.wounds} wounds | {self.character.salvage ?? 0} Salvage | {scarCount} scars
-            </span>
-          </header>
-        )}
+        <SignalPhoneIdentityRail
+          characterId={self.character.id}
+          characterName={self.character.name}
+          displayName={displayName}
+          wounds={self.character.wounds}
+          salvage={self.character.salvage ?? 0}
+          sectorId={self.sectorId}
+          connectionStatus={connectionStatus}
+        />
 
         <main
           ref={phoneScrollRef}
@@ -2268,17 +2208,6 @@ export function PortraitControllerView({
                 onClick={onLeave}
               >
                 Leave Room
-              </button>
-              <button
-                type="button"
-                className="phone-portrait-tab phone-portrait-tab-utility phone-display-menu-action"
-                onClick={() => {
-                  hideBottomDock();
-                  if (phoneChromeVisible) hidePhoneChrome();
-                  else showPhoneChrome();
-                }}
-              >
-                {phoneChromeVisible ? "Hide UI" : "Show UI"}
               </button>
               {fullscreen.supported ? <button
                 type="button"

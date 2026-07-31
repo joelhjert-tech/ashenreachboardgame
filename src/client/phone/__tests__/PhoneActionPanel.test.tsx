@@ -235,7 +235,8 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByRole("region", { name: /compare scar choices/i })).toBeVisible();
     expect(screen.getByRole("button", { name: /inspect relay ghost/i })).toBeVisible();
-    expect(screen.getByRole("button", { name: /inspect choir static/i })).toBeVisible();
+    expect(screen.queryByRole("button", { name: /inspect choir static/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /next scar/i })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /accept relay ghost/i }));
 
     expect(onIntent).toHaveBeenCalledTimes(1);
@@ -247,7 +248,7 @@ describe("PhoneActionPanel", () => {
     });
   });
 
-  it("keeps an owner-private Scar choice actionable over an active battle", () => {
+  it("prioritizes the one-at-a-time owner-private Scar selector over an active battle", () => {
     const onIntent = vi.fn<(intent: ClientIntent) => void>();
     render(
       <PhoneActionPanel
@@ -299,8 +300,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
-    const choice = screen.getByRole("button", { name: /choose relay ghost/i });
+    expect(screen.queryByTestId("phone-battle-shell")).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /compare scar choices/i })).toBeVisible();
+    const choice = screen.getByRole("button", { name: /accept relay ghost/i });
     expect(choice).toBeEnabled();
 
     fireEvent.click(choice);
@@ -3156,8 +3158,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-resolution-card")).toHaveAttribute("data-result-ready-gate", "true");
-    expect(screen.getByTestId("phone-resolution-card")).not.toHaveTextContent(/result ready.*waits for your choice/i);
+    expect(screen.getByTestId("phone-battle-outcome")).toHaveTextContent(/threat defeated/i);
+    expect(screen.getByTestId("phone-battle-cinematic-stage")).toHaveTextContent(/12/);
+    expect(screen.queryByTestId("phone-resolution-card")).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /^continue$/i })).toHaveLength(1);
   });
 
@@ -3515,7 +3518,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByTestId("phone-battle-total-comparison")).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/battle details/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /roll grit/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^gear$/i })).toBeEnabled();
+    expect(screen.queryByRole("navigation", { name: /battle navigation/i })).not.toBeInTheDocument();
     expect(shell).not.toHaveTextContent(/attack|defense|a\/d/i);
 
     fireEvent.click(screen.getByRole("button", { name: /roll grit/i }));
@@ -3884,16 +3887,15 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-resolution-card")).toBeInTheDocument();
-    expect(screen.getByLabelText("Die 1: 6")).toBeVisible();
-    expect(screen.getByLabelText("Die 2: 4")).toBeVisible();
-    expect(screen.queryByText(/the gate yields|threat defeated|added to the trophy pile/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-resolution-card")).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-outcome")).toHaveTextContent(/threat defeated/i);
+    expect(screen.getByTestId("phone-battle-outcome")).toHaveTextContent(/trophy added/i);
     expect(screen.queryByText(/BattleThreatGrit/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-current-prompt")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /continue/i })).toHaveLength(1);
     expect(screen.getByRole("button", { name: /continue/i })).toBeEnabled();
-    expect(screen.queryByTestId("phone-battle-action-dock")).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-action-dock")).toBeInTheDocument();
     expect(screen.queryByText(/equipped \+2/i)).not.toBeInTheDocument();
   });
 
@@ -3955,11 +3957,10 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByLabelText("Die 1: 2")).toBeVisible();
-    expect(screen.getByLabelText("Die 2: 3")).toBeVisible();
-    expect(screen.queryByText(/the signal breaks|operative defeated|you suffered 1 wound/i)).not.toBeInTheDocument();
-    expect(screen.getByTestId("phone-resolution-card")).toBeInTheDocument();
-    expect(screen.getByTestId("phone-battle-shell")).toHaveClass("phone-battle-shell--result-gate", "phone-battle-shell--defeat");
+    expect(screen.getByTestId("phone-battle-outcome")).toHaveTextContent(/test failed/i);
+    expect(screen.getByTestId("phone-battle-outcome")).toHaveTextContent(/you suffered 1 wound/i);
+    expect(screen.queryByTestId("phone-resolution-card")).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toHaveClass("phone-battle-shell--defeat");
     expect(screen.queryByText(/no quick actions available/i)).not.toBeInTheDocument();
   });
 
@@ -4050,7 +4051,7 @@ describe("PhoneActionPanel", () => {
     expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({ type: "CONTINUE_RESOLUTION" }));
   });
 
-  it("shows battle assist and opens usable combat cards during an enemy encounter", () => {
+  it("opens the full pre-roll Gear and follower loadout during an enemy encounter", () => {
     const onIntent = vi.fn();
     const heldGear = [
       {
@@ -4098,12 +4099,19 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
-    expect(screen.getByText("Equipment available")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: /^gear$/i }));
-    expect(screen.getByLabelText(/gear battle context/i)).toHaveTextContent(/black route fuse/i);
-    expect(screen.getByLabelText(/gear battle context/i)).not.toHaveTextContent(/coffin rig/i);
+    fireEvent.click(screen.getByRole("button", { name: /adjust loadout/i }));
+    expect(screen.getByLabelText(/loadout battle context/i)).toHaveTextContent(/black route fuse/i);
+    expect(screen.getByLabelText(/loadout battle context/i)).toHaveTextContent(/coffin rig/i);
+    fireEvent.click(screen.getByRole("button", { name: /equip armor/i }));
     fireEvent.click(screen.getByRole("button", { name: /use black route fuse/i }));
 
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "EQUIP_GEAR",
+      seatId: "seat-1",
+      gearId: "coffin-rig",
+      instanceId: undefined,
+      slot: "armor"
+    });
     expect(onIntent).toHaveBeenCalledWith({
       type: "USE_GEAR",
       seatId: "seat-1",
@@ -4111,7 +4119,7 @@ describe("PhoneActionPanel", () => {
     });
   });
 
-  it("does not present Grit-only combat cards during Command battles", () => {
+  it("shows off-stat Gear for switching without offering an ineligible active ability", () => {
     const heldGear = [
       {
         id: "red-march-warbell",
@@ -4151,8 +4159,8 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /^gear$/i }));
-    expect(screen.getByLabelText(/gear battle context/i)).toHaveTextContent(/no gear is eligible/i);
+    fireEvent.click(screen.getByRole("button", { name: /adjust loadout/i }));
+    expect(screen.getByLabelText(/loadout battle context/i)).toHaveTextContent(/red march warbell/i);
     expect(screen.queryByRole("button", { name: /use red march warbell/i })).not.toBeInTheDocument();
   });
 
@@ -4191,8 +4199,8 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /^gear$/i }));
-    expect(screen.getByLabelText(/gear battle context/i)).toHaveTextContent(/no gear is eligible/i);
+    expect(screen.getByRole("button", { name: /adjust loadout/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /enter combat/i })).toBeEnabled();
   });
 
   it("keeps trophies and stat upgrades out of the sector action tab", () => {

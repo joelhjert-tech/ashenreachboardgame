@@ -160,9 +160,11 @@ import { canEndTurn, getServiceThreatGate } from "../rules/tileFunctions.js";
 import {
   getStatUpgradeCost,
   getStatUpgradeDisabledReason,
+  getStatUpgradeWindow,
   isUpgradeableStat,
   NORMAL_STAT_UPGRADE_CAP
 } from "../rules/statUpgrades.js";
+import { getLoadoutDisabledReason, getLoadoutWindow, type LoadoutWindowContext } from "../rules/loadoutWindow.js";
 import {
   advanceContractObjectiveProgress,
   getContractObjectiveTarget,
@@ -1440,6 +1442,42 @@ function addFollowerToPlayer(
   };
 }
 
+function canManageLoadout(state: GameState, seatId: string): void {
+  const context: LoadoutWindowContext = {
+    status: state.status,
+    phase: state.phase,
+    seatId,
+    activeSeatId: getActiveSeatId(state),
+    activeResolution: state.activeResolution
+      ? {
+          playerId: state.activeResolution.playerId,
+          stage: state.activeResolution.stage,
+          hasBattle: Boolean(state.activeResolution.battle)
+        }
+      : null,
+    pendingTileChallenge: state.pendingTileChallenge
+      ? { seatId: state.pendingTileChallenge.seatId, rolled: state.pendingTileChallenge.rolled }
+      : null,
+    encounterCardType: state.currentEncounter?.cardType ?? state.activeResolution?.card?.type ?? null,
+    pendingEnemyRoll: Boolean(state.pendingEnemyRoll)
+  };
+  const window = getLoadoutWindow(context);
+
+  if (window === "setup") {
+    const seat = state.seats.find((entry) => entry.seatId === seatId);
+    if (!seat?.displayName || seat.kicked || seat.characterSelected === false) {
+      throw new Error("Choose an operative before managing starting gear");
+    }
+    requirePlayer(state, seatId);
+    return;
+  }
+
+  ensureSeatTurn(state, seatId);
+  ensureSeatCanTakeNormalTurnAction(state, seatId);
+
+  if (!window) throw new Error(getLoadoutDisabledReason(context));
+}
+
 function canManageGear(state: GameState, seatId: string): void {
   if (state.status === "lobby" && state.phase === "start") {
     const seat = state.seats.find((entry) => entry.seatId === seatId);
@@ -1576,8 +1614,8 @@ function canRaiseStat(state: GameState, seatId: string): void {
   ensureSeatTurn(state, seatId);
   ensureSeatCanTakeNormalTurnAction(state, seatId);
 
-  if (state.phase !== "action" && state.phase !== "broadcast") {
-    throw new Error(`Cannot raise a stat during phase ${state.phase}`);
+  if (!getStatUpgradeWindow(state.phase)) {
+    throw new Error(`Cannot raise a stat during ${state.phase}; upgrades require Setup or Experience`);
   }
 
   if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect || state.activeResolution) {
@@ -4689,7 +4727,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const equipAction = action as EquipGearAction;
 
       try {
-        canManageGear(state, equipAction.seatId);
+        canManageLoadout(state, equipAction.seatId);
       } catch (error) {
         return reject(state, action, error instanceof Error ? error.message : "Seat cannot manage gear");
       }
@@ -4731,7 +4769,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const unequipAction = action as UnequipGearAction;
 
       try {
-        canManageGear(state, unequipAction.seatId);
+        canManageLoadout(state, unequipAction.seatId);
       } catch (error) {
         return reject(state, action, error instanceof Error ? error.message : "Seat cannot manage gear");
       }

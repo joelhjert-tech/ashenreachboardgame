@@ -2,11 +2,11 @@
   "id": "cleanse-ember-sanctum",
   "name": "Cleanse Ember Sanctum",
   "factionGiver": "Meridian Compact",
-  "text": "Scrape the old ash from a sanctum that still believes every visitor is kindling.",
+  "text": "At Pilgrim Lock Gate, complete the Pilgrim Rest rite after the approach is clear and cool the buried ember sanctuary.",
   "objective": {
     "type": "spaceTextResolved",
     "effectKey": "outer_emberSanctumRest",
-    "label": "Ember sanctum cleansed",
+    "label": "Resolve Pilgrim Rest at Pilgrim Lock Gate",
     "target": 1
   },
   "reward": {

@@ -3,6 +3,7 @@ import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import {
   getStatUpgradeCost,
   getStatUpgradeDisabledReason,
+  getStatUpgradeWindow,
   NORMAL_STAT_UPGRADE_CAP
 } from "../../game/rules/statUpgrades.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
@@ -21,14 +22,15 @@ import {
   type InventoryCardViewModel
 } from "./inventoryPresentation.js";
 import { PhoneMissionRelicExchange } from "./PhoneMissionRelicExchange.js";
+import { getPhoneLoadoutDisabledReason, getPhoneLoadoutWindow } from "./loadoutWindow.js";
 
 interface PhoneInventoryPanelProps {
   patch: PhonePatchPayload;
   onIntent: ((intent: ClientIntent) => void) | null;
   compact?: boolean;
   onlyUsable?: boolean;
+  loadoutOnly?: boolean;
   onUse?: () => void;
-  onReturnToAction?: () => void;
 }
 
 function InventoryDisclosure({
@@ -244,13 +246,15 @@ function InventoryCard({
   seatId,
   onIntent,
   onUse,
-  canManageEquipment
+  canManageEquipment,
+  equipmentDisabledReason
 }: {
   card: InventoryCardViewModel;
   seatId: string;
   onIntent: ((intent: ClientIntent) => void) | null;
   onUse?: () => void;
   canManageEquipment: boolean;
+  equipmentDisabledReason: string;
 }): ReactElement {
   const [oathchainConfirming, setOathchainConfirming] = useState(false);
   const [submitting, setSubmitting] = useState<"use" | "equip" | null>(null);
@@ -320,7 +324,7 @@ function InventoryCard({
             tone="secondary"
             className="phone-button phone-inventory-equip-button"
             disabled={!canManageEquipment || submitting !== null}
-            disabledReason={canManageEquipment ? undefined : "Equip gear during setup or your Action phase."}
+            disabledReason={canManageEquipment ? undefined : equipmentDisabledReason}
             onClick={() => {
               if (submitting) return;
               setSubmitting("equip");
@@ -528,6 +532,22 @@ function InventoryProgressionSection({
 
   const trophyPile = self.character.trophyPile ?? [];
   const pileAvailableValue = trophyPile.reduce((total, entry) => total + getTrophyPileEntryAvailableValue(entry), 0);
+  const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
+  const namedUpgradeWindow = getStatUpgradeWindow(patch.phase);
+  const upgradeWindowOpen = Boolean(
+    patch.status === "active"
+      && activeSeatId === self.seatId
+      && namedUpgradeWindow
+      && !patch.encounter
+      && !patch.pendingEnemyRoll
+      && !patch.activeResolution
+  );
+  const timingDisabledReason = upgradeWindowOpen
+    ? null
+    : "Skill upgrades unlock only during your Setup or Experience window, after the current resolution is clear.";
+  const confirmedUpgrade = (patch.playerResultDeltas ?? patch.publicResultDeltas ?? []).find(
+    (delta) => delta.type === "statUpgrade" && (!delta.targetSeatId || delta.targetSeatId === self.seatId)
+  );
   return (
     <section className="phone-inventory-progression" aria-label="Progression" data-testid="phone-inventory-progression">
       <div className="phone-inventory-progression-header">
@@ -560,19 +580,34 @@ function InventoryProgressionSection({
 
       <div className="phone-inventory-upgrades">
         <span className="phone-inventory-upgrades-title">Available Upgrades</span>
-        <p className="phone-inventory-upgrades-copy">Choose one skill. The server spends Trophies only after you confirm.</p>
+        <div
+          className={`phone-inventory-upgrade-window${upgradeWindowOpen ? " is-open" : " is-locked"}`}
+          data-testid="phone-inventory-upgrade-window"
+          data-window-open={upgradeWindowOpen ? "true" : "false"}
+        >
+          <span>{upgradeWindowOpen ? `${namedUpgradeWindow} window open` : "Upgrades locked"}</span>
+          <small>{upgradeWindowOpen ? "Choose a skill, review the cost, then confirm." : timingDisabledReason}</small>
+        </div>
+        {confirmedUpgrade ? (
+          <div className="phone-inventory-upgrade-receipt" role="status" data-testid="phone-inventory-upgrade-receipt">
+            <span>Upgrade confirmed</span>
+            <strong>{confirmedUpgrade.privateText ?? confirmedUpgrade.publicText}</strong>
+          </div>
+        ) : null}
+        <p className="phone-inventory-upgrades-copy">The server spends Trophies only after you confirm.</p>
         <div className="phone-inventory-upgrade-grid">
           {statOrder.map((stat) => {
             const currentValue = self.character.stats[stat];
             const nextValue = Math.min(currentValue + 1, NORMAL_STAT_UPGRADE_CAP);
             const cost = getStatUpgradeCost(currentValue);
-            const disabledReason = getStatUpgradeDisabledReason({
+            const eligibilityDisabledReason = getStatUpgradeDisabledReason({
               stat: stat as Stat,
               currentValue,
               trophies,
               qaOnly: self.character.qaOnly === true,
               cap: NORMAL_STAT_UPGRADE_CAP
             });
+            const disabledReason = timingDisabledReason ?? eligibilityDisabledReason ?? (!onIntent ? "Controller is not synchronized." : null);
             const label = currentValue >= NORMAL_STAT_UPGRADE_CAP
               ? `${statLabelById[stat]} ${currentValue}`
               : `${statLabelById[stat]} ${currentValue} -> ${nextValue}`;
@@ -597,17 +632,18 @@ function InventoryProgressionSection({
         {selectedUpgrade ? (() => {
           const currentValue = self.character.stats[selectedUpgrade];
           const cost = getStatUpgradeCost(currentValue);
-          const disabledReason = getStatUpgradeDisabledReason({
+          const eligibilityDisabledReason = getStatUpgradeDisabledReason({
             stat: selectedUpgrade,
             currentValue,
             trophies,
             qaOnly: self.character.qaOnly === true,
             cap: NORMAL_STAT_UPGRADE_CAP
           });
+          const disabledReason = timingDisabledReason ?? eligibilityDisabledReason ?? (!onIntent ? "Controller is not synchronized." : null);
           return (
             <div className="phone-inventory-upgrade-confirm" role="group" aria-label={`Confirm ${statLabelById[selectedUpgrade]} upgrade`}>
               <div>
-                <span>{statLabelById[selectedUpgrade]}</span>
+                <span>{namedUpgradeWindow ?? "Locked"} upgrade · {statLabelById[selectedUpgrade]}</span>
                 <strong>{currentValue} → {Math.min(currentValue + 1, NORMAL_STAT_UPGRADE_CAP)}</strong>
                 <small>{disabledReason ?? `${cost} Trophies will be spent · ${Math.max(0, trophies - cost)} remain`}</small>
               </div>
@@ -637,8 +673,8 @@ export function PhoneInventoryPanel({
   onIntent,
   compact = false,
   onlyUsable = false,
-  onUse,
-  onReturnToAction
+  loadoutOnly = false,
+  onUse
 }: PhoneInventoryPanelProps): ReactElement {
   const self = patch.self;
 
@@ -652,12 +688,17 @@ export function PhoneInventoryPanel({
 
   const presentation = getInventoryPresentation(patch)!;
   const allCards = [...presentation.relevantNow, ...presentation.groups.flatMap((group) => group.items)];
+  const loadoutCards = allCards.filter((card) => card.source === "gear" || card.source === "follower");
   const relevantCards = (presentation.relevantNow.length > 0 || !onlyUsable
     ? presentation.relevantNow
     : allCards.filter((card) => card.canUseNow)
   ).filter((card) => onlyUsable ? card.canUseNow : true);
   const edgeCards = patch.edgeHand?.cards ?? [];
-  const visibleItemCount = onlyUsable ? relevantCards.length : allCards.length + edgeCards.length;
+  const visibleItemCount = onlyUsable
+    ? relevantCards.length
+    : loadoutOnly
+      ? loadoutCards.length
+      : allCards.length + edgeCards.length;
   const artifactCards = allCards.filter((card) => card.group === "Artifacts / Relics");
   const followerCards = allCards.filter((card) => card.group === "Followers");
   const equipmentCards = allCards.filter((card) => card.group !== "Artifacts / Relics" && card.group !== "Followers");
@@ -745,13 +786,15 @@ export function PhoneInventoryPanel({
       actionAvailable: false
     }
   ];
-  const defaultOpenCategory = categories.find((category) => category.actionAvailable)?.id
-    ?? categories.find((category) => category.count > 0)?.id
+  const loadoutWindow = getPhoneLoadoutWindow(patch, self.seatId);
+  const canManageEquipment = Boolean(loadoutWindow);
+  const equipmentDisabledReason = getPhoneLoadoutDisabledReason(patch, self.seatId);
+  const visibleCategories = loadoutOnly
+    ? categories.filter((category) => category.id === "equipment" || category.id === "artifacts" || category.id === "followers")
+    : categories;
+  const defaultOpenCategory = visibleCategories.find((category) => category.actionAvailable)?.id
+    ?? visibleCategories.find((category) => category.count > 0)?.id
     ?? "equipment";
-  const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
-  const canManageEquipment =
-    (patch.status === "lobby" && patch.phase === "start") ||
-    (patch.status === "active" && patch.phase === "action" && activeSeatId === self.seatId && !patch.activeResolution && !patch.encounter);
   const panelClassName = [
     "phone-inventory-panel",
     compact ? "phone-inventory-panel-compact" : "",
@@ -762,7 +805,13 @@ export function PhoneInventoryPanel({
 
   return (
     <section className={panelClassName} aria-label="Inventory" data-item-count={visibleItemCount}>
-      {!onlyUsable ? (
+      {loadoutOnly ? (
+        <section className="phone-inventory-loadout-window" aria-label="Pre-roll loadout" data-window-open={canManageEquipment ? "true" : "false"}>
+          <span>Pre-roll loadout</span>
+          <strong>{canManageEquipment ? `${loadoutWindow === "challenge" ? "Challenge" : loadoutWindow === "battle" ? "Battle" : "Loadout"} window open` : "Loadout locked"}</strong>
+          <p>{canManageEquipment ? "Switch equipped Gear now. Eligible follower abilities remain available until the roll begins." : equipmentDisabledReason}</p>
+        </section>
+      ) : !onlyUsable ? (
         <section className="phone-inventory-relevant" aria-label="Relevant now" data-testid="phone-inventory-relevant-now">
           <div className="phone-inventory-relevant-heading">
             <div><span>Relevant now</span><strong>{presentation.context.label}</strong></div>
@@ -776,26 +825,7 @@ export function PhoneInventoryPanel({
           ) : <p>Nothing you own changes this decision. Continue with the required action.</p>}
         </section>
       ) : null}
-      <div className="phone-inventory-command-header">
-        <div>
-          <span>Inventory context</span>
-          <strong>{presentation.context.label}</strong>
-          {presentation.context.testedSkill ? <em>{statLabelById[presentation.context.testedSkill]} matters now</em> : null}
-        </div>
-        <dl aria-label="Essential operative state">
-          <div><dt>Wounds</dt><dd>{presentation.operative.wounds}</dd></div>
-          <div><dt>Scars</dt><dd>{presentation.operative.scars}</dd></div>
-          <div><dt>Salvage</dt><dd>{presentation.operative.salvage}</dd></div>
-          <div><dt>Owned</dt><dd>{presentation.operative.heldCount + edgeCards.length}</dd></div>
-        </dl>
-        {presentation.context.requiredAction ? <p>{presentation.context.requiredAction}</p> : null}
-        {onReturnToAction && patch.requiredAction?.requiredTab ? (
-          <GameButton type="button" tone="action" className="phone-button phone-inventory-return-action" onClick={onReturnToAction}>
-            Return to {patch.requiredAction.requiredTab === "battle" ? "Battle" : patch.requiredAction.requiredTab === "move" ? "Move" : patch.requiredAction.requiredTab === "shop" ? "Shop" : "Action"}
-          </GameButton>
-        ) : null}
-      </div>
-      {!onlyUsable ? <div className="phone-inventory-collection-heading"><span>Inventory categories</span><small>Expand a reliquary drawer</small></div> : null}
+      {!onlyUsable ? <div className="phone-inventory-collection-heading"><span>{loadoutOnly ? "Gear & followers" : "Inventory categories"}</span><small>Expand a reliquary drawer</small></div> : null}
       {onlyUsable && relevantCards.length === 0 ? (
         <p className="phone-sheet-action-empty">
           No combat cards are usable in this timing window.
@@ -811,12 +841,12 @@ export function PhoneInventoryPanel({
         >
           <div className="phone-inventory-card-list">
             {relevantCards.map((card) => (
-              <InventoryCard key={`${card.source}-${card.instanceId ?? card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} canManageEquipment={canManageEquipment} />
+              <InventoryCard key={`${card.source}-${card.instanceId ?? card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} canManageEquipment={canManageEquipment} equipmentDisabledReason={equipmentDisabledReason} />
             ))}
           </div>
         </InventoryDisclosure>
       ) : (
-        categories.map((category) => (
+        visibleCategories.map((category) => (
           <InventoryDisclosure
             key={category.id}
             label={category.label}
@@ -829,7 +859,7 @@ export function PhoneInventoryPanel({
             {category.cards.length > 0 ? (
               <div className="phone-inventory-card-list">
                 {category.cards.map((card) => (
-                  <InventoryCard key={`${card.source}-${card.instanceId ?? card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} canManageEquipment={canManageEquipment} />
+                  <InventoryCard key={`${card.source}-${card.instanceId ?? card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} canManageEquipment={canManageEquipment} equipmentDisabledReason={equipmentDisabledReason} />
                 ))}
               </div>
             ) : null}

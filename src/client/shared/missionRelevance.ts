@@ -7,6 +7,16 @@ export interface MissionRelevance {
   reason: string;
 }
 
+export function getMissionObjectiveCategory(contract: ContractCard): string {
+  switch (contract.objective.type) {
+    case "defeatCount": return "Threat hunt";
+    case "spaceTextResolved": return "Tile action";
+    case "multiStopRoute": return "Route";
+    case "shopTransaction": return "Shop";
+    case "tileChallengeResolved": return "Tile challenge";
+  }
+}
+
 interface MissionRelevanceOptions {
   threatIcons?: Array<ThreatIcon | string>;
   faceUpThreatCount?: number;
@@ -42,7 +52,7 @@ export function getMissionRelevanceForSector(
     return {
       label: "Mission",
       missionTitle: contract.name,
-      reason: `This sector can progress ${contract.name}: ${contract.objective.label}.`
+      reason: `This sector can progress ${contract.name}: resolve ${boardSpace.textBox.title} after arrival threats are cleared.`
     };
   }
 
@@ -69,6 +79,17 @@ export function getMissionRelevanceForSector(
     }
   }
 
+  if (contract.objective.type === "tileChallengeResolved") {
+    const sectorMatches = !contract.objective.sectorId || contract.objective.sectorId === sectorId;
+    if (sectorMatches) {
+      return {
+        label: "Mission",
+        missionTitle: contract.name,
+        reason: `This sector can progress ${contract.name}: resolve ${contract.objective.label ?? "the assigned tile challenge"}.`
+      };
+    }
+  }
+
   return null;
 }
 
@@ -79,20 +100,26 @@ export function getMissionTargetClue(contract: ContractCard | null | undefined):
 
   if (contract.objective.type === "spaceTextResolved") {
     const effectKey = contract.objective.effectKey;
-    const targetNames = BOARD_SPACES
+    const targets = BOARD_SPACES
       .filter((space) => space.textBox.effectKey === effectKey)
-      .map((space) => space.name);
+      .map((space) => ({ name: space.name, action: space.textBox.title }));
 
-    if (targetNames.length === 0) {
+    if (targets.length === 0) {
       return `Target: sector action ${contract.objective.label}.`;
     }
 
-    return targetNames.length === 1
-      ? `Target sector: ${targetNames[0]}.`
-      : `Target sectors: ${targetNames.slice(0, 3).join(", ")}${targetNames.length > 3 ? ", ..." : ""}.`;
+    return targets.length === 1
+      ? `Target: ${targets[0].name} — resolve ${targets[0].action} after arrival threats are cleared.`
+      : `Targets: ${targets.slice(0, 3).map((target) => `${target.name} — ${target.action}`).join(", ")}${targets.length > 3 ? ", ..." : ""}.`;
   }
 
   if (contract.objective.type === "multiStopRoute") return `Route: ${contract.objective.targets.map((target) => target.label).join(" → ")}.`;
   if (contract.objective.type === "shopTransaction") return `Shop objective: ${contract.objective.label}.`;
+  if (contract.objective.type === "tileChallengeResolved") {
+    const sector = contract.objective.sectorId ? getBoardSpace(contract.objective.sectorId) : null;
+    return sector
+      ? `Challenge at ${sector.name}: ${contract.objective.label}.`
+      : `Tile challenge: ${contract.objective.label}.`;
+  }
   return "Target: any sector with a threat or enemy.";
 }

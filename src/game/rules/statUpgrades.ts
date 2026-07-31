@@ -5,6 +5,13 @@ export const NORMAL_STARTING_STAT_BUDGET = 15;
 export const NORMAL_STARTING_STAT_MAX = 5;
 export const NORMAL_STARTING_STAT_MIN = 1;
 export const STAT_UPGRADE_STATS = ["command", "grit", "signal", "guile", "forge"] as const satisfies readonly Stat[];
+export type StatUpgradeWindow = "Setup" | "Experience";
+
+export function getStatUpgradeWindow(phase: string): StatUpgradeWindow | null {
+  if (phase === "action") return "Setup";
+  if (phase === "broadcast") return "Experience";
+  return null;
+}
 
 export function isUpgradeableStat(value: unknown): value is Stat {
   return typeof value === "string" && (STAT_UPGRADE_STATS as readonly string[]).includes(value);

@@ -129,7 +129,7 @@ async function waitForBattleStage(page: Page, stage: BattleStage): Promise<void>
   } else if (stage === "success") {
     await page.getByText("Threat defeated", { exact: true }).waitFor({ state: "visible" });
   } else {
-    await page.getByText("Operative defeated", { exact: true }).waitFor({ state: "visible" });
+    await page.getByText("Test failed", { exact: true }).waitFor({ state: "visible" });
   }
 }
 
@@ -138,20 +138,24 @@ async function assertFocusedBattleLayout(page: Page, viewport: { width: number; 
     const arenaElement = document.querySelector<HTMLElement>(".phone-battle-duel-stage");
     const intentElement = document.querySelector<HTMLElement>(".phone-battle-duel__intent");
     const actionElement = document.querySelector<HTMLElement>(".phone-battle-shell__action");
-    const navigationElement = document.querySelector<HTMLElement>(".phone-battle-shell__nav");
-    if (!arenaElement || !intentElement || !actionElement || !navigationElement) {
+    const identityElement = document.querySelector<HTMLElement>(".signal-phone-identity");
+    const navigationElement = document.querySelector<HTMLElement>(".signal-phone-nav");
+    if (!arenaElement || !intentElement || !actionElement || !identityElement || !navigationElement) {
       throw new Error("Focused battle layout is incomplete");
     }
     const arena = arenaElement.getBoundingClientRect();
     const intent = intentElement.getBoundingClientRect();
     const action = actionElement.getBoundingClientRect();
+    const identity = identityElement.getBoundingClientRect();
     const navigation = navigationElement.getBoundingClientRect();
     return {
       bodyWidth: document.body.scrollWidth,
       arena: { top: arena.top, bottom: arena.bottom },
       intent: { top: intent.top, bottom: intent.bottom },
       action: { top: action.top, bottom: action.bottom },
-      navigation: { top: navigation.top, bottom: navigation.bottom }
+      identity: { top: identity.top, bottom: identity.bottom },
+      navigation: { top: navigation.top, bottom: navigation.bottom },
+      duplicateBattleNavigation: Boolean(document.querySelector(".phone-battle-shell__nav"))
     };
   });
 
@@ -162,11 +166,15 @@ async function assertFocusedBattleLayout(page: Page, viewport: { width: number; 
     throw new Error("Combatants or enemy intent are obscured by the primary action dock");
   }
   if (measurements.action.bottom > measurements.navigation.top + 1) {
-    throw new Error("Primary action dock overlaps battle navigation");
+    throw new Error("Primary action dock overlaps the global phone navigation");
+  }
+  if (measurements.identity.top < -1 || measurements.identity.bottom <= measurements.identity.top) {
+    throw new Error("The normal phone identity header is not visible during battle");
   }
   if (measurements.navigation.bottom > viewport.height + 1) {
-    throw new Error("Battle navigation extends below the viewport");
+    throw new Error("Global phone navigation extends below the viewport");
   }
+  if (measurements.duplicateBattleNavigation) throw new Error("Duplicate battle navigation is present");
 }
 
 async function captureExpandedStates(page: Page, outputRoot: string, viewportValue: string): Promise<void> {
@@ -178,14 +186,14 @@ async function captureExpandedStates(page: Page, outputRoot: string, viewportVal
   });
   await page.getByRole("button", { name: "Hide details" }).click();
 
-  for (const label of ["Operative", "Gear", "Battle Log"]) {
-    await page.getByRole("button", { name: label, exact: true }).click();
-    await page.getByRole("button", { name: "Back to battle" }).waitFor({ state: "visible" });
+  for (const label of ["Operative", "Inventory"]) {
+    await page.getByRole("tab", { name: new RegExp(label, "i") }).click();
     await page.screenshot({
       path: join(outputRoot, `${viewportValue}-context-${label.toLowerCase().replace(/\s+/g, "-")}.png`),
       fullPage: false
     });
-    await page.getByRole("button", { name: "Back to battle" }).click();
+    await page.getByRole("tab", { name: "Battle", exact: true }).click();
+    await page.getByTestId("phone-battle-shell").waitFor({ state: "visible" });
   }
 }
 

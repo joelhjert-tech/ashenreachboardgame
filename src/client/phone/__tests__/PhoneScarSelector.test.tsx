@@ -34,23 +34,30 @@ const cards: ScarSummary[] = [
 afterEach(cleanup);
 
 describe("PhoneScarSelector", () => {
-  it("shows both canonical choices with inspectable artwork and submits one Scar only once", () => {
+  it("shows one canonical choice at a time, switches between them, and submits one Scar only once", () => {
     const onChoose = vi.fn();
     render(<PhoneScarSelector cards={cards} source="mind" currentCount={0} thresholdWarning={false} onChoose={onChoose} />);
 
     expect(screen.getByRole("region", { name: /compare scar choices/i })).toBeVisible();
-    expect(screen.getByText(/choice a/i)).toBeVisible();
-    expect(screen.getByText(/choice b/i)).toBeVisible();
+    expect(screen.getByText(/^choice a$/i)).toBeVisible();
+    expect(screen.queryByText(/^choice b$/i)).not.toBeInTheDocument();
     expect(screen.getByText(cards[0]!.burdenText!)).toBeVisible();
     expect(screen.getByText(cards[0]!.adaptationText!)).toBeVisible();
-    expect(screen.getByText(cards[1]!.burdenText!)).toBeVisible();
-    expect(screen.getByText(cards[1]!.adaptationText!)).toBeVisible();
+    expect(screen.queryByText(cards[1]!.burdenText!)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /inspect relay ghost/i })).toBeVisible();
-    expect(screen.getByRole("button", { name: /inspect choir static/i })).toBeVisible();
+    expect(screen.queryByRole("button", { name: /inspect choir static/i })).not.toBeInTheDocument();
     expect(screen.getByTestId("phone-scar-choice-art-scar-wound-12")).toHaveAttribute(
       "src",
       "/assets/cards/scars/scar-wound-12.phone.webp"
     );
+
+    fireEvent.click(screen.getByRole("button", { name: /next scar/i }));
+    expect(screen.getByRole("status")).toHaveTextContent(/2 of 2choir static/i);
+    expect(screen.getByText(/^choice b$/i)).toBeVisible();
+    expect(screen.queryByText(cards[0]!.burdenText!)).not.toBeInTheDocument();
+    expect(screen.getByText(cards[1]!.burdenText!)).toBeVisible();
+    expect(screen.getByText(cards[1]!.adaptationText!)).toBeVisible();
+    expect(screen.getByRole("button", { name: /inspect choir static/i })).toBeVisible();
 
     const accept = screen.getByRole("button", { name: /accept choir static/i });
     fireEvent.click(accept);
@@ -59,7 +66,8 @@ describe("PhoneScarSelector", () => {
     expect(onChoose).toHaveBeenCalledTimes(1);
     expect(onChoose).toHaveBeenCalledWith("scar-wound-13");
     expect(accept).toBeDisabled();
-    expect(screen.getByRole("button", { name: /accept relay ghost/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /previous scar/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /next scar/i })).toBeDisabled();
   });
 
   it("keeps the retirement warning above the primary comparison", () => {
@@ -67,7 +75,7 @@ describe("PhoneScarSelector", () => {
     render(<PhoneScarSelector cards={cards} source="mind" currentCount={2} thresholdWarning onChoose={onChoose} />);
 
     expect(screen.getByText(/your next scar will break this operative/i)).toBeVisible();
-    expect(screen.getByRole("note")).toHaveTextContent(/compare both/i);
+    expect(screen.getByRole("note")).toHaveTextContent(/review each/i);
     expect(screen.getByRole("button", { name: /accept relay ghost/i })).toHaveTextContent(/break the operative/i);
     expect(screen.queryByRole("dialog", { name: /compare both scars/i })).not.toBeInTheDocument();
     expect(onChoose).not.toHaveBeenCalled();

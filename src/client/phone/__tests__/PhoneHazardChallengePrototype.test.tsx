@@ -118,6 +118,7 @@ function renderView(onClick = vi.fn()) {
       patch={patch()}
       resolution={patch().activeResolution ?? null}
       actions={[{ key: "attempt", label: "Attempt Challenge", onClick }]}
+      onIntent={vi.fn()}
       canContinue={false}
       onContinue={vi.fn()}
       resultDeltas={[]}
@@ -155,6 +156,58 @@ describe("PhoneHazardChallengeView", () => {
     fireEvent.click(screen.getByRole("button", { name: "Attempt Challenge" }));
     expect(screen.getByRole("button", { name: /Waiting for server/ })).toBeDisabled();
     expect(action).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets the active operative switch Gear before a challenge roll and locks the loadout once rolling starts", () => {
+    const onIntent = vi.fn();
+    const ready = patch();
+    ready.self!.character.heldGear = [{
+      id: "saltline-knife",
+      instanceId: "saltline-knife-1",
+      name: "Saltline Knife",
+      slot: "weapon",
+      category: "passive",
+      statBonus: { stat: "guile", amount: 1 }
+    }];
+
+    const view = render(
+      <PhoneHazardChallengeView
+        patch={ready}
+        resolution={ready.activeResolution ?? null}
+        actions={[{ key: "attempt", label: "Attempt Challenge", onClick: vi.fn() }]}
+        onIntent={onIntent}
+        canContinue={false}
+        onContinue={vi.fn()}
+        resultDeltas={[]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /adjust loadout/i }));
+    expect(screen.getByLabelText(/challenge loadout context/i)).toHaveTextContent("Saltline Knife");
+    fireEvent.click(screen.getByRole("button", { name: /equip weapon/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "EQUIP_GEAR",
+      seatId: "seat-1",
+      gearId: "saltline-knife",
+      instanceId: "saltline-knife-1",
+      slot: "weapon"
+    });
+
+    const rolling = patch();
+    rolling.self!.character.heldGear = ready.self!.character.heldGear;
+    rolling.activeResolution = { ...rolling.activeResolution!, stage: "dice_roll" };
+    view.rerender(
+      <PhoneHazardChallengeView
+        patch={rolling}
+        resolution={rolling.activeResolution}
+        actions={[]}
+        onIntent={onIntent}
+        canContinue={false}
+        onContinue={vi.fn()}
+        resultDeltas={[]}
+      />
+    );
+    expect(screen.queryByRole("button", { name: /adjust loadout/i })).not.toBeInTheDocument();
   });
 
   it("ignores totals and outcomes from a stale presentation before the authoritative roll", () => {
@@ -206,6 +259,7 @@ describe("PhoneHazardChallengeView", () => {
         patch={stale}
         resolution={stale.activeResolution ?? null}
         actions={[{ key: "attempt", label: "Attempt Challenge", onClick: vi.fn() }]}
+        onIntent={vi.fn()}
         canContinue={false}
         onContinue={vi.fn()}
         resultDeltas={[]}
@@ -253,6 +307,7 @@ describe("PhoneHazardChallengeView", () => {
         patch={resolved}
         resolution={resolved.activeResolution}
         actions={[]}
+        onIntent={vi.fn()}
         canContinue
         onContinue={vi.fn()}
         resultDeltas={[]}

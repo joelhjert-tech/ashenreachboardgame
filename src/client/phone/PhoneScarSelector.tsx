@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import type { ScarSummary } from "../shared/types.js";
 import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
 
@@ -81,7 +81,7 @@ function ScarSelectorHeader({ source, currentCount, thresholdWarning }: Pick<Pho
     <header className="scar-prototype__header">
       <span>The Wound Did Not Close</span>
       <h2>Choose Your Scar</h2>
-      <p>Compare both permanent choices. Read the burden and adaptation before accepting one.</p>
+      <p>Review one permanent choice at a time. Read its burden and adaptation before accepting it.</p>
       <div className="scar-prototype__threshold">
         <strong>{source[0]?.toUpperCase()}{source.slice(1)} source · {currentCount} / 3 Scars</strong>
         {thresholdWarning ? <span>Threshold warning · Your next Scar will break this operative.</span> : null}
@@ -170,8 +170,22 @@ function ScarChoiceCard({
 
 export function PhoneScarSelector({ cards, source, currentCount, thresholdWarning, onChoose }: PhoneScarSelectorProps): ReactElement {
   const [pendingScarId, setPendingScarId] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const choiceKey = cards.map((card) => card.id).join("|");
+
+  useEffect(() => {
+    setSelectedIndex(0);
+    setPendingScarId(null);
+  }, [choiceKey]);
 
   if (cards.length === 0) return <p className="scar-prototype__empty">No Scar candidates are available.</p>;
+  const activeIndex = Math.min(selectedIndex, cards.length - 1);
+  const activeScar = cards[activeIndex]!;
+  const canNavigate = cards.length > 1 && pendingScarId === null;
+  const move = (direction: -1 | 1): void => {
+    if (!canNavigate) return;
+    setSelectedIndex((current) => (current + direction + cards.length) % cards.length);
+  };
   const choose = (scarId: string): void => {
     if (pendingScarId !== null) return;
     setPendingScarId(scarId);
@@ -185,20 +199,39 @@ export function PhoneScarSelector({ cards, source, currentCount, thresholdWarnin
     >
       <ScarSelectorHeader source={source} currentCount={currentCount} thresholdWarning={thresholdWarning} />
       <div className="scar-choice-guide" role="note">
-        <strong>Compare both</strong>
-        <span>Tap either image to inspect the full artwork.</span>
+        <strong>Review each</strong>
+        <span>Switch choices, then tap the image to inspect its full artwork.</span>
       </div>
-      <div className="scar-choice-grid">
-        {cards.map((scar, index) => (
-          <ScarChoiceCard
-            key={scar.id}
-            scar={scar}
-            optionLabel={`Choice ${String.fromCharCode(65 + index)}`}
-            thresholdWarning={thresholdWarning}
-            pendingScarId={pendingScarId}
-            onChoose={choose}
-          />
-        ))}
+      {cards.length > 1 ? (
+        <nav className="scar-choice-carousel__navigation" aria-label="Scar choice navigation">
+          <button type="button" onClick={() => move(-1)} disabled={!canNavigate} aria-label="Previous Scar">
+            <span aria-hidden="true">{"\u2039"}</span>
+            Previous
+          </button>
+          <div className="scar-choice-carousel__position" role="status" aria-live="polite" aria-atomic="true">
+            <strong>{activeIndex + 1} of {cards.length}</strong>
+            <span>{activeScar.title}</span>
+          </div>
+          <button type="button" onClick={() => move(1)} disabled={!canNavigate} aria-label="Next Scar">
+            Next
+            <span aria-hidden="true">{"\u203A"}</span>
+          </button>
+        </nav>
+      ) : (
+        <div className="scar-choice-carousel__position scar-choice-carousel__position--single" role="status">
+          <strong>Only choice</strong>
+          <span>{activeScar.title}</span>
+        </div>
+      )}
+      <div className="scar-choice-carousel" data-active-index={activeIndex}>
+        <ScarChoiceCard
+          key={activeScar.id}
+          scar={activeScar}
+          optionLabel={`Choice ${String.fromCharCode(65 + activeIndex)}`}
+          thresholdWarning={thresholdWarning}
+          pendingScarId={pendingScarId}
+          onChoose={choose}
+        />
       </div>
       <footer className="scar-prototype__required">Scar choice required</footer>
     </section>

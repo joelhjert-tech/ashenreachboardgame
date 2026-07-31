@@ -54,6 +54,8 @@ async function assertPhone(page: Page, label: string): Promise<void> {
     canvasCount: document.querySelectorAll("canvas").length,
     bodyText: document.body.innerText,
     phoneNavigationVisible: Boolean(document.querySelector('[aria-label="Phone navigation"]')),
+    visibleScarCards: document.querySelectorAll(".scar-choice-carousel > .scar-choice-card").length,
+    positionText: document.querySelector<HTMLElement>(".scar-choice-carousel__position")?.innerText ?? null,
     acceptRect: (() => {
       const button = document.querySelector<HTMLButtonElement>(".accept-scar-button");
       if (!button) return null;
@@ -66,6 +68,8 @@ async function assertPhone(page: Page, label: string): Promise<void> {
   if (/selectionId|candidateIds|sourceEventId/i.test(metrics.bodyText)) throw new Error(`${label} leaked internal Scar state`);
   if (!/SCAR CHOICE REQUIRED/i.test(metrics.bodyText)) throw new Error(`${label} omitted the blocking Scar footer`);
   if (metrics.phoneNavigationVisible) throw new Error(`${label} left normal phone navigation visible during a blocking Scar choice`);
+  if (metrics.visibleScarCards !== 1) throw new Error(`${label} rendered ${metrics.visibleScarCards} Scar cards instead of one`);
+  if (!metrics.positionText || !/\d+ of \d+/i.test(metrics.positionText)) throw new Error(`${label} omitted the Scar carousel position`);
   if (metrics.acceptRect && (metrics.acceptRect.top < 0 || metrics.acceptRect.bottom > metrics.viewportHeight)) {
     throw new Error(`${label} acceptance action is outside the viewport: ${JSON.stringify(metrics.acceptRect)}`);
   }
@@ -77,7 +81,11 @@ async function openSelector(page: Page, auth: Auth, width: number, height: numbe
   await page.getByRole("heading", { name: "Choose Your Scar" }).waitFor();
   await page.waitForFunction(() => {
     const frames = Array.from(document.querySelectorAll<HTMLElement>(".scar-choice-card__art [data-artwork-status]"));
-    return frames.length === 2 && frames.every((frame) => frame.dataset.artworkStatus === "ready");
+    return frames.length === 1 && frames.every((frame) => frame.dataset.artworkStatus === "ready");
+  });
+  await page.evaluate(() => {
+    const scroller = document.querySelector<HTMLElement>(".phone-scar-choice-content");
+    if (scroller) scroller.scrollTop = 0;
   });
   await page.waitForTimeout(180);
 }
@@ -97,10 +105,9 @@ async function assertScrollAfterViewportTransition(page: Page, auth: Auth): Prom
   const metrics = await page.evaluate(() => {
     const scroller = document.querySelector<HTMLElement>(".phone-scar-choice-content");
     const inner = document.querySelector<HTMLElement>(".phone-action-content-root");
-    if (!scroller || !inner) return null;
+    if (!scroller) return null;
     scroller.scrollTop = scroller.scrollHeight;
-    const acceptButtons = Array.from(document.querySelectorAll<HTMLElement>(".accept-scar-button"));
-    const secondAccept = acceptButtons[1]?.getBoundingClientRect() ?? null;
+    const activeAccept = document.querySelector<HTMLElement>(".accept-scar-button")?.getBoundingClientRect() ?? null;
     const ancestry: Array<Record<string, string | number>> = [];
     let ancestor: HTMLElement | null = document.querySelector<HTMLElement>(".scar-prototype");
     while (ancestor && ancestry.length < 8) {
@@ -119,11 +126,11 @@ async function assertScrollAfterViewportTransition(page: Page, auth: Auth): Prom
     }
     return {
       outerOverflowY: getComputedStyle(scroller).overflowY,
-      innerOverflowY: getComputedStyle(inner).overflowY,
+      innerOverflowY: inner ? getComputedStyle(inner).overflowY : "absent",
       scrollTop: scroller.scrollTop,
       scrollHeight: scroller.scrollHeight,
       clientHeight: scroller.clientHeight,
-      secondAccept: secondAccept ? { top: secondAccept.top, bottom: secondAccept.bottom } : null,
+      activeAccept: activeAccept ? { top: activeAccept.top, bottom: activeAccept.bottom } : null,
       viewportHeight: innerHeight,
       ancestry
     };
@@ -131,16 +138,16 @@ async function assertScrollAfterViewportTransition(page: Page, auth: Auth): Prom
 
   if (!metrics) throw new Error("Scar comparison scroll owners were not rendered");
   if (metrics.outerOverflowY !== "auto") throw new Error(`Scar comparison outer overflow is ${metrics.outerOverflowY}`);
-  if (metrics.innerOverflowY !== "visible") throw new Error(`Scar comparison retained nested overflow ${metrics.innerOverflowY}`);
-  if (metrics.scrollHeight <= metrics.clientHeight || metrics.scrollTop <= 0) {
-    throw new Error(`Scar comparison did not remain scrollable after viewport transition: ${JSON.stringify(metrics)}`);
+  if (metrics.innerOverflowY !== "visible" && metrics.innerOverflowY !== "absent") throw new Error(`Scar comparison retained nested overflow ${metrics.innerOverflowY}`);
+  if (metrics.scrollHeight > metrics.clientHeight && metrics.scrollTop <= 0) {
+    throw new Error(`Overflowing Scar comparison did not remain scrollable after viewport transition: ${JSON.stringify(metrics)}`);
   }
   if (
-    !metrics.secondAccept ||
-    metrics.secondAccept.top < 0 ||
-    metrics.secondAccept.bottom > metrics.viewportHeight
+    !metrics.activeAccept ||
+    metrics.activeAccept.top < 0 ||
+    metrics.activeAccept.bottom > metrics.viewportHeight
   ) {
-    throw new Error(`Second Scar acceptance action could not be reached: ${JSON.stringify(metrics)}`);
+    throw new Error(`Active Scar acceptance action could not be reached: ${JSON.stringify(metrics)}`);
   }
 
   await page.screenshot({ path: join(output, "scar-selector-after-viewport-transition-scroll-390x844.png"), fullPage: false });
@@ -172,6 +179,11 @@ async function main(): Promise<void> {
 
   await assertScrollAfterViewportTransition(phone, auth);
   await openSelector(phone, auth, 390, 844);
+  await phone.getByRole("button", { name: "Next Scar" }).click();
+  await phone.getByText("2 of 2").waitFor();
+  await phone.locator('.scar-choice-card__art [data-artwork-status="ready"]').waitFor();
+  await phone.waitForTimeout(220);
+  await shot(phone, "scar-selector-second-choice-390x844.png");
   await phone.getByRole("button", { name: /inspect /i }).first().click();
   const inspector = phone.getByRole("dialog");
   await inspector.waitFor();
@@ -195,7 +207,7 @@ async function main(): Promise<void> {
 
   await browser.close();
   if (errors.length) throw new Error(`Browser errors: ${errors.join(" | ")}`);
-  console.log(JSON.stringify({ output, captures: 7, viewportTransitionScrollVerified: true, authoritativeChoiceResolved: true, errors: 0 }, null, 2));
+  console.log(JSON.stringify({ output, captures: 8, oneCardCarouselVerified: true, viewportTransitionScrollVerified: true, authoritativeChoiceResolved: true, errors: 0 }, null, 2));
 }
 
 void main();

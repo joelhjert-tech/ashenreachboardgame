@@ -8,9 +8,12 @@ import { OperativePortraitImage } from "../shared/OperativePortraitImage.js";
 import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 import { getSignalTheatreResultCrestPath, getSignalTheatreStatSealPath } from "../shared/assetPaths.js";
 import { statLabelById } from "../shared/statLabels.js";
-import type { ActiveResolution, PhonePatchPayload, ResultDelta, Stat } from "../shared/types.js";
+import type { ActiveResolution, ClientIntent, PhonePatchPayload, ResultDelta, Stat } from "../shared/types.js";
 import { useAuthoritativeResultCollapse } from "../shared/useAuthoritativeResultCollapse.js";
+import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneResultReadyGate } from "./PhoneResultReadyGate.js";
+import { getPhoneLoadoutWindow } from "./loadoutWindow.js";
+import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 import "./PhoneHazardChallengePrototype.css";
 
 export interface HazardChallengeAction {
@@ -25,6 +28,7 @@ interface PhoneHazardChallengePrototypeProps {
   patch: PhonePatchPayload;
   resolution: ActiveResolution | null;
   actions: HazardChallengeAction[];
+  onIntent: (intent: ClientIntent) => void;
   canContinue: boolean;
   onContinue: () => void;
   resultDeltas: ResultDelta[];
@@ -167,6 +171,7 @@ export function PhoneHazardChallengeView({
   patch,
   resolution,
   actions,
+  onIntent,
   canContinue,
   onContinue,
   resultDeltas,
@@ -180,6 +185,7 @@ export function PhoneHazardChallengeView({
       : null;
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [loadoutOpen, setLoadoutOpen] = useState(false);
   const kind = trialKind(patch, resolution);
   const categoryLabel = titleCase(kind);
   const title = presentation?.encounter.name ?? resolution?.card?.title ?? patch.encounter?.title ?? "Unknown encounter";
@@ -281,6 +287,8 @@ export function PhoneHazardChallengeView({
     100,
     `trial:${self.seatId}:${identity}`
   );
+  const loadoutWindow = getPhoneLoadoutWindow(patch, self.seatId);
+  const loadoutCardCount = self.character.heldGear.length + (self.character.followers?.length ?? 0);
 
   useEffect(() => {
     setSubmitted(false);
@@ -296,6 +304,16 @@ export function PhoneHazardChallengeView({
     if (finalTotal !== null || resolution?.stage === "dice_roll") setSubmitted(false);
   }, [finalTotal, resolution?.stage]);
 
+  useEffect(() => {
+    if (!loadoutWindow) setLoadoutOpen(false);
+  }, [loadoutWindow]);
+
+  usePhoneBackDismissal(loadoutOpen, () => {
+    if (!loadoutOpen) return false;
+    setLoadoutOpen(false);
+    return true;
+  });
+
   const visibleDeltas = useMemo(
     () => resultDeltas.filter((delta) => delta.visibility !== "hidden").slice(0, 4),
     [resultDeltas]
@@ -304,6 +322,28 @@ export function PhoneHazardChallengeView({
   const fullFormula = finalTotal === null
     ? "Test not yet rolled"
     : `${operativeBase} + ${rollTotal ?? 0} ${modifierTotal >= 0 ? "+" : "−"} ${Math.abs(modifierTotal)} = ${finalTotal}`;
+
+  if (loadoutOpen && loadoutWindow) {
+    return (
+      <section
+        className={`phone-trial-shell phone-trial-shell--${kind} phone-trial-shell--loadout`}
+        style={getChallengeThemeStyle(stat) as CSSProperties}
+        aria-label={`${categoryLabel} pre-roll loadout`}
+        data-testid="phone-action-active-panel"
+        data-hazard-challenge-layout="loadout"
+      >
+        <div className="phone-trial-shell__scroll">
+          <section className="phone-trial-loadout phone-battle-context" aria-label="Challenge loadout context">
+            <button type="button" className="phone-battle-context__back" onClick={() => setLoadoutOpen(false)}>
+              Back to challenge
+            </button>
+            <span>Challenge loadout</span>
+            <PhoneInventoryPanel patch={patch} onIntent={onIntent} compact loadoutOnly />
+          </section>
+        </div>
+      </section>
+    );
+  }
 
   if (compactResult) {
     const actionAvailable = Boolean(primary && !primary.disabled && !submitted);
@@ -463,6 +503,17 @@ export function PhoneHazardChallengeView({
         </div>
 
         {!result ? <TrialStakes patch={patch} resolution={resolution} /> : null}
+
+        {loadoutWindow && loadoutCardCount > 0 ? (
+          <button
+            type="button"
+            className="phone-battle-equipment-alert phone-trial-loadout-alert"
+            onClick={() => setLoadoutOpen(true)}
+          >
+            <span>Adjust loadout</span>
+            <strong>{loadoutCardCount} Gear or follower card{loadoutCardCount === 1 ? "" : "s"} available before this {statLabel} test</strong>
+          </button>
+        ) : null}
 
         {result || outcome ? (
           <section className={`phone-trial-outcome phone-trial-outcome--${result ?? "neutral"}`} data-testid="phone-resolution-card">

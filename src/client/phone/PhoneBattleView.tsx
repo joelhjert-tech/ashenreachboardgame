@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactElement } from "react";
 import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
-import { OperativePortraitImage } from "../shared/OperativePortraitImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { formatResultDelta } from "../shared/resultDeltas.js";
-import { getCardArtPath } from "../shared/assetPaths.js";
 import { statLabelById } from "../shared/statLabels.js";
 import type {
   ClientIntent,
@@ -19,9 +17,9 @@ import { CinderWattleAbilityPanel } from "./CinderWattleAbilityPanel.js";
 import { getBattleAssistViewModel } from "./inventoryPresentation.js";
 import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
 import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
-import { PhoneResultReadyGate } from "./PhoneResultReadyGate.js";
 import { PhoneBattleDuelStage } from "./PhoneBattleDuelStage.js";
 import { PhoneEdgeCardHand } from "./PhoneEdgeCardHand.js";
+import { getPhoneLoadoutWindow } from "./loadoutWindow.js";
 
 export interface PhoneBattleChoiceAction {
   key: string;
@@ -40,7 +38,7 @@ interface PhoneBattleViewProps {
   submissionPending?: boolean;
 }
 
-type BattleContext = "battle" | "operative" | "gear" | "log";
+type BattleContext = "battle" | "loadout";
 
 const consequenceGlyphByType: Record<ResultDeltaType, string> = {
   wound: "✚",
@@ -255,16 +253,6 @@ function BattleChoiceList({ actions }: { actions: PhoneBattleChoiceAction[] }): 
   );
 }
 
-function BattleContextNavigation({ onSelect }: { onSelect: (context: Exclude<BattleContext, "battle">) => void }): ReactElement {
-  return (
-    <nav className="phone-battle-shell__nav" aria-label="Battle navigation">
-      <button type="button" onClick={() => onSelect("operative")}>Operative</button>
-      <button type="button" onClick={() => onSelect("gear")}>Gear</button>
-      <button type="button" onClick={() => onSelect("log")}>Battle Log</button>
-    </nav>
-  );
-}
-
 export function PhoneBattleView({
   patch,
   self,
@@ -290,10 +278,6 @@ export function PhoneBattleView({
   const resultStage = Boolean(
     resolution &&
     ["roll_result", "outcome_summary", "awaiting_continue"].includes(resolution.stage)
-  );
-  const finalResultStage = Boolean(
-    resolution &&
-    ["outcome_summary", "awaiting_continue"].includes(resolution.stage)
   );
   const roll = resultStage ? resolution?.roll : undefined;
   const outcome = resultStage ? resolution?.outcome : undefined;
@@ -340,7 +324,8 @@ export function PhoneBattleView({
     ? `${operativeValue} + ${rollValue ?? 0} ${modifierTotal >= 0 ? "+" : "−"} ${Math.abs(modifierTotal)} = ${finalTotal}`
     : null;
   const outcomeFlavor = resultStage ? presentation?.publicConsequence ?? outcome?.text ?? null : null;
-  const usableGearCount = assist?.usableCards.length ?? 0;
+  const loadoutWindow = getPhoneLoadoutWindow(patch, self.seatId);
+  const loadoutCardCount = self.character.heldGear.length + (self.character.followers?.length ?? 0);
   const victoryReward = !roll ? presentation?.encounter.victoryReward ?? null : null;
   const failureStakes = !roll ? presentation?.encounter.failureStakes ?? null : null;
 
@@ -362,6 +347,10 @@ export function PhoneBattleView({
   useEffect(() => {
     if (!submissionPending) setRollSubmitting(false);
   }, [submissionPending]);
+
+  useEffect(() => {
+    if (!loadoutWindow && context === "loadout") setContext("battle");
+  }, [context, loadoutWindow]);
 
   usePhoneBackDismissal(context !== "battle" || detailsOpen, () => {
     if (context !== "battle") {
@@ -468,14 +457,6 @@ export function PhoneBattleView({
     statLabel
   ]);
 
-  const settledResult =
-    Boolean(result && outcome)
-    && finalResultStage
-    && primaryAction.label === "Continue"
-    && !primaryAction.disabled
-    && choiceActions.length === 0
-    && optionalActions.length === 0;
-
   const transientRollResult =
     resolution?.stage === "roll_result"
     && choiceActions.length === 0
@@ -511,44 +492,6 @@ export function PhoneBattleView({
     );
   }
 
-  if (settledResult) {
-    return (
-      <section
-        className={`phone-battle-shell phone-battle-shell--result-gate phone-battle-shell--${result ?? "active"}`}
-        data-testid="phone-battle-shell"
-        data-battle-identity={identity ?? undefined}
-        data-battle-ui="unified-verdict"
-        data-battle-restored={restored ? "true" : "false"}
-        data-battle-result="true"
-        data-challenge-stat={stat}
-        style={challengeThemeStyle}
-      >
-        <PhoneResultReadyGate
-          actorName={playerName}
-          operativeName={self.character.name}
-          operativeId={self.character.id}
-          sourceLabel="Battle"
-          challengeTitle={enemyName}
-          challengeArtType={enemyArtType(patch)}
-          challengeArtId={enemyId}
-          challengeFlavor={resolution?.card?.flavor ?? encounter?.flavor ?? null}
-          success={result === "success" ? true : result === "defeat" ? false : null}
-          playerTotal={finalTotal}
-          targetTotal={opponentTotal}
-          resolutionId={resolution?.id ?? identity ?? undefined}
-          dice={resolution?.roll?.dice ?? []}
-          modifierTotal={resolution?.roll?.modifierTotal ?? 0}
-          outcomeTitle={outcome?.title ?? resultLabel}
-          outcomeText={outcome?.text ?? outcomeFlavor ?? "The authoritative battle result is complete."}
-          outcomeEffects={outcome?.effects ?? []}
-          resultDeltas={patch.playerResultDeltas ?? patch.publicResultDeltas ?? []}
-          canContinue
-          onContinue={() => primaryAction.action?.()}
-        />
-      </section>
-    );
-  }
-
   return (
     <section
       className={`phone-battle-shell phone-battle-shell--cinematic phone-battle-shell--${result ?? "active"}`}
@@ -579,14 +522,14 @@ export function PhoneBattleView({
               victoryReward={victoryReward}
               failureStakes={failureStakes}
             />
-            {usableGearCount > 0 && !roll ? (
+            {loadoutWindow && loadoutCardCount > 0 ? (
               <button
                 type="button"
                 className="phone-battle-equipment-alert"
-                onClick={() => setContext("gear")}
+                onClick={() => setContext("loadout")}
               >
-                <span>Equipment available</span>
-                <strong>{usableGearCount} item{usableGearCount === 1 ? "" : "s"} can help this {statLabel} battle</strong>
+                <span>Adjust loadout</span>
+                <strong>{loadoutCardCount} Gear or follower card{loadoutCardCount === 1 ? "" : "s"} available before this {statLabel} roll</strong>
               </button>
             ) : null}
             <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
@@ -673,48 +616,11 @@ export function PhoneBattleView({
             <button type="button" className="phone-battle-context__back" onClick={() => setContext("battle")}>
               Back to battle
             </button>
-            {context === "operative" ? (
-              <>
-                <span>Operative status</span>
-                <OperativePortraitImage characterId={self.character.id} alt="" />
-                <strong>{playerName}</strong>
-                <p>{self.character.name} · {self.character.archetype}</p>
-                <dl>
-                  <div><dt>{statLabel}</dt><dd>{operativeValue}</dd></div>
-                  <div><dt>Wounds</dt><dd>{self.character.wounds}</dd></div>
-                  <div><dt>Salvage</dt><dd>{self.character.salvage ?? 0}</dd></div>
-                  <div><dt>Scars</dt><dd>{self.character.scars.length}</dd></div>
-                </dl>
-              </>
-            ) : context === "gear" ? (
-              <>
-                <span>Battle gear</span>
-                {usableGearCount > 0 ? (
-                  <PhoneInventoryPanel patch={patch} onIntent={onIntent} compact onlyUsable />
-                ) : (
-                  <p>No gear is eligible in this battle window.</p>
-                )}
-              </>
-            ) : (
-              <>
-                <span>Battle log</span>
-                <strong>{enemyName}</strong>
-                <div className="phone-battle-details phone-battle-details--log">
-                  <div><span>Stage</span><strong>{titleCase(resolution?.stage ?? "encounter")}</strong></div>
-                  <div><span>Full roll</span><strong>{detailsFormula ?? "Roll not yet made"}</strong></div>
-                  <div><span>Opponent</span><strong>{opponentTotal}</strong></div>
-                  <div>
-                    <span>Modifiers</span>
-                    <strong>{presentation?.operative.modifiers.length ? presentation.operative.modifiers.map((modifier) => `${modifier.label} ${signed(modifier.value)}`).join(", ") : battle?.modifiers.length ? battle.modifiers.map((modifier) => `${modifier.label} ${signed(modifier.value)}`).join(", ") : "None"}</strong>
-                  </div>
-                  {patch.outcomeSummary?.summary ? <p>{patch.outcomeSummary.summary}</p> : null}
-                </div>
-              </>
-            )}
+            <span>Battle loadout</span>
+            <PhoneInventoryPanel patch={patch} onIntent={onIntent} compact loadoutOnly />
           </section>
         )}
       </div>
-      <BattleContextNavigation onSelect={setContext} />
     </section>
   );
 }

@@ -3478,6 +3478,14 @@ export function PhoneActionPanel({
     );
   }
 
+  if (patch.pendingScarChoice) {
+    return (
+      <section className="phone-sheet-actions" aria-label="Required Scar choice">
+        {scarDecisionContent}
+      </section>
+    );
+  }
+
   if (patch.movementPresentationGate) {
     const isMovingPlayer = patch.movementPresentationGate.ownerSeatId === self.seatId;
     return (
@@ -3598,14 +3606,6 @@ export function PhoneActionPanel({
   }
 
   if (self.character.status === "recalled") {
-    if (patch.pendingScarChoice) {
-      return (
-        <section className="phone-sheet-actions" aria-label="Required Scar choice">
-          {scarDecisionContent}
-        </section>
-      );
-    }
-
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
@@ -3909,19 +3909,6 @@ export function PhoneActionPanel({
         use: false
       })
     });
-  }
-
-  if (patch.pendingScarChoice) {
-    const choice = patch.pendingScarChoice;
-    for (const scar of choice.cards) {
-      resolveActions.push({
-        key: `choose-scar-${choice.selectionId}-${scar.id}`,
-        label: `Choose ${scar.title}`,
-        detail: `${choice.thirdScarWarning ? "WARNING — this is your third Scar and will retire this operative. " : ""}BURDEN: ${scar.burdenText ?? scar.penalty} ADAPTATION: ${scar.adaptationText ?? scar.upside ?? "None"}`,
-        tone: "primary",
-        onClick: () => onIntent({ type: "CHOOSE_SCAR", seatId: self.seatId, selectionId: choice.selectionId, scarId: scar.id })
-      });
-    }
   }
 
   if (patch.pendingScarRemovalChoice) {
@@ -4815,6 +4802,7 @@ export function PhoneActionPanel({
         patch={patch}
         resolution={activeResolution}
         actions={[...resolveActions, ...threatActions]}
+        onIntent={onIntent}
         canContinue={canContinueResolution}
         onContinue={continueResolution}
         resultDeltas={visibleActionDeltas}

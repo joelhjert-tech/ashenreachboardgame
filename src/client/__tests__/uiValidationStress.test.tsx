@@ -334,13 +334,10 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(inventory.querySelector(".phone-inventory-card-list")).toBeInTheDocument();
   });
 
-  it("replaces mixed turn actions with focused battle navigation under an active stress battle", () => {
+  it("keeps the stress battle focused without adding a duplicate navigation system", () => {
     render(<PhoneActionPanel characters={catalogFromMasterAlpha()} patch={createMasterAlphaPhonePatch()} onIntent={vi.fn()} />);
 
-    const navigation = screen.getByRole("navigation", { name: /battle navigation/i });
-    expect(within(navigation).getByRole("button", { name: /^operative$/i })).toBeInTheDocument();
-    expect(within(navigation).getByRole("button", { name: /^gear$/i })).toBeInTheDocument();
-    expect(within(navigation).getByRole("button", { name: /battle log/i })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: /battle navigation/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("tablist", { name: /turn actions/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
     expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(longEnemyName);
@@ -454,7 +451,7 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(screen.getByRole("button", { name: /^leave room$/i })).toBeInTheDocument();
   });
 
-  it("renders contextual battle navigation instead of persistent global navigation during combat", () => {
+  it("retains persistent global navigation during combat", () => {
     const patch = createMasterAlphaPhonePatch();
 
     render(
@@ -473,11 +470,9 @@ describe("Ashen Reach UI validation stress states", () => {
       />
     );
 
-    const navigation = screen.getByRole("navigation", { name: /battle navigation/i });
-    expect(within(navigation).getByRole("button", { name: /^operative$/i })).toBeInTheDocument();
-    expect(within(navigation).getByRole("button", { name: /^gear$/i })).toBeInTheDocument();
-    expect(within(navigation).getByRole("button", { name: /battle log/i })).toBeInTheDocument();
-    expect(screen.queryByRole("tablist", { name: /phone navigation/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: /battle navigation/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("tablist", { name: /phone navigation/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /battle/i })).toHaveAttribute("aria-selected", "true");
     expect(screen.queryByRole("tablist", { name: /turn actions/i })).not.toBeInTheDocument();
   });
 

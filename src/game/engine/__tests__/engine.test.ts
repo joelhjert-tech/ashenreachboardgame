@@ -2459,6 +2459,101 @@ describe("active resolution visibility state", () => {
 });
 
 describe("active objects and table interaction", () => {
+  it.each([
+    { label: "battle", encounterId: "cinder-veil-stalker" },
+    { label: "challenge", encounterId: "signal-static" }
+  ])("allows an equipment switch in the pre-roll $label window", ({ encounterId }) => {
+    const encounter = createThreats().get(encounterId)!;
+    const gear = { ...createGear().get("veil-hook")!, instanceId: `veil-hook:${encounterId}` };
+    const state = createState({
+      phase: "resolution",
+      currentEncounter: encounter,
+      activeResolution: {
+        id: `seat-1:threat:${encounterId}:loadout`,
+        playerId: "seat-1",
+        source: "threat",
+        stage: "battle_setup",
+        card: {
+          id: encounter.id,
+          title: encounter.title,
+          type: encounter.cardType,
+          flavor: encounter.flavor,
+          artType: "threat"
+        },
+        battle: {
+          enemyName: encounter.cardType === "enemy" ? encounter.enemyName : encounter.title,
+          stat: encounter.stat,
+          difficulty: encounter.difficulty,
+          modifiers: []
+        }
+      },
+      players: createState().players.map((player) => player.seatId === "seat-1"
+        ? {
+            ...player,
+            character: {
+              ...player.character,
+              heldGear: [gear],
+              equippedGear: { weapon: null, armor: null, utility: null },
+              equippedGearInstances: { weapon: null, armor: null, utility: null }
+            }
+          }
+        : player)
+    });
+
+    const result = reduceGameState(state, {
+      type: "EQUIP_GEAR",
+      seatId: "seat-1",
+      gearId: gear.id,
+      instanceId: gear.instanceId,
+      slot: "weapon",
+      createdAt: "2026-07-31T12:00:00.000Z"
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.players[0]?.character.equippedGear.weapon).toBe("veil-hook");
+    expect(result.state.players[0]?.character.equippedGearInstances?.weapon).toBe(gear.instanceId);
+  });
+
+  it("rejects equipment changes after the authoritative roll has begun", () => {
+    const encounter = createThreats().get("cinder-veil-stalker")!;
+    const gear = { ...createGear().get("veil-hook")!, instanceId: "veil-hook:locked" };
+    const state = createState({
+      phase: "resolution",
+      currentEncounter: encounter,
+      activeResolution: {
+        id: "seat-1:threat:cinder-veil-stalker:rolling",
+        playerId: "seat-1",
+        source: "threat",
+        stage: "dice_roll",
+        card: { id: encounter.id, title: encounter.title, type: encounter.cardType },
+        battle: {
+          enemyName: encounter.cardType === "enemy" && "enemyName" in encounter ? encounter.enemyName : encounter.title,
+          stat: encounter.stat,
+          difficulty: encounter.difficulty,
+          modifiers: []
+        }
+      },
+      players: createState().players.map((player) => player.seatId === "seat-1"
+        ? { ...player, character: { ...player.character, heldGear: [gear] } }
+        : player)
+    });
+
+    const result = reduceGameState(state, {
+      type: "EQUIP_GEAR",
+      seatId: "seat-1",
+      gearId: gear.id,
+      instanceId: gear.instanceId,
+      slot: "weapon",
+      createdAt: "2026-07-31T12:00:01.000Z"
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.rejection.reason).toMatch(/loadout locked when rolling began/i);
+    expect(result.state.players[0]?.character.equippedGear.weapon).toBeNull();
+  });
+
   it("shows imported passive Equipment as a named source in battle formula rows", () => {
     const encounter = createThreats().get("cinder-veil-stalker")!;
     const ashlockCleaver = createGear().get("ashlock-cleaver")!;
@@ -6302,7 +6397,7 @@ describe("trophy progression", () => {
     );
     expect(
       unsafeResponses.some(
-        (message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("safe action or broadcast")
+        (message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("Setup or Experience")
       )
     ).toBe(true);
 
