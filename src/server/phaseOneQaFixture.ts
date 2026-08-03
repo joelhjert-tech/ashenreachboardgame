@@ -50,6 +50,7 @@ export type PhaseOneQaFixture =
     }
   | { kind: "map-transition"; stage: "guardian-locked" | "guardian-cleared" | "core-locked" | "core-cleared" }
   | { kind: "mission-reward"; stage: "progress" | "ready" }
+  | { kind: "trophy-upgrade"; stage: "three-card" | "partial" | "ten-card" }
   | {
       kind: "objective-presentation";
       stage: "shared" | "contract" | "contract-near" | "replacement" | "agenda-locked" | "agenda-revealed" | "agenda-complete" | "private-resolution" | "long-content";
@@ -311,6 +312,48 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
   }
   state.sequence += 1;
   state.activeSeatIndex = Math.max(0, state.turnOrder.indexOf(seatId));
+
+  if (fixture.kind === "trophy-upgrade") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+    const threats = loadThreatCards();
+    const toPileEntry = (cardId: string) => {
+      const card = threats.get(cardId);
+      if (!card || card.cardType !== "enemy") throw new Error(`QA fixture cannot load Trophy card ${cardId}`);
+      return {
+        cardId: card.id,
+        name: card.enemyName ?? card.title,
+        trophyValue: card.trophyValue,
+        spentValue: 0,
+        stat: card.stat,
+        cardType: card.cardType
+      };
+    };
+
+    state.phase = "broadcast";
+    player.character.status = "active";
+    player.character.qaOnly = false;
+    player.character.stats.signal = fixture.stage === "partial" ? 3 : fixture.stage === "ten-card" ? 9 : 5;
+    player.character.trophyPile = fixture.stage === "three-card"
+      ? ["archive-shade", "choir-wraith", "cinder-veil-stalker"].map(toPileEntry)
+      : fixture.stage === "partial"
+        ? [toPileEntry("hearth-ruin-behemoth")]
+        : [...threats.values()]
+          .filter((card) => card.cardType === "enemy" && card.trophyValue === 1)
+          .slice(0, 10)
+          .map((card) => toPileEntry(card.id));
+    if (player.character.trophyPile.length !== (fixture.stage === "ten-card" ? 10 : fixture.stage === "three-card" ? 3 : 1)) {
+      throw new Error(`QA fixture cannot prepare ${fixture.stage} Trophy receipt`);
+    }
+    player.character.trophies = player.character.trophyPile.reduce((total, entry) => total + entry.trophyValue, 0);
+    state.eventLog = state.eventLog.filter((entry) => {
+      const type = typeof entry === "object" && entry !== null && "type" in entry
+        ? (entry as { type?: unknown }).type
+        : null;
+      return type !== "STAT_RAISED" && type !== "SCAR_ADAPTATION_ACTIVATED";
+    });
+    return;
+  }
 
   if (fixture.kind === "progression-endgame") {
     const stage = fixture.stage;

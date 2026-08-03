@@ -96,6 +96,7 @@ import type { ContractCard } from "../schema/contract.schema.js";
 import type { ActiveResolution, GameState, PlayerState } from "../schema/session.schema.js";
 import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
+import { planTrophySpend, trophySpendReceiptsEqual } from "../rules/trophySpend.js";
 import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/afflictions.js";
 import { buildPendingScarConsequences, getMatchingScarTriggers } from "../rules/scarTriggers.js";
 import { NAMED_PLAYER_FANDIABLOS_ID, requiresBoundFandiablos } from "../rules/namedPlayerRules.js";
@@ -161,6 +162,7 @@ import {
   getStatUpgradeCost,
   getStatUpgradeDisabledReason,
   getStatUpgradeWindow,
+  hasActiveTrophyAdvancementDiscount,
   isUpgradeableStat,
   NORMAL_STAT_UPGRADE_CAP
 } from "../rules/statUpgrades.js";
@@ -1148,37 +1150,6 @@ function getTrophyPileEntryAvailableValue(entry: TrophyPileEntry): number {
 
 function getCrownKeyProgressKey(seatId: string): string {
   return `crownKey:${seatId}`;
-}
-
-function spendTrophyPileValue(trophyPile: TrophyPileEntry[] | undefined, cost: number): TrophyPileEntry[] {
-  let remainingCost = cost;
-  const nextPile: TrophyPileEntry[] = [];
-
-  for (const entry of trophyPile ?? []) {
-    if (remainingCost <= 0) {
-      nextPile.push(entry);
-      continue;
-    }
-
-    const availableValue = getTrophyPileEntryAvailableValue(entry);
-
-    if (availableValue <= 0) {
-      continue;
-    }
-
-    const spentValue = Math.min(availableValue, remainingCost);
-    remainingCost -= spentValue;
-    const nextEntry = {
-      ...entry,
-      spentValue: (entry.spentValue ?? 0) + spentValue
-    };
-
-    if (getTrophyPileEntryAvailableValue(nextEntry) > 0) {
-      nextPile.push(nextEntry);
-    }
-  }
-
-  return nextPile;
 }
 
 function summarizeEffects(effect: EncounterEffect | null, success: boolean | null): string[] {
@@ -4660,11 +4631,16 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       const currentValue = player.character.stats[statRaisedAction.stat];
-      const expectedCost = getStatUpgradeCost(currentValue);
+      const expectedCost = Math.max(
+        0,
+        getStatUpgradeCost(currentValue)
+          - (hasActiveTrophyAdvancementDiscount(state.eventLog, statRaisedAction.seatId) ? 1 : 0)
+      );
       const disabledReason = getStatUpgradeDisabledReason({
         stat: statRaisedAction.stat,
         currentValue,
         trophies: player.character.trophies,
+        cost: expectedCost,
         qaOnly: player.character.qaOnly === true || player.character.id === MASTER_ALPHA_ID,
         cap: NORMAL_STAT_UPGRADE_CAP
       });
@@ -4681,6 +4657,34 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "Stat upgrade values are stale");
       }
 
+      const expectedEventId = `stat-raised:${state.sessionId}:${state.sequence + 1}:${statRaisedAction.seatId}:${statRaisedAction.stat}`;
+      if (statRaisedAction.eventId !== expectedEventId) {
+        return reject(state, action, "Stat upgrade event identity is stale");
+      }
+
+      let trophySpend;
+      try {
+        trophySpend = planTrophySpend(
+          player.character.trophyPile,
+          statRaisedAction.cost,
+          player.character.trophies
+        );
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Invalid trophy spend");
+      }
+
+      if (
+        trophySpend.totalSpent !== statRaisedAction.cost
+        || !trophySpendReceiptsEqual(statRaisedAction.trophySpendReceipt, trophySpend.receipt)
+      ) {
+        return reject(state, action, "Stat upgrade trophy receipt is stale or forged");
+      }
+
+      const canonicalAction: StatRaisedAction = {
+        ...statRaisedAction,
+        trophySpendReceipt: trophySpend.receipt
+      };
+
       return succeed({
         ...state,
         sequence: state.sequence + 1,
@@ -4689,7 +4693,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           character: {
             ...player.character,
             trophies: Math.max(0, player.character.trophies - statRaisedAction.cost),
-            trophyPile: spendTrophyPileValue(player.character.trophyPile, statRaisedAction.cost),
+            trophyPile: trophySpend.remainingPile,
             stats: {
               ...player.character.stats,
               [statRaisedAction.stat]: player.character.stats[statRaisedAction.stat] + 1
@@ -4720,7 +4724,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           success: true,
           summary: `${player.character.name} upgraded ${statRaisedAction.stat} to ${statRaisedAction.nextValue}.`
         },
-        eventLog: [...state.eventLog, action]
+        eventLog: [...state.eventLog, canonicalAction]
       });
     }
     case "EQUIP_GEAR": {

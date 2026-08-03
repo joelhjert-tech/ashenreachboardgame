@@ -85,6 +85,7 @@ import {
   isPhoneChallengeRelevantToSeat
 } from "./PhoneHazardChallengePrototype.js";
 import { PhoneResultReadyGate } from "./PhoneResultReadyGate.js";
+import { PhoneMovementPresentationWait, PhoneTvPresentationWait } from "./PhoneTvPresentationWait.js";
 import {
   PhoneActionPriorityStack,
   buildPhoneActionViewModel,
@@ -102,6 +103,7 @@ interface PhoneActionPanelProps {
   onMovementNavigation?: (target: MovementNavigationTarget) => void;
   showMovementContextNavigation?: boolean;
   onLeaveRoom?: () => void;
+  suppressTvPresentationWait?: boolean;
 }
 
 export type PhoneArrivalPresentation = "cinematic" | "overlay";
@@ -3222,7 +3224,8 @@ export function PhoneActionPanel({
   hideTurnTabs = false,
   onMovementNavigation,
   showMovementContextNavigation = true,
-  onLeaveRoom
+  onLeaveRoom,
+  suppressTvPresentationWait = false
 }: PhoneActionPanelProps): ReactElement {
   const [localSelectedTurnTab, setLocalSelectedTurnTab] = useState<TurnActionTab | null>(null);
   const selectedTurnTab = controlledSelectedTurnTab ?? localSelectedTurnTab;
@@ -3478,6 +3481,10 @@ export function PhoneActionPanel({
     );
   }
 
+  if (patch.tvPresentationGate && !suppressTvPresentationWait) {
+    return <PhoneTvPresentationWait gate={patch.tvPresentationGate} seatId={self.seatId} />;
+  }
+
   if (patch.pendingScarChoice) {
     return (
       <section className="phone-sheet-actions" aria-label="Required Scar choice">
@@ -3486,20 +3493,8 @@ export function PhoneActionPanel({
     );
   }
 
-  if (patch.movementPresentationGate) {
-    const isMovingPlayer = patch.movementPresentationGate.ownerSeatId === self.seatId;
-    return (
-      <section className="phone-movement-tv-wait" role="status" aria-live="polite" data-testid="movement-tv-presentation-gate">
-        <span>Host movement</span>
-        <h2>{isMovingPlayer ? "Movement playing on TV" : `${patch.movementPresentationGate.ownerDisplayName} is moving`}</h2>
-        <p>
-          {isMovingPlayer
-            ? `Your operative is travelling to ${patch.movementPresentationGate.destinationSectorName}. Arrival actions unlock after the piece lands.`
-            : `The host display is following the route to ${patch.movementPresentationGate.destinationSectorName}.`}
-        </p>
-        <div className="phone-movement-tv-wait__pulse" aria-hidden="true"><i /><i /><i /></div>
-      </section>
-    );
+  if (patch.movementPresentationGate && !suppressTvPresentationWait) {
+    return <PhoneMovementPresentationWait gate={patch.movementPresentationGate} seatId={self.seatId} />;
   }
 
   if (

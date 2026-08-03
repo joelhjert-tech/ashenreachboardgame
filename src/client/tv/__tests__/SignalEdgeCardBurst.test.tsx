@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PublicEdgeCardPlay } from "../../shared/types.js";
 import { SignalEdgeCardBurst } from "../SignalEdgeCardBurst.js";
 
@@ -22,7 +22,10 @@ const play: PublicEdgeCardPlay = {
 
 describe("SignalEdgeCardBurst", () => {
   beforeEach(() => window.sessionStorage.clear());
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
 
   it("uses the generated charge frame during the reveal phase", () => {
     render(<SignalEdgeCardBurst play={play} forcedStage="charge" />);
@@ -70,5 +73,16 @@ describe("SignalEdgeCardBurst", () => {
     expect(screen.getByText("Edge ability activated")).toBeInTheDocument();
     expect(screen.getByText("Ability burned")).toBeInTheDocument();
     expect(screen.queryByText("One die locked")).not.toBeInTheDocument();
+  });
+
+  it("releases the authoritative hold only after the burst settles", () => {
+    vi.useFakeTimers();
+    const onSettled = vi.fn();
+    render(<SignalEdgeCardBurst play={play} onSettled={onSettled} />);
+
+    act(() => vi.advanceTimersByTime(3899));
+    expect(onSettled).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1));
+    expect(onSettled).toHaveBeenCalledOnce();
   });
 });

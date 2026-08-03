@@ -3413,8 +3413,14 @@ export function TvApp(): ReactElement {
             onOpenAdminDashboard={() => { setAdminInitialTab("overview"); setAdminSurface("dashboard"); }}
             onMovementPresentationCompleted={(eventId) => {
               const gate = publicPatch?.payload.movementPresentationGate;
-              if (gate?.eventId) {
-                sendIntent({ type: "MOVEMENT_PRESENTATION_COMPLETED", eventId: gate.eventId });
+              if (gate?.eventId === eventId) {
+                sendIntent({ type: "MOVEMENT_PRESENTATION_COMPLETED", eventId });
+              }
+            }}
+            onTvPresentationCompleted={(eventId) => {
+              const gate = publicPatch?.payload.tvPresentationGate;
+              if (gate?.eventId === eventId) {
+                sendIntent({ type: "TV_PRESENTATION_COMPLETED", eventId });
               }
             }}
           />
@@ -3422,7 +3428,13 @@ export function TvApp(): ReactElement {
         {gameIntroVisible ? (
           <HostGameIntro
             key={publicPatch?.sessionId ?? "pending-session"}
-            onComplete={() => setGameIntroVisible(false)}
+            onComplete={() => {
+              setGameIntroVisible(false);
+              const gate = publicPatch?.payload.tvPresentationGate;
+              if (gate?.kind === "intro") {
+                sendIntent({ type: "TV_PRESENTATION_COMPLETED", eventId: gate.eventId });
+              }
+            }}
           />
         ) : null}
         <EndgameOverlay

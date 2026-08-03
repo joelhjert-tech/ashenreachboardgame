@@ -11,6 +11,7 @@ Assets are runtime data. Do not delete an asset just because TypeScript does not
 - Signal Cartography marker coins: `public/assets/riftfall/ui/signal-cartography/markers/`
 - Signal Theatre host intro video: `public/assets/riftfall/ui/signal-theatre/intro/`
 - Signal Theatre Edge Card animation frames: `public/assets/riftfall/ui/signal-theatre/edge-card/`
+- Signal Theatre Trophy Upgrade props: `public/assets/riftfall/ui/signal-theatre/trophy-upgrade/`
 - Host TV shop-category emblems: `public/assets/riftfall/ui/shop/categories/`
 - Current generated card art: `public/assets/cards/`
 - Active card backs: `public/assets/cards/backs/`
@@ -70,6 +71,7 @@ Remaining legacy files:
 - Objective category emblem prompt catalog: `src/game/assets/design/objectiveCategoryIconPrompts.ts`
 - Result-ready verdict gate prompt catalog: `src/game/assets/design/resultReadyVisualPrompts.ts`
 - Edge Card animation prompt catalog: `src/game/assets/design/edgeCardAnimationPrompts.ts`
+- Trophy Upgrade animation prompt catalog: `src/game/assets/design/trophyUpgradeAnimationPrompts.ts`
 - Generated card image prompt catalog: `src/game/assets/design/generatedCardImagePrompts.ts`
 - Card fallback and output directories: `src/game/assets/design/cardImageCatalog.ts`
 - Phone derivative generator: `scripts/generate-phone-images.ts`
@@ -83,6 +85,7 @@ Remaining legacy files:
 - Signal Cartography player coins reuse the six stable Signal Piece IDs under `markers/players/`; public objective coins use `route`, `challenge`, `hunt`, and `service` under `markers/objectives/`.
 - The TV-only opening video uses the stable filename `ashenreach-intro.mp4` under the Signal Theatre intro root. Keep it H.264/AAC MP4 for browser and television compatibility.
 - Edge Card TV frames use the stable names `edge-card-charge.png` and `edge-card-detonation.png`; both preserve the card-reveal chamber camera for a clean CSS crossfade.
+- Trophy Upgrade TV props use the stable names `trophy-upgrade-crt.png` and `trophy-ledger-furnace.png`; both are transparent, front-facing Signal Theatre composites animated by React and CSS.
 - Edge Card faces use their stable card IDs under `public/assets/cards/edge/`; each
   face carries the printed value above one original alternate-use icon. Phone
   cards and the TV burn reveal resolve them through the shared card-art catalog.
@@ -112,14 +115,14 @@ npm run audit:assets
 
 The asset audit validates the generated phone manifest, source and derivative hashes, byte counts, dimensions, maximum edge, no-upscale rule, and no-growth rule. SVG, animation, TV-only Signal Theatre environments, the TV-only intro video, shop interiors, cartography assets, and admin-only Lore Bible art are excluded from phone-image derivative generation. The intro MP4 remains registered and existence-checked through `getRuntimeAssetPaths()`.
 
-The asset audit is the source of truth for the current expected count. Signal Theatre adds 49 distinct sector environments, 6 selectable player-piece renders, and 2 Edge Card animation frames. Signal Cartography adds 6 public player coins and 4 public objective coins. The phone inventory adds 6 original category emblems.
+The asset audit is the source of truth for the current expected count. Signal Theatre adds 49 distinct sector environments, 6 selectable player-piece renders, 2 Edge Card animation frames, and 2 Trophy Upgrade animation props. Signal Cartography adds 6 public player coins and 4 public objective coins. The phone inventory adds 6 original category emblems.
 
 The runtime also includes six original SVG shop-category emblems. These are code-native UI vectors rather than card or environment artwork and must remain registered through `getRuntimeAssetPaths()`.
 
 Previous baseline after the July 2026 repository cleanup and contract-art refresh:
 
-- 422 expected assets
-- 422 present
+- 424 expected assets
+- 424 present
 - 0 missing card PNGs
 - 0 invalid assets
 - 0 placeholder violations

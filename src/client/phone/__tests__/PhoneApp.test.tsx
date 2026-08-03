@@ -33,7 +33,14 @@ const characters: CharacterCatalogEntry[] = [
   activeContract: null,
   heldGear: [],
   equippedGear: { weapon: null, armor: null, utility: null },
-  abilities: [],
+  abilities: id === "void-marshal"
+    ? [{
+        id: "hold-the-line",
+        name: "Hold the Line",
+        text: "Once per round, turn a failed Command challenge into a controlled retreat."
+      }]
+    : [],
+  lore: id === "void-marshal" ? "A breach-line commander who keeps a crew moving when the Reach turns hostile." : undefined,
   presentation:
     id === "void-marshal"
       ? {
@@ -407,13 +414,15 @@ describe("PhoneApp", () => {
     const picker = await screen.findByRole("list", { name: /character/i });
 
     await waitFor(() => {
-      expect(screen.getAllByRole("button", { name: /void marshal|rift cartographer|signal witch|siege medic|oathbroken prince|grave engineer|black ledger agent|cinder monk|salvage warden|fleet elder|deep route delver/i })).toHaveLength(11);
+      expect(within(picker).getAllByRole("listitem")).toHaveLength(11);
+      expect(within(picker).getAllByRole("button", { name: /inspect operative dossier/i })).toHaveLength(11);
+      expect(within(picker).getAllByRole("button", { name: /^select /i })).toHaveLength(11);
     });
 
     expect(picker).toBeInTheDocument();
     expect(picker).toHaveClass("phone-character-snap-list");
     expect(picker.parentElement?.parentElement).toHaveClass("phone-character-select-scroll");
-    for (const option of within(picker).getAllByRole("button")) {
+    for (const option of within(picker).getAllByRole("listitem")) {
       expect(option).toHaveClass("phone-character-option");
     }
     expect(screen.getAllByRole("heading", { name: /choose operative/i })).toHaveLength(1);
@@ -422,12 +431,12 @@ describe("PhoneApp", () => {
     expect(screen.getByRole("tab", { name: /recommended/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /all operatives/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /advanced/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /tarek voss.*void marshal/i })).toBeInTheDocument();
-    const tarekCard = screen.getByRole("button", { name: /tarek voss.*void marshal/i });
+    expect(screen.getByRole("button", { name: /select tarek voss.*void marshal/i })).toBeInTheDocument();
+    const tarekCard = screen.getByRole("listitem", { name: /tarek voss.*void marshal/i });
     expect(within(tarekCard).queryByLabelText(/tarek voss stats/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /mira.*cinder monk/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /orenna tash.*fleet elder/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /deepdale.*deep route delver/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /select mira.*cinder monk/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /select orenna tash.*fleet elder/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /select deepdale.*deep route delver/i })).toBeInTheDocument();
     expect(networkMocks.joinSession).toHaveBeenCalledWith({
       roomCode: "RT7P4",
       displayName: "Joel"
@@ -495,7 +504,7 @@ describe("PhoneApp", () => {
 
     await continueToOperativeSelection();
     const picker = await screen.findByRole("list", { name: /character/i });
-    const firstOperative = within(picker).getAllByRole("button")[0]!;
+    const firstOperative = within(picker).getAllByRole("button", { name: /inspect operative dossier/i })[0]!;
     await waitFor(() => expect(document.activeElement).toBe(firstOperative));
   });
 
@@ -560,7 +569,16 @@ describe("PhoneApp", () => {
     expect(lantern).toHaveAttribute("tabindex", "0");
   });
 
-  it("shows character role, complexity, starting gear, and starting contract guidance", async () => {
+  it("inspects canonical stats, abilities, guidance, and lore without selecting the operative", async () => {
+    const sendIntent = vi.fn();
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch(),
+      error: null,
+      sendIntent,
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
     render(<PhoneApp />);
 
     await screen.findByRole("button", { name: /join game/i });
@@ -577,9 +595,51 @@ describe("PhoneApp", () => {
     expect(firstGamePresentation!).toHaveTextContent(/beginner/i);
     expect(firstGamePresentation!).toHaveTextContent(/first-game pick/i);
 
-    const marshalCard = screen.getByRole("button", { name: /tarek voss.*void marshal/i });
+    const marshalCard = screen.getByRole("listitem", { name: /tarek voss.*void marshal/i });
     expect(within(marshalCard).queryByLabelText(/tarek voss stats/i)).not.toBeInTheDocument();
-    expect(within(marshalCard).getByText(/select operative/i)).toBeInTheDocument();
+    expect(within(marshalCard).getByRole("button", { name: /inspect operative dossier/i })).toBeInTheDocument();
+    expect(within(marshalCard).getByRole("button", { name: /select tarek voss.*void marshal/i })).toBeInTheDocument();
+
+    const inspectButton = within(marshalCard).getByRole("button", { name: /inspect operative dossier/i });
+    fireEvent.click(inspectButton);
+
+    const dossier = screen.getByRole("dialog", { name: /tarek voss/i });
+    expect(dossier).toBeInTheDocument();
+    expect(document.querySelector(".phone-portrait-controller")).toHaveAttribute("inert");
+    expect(within(dossier).getByLabelText(/tarek voss stats/i)).toHaveTextContent(/command3/i);
+    expect(within(dossier).getByLabelText(/tarek voss stats/i)).toHaveTextContent(/signal1/i);
+    expect(within(dossier).getByText(/hold the line/i)).toBeInTheDocument();
+    expect(within(dossier).getByText(/failed command challenge/i)).toBeInTheDocument();
+    expect(within(dossier).getByText(/cinder suture kit/i)).toBeInTheDocument();
+    expect(within(dossier).getByText(/warbell recovery/i)).toBeInTheDocument();
+    expect(within(dossier).getByText(/breach-line commander/i)).toBeInTheDocument();
+    expect(sendIntent).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dossier).getByRole("button", { name: /keep browsing/i }));
+    expect(screen.queryByRole("dialog", { name: /tarek voss/i })).not.toBeInTheDocument();
+    await waitFor(() => expect(inspectButton).toHaveFocus());
+  });
+
+  it("dismisses an operative dossier before the Android Back leave guard", async () => {
+    storeControllerAuth();
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch(),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<PhoneApp />);
+    await continueToOperativeSelection();
+    const marshalCard = await screen.findByRole("listitem", { name: /tarek voss.*void marshal/i });
+    fireEvent.click(within(marshalCard).getByRole("button", { name: /inspect operative dossier/i }));
+    expect(screen.getByRole("dialog", { name: /tarek voss/i })).toBeInTheDocument();
+
+    fireEvent.popState(window);
+    expect(screen.queryByRole("dialog", { name: /tarek voss/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /leave the game/i })).not.toBeInTheDocument();
   });
 
   it("sorts first-game characters before advanced operatives", async () => {
@@ -592,7 +652,7 @@ describe("PhoneApp", () => {
 
     await continueToOperativeSelection();
     const picker = await screen.findByRole("list", { name: /character/i });
-    const options = within(picker).getAllByRole("button");
+    const options = within(picker).getAllByRole("listitem");
     const firstGameIndex = options.findIndex((option) => /tarek voss/i.test(option.textContent ?? ""));
     const advancedIndex = options.findIndex((option) => /joss var/i.test(option.textContent ?? ""));
 

@@ -132,11 +132,13 @@ describe("SignalCardReveal", () => {
 
   it("animates once and restores the stable reveal without replay", () => {
     const model = buildSignalCardRevealModel(baseResolution);
-    const { unmount } = render(<SignalCardReveal model={model} />);
+    const onReady = vi.fn();
+    const { unmount } = render(<SignalCardReveal model={model} onReady={onReady} />);
     expect(screen.getByTestId("signal-card-reveal")).toHaveAttribute("data-stage", "sealed");
 
     act(() => vi.advanceTimersByTime(3260));
     expect(screen.getByTestId("signal-card-reveal")).toHaveAttribute("data-stage", "ready");
+    expect(onReady).toHaveBeenCalledOnce();
     unmount();
 
     render(<SignalCardReveal model={model} />);

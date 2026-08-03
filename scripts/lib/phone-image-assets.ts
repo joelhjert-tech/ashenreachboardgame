@@ -22,6 +22,7 @@ const excludedFragments = [
   "/signal-theatre/edge-card/",
   "/signal-theatre/dice/",
   "/signal-theatre/shops/",
+  "/signal-theatre/trophy-upgrade/",
   "/signal-theatre/shopkeeper-establishment."
 ] as const;
 

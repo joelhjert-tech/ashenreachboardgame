@@ -113,10 +113,12 @@ function markSeen(id: string): void {
 
 export function SignalCardReveal({
   model,
-  forcedStage = null
+  forcedStage = null,
+  onReady
 }: {
   model: SignalCardRevealModel;
   forcedStage?: SignalCardRevealStage | null;
+  onReady?: () => void;
 }): ReactElement {
   const restoreImmediately = model.restored || wasSeen(model.id);
   const [stage, setStage] = useState<SignalCardRevealStage>(
@@ -133,6 +135,7 @@ export function SignalCardReveal({
     if (model.restored || wasSeen(model.id) || reducedMotion) {
       markSeen(model.id);
       setStage("ready");
+      onReady?.();
       return undefined;
     }
 
@@ -144,10 +147,11 @@ export function SignalCardReveal({
       window.setTimeout(() => {
         markSeen(model.id);
         setStage("ready");
+        onReady?.();
       }, 3260)
     ];
     return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [forcedStage, model.id, model.restored]);
+  }, [forcedStage, model.id, model.restored, onReady]);
 
   const actionVerb = model.category === "Enemy" ? "roll" : "test";
   const isReward = model.revealKind === "reward";

@@ -27,10 +27,12 @@ function markSeen(id: string): void {
 
 export function SignalEdgeCardBurst({
   play,
-  forcedStage = null
+  forcedStage = null,
+  onSettled
 }: {
   play: PublicEdgeCardPlay | null;
   forcedStage?: SignalEdgeCardBurstStage | null;
+  onSettled?: () => void;
 }): ReactElement | null {
   const [activePlay, setActivePlay] = useState<PublicEdgeCardPlay | null>(
     play && (!wasSeen(play.id) || forcedStage) ? play : null
@@ -59,6 +61,7 @@ export function SignalEdgeCardBurst({
         markSeen(activePlay.id);
         setStage("done");
         setActivePlay(null);
+        onSettled?.();
       }, 1800);
       return () => window.clearTimeout(timer);
     }
@@ -72,10 +75,11 @@ export function SignalEdgeCardBurst({
         markSeen(activePlay.id);
         setStage("done");
         setActivePlay(null);
+        onSettled?.();
       }, 3900)
     ];
     return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [activePlay, forcedStage]);
+  }, [activePlay, forcedStage, onSettled]);
 
   if (!activePlay || stage === "done") return null;
 

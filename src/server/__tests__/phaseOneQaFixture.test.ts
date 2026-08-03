@@ -4,6 +4,10 @@ import { applyPhaseOneQaFixture } from "../phaseOneQaFixture.js";
 import { buildMovementRoutePlan } from "../../game/rules/movementPlanner.js";
 import { startAshenReachServer, type StartedAshenReachServer } from "../index.js";
 import { createPhoneProjection, createTvProjection } from "../roomServer.js";
+import { GameRoomServer } from "../roomServer.js";
+import { parseAndMigrateSessionSnapshot, serializeSessionSnapshotV2 } from "../../game/persistence/sessionSnapshot.js";
+import { planTrophySpend } from "../../game/rules/trophySpend.js";
+import { reduceGameState } from "../../game/engine/reducer.js";
 
 const started: StartedAshenReachServer[] = [];
 let serverPortOffset = 0;
@@ -196,6 +200,114 @@ describe("Phase 1 QA fixture", () => {
     expect(player.character.trophyPile).toEqual([
       expect.objectContaining({ cardId: "hearth-ruin-behemoth", trophyValue: 6, spentValue: 0, stat: "grit" })
     ]);
+  });
+
+  it("prepares the three-card Signal 5 to 6 Trophy ceremony fixture", () => {
+    const state = createInitialSessionState("QA-TROPHY-TV", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "trophy-upgrade", stage: "three-card" });
+    const player = state.players[0]!;
+
+    expect(state.phase).toBe("broadcast");
+    expect(player.character.stats.signal).toBe(5);
+    expect(player.character.trophies).toBe(6);
+    expect(player.character.trophyPile).toEqual([
+      expect.objectContaining({ cardId: "archive-shade", trophyValue: 1 }),
+      expect.objectContaining({ cardId: "choir-wraith", trophyValue: 2 }),
+      expect.objectContaining({ cardId: "cinder-veil-stalker", trophyValue: 3 })
+    ]);
+    expect((createTvProjection(state) as { trophyUpgradePresentation?: unknown }).trophyUpgradePresentation).toBeNull();
+  });
+
+  it("projects only the authoritative spent Trophy receipt and restores it from a snapshot", () => {
+    const state = createInitialSessionState("QA-TROPHY-PROJECTION", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    state.seats[0]!.displayName = "Joel";
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "trophy-upgrade", stage: "three-card" });
+    state.players[0]!.character.trophyPile!.push({
+      cardId: "copperjaw-vermin",
+      name: "Copperjaw Vermin",
+      trophyValue: 1,
+      spentValue: 0,
+      stat: "grit",
+      cardType: "enemy"
+    });
+    state.players[0]!.character.trophies += 1;
+
+    const server = new GameRoomServer(state);
+    server.resolveRaiseStatIntent({ type: "RAISE_STAT_REQUESTED", seatId: "seat-1", stat: "signal" });
+    const projection = createTvProjection(server.getState()) as {
+      trophyUpgradePresentation: {
+        id: string;
+        actorDisplayName: string;
+        previousValue: number;
+        newValue: number;
+        totalCost: number;
+        spentTrophies: Array<{ cardId: string; spentValue: number }>;
+      } | null;
+    };
+
+    expect(projection.trophyUpgradePresentation).toMatchObject({
+      id: expect.stringContaining("stat-raised:QA-TROPHY-PROJECTION:"),
+      actorDisplayName: "Joel",
+      previousValue: 5,
+      newValue: 6,
+      totalCost: 6
+    });
+    expect(projection.trophyUpgradePresentation?.spentTrophies.map((line) => line.cardId)).toEqual([
+      "archive-shade",
+      "choir-wraith",
+      "cinder-veil-stalker"
+    ]);
+    expect(projection.trophyUpgradePresentation?.spentTrophies).not.toContainEqual(
+      expect.objectContaining({ cardId: "copperjaw-vermin" })
+    );
+
+    const restored = parseAndMigrateSessionSnapshot(serializeSessionSnapshotV2(server.getState())).state;
+    expect((createTvProjection(restored) as typeof projection).trophyUpgradePresentation)
+      .toEqual(projection.trophyUpgradePresentation);
+  });
+
+  it("persists an in-flight TV hold through the authoritative snapshot", () => {
+    const state = createInitialSessionState("QA-TV-GATE-SNAPSHOT", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    state.tvPresentationGate = {
+      eventId: "tv:dice-result:resolution-12",
+      kind: "dice-result",
+      ownerSeatId: "seat-1",
+      label: "The dice result",
+      createdAt: "2026-08-03T12:00:00.000Z",
+      deadlineAt: "2026-08-03T12:00:05.000Z"
+    };
+
+    const restored = parseAndMigrateSessionSnapshot(serializeSessionSnapshotV2(state)).state;
+    expect(restored.tvPresentationGate).toEqual(state.tvPresentationGate);
+    expect((createPhoneProjection(restored, "seat-1") as { tvPresentationGate?: unknown }).tvPresentationGate)
+      .toMatchObject({ eventId: "tv:dice-result:resolution-12", kind: "dice-result" });
+  });
+
+  it("rejects a forged Trophy receipt before storing the stat-upgrade event", () => {
+    const state = createInitialSessionState("QA-TROPHY-FORGERY", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "trophy-upgrade", stage: "three-card" });
+    const player = state.players[0]!;
+    const eventId = `stat-raised:${state.sessionId}:${state.sequence + 1}:seat-1:signal`;
+    const receipt = planTrophySpend(player.character.trophyPile, 6, player.character.trophies).receipt;
+    const result = reduceGameState(state, {
+      type: "STAT_RAISED",
+      eventId,
+      seatId: "seat-1",
+      stat: "signal",
+      cost: 6,
+      previousValue: 5,
+      nextValue: 6,
+      trophySpendReceipt: [{ ...receipt[0]!, name: "Forged identity" }, ...receipt.slice(1)],
+      createdAt: "2026-08-03T12:00:00.000Z"
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.rejection.reason).toMatch(/receipt is stale or forged/i);
+    expect(result.state.eventLog.some((entry) => (entry as { eventId?: string }).eventId === eventId)).toBe(false);
   });
 
   it("isolates host presentation fixtures from prior movement and arrival state", () => {

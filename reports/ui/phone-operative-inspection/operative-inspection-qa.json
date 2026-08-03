@@ -1,0 +1,46 @@
+{
+  "roomCode": "40VRZ",
+  "selection": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "horizontalOverflow": false,
+    "canvasCount": 0,
+    "cardCount": 17,
+    "imageLoaded": true,
+    "cardSize": {
+      "width": 309.125,
+      "height": 489.515625
+    },
+    "artworkSize": {
+      "width": 316.3387451171875,
+      "height": 502.14111328125
+    },
+    "artworkFillsCard": true,
+    "copyBackground": "rgba(0, 0, 0, 0)",
+    "lowerVignette": "linear-gradient(rgba(3, 5, 8, 0.02) 0%, rgba(3, 5, 8, 0.05) 36%, rgba(3, 5, 8, 0.34) 61%, rgba(3, 5, 8, 0.7) 100%)",
+    "inspectHeight": 44,
+    "selectHeight": 44,
+    "inspectVisible": true,
+    "selectVisible": true,
+    "remainedInOperativeSelection": true
+  },
+  "inspection": {
+    "horizontalOverflow": false,
+    "canvasCount": 0,
+    "statCount": 5,
+    "abilityCount": 2,
+    "hasStrengthsAndWeaknesses": true,
+    "hasStartingGuidance": true,
+    "hasBackground": true,
+    "dialogFitsViewport": true,
+    "footerVisible": true,
+    "internalScrollAvailable": true,
+    "underlyingPickerInert": true,
+    "focusedControl": "Close Bjornis inspection"
+  },
+  "focusReturnedAfterClose": true,
+  "browserErrors": [],
+  "pass": true
+}

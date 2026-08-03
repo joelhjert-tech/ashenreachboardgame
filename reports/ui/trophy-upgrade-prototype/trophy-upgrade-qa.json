@@ -1,0 +1,167 @@
+{
+  "metrics": [
+    {
+      "label": "phone-hold-1920x1080",
+      "holdCount": 1,
+      "identityVisible": true,
+      "navigationVisible": true,
+      "inventoryContentMounted": true,
+      "contentInert": true
+    },
+    {
+      "label": "summon-1920x1080",
+      "viewportWidth": 1920,
+      "viewportHeight": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "canvasCount": 0,
+      "overlayCount": 1,
+      "cardCount": 3,
+      "privateLeak": false
+    },
+    {
+      "label": "display-1920x1080",
+      "viewportWidth": 1920,
+      "viewportHeight": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "canvasCount": 0,
+      "overlayCount": 1,
+      "cardCount": 3,
+      "privateLeak": false
+    },
+    {
+      "label": "burn-1920x1080",
+      "viewportWidth": 1920,
+      "viewportHeight": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "canvasCount": 0,
+      "overlayCount": 1,
+      "cardCount": 3,
+      "privateLeak": false
+    },
+    {
+      "label": "flip-1920x1080",
+      "viewportWidth": 1920,
+      "viewportHeight": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "canvasCount": 0,
+      "overlayCount": 1,
+      "cardCount": 3,
+      "privateLeak": false
+    },
+    {
+      "label": "phone-released-1920x1080",
+      "holdCount": 0,
+      "inventoryContentVisible": true,
+      "contentInert": false,
+      "selectedInventory": "true"
+    },
+    {
+      "label": "settled-1920x1080",
+      "settledCanvasCount": 0,
+      "replayBeforeReload": 0,
+      "replayAfterReload": 0
+    },
+    {
+      "label": "phone-hold-1366x768",
+      "holdCount": 1,
+      "identityVisible": true,
+      "navigationVisible": true,
+      "inventoryContentMounted": true,
+      "contentInert": true
+    },
+    {
+      "label": "summon-1366x768",
+      "viewportWidth": 1366,
+      "viewportHeight": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 768,
+      "canvasCount": 0,
+      "overlayCount": 1,
+      "cardCount": 3,
+      "privateLeak": false
+    },
+    {
+      "label": "display-1366x768",
+      "viewportWidth": 1366,
+      "viewportHeight": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 768,
+      "canvasCount": 0,
+      "overlayCount": 1,
+      "cardCount": 3,
+      "privateLeak": false
+    },
+    {
+      "label": "burn-1366x768",
+      "viewportWidth": 1366,
+      "viewportHeight": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 768,
+      "canvasCount": 0,
+      "overlayCount": 1,
+      "cardCount": 3,
+      "privateLeak": false
+    },
+    {
+      "label": "flip-1366x768",
+      "viewportWidth": 1366,
+      "viewportHeight": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 768,
+      "canvasCount": 0,
+      "overlayCount": 1,
+      "cardCount": 3,
+      "privateLeak": false
+    },
+    {
+      "label": "phone-released-1366x768",
+      "holdCount": 0,
+      "inventoryContentVisible": true,
+      "contentInert": false,
+      "selectedInventory": "true"
+    },
+    {
+      "label": "settled-1366x768",
+      "settledCanvasCount": 0,
+      "replayBeforeReload": 0,
+      "replayAfterReload": 0
+    },
+    {
+      "label": "phone-hold-1920x1080",
+      "holdCount": 1,
+      "identityVisible": true,
+      "navigationVisible": true,
+      "inventoryContentMounted": true,
+      "contentInert": true
+    },
+    {
+      "label": "reduced-1920x1080",
+      "viewportWidth": 1920,
+      "viewportHeight": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "canvasCount": 0,
+      "overlayCount": 1,
+      "cardCount": 3,
+      "privateLeak": false
+    },
+    {
+      "label": "phone-released-1920x1080",
+      "holdCount": 0,
+      "inventoryContentVisible": true,
+      "contentInert": false,
+      "selectedInventory": "true"
+    },
+    {
+      "label": "settled-1920x1080",
+      "settledCanvasCount": 0,
+      "replayBeforeReload": 0,
+      "replayAfterReload": 0
+    }
+  ],
+  "browserErrors": []
+}

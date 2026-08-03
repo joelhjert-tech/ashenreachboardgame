@@ -10,6 +10,7 @@ import type { DiceRollResult } from "./dice.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import type { MemoryTaxOptionId } from "../schema/memoryTax.schema.js";
 import type { EdgeAbilityKey, EdgePlayMode } from "../data/edgeCards.js";
+import type { TrophySpendReceiptLine } from "../rules/trophySpend.js";
 
 export type CheckStat = Stat;
 
@@ -765,10 +766,12 @@ export interface StabilizeResolvedAction extends BaseAction {
 
 export interface StatRaisedAction extends BaseAction {
   type: "STAT_RAISED";
+  eventId: string;
   stat: Stat;
   cost: number;
   previousValue: number;
   nextValue: number;
+  trophySpendReceipt: TrophySpendReceiptLine[];
 }
 
 export interface RoundCompletedAction extends BaseAction {

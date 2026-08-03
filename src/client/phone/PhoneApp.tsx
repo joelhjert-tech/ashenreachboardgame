@@ -12,12 +12,14 @@ import {
 import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSessionAuth, ScenarioCatalogEntry, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
+import { statLabelById, statOrder } from "../shared/statLabels.js";
 import { useFocusOnRevision } from "../shared/useFocusOnRevision.js";
 import { usePhysicalVisualViewport } from "../shared/usePhysicalVisualViewport.js";
 import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
 import { PortraitControllerView } from "./PortraitControllerView.js";
-import { useActiveRoomBackGuard } from "./useActiveRoomBackGuard.js";
+import { useActiveRoomBackGuard, usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 import { getSubmittedDisplayNameError, MAX_PLAYER_DISPLAY_NAME_LENGTH } from "../../game/rules/playerIdentity.js";
 import { PhoneCartographyPrototypeFixture } from "./PhoneCartographyPrototypeFixture.js";
 import {
@@ -198,6 +200,159 @@ function matchesCharacterFilter(character: CharacterCatalogEntry, filter: Charac
   return Boolean(character.qaOnly || character.presentation?.complexity === "advanced" || character.presentation?.complexity === "expert");
 }
 
+function OperativeInspectionDialog({
+  character,
+  unavailableReason,
+  selecting,
+  onClose,
+  onSelect
+}: {
+  character: CharacterCatalogEntry;
+  unavailableReason: string | null;
+  selecting: boolean;
+  onClose: () => void;
+  onSelect: () => void;
+}): ReactElement {
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const titleId = `phone-operative-inspection-title-${character.id}`;
+  const presentation = character.presentation;
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLElement>): void => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(
+      dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])') ?? []
+    );
+    if (focusable.length === 0) return;
+    const first = focusable[0]!;
+    const last = focusable.at(-1)!;
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  return (
+    <div className="phone-operative-inspection" data-testid="phone-operative-inspection">
+      <section
+        ref={dialogRef}
+        className="phone-operative-inspection__sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onKeyDown={handleKeyDown}
+      >
+        <header className="phone-operative-inspection__header">
+          <div>
+            <span>Operative dossier</span>
+            <strong>Inspect before selection</strong>
+          </div>
+          <button type="button" autoFocus onClick={onClose} aria-label={`Close ${character.name} inspection`}>Close</button>
+        </header>
+
+        <div className="phone-operative-inspection__scroll">
+          <section className="phone-operative-inspection__hero">
+            <PhoneOptimizedImage src={getCharacterPortraitPath(character.id)} alt="" aria-hidden="true" />
+            <div>
+              <span>{character.archetype}</span>
+              <h2 id={titleId}>{character.name}</h2>
+              {presentation ? <p>{presentation.role} · {formatComplexity(presentation.complexity)}</p> : null}
+              {presentation?.recommendedForFirstGame ? <em>First-game pick</em> : null}
+            </div>
+          </section>
+
+          {unavailableReason ? <p className="phone-operative-inspection__unavailable" role="status">{unavailableReason}</p> : null}
+
+          <section className="phone-operative-inspection__section" aria-labelledby={`${titleId}-stats`}>
+            <div className="phone-operative-inspection__section-heading">
+              <span>Base profile</span>
+              <h3 id={`${titleId}-stats`}>Starting stats</h3>
+            </div>
+            <div className="phone-operative-inspection__stats" aria-label={`${character.name} stats`}>
+              {statOrder.map((stat) => (
+                <div key={stat} style={getChallengeThemeStyle(stat)}>
+                  <span>{statLabelById[stat]}</span>
+                  <strong>{character.stats[stat]}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="phone-operative-inspection__section" aria-labelledby={`${titleId}-abilities`}>
+            <div className="phone-operative-inspection__section-heading">
+              <span>Special rules</span>
+              <h3 id={`${titleId}-abilities`}>Abilities</h3>
+            </div>
+            <div className="phone-operative-inspection__abilities">
+              {character.abilities.length > 0 ? character.abilities.map((ability) => (
+                <article key={ability.id}>
+                  <strong>{ability.name}</strong>
+                  <p>{ability.text}</p>
+                </article>
+              )) : <p>No special ability is listed for this operative.</p>}
+            </div>
+          </section>
+
+          {presentation ? (
+            <>
+              <section className="phone-operative-inspection__section phone-operative-inspection__fit" aria-label="Operative strengths and weaknesses">
+                <div>
+                  <span>Strengths</span>
+                  <ul>{presentation.strengths.map((strength) => <li key={strength}>{strength}</li>)}</ul>
+                </div>
+                <div>
+                  <span>Watch for</span>
+                  <ul>{presentation.weaknesses.map((weakness) => <li key={weakness}>{weakness}</li>)}</ul>
+                </div>
+              </section>
+              <section className="phone-operative-inspection__section" aria-labelledby={`${titleId}-starting`}>
+                <div className="phone-operative-inspection__section-heading">
+                  <span>Opening plan</span>
+                  <h3 id={`${titleId}-starting`}>Starting guidance</h3>
+                </div>
+                <dl className="phone-operative-inspection__starting">
+                  <div><dt>Signature item</dt><dd>{presentation.signatureItemSummary}</dd></div>
+                  <div><dt>Starting Contract</dt><dd>{presentation.startingContractSummary}</dd></div>
+                </dl>
+              </section>
+              <section className="phone-operative-inspection__section">
+                <div className="phone-operative-inspection__section-heading"><span>Playstyle</span><h3>How this operative plays</h3></div>
+                <p>{presentation.playstyleSummary}</p>
+              </section>
+            </>
+          ) : null}
+
+          {character.lore ? (
+            <section className="phone-operative-inspection__section">
+              <div className="phone-operative-inspection__section-heading"><span>Record</span><h3>Background</h3></div>
+              <p>{character.lore}</p>
+            </section>
+          ) : null}
+        </div>
+
+        <footer className="phone-operative-inspection__actions">
+          <button type="button" className="phone-button" onClick={onClose}>Keep browsing</button>
+          <button
+            type="button"
+            className="phone-button phone-button-primary"
+            disabled={selecting || Boolean(unavailableReason)}
+            onClick={onSelect}
+          >
+            {selecting ? "Selecting…" : unavailableReason ?? `Select ${character.name}`}
+          </button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
 function getFirstAvailableSignalPiece(taken: ReadonlySet<SignalPieceId>): SignalPieceId {
   return SIGNAL_PIECES.find((piece) => !taken.has(piece.id))?.id ?? SIGNAL_PIECES[0]!.id;
 }
@@ -266,6 +421,7 @@ export function PhoneApp(): ReactElement {
   const [configuringLobby, setConfiguringLobby] = useState(false);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
   const [characterFilter, setCharacterFilter] = useState<CharacterSelectionFilter>("all");
+  const [inspectedCharacterId, setInspectedCharacterId] = useState<string | null>(null);
   const [joiningRoom, setJoiningRoom] = useState(false);
   const [startingGame, setStartingGame] = useState(false);
   const [formState, setFormState] = useState(() => ({
@@ -290,6 +446,7 @@ export function PhoneApp(): ReactElement {
   const operativeSelectionRef = useRef<HTMLElement | null>(null);
   const characterSelectionScrollRef = useRef<HTMLElement | null>(null);
   const signalPiecePickerRef = useRef<HTMLDivElement | null>(null);
+  const operativeInspectTriggerRef = useRef<HTMLButtonElement | null>(null);
   const initializedSignalPieceSeatRef = useRef<string | null>(null);
   const previousCharacterSelectedRef = useRef<boolean | null>(null);
   const joinUnavailable = joinError === "No open seats remain";
@@ -345,6 +502,14 @@ export function PhoneApp(): ReactElement {
     active: Boolean(auth && phonePatch?.payload.status !== "ended"),
     roomKey: auth ? `${auth.roomCode}:${auth.seatId}` : null,
     onLeave: leaveCurrentRoom
+  });
+  const closeOperativeInspection = useCallback((): void => {
+    setInspectedCharacterId(null);
+    window.requestAnimationFrame(() => operativeInspectTriggerRef.current?.focus());
+  }, []);
+  usePhoneBackDismissal(Boolean(inspectedCharacterId), () => {
+    closeOperativeInspection();
+    return true;
   });
 
   useEffect(() => {
@@ -542,6 +707,12 @@ export function PhoneApp(): ReactElement {
     () => sortedCharacters.filter((character) => matchesCharacterFilter(character, characterFilter) || characterOptionById.get(character.id)?.developerQa),
     [characterFilter, characterOptionById, sortedCharacters]
   );
+  const inspectedCharacter = inspectedCharacterId
+    ? availableCharacterCatalog.find((character) => character.id === inspectedCharacterId) ?? null
+    : null;
+  const inspectedCharacterOption = inspectedCharacter
+    ? characterOptionById.get(inspectedCharacter.id) ?? null
+    : null;
   const portraitPlayerName = auth?.displayName || "Ashen Reach Controller";
   const portraitRoomCode = auth?.roomCode || formState.roomCode || "Awaiting room";
   const portraitPhaseStatus = phonePatch
@@ -650,7 +821,7 @@ export function PhoneApp(): ReactElement {
       && phonePatch?.payload.setup?.stage === "operative-selection"
       && phonePatch.payload.setup.actorSeatId === auth.seatId
     ),
-    ".phone-character-option:not([disabled])"
+    ".phone-character-inspect:not([disabled])"
   );
   useFocusOnRevision(
     operativeSelectionRef,
@@ -672,6 +843,10 @@ export function PhoneApp(): ReactElement {
     scrollRoot.scrollTop = 0;
     scrollRoot.scrollLeft = 0;
   }, [ownSeat?.seatId, phonePatch?.payload.setup?.id, setupSelectionStep]);
+
+  useEffect(() => {
+    if (setupSelectionStep !== "operative") setInspectedCharacterId(null);
+  }, [setupSelectionStep]);
 
   useEffect(() => {
     if (!ownSeat) return;
@@ -1155,7 +1330,11 @@ export function PhoneApp(): ReactElement {
   ) {
     return (
       <main className="phone-page phone-page-controller">
-        <section className="phone-portrait-controller phone-portrait-controller-empty">
+        <section
+          className="phone-portrait-controller phone-portrait-controller-empty"
+          aria-hidden={inspectedCharacter ? "true" : undefined}
+          inert={inspectedCharacter ? true : undefined}
+        >
           <div className="phone-portrait-panel phone-portrait-lobby-panel">
             <main
               ref={characterSelectionScrollRef}
@@ -1297,15 +1476,17 @@ export function PhoneApp(): ReactElement {
                       {displayCharacters.map((character) => {
                         const projectedOption = characterOptionById.get(character.id);
                         const unavailableReason = projectedOption?.eligible === false ? projectedOption.disabledReason : null;
+                        const selecting = pendingCharacterId === character.id;
+                        const selectionDisabled = pendingCharacterId !== null || Boolean(unavailableReason);
                         return (
-                        <button
+                        <article
                           key={character.id}
-                          type="button"
-                          className={`phone-character-option${pendingCharacterId === character.id ? " phone-character-option-selected" : ""}`}
-                          disabled={pendingCharacterId !== null || Boolean(unavailableReason)}
+                          role="listitem"
+                          aria-label={`${character.name}, ${character.archetype}`}
+                          className={`phone-character-option${selecting ? " phone-character-option-selected" : ""}${unavailableReason ? " is-unavailable" : ""}`}
                           title={unavailableReason ?? undefined}
-                          aria-busy={pendingCharacterId === character.id ? "true" : undefined}
-                          onClick={() => handleCharacterSelected(character.id)}
+                          aria-busy={selecting ? "true" : undefined}
+                          data-character-id={character.id}
                         >
                           <PhoneOptimizedImage src={getCharacterPortraitPath(character.id)} alt="" />
                           <span>
@@ -1320,14 +1501,33 @@ export function PhoneApp(): ReactElement {
                                   {character.presentation.recommendedForFirstGame ? <em>First-game pick</em> : null}
                                 </span>
                                 <small>{character.presentation.playstyleSummary}</small>
-                                {character.lore ? <small className="phone-muted-copy">{character.lore}</small> : null}
                               </span>
                             )}
-                            <small className="phone-character-select-label">
-                              {pendingCharacterId === character.id ? "Selecting…" : unavailableReason ?? "Select operative"}
-                            </small>
+                            <span className="phone-character-card-actions">
+                              <button
+                                type="button"
+                                className="phone-character-inspect"
+                                disabled={pendingCharacterId !== null}
+                                aria-label="Inspect operative dossier"
+                                onClick={(event) => {
+                                  operativeInspectTriggerRef.current = event.currentTarget;
+                                  setInspectedCharacterId(character.id);
+                                }}
+                              >
+                                Inspect
+                              </button>
+                              <button
+                                type="button"
+                                className="phone-button phone-button-primary phone-character-select-action"
+                                disabled={selectionDisabled}
+                                aria-label={`Select ${character.name}, ${character.archetype}`}
+                                onClick={() => handleCharacterSelected(character.id)}
+                              >
+                                {selecting ? "Selecting…" : unavailableReason ?? "Select operative"}
+                              </button>
+                            </span>
                           </span>
-                        </button>
+                        </article>
                         );
                       })}
                     </div>
@@ -1338,6 +1538,18 @@ export function PhoneApp(): ReactElement {
             </main>
           </div>
         </section>
+        {inspectedCharacter ? (
+          <OperativeInspectionDialog
+            character={inspectedCharacter}
+            unavailableReason={inspectedCharacterOption?.eligible === false ? inspectedCharacterOption.disabledReason : null}
+            selecting={pendingCharacterId === inspectedCharacter.id}
+            onClose={closeOperativeInspection}
+            onSelect={() => {
+              setInspectedCharacterId(null);
+              handleCharacterSelected(inspectedCharacter.id);
+            }}
+          />
+        ) : null}
         {leaveConfirmationDialog}
       </main>
     );

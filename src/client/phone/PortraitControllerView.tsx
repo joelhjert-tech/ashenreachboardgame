@@ -33,6 +33,7 @@ import type {
 } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
+import { PhoneMovementPresentationWait, PhoneTvPresentationWait } from "./PhoneTvPresentationWait.js";
 import { PhoneRequiredActionShell, type RequiredActionStatus } from "./PhoneRequiredActionShell.js";
 import type { MovementNavigationTarget } from "./PhoneMovementView.js";
 import { isPhoneBattleRelevantToSeat } from "./PhoneBattleView.js";
@@ -1800,13 +1801,14 @@ export function PortraitControllerView({
           connectionStatus={connectionStatus}
         />
 
-        <main
-          ref={phoneScrollRef}
-          className={contentClassName}
-          aria-label="Phone content"
-          aria-hidden={bottomDockExpanded ? "true" : undefined}
-          inert={bottomDockExpanded ? true : undefined}
-        >
+        <div className="phone-portrait-content-stage">
+          <main
+            ref={phoneScrollRef}
+            className={contentClassName}
+            aria-label="Phone content"
+            aria-hidden={bottomDockExpanded || patch?.tvPresentationGate || patch?.movementPresentationGate ? "true" : undefined}
+            inert={bottomDockExpanded || Boolean(patch?.tvPresentationGate) || Boolean(patch?.movementPresentationGate) ? true : undefined}
+          >
           {focusedResolutionActive && patch && onIntent ? (
             <div className="phone-portrait-screen phone-portrait-screen-command phone-portrait-screen-battle" data-testid="phone-action-screen">
               {matchEnded ? (
@@ -1819,6 +1821,7 @@ export function PortraitControllerView({
                   selectedTurnTab={focusedResolutionTab}
                   hideTurnTabs
                   onLeaveRoom={handleLeave}
+                  suppressTvPresentationWait
                 />
               ) : renderRequiredAction(
                 <PhoneActionPanel
@@ -1830,6 +1833,7 @@ export function PortraitControllerView({
                   selectedTurnTab={focusedResolutionTab}
                   hideTurnTabs
                   onLeaveRoom={handleLeave}
+                  suppressTvPresentationWait
                 />
               )}
             </div>
@@ -2155,6 +2159,7 @@ export function PortraitControllerView({
                     hideTurnTabs
                     onMovementNavigation={handleMovementNavigation}
                     showMovementContextNavigation={false}
+                    suppressTvPresentationWait
                   />
                 )
               ) : (
@@ -2165,7 +2170,18 @@ export function PortraitControllerView({
               )}
             </div>
           )}
-        </main>
+          </main>
+
+          {patch?.tvPresentationGate ? (
+            <div className="phone-tv-hold-overlay">
+              <PhoneTvPresentationWait gate={patch.tvPresentationGate} seatId={self.seatId} />
+            </div>
+          ) : patch?.movementPresentationGate ? (
+            <div className="phone-tv-hold-overlay">
+              <PhoneMovementPresentationWait gate={patch.movementPresentationGate} seatId={self.seatId} />
+            </div>
+          ) : null}
+        </div>
 
         {!focusedResolutionActive && !scarSelectorActive ? <nav
           ref={bottomDockRef}

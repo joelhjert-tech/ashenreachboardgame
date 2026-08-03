@@ -1,0 +1,24 @@
+{
+  "viewport": [
+    390,
+    844
+  ],
+  "documentSize": [
+    390,
+    844
+  ],
+  "card": {
+    "width": 264,
+    "height": 190
+  },
+  "art": {
+    "width": 262,
+    "height": 188
+  },
+  "artCoversInnerCard": true,
+  "copyBackground": "rgba(0, 0, 0, 0)",
+  "copyTextShadow": "rgba(0, 0, 0, 0.98) 0px 1px 1px, rgba(0, 0, 0, 0.96) 0px 2px 4px, rgba(0, 0, 0, 0.92) 0px 0px 10px",
+  "titleColor": "rgb(255, 240, 210)",
+  "canvasCount": 0,
+  "browserErrors": []
+}

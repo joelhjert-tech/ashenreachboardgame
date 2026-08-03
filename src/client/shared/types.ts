@@ -1418,6 +1418,31 @@ export interface PublicEdgeCardPlay {
   createdAt: string;
 }
 
+export interface TrophyUpgradeReceiptLine {
+  cardId: string;
+  name: string;
+  originalValue: number;
+  spentValue: number;
+  remainingValue: number;
+  associatedSkill: Stat | null;
+  cardType: string;
+}
+
+/** Public-safe receipt for one authoritative permanent-stat upgrade. */
+export interface TrophyUpgradePresentation {
+  id: string;
+  actorSeatId: string;
+  actorDisplayName: string;
+  operativeName: string;
+  skill: Stat;
+  skillLabel: string;
+  previousValue: number;
+  newValue: number;
+  totalCost: number;
+  spentTrophies: TrophyUpgradeReceiptLine[];
+  createdAt: string;
+}
+
 export interface PhoneEdgeCardHand {
   cards: Array<{
     id: string;
@@ -1523,6 +1548,7 @@ export interface PublicPatchPayload {
   activeResolution?: ActiveResolution | null;
   battlePresentation?: BattlePresentation | null;
   edgeCardPlay?: PublicEdgeCardPlay | null;
+  trophyUpgradePresentation?: TrophyUpgradePresentation | null;
   shopEncounter?: PublicShopEncounterState | null;
   movementPlanner?: PublicMovementPlannerState | null;
   innerApproach?: PublicInnerApproachState | null;
@@ -1532,6 +1558,14 @@ export interface PublicPatchPayload {
     ownerDisplayName: string;
     destinationSectorId: string;
     destinationSectorName: string;
+    deadlineAt: string;
+  } | null;
+  tvPresentationGate?: {
+    eventId: string;
+    kind: "intro" | "card-reveal" | "dice-result" | "edge-card" | "trophy-upgrade" | "shop" | "mission";
+    ownerSeatId: string | null;
+    ownerDisplayName: string | null;
+    label: string;
     deadlineAt: string;
   } | null;
   transitionRouteAid?: {
@@ -2207,6 +2241,10 @@ export type HostCommand =
     }
   | {
       type: "MOVEMENT_PRESENTATION_COMPLETED";
+      eventId: string;
+    }
+  | {
+      type: "TV_PRESENTATION_COMPLETED";
       eventId: string;
     };
 

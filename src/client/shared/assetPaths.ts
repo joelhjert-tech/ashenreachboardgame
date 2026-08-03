@@ -89,6 +89,12 @@ const signalTheatreEdgeCardPaths = {
   cardBack: signalTheatreCardRevealPaths.cardBack
 } as const;
 
+const signalTheatreTrophyUpgradePaths = {
+  crt: "/assets/riftfall/ui/signal-theatre/trophy-upgrade/trophy-upgrade-crt.png",
+  furnace: "/assets/riftfall/ui/signal-theatre/trophy-upgrade/trophy-ledger-furnace.png",
+  reserveToken: "/assets/riftfall/tokens/token_trophy.png"
+} as const;
+
 const hostGameIntroVideoPath =
   "/assets/riftfall/ui/signal-theatre/intro/ashenreach-intro.mp4";
 
@@ -129,6 +135,7 @@ const uiAssetPaths = [
   ...Object.values(signalTheatreCardRevealPaths),
   signalTheatreEdgeCardPaths.charge,
   signalTheatreEdgeCardPaths.detonation,
+  ...Object.values(signalTheatreTrophyUpgradePaths),
   hostGameIntroVideoPath,
   ...Object.values(inventoryCategoryIconByCategory),
   ...Object.values(objectiveCategoryIconByCategory),
@@ -232,6 +239,10 @@ export function getSignalTheatreCardRevealPaths(): typeof signalTheatreCardRevea
 
 export function getSignalTheatreEdgeCardPaths(): typeof signalTheatreEdgeCardPaths {
   return signalTheatreEdgeCardPaths;
+}
+
+export function getSignalTheatreTrophyUpgradePaths(): typeof signalTheatreTrophyUpgradePaths {
+  return signalTheatreTrophyUpgradePaths;
 }
 
 export function getHostGameIntroVideoPath(): string {

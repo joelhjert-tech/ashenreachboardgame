@@ -16,6 +16,7 @@ import type { GameState } from "../../game/schema/session.schema.js";
 import { createHostToken, createJoinToken } from "../auth.js";
 import { GameRoomServer, type ConnectedClient } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
+import { applyPhaseOneQaFixture } from "../phaseOneQaFixture.js";
 
 type ServerEnvelope =
   | {
@@ -62,6 +63,10 @@ type ClientSocketMessage =
     }
   | {
       type: "MOVEMENT_PRESENTATION_COMPLETED";
+      eventId: string;
+    }
+  | {
+      type: "TV_PRESENTATION_COMPLETED";
       eventId: string;
     };
 
@@ -1656,10 +1661,13 @@ describe("roomServer websocket integration", () => {
   });
 
   it("writes the live movement roll into state and projects exact-distance movement", async () => {
-    const activeHarness = (harness = await startHarness([2, 0, 0], createInitialSessionState("session-alpha", "single-player")));
+    const activeHarness = (harness = await startHarness(
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0],
+      createInitialSessionState("session-alpha", "single-player")
+    ));
 
     const joinResult = activeHarness.roomServer.joinSeat("Solo", "void-marshal");
-    const tv = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=tv`);
+    const tv = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=tv&hostToken=${encodeURIComponent(activeHarness.hostToken)}`);
     const phone = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=phone&token=${joinResult.seatToken}`);
     probes.push(tv, phone);
 
@@ -1669,13 +1677,13 @@ describe("roomServer websocket integration", () => {
     activeHarness.roomServer.setSeatReady(joinResult.seatId, true);
     activeHarness.roomServer.startSession();
 
-    await tv.waitFor(
+    const activePatch = await tv.waitFor(
       (message) =>
         isStatePatch(message) &&
         message.payload.status === "active" &&
         message.phase === "navigation" &&
         (message.payload.movementPlanner as unknown) === null
-    );
+    ) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
     await phone.waitFor(
       (message) =>
         isStatePatch(message) &&
@@ -1683,10 +1691,39 @@ describe("roomServer websocket integration", () => {
         (message.payload.movementPlanner as unknown) === null
     );
 
+    const introGate = activePatch.payload.tvPresentationGate as { eventId: string; kind: string } | null;
+    expect(introGate?.kind).toBe("intro");
+    const introCompletedMarker = phone.mark();
+    tv.send({ type: "TV_PRESENTATION_COMPLETED", eventId: introGate!.eventId });
+    await phone.waitForSince(
+      introCompletedMarker,
+      (message) => isStatePatch(message) && (message.payload.tvPresentationGate as unknown) === null
+    );
+    expect(activeHarness.roomServer.getState().tvPresentationGate).toBeNull();
+
+    const movementRollMarker = phone.mark();
     phone.send({
       type: "MOVEMENT_ROLL_REQUESTED",
       seatId: joinResult.seatId
     });
+    await waitForServerTick();
+    expect({
+      gate: activeHarness.roomServer.getState().tvPresentationGate,
+      movementRoll: activeHarness.roomServer.getState().movementRolls?.[joinResult.seatId] ?? null,
+      phase: activeHarness.roomServer.getState().phase
+    }).toMatchObject({ gate: null, movementRoll: 3, phase: "navigation" });
+
+    const phoneStartedOrRejected = await phone.waitForSince(
+      movementRollMarker,
+      (message) =>
+        (message.type === "INTENT_REJECTED" && message.actionType === "MOVEMENT_ROLL_REQUESTED")
+        || (
+          isStatePatch(message)
+          && Object.hasOwn(message.payload, "self")
+          && (message.payload.movementPlanner as { movementValue?: number } | null | undefined)?.movementValue === 3
+        )
+    );
+    expect(phoneStartedOrRejected.type).toBe("STATE_PATCH");
 
     const tvStarted = (await tv.waitFor(
       (message) =>
@@ -1695,12 +1732,7 @@ describe("roomServer websocket integration", () => {
         message.phase === "navigation" &&
         (message.payload.movementPlanner as { movementValue?: number } | null | undefined)?.movementValue === 3
     )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
-    const phoneStarted = (await phone.waitFor(
-      (message) =>
-        isStatePatch(message) &&
-        Object.hasOwn(message.payload, "self") &&
-        (message.payload.movementPlanner as { movementValue?: number } | null | undefined)?.movementValue === 3
-    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+    const phoneStarted = phoneStartedOrRejected as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
 
     expect(activeHarness.roomServer.getState().movementRolls?.[joinResult.seatId]).toBe(3);
     expect((tvStarted.payload.movementPlanner as { movementValue: number }).movementValue).toBe(3);
@@ -3295,6 +3327,108 @@ describe("roomServer websocket integration", () => {
       message.type === "STATE_PATCH" && (message.payload as { movementPresentationGate?: unknown }).movementPresentationGate === null
     );
     expect(harness.roomServer.getState().movementPresentationGate).toBeNull();
+  }, 20000);
+
+  it("blocks every phone action until the host TV acknowledges the exact gameplay animation", async () => {
+    const state = createState({
+      tvPresentationGate: {
+        eventId: "tv:trophy-upgrade:stat-raised-12",
+        kind: "trophy-upgrade",
+        ownerSeatId: "seat-1",
+        label: "Signal advancement ceremony",
+        createdAt: "2026-08-03T12:00:00.000Z",
+        deadlineAt: "2099-08-03T12:00:10.000Z"
+      }
+    });
+    harness = await startHarness([0], state);
+
+    const hostTv = await connectClient(`ws://127.0.0.1:${harness.port}/?view=tv&hostToken=${encodeURIComponent(harness.hostToken)}`);
+    const phone1 = await connectClient(
+      `ws://127.0.0.1:${harness.port}/?view=phone&token=${createJoinToken({ sessionId: "session-alpha", seatId: "seat-1" })}`
+    );
+    probes.push(hostTv, phone1);
+
+    const phonePatch = phone1.messages.find((message) => message.type === "STATE_PATCH");
+    expect(phonePatch?.type === "STATE_PATCH" ? phonePatch.payload.tvPresentationGate : null).toMatchObject({
+      eventId: "tv:trophy-upgrade:stat-raised-12",
+      kind: "trophy-upgrade",
+      ownerSeatId: "seat-1"
+    });
+
+    const rejectedMarker = phone1.mark();
+    phone1.send({ type: "MOVEMENT_ROLL_REQUESTED", seatId: "seat-1" });
+    const rejected = await phone1.waitForSince(
+      rejectedMarker,
+      (message) => message.type === "INTENT_REJECTED" && message.actionType === "MOVEMENT_ROLL_REQUESTED"
+    );
+    expect(isIntentRejected(rejected) && rejected.reason).toContain("Signal advancement ceremony is still playing");
+
+    const staleMarker = hostTv.mark();
+    hostTv.send({ type: "TV_PRESENTATION_COMPLETED", eventId: "tv:trophy-upgrade:stale" });
+    await hostTv.waitForSince(staleMarker, (message) => message.type === "STATE_PATCH");
+    expect(harness.roomServer.getState().tvPresentationGate?.eventId).toBe("tv:trophy-upgrade:stat-raised-12");
+
+    const completedMarker = hostTv.mark();
+    hostTv.send({ type: "TV_PRESENTATION_COMPLETED", eventId: "tv:trophy-upgrade:stat-raised-12" });
+    await hostTv.waitForSince(completedMarker, (message) =>
+      message.type === "STATE_PATCH" && (message.payload as { tvPresentationGate?: unknown }).tvPresentationGate === null
+    );
+    expect(harness.roomServer.getState().tvPresentationGate).toBeNull();
+  }, 20000);
+
+  it("opens the TV hold in the same patch that starts the expedition intro", async () => {
+    harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "single-player"));
+    const joined = harness.roomServer.joinSeat("Solo", "signal-witch");
+    selectFirstStartingContract(harness.roomServer, joined.seatId);
+    harness.roomServer.setSeatReady(joined.seatId, true);
+
+    const hostTv = await connectClient(`ws://127.0.0.1:${harness.port}/?view=tv&hostToken=${encodeURIComponent(harness.hostToken)}`);
+    probes.push(hostTv);
+    const marker = hostTv.mark();
+
+    harness.roomServer.startSession();
+
+    const introPatch = await hostTv.waitForSince(marker, (message) =>
+      message.type === "STATE_PATCH"
+      && (message.payload as { tvPresentationGate?: { kind?: string } | null }).tvPresentationGate?.kind === "intro"
+    );
+    expect(introPatch.type === "STATE_PATCH" ? introPatch.payload.tvPresentationGate : null).toMatchObject({
+      kind: "intro",
+      ownerSeatId: joined.seatId,
+      label: "The expedition intro"
+    });
+    expect(harness.roomServer.getState().tvPresentationGate?.eventId).toContain("tv:intro:session-alpha:");
+  }, 20000);
+
+  it("automatically gates the full Trophy upgrade ceremony until its TV callback", async () => {
+    const state = createInitialSessionState("session-alpha", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    state.seats[0]!.displayName = "Solo";
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "trophy-upgrade", stage: "three-card" });
+    harness = await startHarness([0], state);
+
+    const hostTv = await connectClient(`ws://127.0.0.1:${harness.port}/?view=tv&hostToken=${encodeURIComponent(harness.hostToken)}`);
+    probes.push(hostTv);
+    const marker = hostTv.mark();
+
+    harness.roomServer.resolveRaiseStatIntent({ type: "RAISE_STAT_REQUESTED", seatId: "seat-1", stat: "signal" });
+    harness.roomServer.broadcastQaFixtureState();
+
+    const gatedPatch = await hostTv.waitForSince(marker, (message) =>
+      message.type === "STATE_PATCH"
+      && (message.payload as { tvPresentationGate?: { kind?: string } | null }).tvPresentationGate?.kind === "trophy-upgrade"
+    );
+    const gate = gatedPatch.type === "STATE_PATCH"
+      ? gatedPatch.payload.tvPresentationGate as { eventId: string; kind: string }
+      : null;
+    expect(gate).toMatchObject({ kind: "trophy-upgrade" });
+
+    const completedMarker = hostTv.mark();
+    hostTv.send({ type: "TV_PRESENTATION_COMPLETED", eventId: gate!.eventId });
+    await hostTv.waitForSince(completedMarker, (message) =>
+      message.type === "STATE_PATCH" && (message.payload as { tvPresentationGate?: unknown }).tvPresentationGate === null
+    );
+    expect(harness.roomServer.getState().tvPresentationGate).toBeNull();
   }, 20000);
 
   it("lets only the setup host phone return a completed defeat to mode selection", async () => {

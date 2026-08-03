@@ -115,7 +115,88 @@ function renderSignal(patch = makePatch(), synchronized = true) {
 }
 
 describe("SignalTheatreHost", () => {
-  afterEach(cleanup);
+  afterEach(() => {
+    window.sessionStorage.clear();
+    cleanup();
+  });
+
+  it("gives a live Trophy upgrade priority over ordinary public overlays", async () => {
+    const upgrade = {
+      id: "stat-raised:EMBER:15:seat-1:signal",
+      actorSeatId: "seat-1",
+      actorDisplayName: "Nera",
+      operativeName: "Bjornis",
+      skill: "signal" as const,
+      skillLabel: "Signal",
+      previousValue: 5,
+      newValue: 6,
+      totalCost: 6,
+      spentTrophies: [
+        { cardId: "archive-shade", name: "Archive Shade", originalValue: 1, spentValue: 1, remainingValue: 0, associatedSkill: "signal" as const, cardType: "enemy" },
+        { cardId: "choir-wraith", name: "Choir Wraith", originalValue: 2, spentValue: 2, remainingValue: 0, associatedSkill: "signal" as const, cardType: "enemy" },
+        { cardId: "cinder-veil-stalker", name: "Cinder-Veil Stalker", originalValue: 3, spentValue: 3, remainingValue: 0, associatedSkill: "grit" as const, cardType: "enemy" }
+      ],
+      createdAt: "2026-08-03T12:00:00.000Z"
+    };
+    const previous = makePatch({ movementPlanner: null, trophyUpgradePresentation: null }, 14);
+    const current = makePatch({
+      movementPlanner: null,
+      trophyUpgradePresentation: upgrade,
+      publicCardReveal: {
+        id: "card-reveal-1",
+        revision: 15,
+        kind: "reward",
+        category: "artifact",
+        title: "Public reward",
+        summary: "A public reward appeared.",
+        sourceLabel: "Test",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Nera",
+        visibility: "public",
+        artType: "artifact",
+        artCardId: "relic-choir-route-orb"
+      }
+    }, 15);
+
+    render(
+      <SignalTheatreHost
+        patch={current}
+        previousPatch={previous}
+        roomCode="EMBER"
+        activeSeat={activeSeat}
+        activePlayer={activePlayer}
+        currentStepCopy="Advancement recorded."
+        synchronized
+        connectionStatus="open"
+      />
+    );
+
+    expect(await screen.findByTestId("signal-trophy-upgrade")).toBeInTheDocument();
+    expect(screen.queryByTestId("signal-card-reveal")).not.toBeInTheDocument();
+    expect(document.querySelector("[data-signal-action-coin]")).toBeNull();
+  });
+
+  it("shows the settled board without replaying a Trophy ceremony after reconnect", () => {
+    renderSignal(makePatch({
+      movementPlanner: null,
+      trophyUpgradePresentation: {
+        id: "stat-raised:EMBER:15:seat-1:signal",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Nera",
+        operativeName: "Bjornis",
+        skill: "signal",
+        skillLabel: "Signal",
+        previousValue: 5,
+        newValue: 6,
+        totalCost: 6,
+        spentTrophies: [{ cardId: "archive-shade", name: "Archive Shade", originalValue: 6, spentValue: 6, remainingValue: 0, associatedSkill: "signal", cardType: "enemy" }],
+        createdAt: "2026-08-03T12:00:00.000Z"
+      }
+    }, 15));
+
+    expect(screen.queryByTestId("signal-trophy-upgrade")).not.toBeInTheDocument();
+    expect(screen.getByTestId("signal-theatre-host")).toBeInTheDocument();
+  });
 
   it("renders the active sector as a full-screen environment with a heraldic operative piece", () => {
     const rendered = renderSignal();

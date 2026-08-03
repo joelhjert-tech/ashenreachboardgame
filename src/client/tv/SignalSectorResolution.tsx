@@ -168,9 +168,11 @@ function AuthoritativeDiceCinema({
 }
 
 export function SignalSectorResolution({
-  model
+  model,
+  onSettled
 }: {
   model: SignalSectorResolutionModel;
+  onSettled?: () => void;
 }): ReactElement {
   const [restored, setRestored] = useState(() => model.restored || wasResolutionSeen(model.id));
   const operativeArt = model.operativeImageKey
@@ -208,6 +210,14 @@ export function SignalSectorResolution({
     }, 900);
     return () => window.clearTimeout(seenHandle);
   }, [model.id, model.restored]);
+
+  useEffect(() => {
+    if (!showDiceCinema || !onSettled) return undefined;
+    const reducedMotion = typeof window.matchMedia === "function"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const handle = window.setTimeout(onSettled, reducedMotion ? 0 : 3300);
+    return () => window.clearTimeout(handle);
+  }, [model.id, onSettled, showDiceCinema]);
 
   return (
     <section

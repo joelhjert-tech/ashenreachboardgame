@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import { WrenchIcon } from "@phosphor-icons/react/dist/csr/Wrench";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import { BOARD_RING_TRANSITIONS } from "../../game/data/boardTransitions.js";
@@ -25,6 +25,10 @@ import {
 } from "./SignalCardReveal.js";
 import { SignalSectorResolution } from "./SignalSectorResolution.js";
 import { SignalEdgeCardBurst } from "./SignalEdgeCardBurst.js";
+import {
+  SignalTrophyUpgrade,
+  useSignalTrophyUpgradeCeremony
+} from "./SignalTrophyUpgrade.js";
 import { SignalJourneyTrack } from "./SignalJourneyTrack.js";
 import {
   getDevPieceVariant,
@@ -55,6 +59,7 @@ interface SignalTheatreHostProps {
   synchronized: boolean;
   connectionStatus: string;
   onMovementPresentationCompleted?: (eventId: string) => void;
+  onTvPresentationCompleted?: (eventId: string) => void;
   adminDashboardAvailable?: boolean;
   onOpenAdminDashboard?: () => void;
 }
@@ -281,10 +286,68 @@ export function SignalTheatreHost({
   synchronized,
   connectionStatus,
   onMovementPresentationCompleted,
+  onTvPresentationCompleted,
   adminDashboardAvailable,
   onOpenAdminDashboard
 }: SignalTheatreHostProps): ReactElement {
   const payload = patch?.payload ?? null;
+  const {
+    activePresentation: trophyUpgradePresentation,
+    settle: settleTrophyUpgradePresentation
+  } = useSignalTrophyUpgradeCeremony({
+    presentation: payload?.trophyUpgradePresentation,
+    previousPresentationId: previousPatch
+      ? previousPatch.payload.trophyUpgradePresentation?.id ?? null
+      : undefined,
+    synchronized
+  });
+  const tvPresentationGateRef = useRef(payload?.tvPresentationGate ?? null);
+  const payloadRef = useRef(payload);
+  const onTvPresentationCompletedRef = useRef(onTvPresentationCompleted);
+  tvPresentationGateRef.current = payload?.tvPresentationGate ?? null;
+  payloadRef.current = payload;
+  onTvPresentationCompletedRef.current = onTvPresentationCompleted;
+  const completeTvPresentation = useCallback((kind: NonNullable<PublicPatchPayload["tvPresentationGate"]>["kind"]) => {
+    const gate = tvPresentationGateRef.current;
+    const currentPayload = payloadRef.current;
+    const expectedIds = kind === "trophy-upgrade"
+      ? currentPayload?.trophyUpgradePresentation
+        ? [`tv:trophy-upgrade:${currentPayload.trophyUpgradePresentation.id}`]
+        : []
+      : kind === "edge-card"
+        ? currentPayload?.edgeCardPlay
+          ? [`tv:edge-card:${currentPayload.edgeCardPlay.id}`]
+          : []
+        : kind === "dice-result"
+          ? currentPayload?.battlePresentation
+            ? [`tv:dice-result:${currentPayload.battlePresentation.id}`]
+            : []
+          : kind === "card-reveal"
+            ? [
+                currentPayload?.publicCardReveal ? `tv:card-reveal:${currentPayload.publicCardReveal.id}` : null,
+                currentPayload?.battlePresentation ? `tv:card-reveal:${currentPayload.battlePresentation.id}` : null
+              ].filter((entry): entry is string => Boolean(entry))
+            : gate ? [gate.eventId] : [];
+    if (gate?.kind === kind && expectedIds.includes(gate.eventId)) {
+      onTvPresentationCompletedRef.current?.(gate.eventId);
+    }
+  }, []);
+  const handleTrophyUpgradeSettled = useCallback(() => {
+    settleTrophyUpgradePresentation();
+    completeTvPresentation("trophy-upgrade");
+  }, [completeTvPresentation, settleTrophyUpgradePresentation]);
+  const handleCardRevealReady = useCallback(() => completeTvPresentation("card-reveal"), [completeTvPresentation]);
+  const handleDiceResultSettled = useCallback(() => completeTvPresentation("dice-result"), [completeTvPresentation]);
+  const handleEdgeCardSettled = useCallback(() => completeTvPresentation("edge-card"), [completeTvPresentation]);
+
+  useEffect(() => {
+    const gate = payload?.tvPresentationGate;
+    if (gate?.kind !== "shop" && gate?.kind !== "mission") return undefined;
+    const reducedMotion = typeof window.matchMedia === "function"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const handle = window.setTimeout(() => completeTvPresentation(gate.kind), reducedMotion ? 0 : 900);
+    return () => window.clearTimeout(handle);
+  }, [completeTvPresentation, payload?.tvPresentationGate?.eventId, payload?.tvPresentationGate?.kind]);
   const journey = useSignalTheatreJourney({
     patch,
     previousPatch,
@@ -464,7 +527,7 @@ export function SignalTheatreHost({
 
   return (
     <main
-      className={`signal-theatre signal-theatre--${kind} signal-theatre--tier-${environment?.tier ?? "unknown"}${journey || fixture?.motionPhase ? " signal-theatre--journey" : ""}${sectorResolution ? " signal-theatre--sector-resolution" : ""}${missionSelectionActive ? " signal-theatre--mission-selection" : ""}${shopActive ? " signal-theatre--shop" : ""}${fixture?.endgameTone ? ` signal-theatre--fixture-${fixture.endgameTone}` : ""}`}
+      className={`signal-theatre signal-theatre--${kind} signal-theatre--tier-${environment?.tier ?? "unknown"}${journey || fixture?.motionPhase ? " signal-theatre--journey" : ""}${sectorResolution ? " signal-theatre--sector-resolution" : ""}${missionSelectionActive ? " signal-theatre--mission-selection" : ""}${shopActive ? " signal-theatre--shop" : ""}${trophyUpgradePresentation ? " signal-theatre--trophy-upgrade" : ""}${fixture?.endgameTone ? ` signal-theatre--fixture-${fixture.endgameTone}` : ""}`}
       data-testid="signal-theatre-host"
       data-signal-state={kind}
       data-motion-id={journey?.eventId ?? model?.id ?? endResult?.id ?? "stable"}
@@ -475,7 +538,7 @@ export function SignalTheatreHost({
       data-mission-selection={missionSelectionActive ? "true" : undefined}
       style={style}
     >
-      <div className="signal-theatre__base" aria-hidden={sectorResolution || missionSelectionActive || shopActive ? "true" : undefined}>
+      <div className="signal-theatre__base" aria-hidden={sectorResolution || missionSelectionActive || shopActive || trophyUpgradePresentation ? "true" : undefined}>
         <section
           className="signal-theatre__environment"
           aria-label={`${focusSector?.name ?? "Unknown sector"}. ${occupants.length} operative${occupants.length === 1 ? "" : "s"} present.`}
@@ -602,7 +665,7 @@ export function SignalTheatreHost({
         </section>
       </div>
 
-      {!shopActive ? <aside className="signal-theatre__signal">
+      {!shopActive && !trophyUpgradePresentation ? <aside className="signal-theatre__signal">
         <SignalActionCoin
           key={`${actionCoinKind}:${sectorResolution?.stat ?? "none"}:${model?.id ?? journey?.eventId ?? endResult?.id ?? "stable"}`}
           kind={actionCoinKind}
@@ -614,17 +677,22 @@ export function SignalTheatreHost({
 
       <HostYouTubePlayer />
 
-      {shopActive ? (
+      {trophyUpgradePresentation ? (
+        <SignalTrophyUpgrade
+          presentation={trophyUpgradePresentation}
+          onSettled={handleTrophyUpgradeSettled}
+        />
+      ) : shopActive ? (
         <HostShopOverlay patch={patch} activePlayer={activePlayer} />
       ) : missionSelectionActive ? (
         <SignalMissionSelection ownerName={missionOwner?.displayName ?? "The operative"} />
       ) : cardReveal ? (
-        <SignalCardReveal model={cardReveal} />
+        <SignalCardReveal model={cardReveal} onReady={handleCardRevealReady} />
       ) : sectorResolution ? (
-        <SignalSectorResolution model={sectorResolution} />
+        <SignalSectorResolution model={sectorResolution} onSettled={handleDiceResultSettled} />
       ) : null}
 
-      <SignalEdgeCardBurst play={payload.edgeCardPlay ?? null} />
+      {!trophyUpgradePresentation ? <SignalEdgeCardBurst play={payload.edgeCardPlay ?? null} onSettled={handleEdgeCardSettled} /> : null}
 
       {!synchronized ? (
         <section className="signal-theatre__network" role="status" aria-live="polite">

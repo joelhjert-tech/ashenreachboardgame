@@ -32,6 +32,7 @@
     "qa:map-progression": "tsx scripts/capture-map-progression-qa.ts",
     "qa:host-ui": "tsx scripts/capture-host-ui-qa.ts",
     "qa:host-ui:rare": "tsx scripts/capture-host-ui-rare-states.ts",
+    "qa:trophy-upgrade": "tsx scripts/record-trophy-upgrade-prototype.ts",
     "qa:mid-game-join": "tsx scripts/capture-mid-game-join-qa.ts",
     "audit:assets": "tsx scripts/audit-assets.ts",
     "audit:assets:release": "tsx scripts/audit-assets.ts --release",

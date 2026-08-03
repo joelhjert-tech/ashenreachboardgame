@@ -4541,6 +4541,25 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByRole("button", { name: /continue|open shop|end turn/i })).not.toBeInTheDocument();
   });
 
+  it("keeps the base phone surface on hold for any authoritative TV ceremony", () => {
+    render(<PhoneActionPanel characters={characters} onIntent={vi.fn()} patch={createPatch({
+      phase: "broadcast",
+      encounter: null,
+      tvPresentationGate: {
+        eventId: "tv:trophy-upgrade:stat-raised-12",
+        kind: "trophy-upgrade",
+        ownerSeatId: "seat-1",
+        ownerDisplayName: "Lane",
+        label: "Signal advancement ceremony",
+        deadlineAt: "2026-08-03T12:00:10.000Z"
+      }
+    })} />);
+
+    expect(screen.getByRole("heading", { name: /your moment is playing on tv/i })).toBeInTheDocument();
+    expect(screen.getByText(/actions unlock when the animation settles/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
   it("offers the setup host one direct Start New Game action after defeat", () => {
     const onIntent = vi.fn<(intent: ClientIntent) => void>();
     const base = createPatch();

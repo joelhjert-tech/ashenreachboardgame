@@ -13,6 +13,7 @@ import { scenarioSheetPrompts } from "./scenarioSheetPrompts.js";
 import { signalCartographyCoinPrompts } from "./signalCartographyCoinPrompts.js";
 import { signalTheatreEnvironmentPrompts } from "./signalTheatreEnvironmentPrompts.js";
 import { signalPiecePrompts } from "./signalPiecePrompts.js";
+import { trophyUpgradeAnimationPrompts } from "./trophyUpgradeAnimationPrompts.js";
 import { uiPrompts } from "./uiPrompts.js";
 
 export type ImagePromptSpec = {
@@ -73,6 +74,7 @@ export const requiredImageGenerationChecklist = [
   "4 private objective category emblems",
   "1 private result-ready verdict gate",
   "2 Signal Theatre Edge Card animation frames",
+  "2 Signal Theatre Trophy Upgrade animation props",
   "12 Edge Card art images",
   "1 admin Lore Bible event overview",
   "6 printable scenario sheet illustrations"
@@ -101,6 +103,7 @@ export const imagePrompts: ImagePromptSpec[] = [
   ...objectiveCategoryIconPrompts,
   ...resultReadyVisualPrompts,
   ...edgeCardAnimationPrompts,
+  ...trophyUpgradeAnimationPrompts,
   ...loreBibleVisualPrompts,
   ...uiPrompts
 ];

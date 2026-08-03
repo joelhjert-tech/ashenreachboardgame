@@ -30,6 +30,15 @@ export const hostPresentationTimings = {
   movementArrivalMs: 720
 } as const;
 
+export const trophyUpgradePresentationTimings = {
+  summonEndMs: 1200,
+  trophyDisplayEndMs: 4000,
+  trophyBurnEndMs: 5700,
+  flipEndMs: 6900,
+  minimizeEndMs: 8000,
+  reducedReceiptEndMs: 1600
+} as const;
+
 export type SignalJourneyTimingPhase = "stable" | "departure" | "travel" | "arrival";
 
 export const signalJourneyVisualTimings = {

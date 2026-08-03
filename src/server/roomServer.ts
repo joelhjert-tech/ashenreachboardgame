@@ -214,9 +214,11 @@ import {
   getStatUpgradeCost,
   getStatUpgradeDisabledReason,
   getStatUpgradeWindow,
+  hasActiveTrophyAdvancementDiscount,
   isUpgradeableStat,
   NORMAL_STAT_UPGRADE_CAP
 } from "../game/rules/statUpgrades.js";
+import { planTrophySpend } from "../game/rules/trophySpend.js";
 import type {
   AcceptContractAction,
   CheckRolledAction,
@@ -698,8 +700,36 @@ interface MovementPresentationCompletedMessage {
   eventId: string;
 }
 
-type HostCommandMessage = KickSeatMessage | RestartSessionMessage | ReturnToLobbyMessage | MovementPresentationCompletedMessage;
+interface TvPresentationCompletedMessage {
+  type: "TV_PRESENTATION_COMPLETED";
+  eventId: string;
+}
+
+type HostCommandMessage =
+  | KickSeatMessage
+  | RestartSessionMessage
+  | ReturnToLobbyMessage
+  | MovementPresentationCompletedMessage
+  | TvPresentationCompletedMessage;
 type ClientMessage = ClientIntent | RejoinMessage | HostCommandMessage;
+
+type TvPresentationKind =
+  | "intro"
+  | "card-reveal"
+  | "dice-result"
+  | "edge-card"
+  | "trophy-upgrade"
+  | "shop"
+  | "mission";
+
+interface TvPresentationCandidate {
+  eventId: string;
+  kind: TvPresentationKind;
+  ownerSeatId: string | null;
+  label: string;
+  createdAt: string;
+  fallbackMs: number;
+}
 
 const CLIENT_INTENT_TYPES = new Set<string>([
   "HOST_VIEW_REQUESTED",
@@ -914,6 +944,8 @@ export class GameRoomServer {
   private enemyRollTimeout: ReturnType<typeof setTimeout> | null = null;
   private resolutionAutoContinueTimeout: ReturnType<typeof setTimeout> | null = null;
   private movementPresentationTimeout: ReturnType<typeof setTimeout> | null = null;
+  private tvPresentationTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readonly completedTvPresentationIds = new Set<string>();
   private readonly movementPreviewBySeatId = new Map<string, { destinationId: string; routeId: string }>();
   private hostView: {
     mode: "signal" | "map";
@@ -970,6 +1002,7 @@ export class GameRoomServer {
       }
     }
     this.reconcileNamedPlayerRules({ autoSelectPopelord: true });
+    this.restorePresentationGateTimeouts();
   }
 
   private getNamedPlayerIdentity(seatId: string): { displayName: string | null } {
@@ -1131,6 +1164,11 @@ export class GameRoomServer {
       if (view === "tv") {
         client.isHost = this.hostToken ? this.isValidHostToken(hostToken ?? "") : false;
         this.clients.add(client);
+        if (client.isHost && !this.state.tvPresentationGate) {
+          for (const candidate of this.getTvPresentationCandidates()) {
+            this.completedTvPresentationIds.add(candidate.eventId);
+          }
+        }
         this.broadcastSnapshotToClient(client);
       }
 
@@ -1193,6 +1231,13 @@ export class GameRoomServer {
 
       if (this.state.status === "ended") {
         throw new IntentRejectedError(intent.type, "Session has ended. Only the host can restart it.");
+      }
+
+      if (this.state.tvPresentationGate) {
+        throw new IntentRejectedError(
+          intent.type,
+          `${this.state.tvPresentationGate.label} is still playing on the host display`
+        );
       }
 
       if (intent.type === "HOST_SETUP_PREVIEW_REQUESTED") {
@@ -1705,6 +1750,8 @@ export class GameRoomServer {
 
   resetSession(state: GameState): void {
     this.clearEnemyRollTimeout();
+    this.clearTvPresentationTimeout();
+    this.completedTvPresentationIds.clear();
 
     for (const client of [...this.clients]) {
       client.superseded = true;
@@ -2515,7 +2562,8 @@ export class GameRoomServer {
       message.type === "KICK_SEAT" ||
       message.type === "RESTART_SESSION" ||
       message.type === "RETURN_TO_LOBBY" ||
-      message.type === "MOVEMENT_PRESENTATION_COMPLETED"
+      message.type === "MOVEMENT_PRESENTATION_COMPLETED" ||
+      message.type === "TV_PRESENTATION_COMPLETED"
     );
   }
 
@@ -2542,6 +2590,11 @@ export class GameRoomServer {
     if (type === "MOVEMENT_PRESENTATION_COMPLETED") {
       requireStringField(message, "eventId", type);
       return message as unknown as MovementPresentationCompletedMessage;
+    }
+
+    if (type === "TV_PRESENTATION_COMPLETED") {
+      requireStringField(message, "eventId", type);
+      return message as unknown as TvPresentationCompletedMessage;
     }
 
     if (!CLIENT_INTENT_TYPES.has(type)) {
@@ -2851,6 +2904,11 @@ export class GameRoomServer {
 
     if (command.type === "MOVEMENT_PRESENTATION_COMPLETED") {
       this.completeMovementPresentation(command.eventId);
+      return;
+    }
+
+    if (command.type === "TV_PRESENTATION_COMPLETED") {
+      this.completeTvPresentation(command.eventId);
       return;
     }
 
@@ -8197,6 +8255,7 @@ export class GameRoomServer {
       clearTimeout(this.movementPresentationTimeout);
       this.movementPresentationTimeout = null;
     }
+    this.clearTvPresentationTimeout();
 
     this.state = {
       ...this.state,
@@ -8221,6 +8280,7 @@ export class GameRoomServer {
       scenarioAssaultBag: null,
       pendingScenarioAssault: null,
       movementPresentationGate: null,
+      tvPresentationGate: null,
       devouredThreatSectorIds: [],
       sectors: this.state.sectors.map((sector) => ({ ...sector, persistentThreatIds: [] })),
       tileArrivalThreatProgress: null,
@@ -10734,6 +10794,259 @@ export class GameRoomServer {
     });
   }
 
+  private getTvPresentationCandidates(): TvPresentationCandidate[] {
+    if (this.state.status !== "active") return [];
+    const projection = createTvProjection(
+      this.state,
+      this.movementPreviewBySeatId
+    ) as unknown as import("../client/shared/types.js").PublicPatchPayload;
+    const candidates: TvPresentationCandidate[] = [];
+    let sessionStartedIndex = -1;
+    for (let index = this.state.eventLog.length - 1; index >= 0; index -= 1) {
+      const entry = this.state.eventLog[index];
+      if (isRecord(entry) && entry.type === "SESSION_STARTED" && typeof entry.createdAt === "string") {
+        sessionStartedIndex = index;
+        break;
+      }
+    }
+    const sessionStarted = sessionStartedIndex >= 0
+      ? this.state.eventLog[sessionStartedIndex] as { seatId?: unknown; createdAt: string }
+      : undefined;
+    const eventIdBelongsToCurrentRun = (eventId: string): boolean => {
+      if (sessionStartedIndex < 0) return true;
+      return this.state.eventLog.some((entry, index) =>
+        index > sessionStartedIndex
+        && isRecord(entry)
+        && (
+          entry.eventId === eventId
+          || (typeof entry.createdAt === "string" && eventId.includes(entry.createdAt))
+        )
+      );
+    };
+
+    if (this.state.status === "active" && sessionStarted) {
+      candidates.push({
+        eventId: `tv:intro:${this.state.sessionId}:${sessionStarted.createdAt}`,
+        kind: "intro",
+        ownerSeatId: typeof sessionStarted.seatId === "string" ? sessionStarted.seatId : null,
+        label: "The expedition intro",
+        createdAt: sessionStarted.createdAt,
+        fallbackMs: 20_000
+      });
+    }
+
+    if (
+      projection.trophyUpgradePresentation
+      && eventIdBelongsToCurrentRun(projection.trophyUpgradePresentation.id)
+    ) {
+      const presentation = projection.trophyUpgradePresentation;
+      candidates.push({
+        eventId: `tv:trophy-upgrade:${presentation.id}`,
+        kind: "trophy-upgrade",
+        ownerSeatId: presentation.actorSeatId,
+        label: `${presentation.skillLabel} advancement ceremony`,
+        createdAt: presentation.createdAt,
+        fallbackMs: 10_000
+      });
+    }
+
+    if (projection.edgeCardPlay) {
+      const presentation = projection.edgeCardPlay;
+      candidates.push({
+        eventId: `tv:edge-card:${presentation.id}`,
+        kind: "edge-card",
+        ownerSeatId: presentation.actorSeatId,
+        label: "The Edge card ceremony",
+        createdAt: presentation.createdAt,
+        fallbackMs: 6_000
+      });
+    }
+
+    const shopPresentation = projection.shopEncounter?.presentation;
+    if (
+      shopPresentation
+      && this.state.phase === "action"
+      && !this.state.activeResolution
+      && !this.state.pendingEnemyRoll
+    ) {
+      const shopSeatId = projection.shopEncounter?.activePlayer.playerId ?? null;
+      const latestShopEvent = this.state.eventLog.slice(sessionStartedIndex + 1).reverse().find((entry) =>
+        isRecord(entry)
+        && entry.seatId === shopSeatId
+        && typeof entry.createdAt === "string"
+        && [
+          "SHOP_PURCHASE_RESOLVED",
+          "SHOP_FOLLOWER_PURCHASE_RESOLVED",
+          "SHOP_SELL_RESOLVED",
+          "SHOP_SERVICE_RESOLVED",
+          "SHOP_STOCK_REVEALED"
+        ].includes(typeof entry.type === "string" ? entry.type : "")
+      ) as { createdAt: string } | undefined;
+      const browseMoment = this.state.shopBrowseSelection?.seatId === shopSeatId
+        ? this.state.shopBrowseSelection.updatedAt
+        : null;
+      const latestShopEntry = this.state.eventLog.slice(sessionStartedIndex + 1).reverse().find((entry) =>
+        isRecord(entry)
+        && entry.seatId === shopSeatId
+        && typeof entry.createdAt === "string"
+        && [
+          "MOVE_REQUESTED",
+          "MOVEMENT_RESOLVED",
+          "TIER_TRANSITION_COMPLETED",
+          "INNER_APPROACH_MOVED"
+        ].includes(typeof entry.type === "string" ? entry.type : "")
+      ) as { createdAt: string } | undefined;
+      const presentationMoment = [latestShopEvent?.createdAt, browseMoment, latestShopEntry?.createdAt]
+        .filter((entry): entry is string => Boolean(entry))
+        .sort()
+        .at(-1)
+        ?? `${shopPresentation.stage}:${shopPresentation.selectedCategoryId ?? "none"}:${shopPresentation.selectedOfferId ?? "none"}`;
+      candidates.push({
+        eventId: `tv:shop:${shopPresentation.id}:${presentationMoment}`,
+        kind: "shop",
+        ownerSeatId: shopSeatId,
+        label: "The shop display",
+        createdAt: new Date().toISOString(),
+        fallbackMs: 2_500
+      });
+    }
+
+    if (this.state.pendingMissionSelection?.status === "awaitingSelection") {
+      candidates.push({
+        eventId: `tv:mission:${this.state.pendingMissionSelection.id}`,
+        kind: "mission",
+        ownerSeatId: this.state.pendingMissionSelection.ownerSeatId,
+        label: "The mission dossier",
+        createdAt: this.state.pendingMissionSelection.createdAt,
+        fallbackMs: 2_500
+      });
+    }
+
+    if (
+      projection.publicCardReveal?.visibility === "public"
+      && (
+        Boolean(this.state.activeResolution)
+        || eventIdBelongsToCurrentRun(projection.publicCardReveal.id)
+      )
+    ) {
+      const presentation = projection.publicCardReveal;
+      candidates.push({
+        eventId: `tv:card-reveal:${presentation.id}`,
+        kind: "card-reveal",
+        ownerSeatId: presentation.actorSeatId,
+        label: "The card reveal",
+        createdAt: new Date().toISOString(),
+        fallbackMs: 5_000
+      });
+    }
+
+    const battle = projection.battlePresentation;
+    if (battle) {
+      const hasResolvedDice = battle.operative.rawDice.length > 0 && battle.operative.finalTotal !== null;
+      if (hasResolvedDice) {
+        candidates.push({
+          eventId: `tv:dice-result:${battle.id}`,
+          kind: "dice-result",
+          ownerSeatId: battle.actorSeatId,
+          label: "The dice result",
+          createdAt: new Date().toISOString(),
+          fallbackMs: 5_000
+        });
+      } else if (battle.stage === "encounter_intro" || battle.stage === "battle_ready") {
+        candidates.push({
+          eventId: `tv:card-reveal:${battle.id}`,
+          kind: "card-reveal",
+          ownerSeatId: battle.actorSeatId,
+          label: "The encounter reveal",
+          createdAt: new Date().toISOString(),
+          fallbackMs: 5_000
+        });
+      }
+    }
+
+    return candidates;
+  }
+
+  private ensureTvPresentationGate(): void {
+    if (this.state.tvPresentationGate || this.state.movementPresentationGate) return;
+    const hostTvConnected = [...this.clients].some(
+      (client) => client.view === "tv" && client.isHost && client.socket.readyState === 1
+    );
+    if (!hostTvConnected) return;
+
+    const candidate = this.getTvPresentationCandidates().find(
+      (entry) => !this.completedTvPresentationIds.has(entry.eventId)
+    );
+    if (!candidate) return;
+
+    const deadlineAt = new Date(Date.now() + candidate.fallbackMs).toISOString();
+    this.state = {
+      ...this.state,
+      tvPresentationGate: {
+        eventId: candidate.eventId,
+        kind: candidate.kind,
+        ownerSeatId: candidate.ownerSeatId,
+        label: candidate.label,
+        createdAt: candidate.createdAt,
+        deadlineAt
+      }
+    };
+    this.clearTvPresentationTimeout();
+    this.tvPresentationTimeout = setTimeout(() => {
+      this.completeTvPresentation(candidate.eventId);
+      this.broadcastPatch();
+    }, candidate.fallbackMs);
+    this.tvPresentationTimeout.unref?.();
+  }
+
+  private clearTvPresentationTimeout(): void {
+    if (!this.tvPresentationTimeout) return;
+    clearTimeout(this.tvPresentationTimeout);
+    this.tvPresentationTimeout = null;
+  }
+
+  private restorePresentationGateTimeouts(): void {
+    if (this.executionServices.mode === "simulation") return;
+
+    const tvGate = this.state.tvPresentationGate;
+    if (tvGate) {
+      const remainingMs = Date.parse(tvGate.deadlineAt) - Date.now();
+      if (!Number.isFinite(remainingMs) || remainingMs <= 0) {
+        this.completedTvPresentationIds.add(tvGate.eventId);
+        this.state = { ...this.state, tvPresentationGate: null };
+      } else {
+        this.tvPresentationTimeout = setTimeout(() => {
+          this.completeTvPresentation(tvGate.eventId);
+          this.broadcastPatch();
+        }, Math.min(120_000, remainingMs));
+        this.tvPresentationTimeout.unref?.();
+      }
+    }
+
+    const movementGate = this.state.movementPresentationGate;
+    if (!movementGate) return;
+    const remainingMs = Date.parse(movementGate.deadlineAt) - Date.now();
+    if (!Number.isFinite(remainingMs) || remainingMs <= 0) {
+      this.state = { ...this.state, movementPresentationGate: null };
+      return;
+    }
+    this.movementPresentationTimeout = setTimeout(() => {
+      this.completeMovementPresentation(movementGate.eventId);
+      this.broadcastPatch();
+    }, Math.min(120_000, remainingMs));
+    this.movementPresentationTimeout.unref?.();
+  }
+
+  private completeTvPresentation(eventId: string): void {
+    if (this.state.tvPresentationGate?.eventId !== eventId) return;
+    this.clearTvPresentationTimeout();
+    this.completedTvPresentationIds.add(eventId);
+    this.state = {
+      ...this.state,
+      tvPresentationGate: null
+    };
+  }
+
   private beginMovementPresentationGate(
     seatId: string,
     fromSectorId: string,
@@ -11436,16 +11749,6 @@ export class GameRoomServer {
     return getStatUpgradeCost(currentValue);
   }
 
-  private hasActiveScarAdvancementDiscount(seatId: string): boolean {
-    for (let index = this.state.eventLog.length - 1; index >= 0; index -= 1) {
-      const event = this.state.eventLog[index] as { type?: string; seatId?: string; ruleKey?: string };
-      if (event.seatId !== seatId) continue;
-      if (event.type === "STAT_RAISED") return false;
-      if (event.type === "SCAR_ADAPTATION_ACTIVATED" && event.ruleKey === "trophy-advancement-discount") return true;
-    }
-    return false;
-  }
-
   resolveRaiseStatIntent(intent: Extract<ClientIntent, { type: "RAISE_STAT_REQUESTED" }>): void {
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
 
@@ -11475,11 +11778,12 @@ export class GameRoomServer {
 
     const currentValue = player.character.stats[intent.stat];
     const baseCost = this.getRaiseStatCost(currentValue);
-    const cost = Math.max(0, baseCost - (this.hasActiveScarAdvancementDiscount(intent.seatId) ? 1 : 0));
+    const cost = Math.max(0, baseCost - (hasActiveTrophyAdvancementDiscount(this.state.eventLog, intent.seatId) ? 1 : 0));
     const disabledReason = getStatUpgradeDisabledReason({
       stat: intent.stat,
       currentValue,
       trophies: player.character.trophies,
+      cost,
       qaOnly: player.character.qaOnly === true || player.character.id === MASTER_ALPHA_ID,
       cap: NORMAL_STAT_UPGRADE_CAP
     });
@@ -11488,13 +11792,18 @@ export class GameRoomServer {
       throw new Error(disabledReason);
     }
 
+    const eventId = `stat-raised:${this.state.sessionId}:${this.state.sequence + 1}:${intent.seatId}:${intent.stat}`;
+    const trophySpend = planTrophySpend(player.character.trophyPile, cost, player.character.trophies);
+
     this.applyAction({
       type: "STAT_RAISED",
       seatId: intent.seatId,
+      eventId,
       stat: intent.stat,
       cost,
       previousValue: currentValue,
       nextValue: currentValue + 1,
+      trophySpendReceipt: trophySpend.receipt,
       createdAt: new Date().toISOString()
     } satisfies StatRaisedAction);
 
@@ -11506,15 +11815,17 @@ export class GameRoomServer {
       }
     }
 
-    this.applyAction({
-      type: "PHASE_ADVANCED",
-      seatId: intent.seatId,
-      toPhase: "resolution",
-      transitionCause: "automatic",
-      createdAt: new Date().toISOString()
-    });
+    if (this.state.phase === "action") {
+      this.applyAction({
+        type: "PHASE_ADVANCED",
+        seatId: intent.seatId,
+        toPhase: "resolution",
+        transitionCause: "automatic",
+        createdAt: new Date().toISOString()
+      });
 
-    this.runAutomaticPhases(intent.seatId);
+      this.runAutomaticPhases(intent.seatId);
+    }
   }
 
   resolveCombatIntent(intent: Extract<ClientIntent, { type: "COMBAT_REQUESTED" }>): void {
@@ -11853,7 +12164,12 @@ export class GameRoomServer {
   }
 
   private scheduleResolutionAutoContinue(): void {
-    if (this.resolutionAutoContinueTimeout || !this.shouldAutoContinueResolution()) {
+    if (
+      this.resolutionAutoContinueTimeout
+      || this.state.tvPresentationGate
+      || this.state.movementPresentationGate
+      || !this.shouldAutoContinueResolution()
+    ) {
       return;
     }
 
@@ -12347,6 +12663,7 @@ export class GameRoomServer {
       this.executionServices.onBroadcastAttempt?.();
       return;
     }
+    this.ensureTvPresentationGate();
     this.reconcileHostView();
     for (const client of this.clients) {
       const envelope = this.createPatchEnvelope(client);
@@ -14840,6 +15157,68 @@ function buildPublicResultDeltas(state: GameState, shopEncounter: Record<string,
   ]);
 }
 
+function buildTrophyUpgradePresentation(
+  state: GameState
+): import("../client/shared/types.js").TrophyUpgradePresentation | null {
+  const entry = [...state.eventLog].reverse().find((candidate) =>
+    typeof candidate === "object"
+    && candidate !== null
+    && "type" in candidate
+    && (candidate as { type?: unknown }).type === "STAT_RAISED"
+  ) as Partial<StatRaisedAction> | undefined;
+
+  if (
+    !entry
+    || typeof entry.eventId !== "string"
+    || typeof entry.seatId !== "string"
+    || !isUpgradeableStat(entry.stat)
+    || typeof entry.cost !== "number"
+    || typeof entry.previousValue !== "number"
+    || typeof entry.nextValue !== "number"
+    || typeof entry.createdAt !== "string"
+    || !Array.isArray(entry.trophySpendReceipt)
+  ) {
+    return null;
+  }
+
+  const spentTrophies = entry.trophySpendReceipt.map((line) => ({
+    cardId: line.cardId,
+    name: line.name,
+    originalValue: line.originalValue,
+    spentValue: line.spentValue,
+    remainingValue: line.remainingValue,
+    associatedSkill: line.associatedSkill,
+    cardType: line.cardType
+  }));
+
+  if (
+    spentTrophies.length < 1
+    || spentTrophies.length > 10
+    || spentTrophies.some((line) => line.spentValue <= 0)
+    || spentTrophies.reduce((total, line) => total + line.spentValue, 0) !== entry.cost
+  ) {
+    return null;
+  }
+
+  const actor = state.players.find((player) => player.seatId === entry.seatId);
+  return {
+    id: entry.eventId,
+    actorSeatId: entry.seatId,
+    actorDisplayName:
+      state.seats.find((seat) => seat.seatId === entry.seatId)?.displayName
+      ?? actor?.character.name
+      ?? "An operative",
+    operativeName: actor?.character.name ?? "Unknown operative",
+    skill: entry.stat,
+    skillLabel: CHALLENGE_LABELS[entry.stat],
+    previousValue: entry.previousValue,
+    newValue: entry.nextValue,
+    totalCost: entry.cost,
+    spentTrophies,
+    createdAt: entry.createdAt
+  };
+}
+
 function buildMatchProgressPresentation(
   state: GameState,
   publicDeltas: ResultDelta[]
@@ -16721,6 +17100,7 @@ export function createTvProjection(
   const shopEncounter = buildPublicShopEncounter(state, visiblePlayers);
   const publicResultDeltas = buildPublicResultDeltas(state, shopEncounter as Record<string, unknown> | null);
   const publicCardReveal = buildPublicCardReveal(state);
+  const trophyUpgradePresentation = buildTrophyUpgradePresentation(state);
   const matchProgress = buildMatchProgressPresentation(state, publicResultDeltas);
   const recentAbilityTriggers = state.eventLog
     .filter(
@@ -17063,6 +17443,7 @@ export function createTvProjection(
     rivalryAgendaReveal: buildPublicRivalryAgendaReveal(state),
     publicResultDeltas,
     publicCardReveal,
+    trophyUpgradePresentation,
     activeResolution: projectActiveResolutionForViewer(state, null),
     battlePresentation: buildBattlePresentation(state, null),
     edgeCardPlay:
@@ -17095,6 +17476,20 @@ export function createTvProjection(
           destinationSectorName: state.sectors.find((sector) => sector.id === state.movementPresentationGate?.toSectorId)?.name
             ?? state.movementPresentationGate.toSectorId,
           deadlineAt: state.movementPresentationGate.deadlineAt
+        }
+      : null,
+    tvPresentationGate: state.tvPresentationGate
+      ? {
+          eventId: state.tvPresentationGate.eventId,
+          kind: state.tvPresentationGate.kind,
+          ownerSeatId: state.tvPresentationGate.ownerSeatId,
+          ownerDisplayName: state.tvPresentationGate.ownerSeatId
+            ? state.seats.find((seat) => seat.seatId === state.tvPresentationGate?.ownerSeatId)?.displayName
+              ?? state.players.find((player) => player.seatId === state.tvPresentationGate?.ownerSeatId)?.character.name
+              ?? state.tvPresentationGate.ownerSeatId
+            : null,
+          label: state.tvPresentationGate.label,
+          deadlineAt: state.tvPresentationGate.deadlineAt
         }
       : null,
     movementPlanner: activeSeatId
@@ -17728,6 +18123,9 @@ export function createPhoneProjection(
     rivalryAgendaReveal: publicProjection.rivalryAgendaReveal,
     publicResultDeltas: publicProjection.publicResultDeltas,
     publicCardReveal: publicProjection.publicCardReveal,
+    trophyUpgradePresentation: publicProjection.trophyUpgradePresentation,
+    movementPresentationGate: publicProjection.movementPresentationGate,
+    tvPresentationGate: publicProjection.tvPresentationGate,
     playerResultDeltas: buildPlayerResultDeltas(
       state,
       seatId,

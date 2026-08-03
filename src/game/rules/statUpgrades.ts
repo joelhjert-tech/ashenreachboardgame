@@ -7,6 +7,12 @@ export const NORMAL_STARTING_STAT_MIN = 1;
 export const STAT_UPGRADE_STATS = ["command", "grit", "signal", "guile", "forge"] as const satisfies readonly Stat[];
 export type StatUpgradeWindow = "Setup" | "Experience";
 
+interface AdvancementEvent {
+  type?: string;
+  seatId?: string;
+  ruleKey?: string;
+}
+
 export function getStatUpgradeWindow(phase: string): StatUpgradeWindow | null {
   if (phase === "action") return "Setup";
   if (phase === "broadcast") return "Experience";
@@ -21,16 +27,34 @@ export function getStatUpgradeCost(currentValue: number): number {
   return currentValue + 1;
 }
 
+export function hasActiveTrophyAdvancementDiscount(
+  eventLog: readonly unknown[],
+  seatId: string
+): boolean {
+  for (let index = eventLog.length - 1; index >= 0; index -= 1) {
+    const candidate = eventLog[index];
+    if (!candidate || typeof candidate !== "object") continue;
+    const event = candidate as AdvancementEvent;
+    if (event.seatId !== seatId) continue;
+    if (event.type === "STAT_RAISED") return false;
+    if (event.type === "SCAR_ADAPTATION_ACTIVATED" && event.ruleKey === "trophy-advancement-discount") return true;
+  }
+
+  return false;
+}
+
 export function getStatUpgradeDisabledReason({
   stat,
   currentValue,
   trophies,
+  cost,
   qaOnly = false,
   cap = NORMAL_STAT_UPGRADE_CAP
 }: {
   stat: Stat;
   currentValue: number;
   trophies: number;
+  cost?: number;
   qaOnly?: boolean;
   cap?: number;
 }): string | null {
@@ -42,10 +66,10 @@ export function getStatUpgradeDisabledReason({
     return `${stat} is already at the maximum rank`;
   }
 
-  const cost = getStatUpgradeCost(currentValue);
+  const requiredCost = cost ?? getStatUpgradeCost(currentValue);
 
-  if (trophies < cost) {
-    return `Need ${cost - trophies} more Troph${cost - trophies === 1 ? "y" : "ies"}`;
+  if (trophies < requiredCost) {
+    return `Need ${requiredCost - trophies} more Troph${requiredCost - trophies === 1 ? "y" : "ies"}`;
   }
 
   return null;

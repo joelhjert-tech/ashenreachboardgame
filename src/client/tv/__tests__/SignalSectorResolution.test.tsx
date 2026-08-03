@@ -103,6 +103,17 @@ describe("SignalSectorResolution", () => {
     expect(rendered.container.querySelectorAll("model-viewer")).toHaveLength(0);
   });
 
+  it("releases the authoritative hold only after dice cinema settles", () => {
+    vi.useFakeTimers();
+    const onSettled = vi.fn();
+    render(<SignalSectorResolution model={model()} onSettled={onSettled} />);
+
+    act(() => vi.advanceTimersByTime(3299));
+    expect(onSettled).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1));
+    expect(onSettled).toHaveBeenCalledOnce();
+  });
+
   it("does not invent dice cinema before an authoritative battle roll", () => {
     const rendered = render(<SignalSectorResolution model={model({
       stage: "battle_ready",

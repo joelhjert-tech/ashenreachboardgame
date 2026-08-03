@@ -596,6 +596,14 @@ export const gameStateSchema = z.object({
     createdAt: z.string().min(1),
     deadlineAt: z.string().min(1)
   }).nullable().optional(),
+  tvPresentationGate: z.object({
+    eventId: z.string().min(1),
+    kind: z.enum(["intro", "card-reveal", "dice-result", "edge-card", "trophy-upgrade", "shop", "mission"]),
+    ownerSeatId: z.string().min(1).nullable(),
+    label: z.string().min(1),
+    createdAt: z.string().min(1),
+    deadlineAt: z.string().min(1)
+  }).nullable().optional(),
   routeStarChoices: z.record(z.string(), z.object({ instanceId: z.string().min(1), destinationId: z.string().min(1), routeId: z.string().min(1), movementRevision: z.number().int().min(1) })).optional(),
   movementAdjustments: z.record(z.string(), z.object({ adjustment: z.union([z.literal(-1), z.literal(1)]), sourceInstanceId: z.string().min(1) })).optional(),
   gateSaintSafeConduct: z.object({ id: z.string(), sourceInstanceId: z.string(), usedSeatIds: z.array(z.string()) }).nullable().optional(),

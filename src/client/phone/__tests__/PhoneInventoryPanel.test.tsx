@@ -2502,6 +2502,83 @@ describe("PhoneInventoryPanel", () => {
     });
   });
 
+  it("holds the central phone viewport for a TV ceremony from Inventory, then restores the same tab", () => {
+    const basePatch = createPatch({ encounter: null });
+    const onIntent = vi.fn();
+    const view = render(
+      <PortraitControllerView
+        self={basePatch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={basePatch}
+        characters={characters}
+        onIntent={onIntent}
+        onLeave={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: /^inventory$/i }));
+    expect(screen.getByText("Inventory", { selector: ".phone-sheet-section-heading" })).toBeInTheDocument();
+
+    const heldPatch = createPatch({
+      encounter: null,
+      tvPresentationGate: {
+        eventId: "tv:trophy-upgrade:upgrade-seat-1-signal-6",
+        kind: "trophy-upgrade",
+        ownerSeatId: "seat-1",
+        ownerDisplayName: "Lane",
+        label: "Signal advancement",
+        deadlineAt: "2026-08-03T12:00:10.000Z"
+      }
+    });
+    view.rerender(
+      <PortraitControllerView
+        self={heldPatch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={heldPatch}
+        characters={characters}
+        onIntent={onIntent}
+        onLeave={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId("tv-presentation-gate")).toHaveTextContent(/your moment is playing on tv/i);
+    expect(screen.getByText("Inventory", { selector: ".phone-sheet-section-heading" })).toBeInTheDocument();
+    expect(view.container.querySelector('main[aria-label="Phone content"]')).toHaveAttribute("inert");
+    expect(view.container.querySelector('main[aria-label="Phone content"]')).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByTestId("signal-phone-identity")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: /more phone controls/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /^inventory$/i })).toHaveAttribute("aria-selected", "true");
+
+    view.rerender(
+      <PortraitControllerView
+        self={basePatch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={basePatch}
+        characters={characters}
+        onIntent={onIntent}
+        onLeave={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId("tv-presentation-gate")).not.toBeInTheDocument();
+    expect(screen.getByText("Inventory", { selector: ".phone-sheet-section-heading" })).toBeInTheDocument();
+    expect(view.container.querySelector('main[aria-label="Phone content"]')).not.toHaveAttribute("inert");
+    expect(screen.getByRole("tab", { name: /^inventory$/i })).toHaveAttribute("aria-selected", "true");
+    expect(onIntent).not.toHaveBeenCalled();
+  });
+
   it("shows two private Relic options and claims only the selected offer", () => {
     const basePatch = createPatch({ encounter: null });
     const baseSelf = basePatch.self!;
