@@ -1,6 +1,6 @@
 import type { Stat } from "../schema/character.schema.js";
 
-export const NORMAL_STAT_UPGRADE_CAP = 6;
+export const NORMAL_STAT_UPGRADE_CAP = 10;
 export const NORMAL_STARTING_STAT_BUDGET = 15;
 export const NORMAL_STARTING_STAT_MAX = 5;
 export const NORMAL_STARTING_STAT_MIN = 1;

@@ -6327,10 +6327,10 @@ describe("trophy progression", () => {
                 ...entry,
                 character: {
                   ...entry.character,
-                  trophies: 6,
+                  trophies: 10,
                   stats: {
                     ...entry.character.stats,
-                    command: 6
+                    command: 10
                   }
                 }
               }

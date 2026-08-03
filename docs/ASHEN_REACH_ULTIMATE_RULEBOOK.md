@@ -54,7 +54,7 @@ An invalid, stale, or unauthorized start request changes nothing.
 
 The chosen scenario defines setup, special pressure, confrontation steps, victory conditions, and defeat conditions. Each operative begins at the authored starting sector with server-created resources, gear, private state, and contract options.
 
-Every normal operative begins with exactly 15 base attribute points. Each starting attribute is between 1 and 5. Permanent Trophy upgrades may later raise an attribute to the normal rank cap of 6. Equipped Gear, Followers, temporary effects, and contextual bonuses are separate modifiers and may raise the displayed current value beyond that permanent cap.
+Every normal operative begins with exactly 15 base attribute points. Each starting attribute is between 1 and 5. Permanent Trophy upgrades may later raise an attribute to the normal rank cap of 10. Equipped Gear, Followers, temporary effects, and contextual bonuses are separate modifiers and may raise the displayed current value beyond that permanent cap.
 
 Safe permanent or conditional starting Gear is equipped automatically when its slot is empty. A second item for an occupied slot remains carried so its owner can choose between them. Consumables, dangerous items, charged relics, and other player-timed effects are never activated or equipped automatically.
 

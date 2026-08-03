@@ -519,6 +519,33 @@ describe("PhoneInventoryPanel", () => {
     });
   });
 
+  it("offers rank 9 to 10 and blocks permanent upgrades at rank 10", () => {
+    const basePatch = createPatch({ encounter: null, activeResolution: null, phase: "broadcast" });
+    const patch = {
+      ...basePatch,
+      self: basePatch.self
+        ? {
+            ...basePatch.self,
+            character: {
+              ...basePatch.self.character,
+              trophies: 10,
+              stats: {
+                ...basePatch.self.character.stats,
+                command: 10,
+                grit: 9
+              }
+            }
+          }
+        : null
+    } satisfies PhonePatchPayload;
+
+    render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
+    openInventoryCategory(/progression.*records/i);
+
+    expect(screen.getByRole("button", { name: /grit 9 -> 10\s*cost 10 trophies/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /command 10\s*command is already at the maximum rank/i })).toBeDisabled();
+  });
+
   it("locks upgrades outside Setup or Experience and shows the authoritative receipt", () => {
     const lockedPatch = createPatch({ encounter: null, activeResolution: null, phase: "navigation" });
     render(<PhoneInventoryPanel patch={lockedPatch} onIntent={vi.fn()} />);
