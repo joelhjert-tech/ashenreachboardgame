@@ -1313,7 +1313,7 @@ describe("PhoneInventoryPanel", () => {
     expect(tablist).toHaveClass("signal-phone-nav__primary");
     expect(tablist).not.toHaveClass("phone-bottomdock--compact");
     expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "false");
-    expect(screen.getByRole("tablist", { name: /^phone navigation$/i })).toHaveTextContent(/act.*action/i);
+    expect(screen.getByRole("tablist", { name: /^phone navigation$/i })).toHaveTextContent(/act.*end turn/i);
     expect(screen.queryByRole("button", { name: /open phone navigation and room controls/i })).not.toBeInTheDocument();
 
     openPhoneTabs();
@@ -1541,7 +1541,7 @@ describe("PhoneInventoryPanel", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
     expect(document.querySelector(".phone-inventory-panel")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: /battle/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /arrival/i }));
     expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
   });
 

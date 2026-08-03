@@ -568,7 +568,121 @@
 .signal-phone-shell__content > .phone-portrait-screen-command {
   height: 100%;
   min-height: 100%;
+  flex-direction: column;
   padding: 0;
+}
+
+.signal-phone-shell__content > .phone-portrait-screen-command > .phone-action-panel,
+.signal-phone-shell__content > .phone-portrait-screen-command > .phone-required-action-shell {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.signal-phone-shell__content > .phone-portrait-screen-command > .phone-action-panel {
+  height: auto;
+}
+
+.phone-turn-flow {
+  flex: 0 0 auto;
+  padding: 0.46rem 0.58rem;
+  overflow: hidden;
+  border-bottom: 1px solid var(--signal-phone-rule-strong);
+  background:
+    linear-gradient(90deg, var(--signal-phone-active-soft), transparent 58%),
+    #0a0e11;
+}
+
+.phone-turn-flow__steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phone-turn-flow__step {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.24rem;
+  color: #777b7a;
+}
+
+.phone-turn-flow__step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 0.64rem;
+  right: 0.1rem;
+  width: 0.34rem;
+  height: 1px;
+  background: var(--signal-phone-rule-strong);
+}
+
+.phone-turn-flow__step > span {
+  width: 1.28rem;
+  height: 1.28rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid #4d5354;
+  border-radius: 50%;
+  font-size: 0.58rem;
+  font-weight: 950;
+}
+
+.phone-turn-flow__step div {
+  min-width: 0;
+  display: grid;
+  gap: 0.08rem;
+}
+
+.phone-turn-flow__step strong,
+.phone-turn-flow__step small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-turn-flow__step strong {
+  font-size: 0.61rem;
+  letter-spacing: 0.015em;
+}
+
+.phone-turn-flow__step small {
+  font-size: 0.48rem;
+}
+
+.phone-turn-flow__step.is-complete {
+  color: #8aab9f;
+}
+
+.phone-turn-flow__step.is-current {
+  color: var(--signal-phone-active);
+}
+
+.phone-turn-flow__step.is-current > span {
+  border-color: var(--signal-phone-active);
+  color: #07100e;
+  background: var(--signal-phone-active);
+  box-shadow: 0 0 0.7rem var(--signal-phone-active-soft);
+}
+
+@media (max-width: 370px) {
+  .phone-turn-flow__step {
+    grid-template-columns: 1.2rem minmax(0, 1fr);
+    gap: 0.16rem;
+  }
+
+  .phone-turn-flow__step > span {
+    width: 1.12rem;
+    height: 1.12rem;
+  }
+
+  .phone-turn-flow__step small {
+    display: none;
+  }
 }
 
 .signal-phone-shell .phone-required-action-shell {

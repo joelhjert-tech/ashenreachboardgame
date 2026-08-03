@@ -517,7 +517,7 @@ function currentPromptFromSharedPrompt(
     meta,
     tone: mapPromptTone(prompt.tone),
     targetTab,
-    actionLabel: targetTab && activeTurnTab !== targetTab ? `Open ${targetTab === "move" ? "Move" : targetTab === "battle" ? "Battle" : targetTab === "shop" ? "Shop" : "Action"}` : undefined
+    actionLabel: targetTab && activeTurnTab !== targetTab ? `Open ${targetTab === "move" ? "Move" : targetTab === "battle" ? "Arrival" : targetTab === "shop" ? "Shop" : "Action"}` : undefined
   };
 }
 
@@ -1334,7 +1334,7 @@ function portraitActionStatusLabel(tab: TurnActionTab): string {
     case "move":
       return "Move";
     case "battle":
-      return "Battle";
+      return "Arrival";
     case "shop":
       return "Shop";
     case "action":
@@ -1348,16 +1348,17 @@ function usefulNowForTurnTab(model: UsefulNowViewModel | null, tab: TurnActionTa
   }
 
   const phaseLabel = model.phaseLabel.toLowerCase();
+  const movePhase = phaseLabel.includes("move");
 
   switch (tab) {
     case "move":
-      return phaseLabel.includes("movement") ? model : null;
+      return movePhase ? model : null;
     case "battle":
       return phaseLabel.includes("battle") || phaseLabel.includes("challenge") ? model : null;
     case "shop":
       return phaseLabel.includes("shop") ? model : null;
     case "action":
-      return phaseLabel.includes("movement") || phaseLabel.includes("battle") || phaseLabel.includes("shop") ? null : model;
+      return movePhase || phaseLabel.includes("battle") || phaseLabel.includes("shop") ? null : model;
   }
 }
 
@@ -3121,7 +3122,7 @@ function PhoneBattlePanel({
       <UsefulNowPanel model={usefulNow} variant="secondary" />
       <ResultDeltaRow deltas={visibleBattleDeltas} className="phone-battle-deltas phone-battle-panel__result" />
       {!hasBattleContent && (
-        <EmptyTurnTab title="No battle active." text="Battle cards will appear here when you engage an enemy or event." />
+        <EmptyTurnTab title="No enemy battle active." text="Battle controls appear here when Arrival reveals an enemy." />
       )}
     </section>
   );
@@ -4631,8 +4632,8 @@ export function PhoneActionPanel({
   const battleBlockedReason = hasBattleContent
     ? undefined
     : patch.phase === "action"
-      ? "Battle locked: no enemy here."
-      : "Battle locked: resolve the current step first.";
+      ? "Arrival locked: no active enemy or challenge."
+      : "Arrival locked: resolve the current step first.";
   const shopBlockedReason = shopLocked
     ? `Shop locked: ${shopLockReasonText ?? "clear local blockers first."}`
     : hasShopContent
@@ -4658,7 +4659,7 @@ export function PhoneActionPanel({
     },
     {
       id: "battle",
-      label: "Battle",
+      label: "Arrival",
       detail: "No opposed enemy",
       tone: "battle",
       enabled: hasBattleContent,
@@ -4723,8 +4724,8 @@ export function PhoneActionPanel({
       ? copy
       : activeTurnTab === "battle"
         ? hasBattleContent
-          ? "Resolve the active enemy, event, or roll."
-          : "No enemy or event is ready to resolve."
+          ? "Resolve the active enemy or assigned roll."
+          : "No enemy battle is ready to resolve."
         : activeTurnTab === "shop"
           ? (shopBlockedReason ?? "Buy and sell only when a shop is available here.")
           : (actionBlockedReason ?? "Resolve this sector action only.");
@@ -4916,7 +4917,7 @@ export function PhoneActionPanel({
   return (
     <section
       className={`phone-sheet-actions phone-action-panel phone-action-panel--${activeTurnTab}${trialPresentationActive ? " phone-action-panel--trial-active" : ""}`}
-      aria-label={`${activeTurnTab} command screen`}
+      aria-label={`${portraitActionStatusLabel(activeTurnTab)} command screen`}
       data-testid="phone-action-panel-root"
     >
       {!patch.requiredAction && !scarDecisionContent && showCurrentPrompt && activeTurnTab !== "move" && activeTurnTab !== "action" ? <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} /> : null}
@@ -4927,7 +4928,7 @@ export function PhoneActionPanel({
         className="phone-action-content-root"
         id={`phone-turn-panel-${activeTurnTab}`}
         role="tabpanel"
-        aria-label={`${activeTurnTab} actions`}
+        aria-label={`${portraitActionStatusLabel(activeTurnTab)} actions`}
         data-testid="phone-action-content-root"
       >
         {scarDecisionContent ?? <>{activeTurnTab === "action" || trialPresentationActive ? null : <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />}{activeTabContent}</>}

@@ -1889,9 +1889,9 @@ describe("PhoneActionPanel", () => {
       <PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={createPatch({ encounter: null, pendingEnemyRoll: null })} />
     );
 
-    expect(screen.getByRole("tab", { name: /battle/i })).toHaveTextContent(/locked/i);
-    expect(screen.getByRole("tab", { name: /battle/i })).not.toHaveTextContent(/battle locked: no enemy here/i);
-    expect(screen.getByRole("tab", { name: /battle/i })).toHaveAttribute("title", "Battle locked: no enemy here.");
+    expect(screen.getByRole("tab", { name: /arrival/i })).toHaveTextContent(/locked/i);
+    expect(screen.getByRole("tab", { name: /arrival/i })).not.toHaveTextContent(/arrival locked: no active enemy or challenge/i);
+    expect(screen.getByRole("tab", { name: /arrival/i })).toHaveAttribute("title", "Arrival locked: no active enemy or challenge.");
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
   });
 
@@ -2024,8 +2024,8 @@ describe("PhoneActionPanel", () => {
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={movementPatch} />);
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
-    expect(screen.getByText(/no battle active/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/battle cards will appear here/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/no enemy battle active/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/battle controls appear here when arrival reveals an enemy/i).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("phone-movement-view")).not.toBeInTheDocument();
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="shop" patch={shopPatch} />);
@@ -4642,7 +4642,7 @@ describe("PhoneActionPanel", () => {
       }
     })} />);
 
-    expect(screen.getByText("No battle active.")).toBeVisible();
+    expect(screen.getByText("No enemy battle active.")).toBeVisible();
     expect(screen.queryByTestId("phone-tile-arrival-presentation")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-action-secondary-status")).not.toBeInTheDocument();
   });

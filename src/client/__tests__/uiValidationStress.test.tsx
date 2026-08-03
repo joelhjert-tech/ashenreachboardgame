@@ -472,7 +472,7 @@ describe("Ashen Reach UI validation stress states", () => {
 
     expect(screen.queryByRole("navigation", { name: /battle navigation/i })).not.toBeInTheDocument();
     expect(screen.getByRole("tablist", { name: /phone navigation/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /battle/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: /arrival/i })).toHaveAttribute("aria-selected", "true");
     expect(screen.queryByRole("tablist", { name: /turn actions/i })).not.toBeInTheDocument();
   });
 
@@ -498,7 +498,7 @@ describe("Ashen Reach UI validation stress states", () => {
     const turnTabs = within(tabs).getAllByRole("tab");
     const getTabByLabel = (label: string) => turnTabs.find((tab) => within(tab).queryByText(label))!;
     const moveTab = getTabByLabel("Move");
-    const battleTab = getTabByLabel("Battle");
+    const battleTab = getTabByLabel("Arrival");
     const shopTab = getTabByLabel("Shop");
 
     expect(moveTab).toHaveAttribute("aria-disabled", "true");
@@ -507,7 +507,7 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(moveTab).toHaveAttribute("title", "Move locked: no legal destination.");
     expect(battleTab).toHaveAttribute("aria-disabled", "true");
     expect(battleTab).toHaveTextContent("Locked");
-    expect(battleTab).not.toHaveTextContent("Battle locked: no enemy here.");
+    expect(battleTab).not.toHaveTextContent("Arrival locked: no active enemy or challenge.");
     expect(shopTab).toHaveAttribute("aria-disabled", "true");
     expect(shopTab).toHaveTextContent("Locked");
     expect(shopTab).not.toHaveTextContent("Shop locked: no shop here.");

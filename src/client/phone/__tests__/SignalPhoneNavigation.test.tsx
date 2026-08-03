@@ -32,6 +32,7 @@ describe("SignalPhoneNavigation", () => {
       <SignalPhoneNavigation
         activeTab="player"
         commandTab="battle"
+        commandLabel="Arrival"
         expanded={false}
         onTab={vi.fn()}
         onMore={vi.fn()}
@@ -40,6 +41,26 @@ describe("SignalPhoneNavigation", () => {
 
     expect(screen.getByRole("tablist", { name: /phone navigation/i })).toBeVisible();
     expect(screen.getAllByRole("tab")).toHaveLength(4);
+    expect(screen.getByRole("tab", { name: "Arrival" })).toBeVisible();
     expect(screen.getByRole("button", { name: /show all phone sections/i })).toHaveTextContent("More");
+  });
+
+  it("uses the contextual command label without changing the command target", () => {
+    const onTab = vi.fn();
+    render(
+      <SignalPhoneNavigation
+        activeTab="action"
+        commandTab="action"
+        commandLabel="End Turn"
+        expanded={false}
+        onTab={onTab}
+        onMore={vi.fn()}
+      />
+    );
+
+    const command = screen.getByRole("tab", { name: "End Turn" });
+    expect(command).toHaveAttribute("data-signal-phone-tab", "action");
+    fireEvent.click(command);
+    expect(onTab).toHaveBeenCalledWith("action");
   });
 });

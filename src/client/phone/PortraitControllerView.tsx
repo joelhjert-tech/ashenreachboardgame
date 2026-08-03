@@ -33,6 +33,7 @@ import type {
 } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
+import { buildPhoneTurnFlow, PhoneTurnFlow } from "./PhoneTurnFlow.js";
 import { PhoneMovementPresentationWait, PhoneTvPresentationWait } from "./PhoneTvPresentationWait.js";
 import { PhoneRequiredActionShell, type RequiredActionStatus } from "./PhoneRequiredActionShell.js";
 import type { MovementNavigationTarget } from "./PhoneMovementView.js";
@@ -1739,9 +1740,10 @@ export function PortraitControllerView({
     showBottomDock();
   };
   const requiredAction = patch?.requiredAction ?? null;
-  const commandTab: SignalPhoneCommandTab = isTurnActionTab(activeTab)
-    ? activeTab
-    : actionGuidance?.requiredTab ?? "move";
+  const turnFlowPresentation = patch ? buildPhoneTurnFlow(patch) : null;
+  const commandTab: SignalPhoneCommandTab = turnFlowPresentation?.commandTab
+    ?? actionGuidance?.requiredTab
+    ?? (isTurnActionTab(activeTab) ? activeTab : "move");
   const requiredActionStatus: RequiredActionStatus = qaRequiredActionState?.status ?? (pendingRequiredIntent
     ? "submitting"
     : requiredAction?.canAct
@@ -1814,6 +1816,7 @@ export function PortraitControllerView({
           >
           {focusedResolutionActive && patch && onIntent ? (
             <div className="phone-portrait-screen phone-portrait-screen-command phone-portrait-screen-battle" data-testid="phone-action-screen">
+              <PhoneTurnFlow patch={patch} />
               {matchEnded ? (
                 <PhoneActionPanel
                   key={`focused-action:${patch.requiredAction?.id ?? "none"}:${actionRecovery?.sequence ?? "stable"}`}
@@ -2141,6 +2144,7 @@ export function PortraitControllerView({
 
           {!focusedResolutionActive && isTurnActionTab(activeTab) && (
             <div className="phone-portrait-screen phone-portrait-screen-command" data-testid="phone-action-screen">
+              {patch ? <PhoneTurnFlow patch={patch} /> : null}
               {patch && onIntent ? (
                 renderRequiredAction(
                   <PhoneActionPanel
@@ -2195,11 +2199,11 @@ export function PortraitControllerView({
                     className={`phone-portrait-tab phone-expanded-tab${activeTab === tab ? " is-active" : ""}`}
                     role="tab"
                     aria-selected={activeTab === tab}
-                    aria-label={tab === "player" ? "Operative — Player Card" : signalPhoneTabLabels[tab]}
+                    aria-label={tab === "player" ? "Operative — Player Card" : tab === commandTab && turnFlowPresentation ? turnFlowPresentation.commandLabel : signalPhoneTabLabels[tab]}
                     onClick={() => chooseBottomDockTab(tab)}
                   >
                     <span className="phone-tab-icon" aria-hidden="true"><SignalPhoneTabIcon tab={tab} size={20} /></span>
-                    <span>{tab === "player" ? "Operative" : signalPhoneTabLabels[tab]}</span>
+                    <span>{tab === "player" ? "Operative" : tab === commandTab && turnFlowPresentation ? turnFlowPresentation.commandLabel : signalPhoneTabLabels[tab]}</span>
                   </button>
                 ))}
               </div>
@@ -2233,6 +2237,7 @@ export function PortraitControllerView({
           <SignalPhoneNavigation
             activeTab={activeTab}
             commandTab={commandTab}
+            commandLabel={turnFlowPresentation?.commandLabel}
             expanded={bottomDockExpanded}
             onTab={(tab) => chooseBottomDockTab(tab)}
             onMore={() => {

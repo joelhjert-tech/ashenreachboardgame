@@ -362,7 +362,7 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
   if (payload.pendingEnemyRoll) {
     const rollerName = getPlayerName(payload, payload.pendingEnemyRoll.assignedRollerSeatId) ?? payload.pendingEnemyRoll.assignedRollerSeatId;
     return {
-      phaseLabel: "Enemy roll",
+      phaseLabel: "Arrival · Battle",
       publicText: `${rollerName} must roll for ${payload.pendingEnemyRoll.encounterTitle}.`,
       requiredActorSeatId: payload.pendingEnemyRoll.assignedRollerSeatId,
       requiredActorName: rollerName,
@@ -384,8 +384,9 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
     );
     const opponent = resolution?.battle?.enemyName ?? resolution?.card?.title ?? payload.encounter?.enemyName ?? payload.encounter?.title ?? "the encounter";
     const math = describeResolutionMath(resolution);
+    const eventArrival = payload.encounter?.presentationType === "event" || resolution?.card?.type === "event";
     return {
-      phaseLabel: opposedBattle ? "Battle resolving" : resolution ? "Encounter resolving" : "Encounter",
+      phaseLabel: opposedBattle ? "Arrival · Battle" : eventArrival ? "Arrival · Threat" : "Arrival · Challenge",
       publicText: `Waiting on ${activeName} to resolve ${opponent}.`,
       requiredActorSeatId: resolution?.playerId ?? activeSeatId,
       requiredActorName: activeName,
@@ -402,7 +403,7 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
     const blocker = describeShopBlocker(payload.shopEncounter);
     const isBlocked = payload.shopEncounter.status === "locked" || payload.shopEncounter.blocked || payload.shopEncounter.blockingThreats.length > 0;
     return {
-      phaseLabel: isBlocked ? "Shop blocked" : "Shop open",
+      phaseLabel: isBlocked ? "Action · Shop blocked" : "Action · Shop",
       publicText: isBlocked
         ? blocker ?? "Shop is locked until blockers are cleared."
         : `Waiting on ${payload.shopEncounter.activePlayer.name} to choose a shop action at ${payload.shopEncounter.shopName}.`,
@@ -420,7 +421,7 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
   if (patch.phase === "navigation" && payload.movementPlanner?.active) {
     const movement = describeMovement(payload.movementPlanner);
     return {
-      phaseLabel: "Movement",
+      phaseLabel: "Move",
       publicText: `Waiting on ${activeName} to choose a legal destination. ${movement.text}`,
       requiredActorSeatId: activeSeatId,
       requiredActorName: activeName,
@@ -435,7 +436,7 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
 
   if (patch.phase === "navigation") {
     return {
-      phaseLabel: "Movement",
+      phaseLabel: "Move",
       publicText: `Waiting on ${activeName} to roll movement.`,
       requiredActorSeatId: activeSeatId,
       requiredActorName: activeName,
@@ -449,7 +450,7 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
   }
 
   return {
-    phaseLabel: toTitleCase(patch.phase),
+    phaseLabel: patch.phase === "broadcast" ? "End Turn · Experience" : toTitleCase(patch.phase),
     publicText: `${activeName} has the command channel.`,
     requiredActorSeatId: activeSeatId,
     requiredActorName: activeName,
@@ -517,12 +518,12 @@ export function buildCurrentPlayerPrompt(patch: PhonePatchPayload): CurrentPlaye
     const assignedToSelf = patch.pendingEnemyRoll.assignedRollerSeatId === self.seatId;
     const rollerName = getPlayerName(patch, patch.pendingEnemyRoll.assignedRollerSeatId) ?? patch.pendingEnemyRoll.assignedRollerSeatId;
     return {
-      phaseLabel: "Enemy roll",
+      phaseLabel: "Arrival · Battle",
       privateText: assignedToSelf
         ? `Roll for ${patch.pendingEnemyRoll.encounterTitle}. You are controlling the enemy dice.`
         : `${rollerName} is rolling for ${patch.pendingEnemyRoll.encounterTitle}.`,
       requiredAction: assignedToSelf ? "Roll enemy dice" : "Wait",
-      actionSummary: assignedToSelf ? "Resolve the enemy roll from the Battle tab." : "Watch the TV result.",
+      actionSummary: assignedToSelf ? "Resolve the enemy roll from Arrival." : "Watch the TV result.",
       disabledReasons: assignedToSelf ? [] : ["notYourTurn"],
       usefulNow: assignedToSelf ? "Roll when the table is ready." : "Watch the center duel.",
       lastOutcomeSummary: latestOutcome,
@@ -535,7 +536,7 @@ export function buildCurrentPlayerPrompt(patch: PhonePatchPayload): CurrentPlaye
   if (patch.movementPlanner?.active) {
     const movement = describeMovement(patch.movementPlanner);
     return {
-      phaseLabel: "Movement",
+      phaseLabel: "Move",
       privateText: movement.text,
       requiredAction: patch.movementPlanner.destinations.length > 0 ? "Choose destination" : "No legal destination",
       actionSummary: movement.summary,
@@ -550,7 +551,7 @@ export function buildCurrentPlayerPrompt(patch: PhonePatchPayload): CurrentPlaye
 
   if (patch.phase === "navigation") {
     return {
-      phaseLabel: "Movement",
+      phaseLabel: "Move",
       privateText: isActive ? "Roll movement to reveal your legal destinations." : `Waiting on ${activeName} to roll movement.`,
       requiredAction: isActive ? "Roll movement" : "Wait",
       actionSummary: isActive ? "Open Move and press Roll Movement." : "Legal destinations appear after the roll.",
@@ -567,22 +568,32 @@ export function buildCurrentPlayerPrompt(patch: PhonePatchPayload): CurrentPlaye
     const resolution = patch.activeResolution ?? null;
     const opponent = resolution?.battle?.enemyName ?? resolution?.card?.title ?? patch.encounter?.enemyName ?? patch.encounter?.title ?? "the encounter";
     const math = describeResolutionMath(resolution);
+    const opposedBattle = Boolean(
+      patch.encounter?.cardType === "enemy" ||
+        patch.encounter?.presentationType === "enemy" ||
+        patch.encounter?.presentationType === "nemesis" ||
+        resolution?.battle ||
+        resolution?.card?.type === "enemy"
+    );
+    const eventArrival = patch.encounter?.presentationType === "event" || resolution?.card?.type === "event";
     const requiredAction = resolution?.roll
       ? "Confirm result"
-      : patch.encounter?.cardType === "enemy" || resolution?.battle
+      : opposedBattle
         ? "Roll battle"
-        : "Resolve event";
+        : "Resolve challenge";
     return {
-      phaseLabel: resolution ? "Resolution" : "Encounter",
+      phaseLabel: opposedBattle ? "Arrival · Battle" : eventArrival ? "Arrival · Threat" : "Arrival · Challenge",
       privateText: math ?? `${opponent} is waiting for the relevant roll.`,
       requiredAction,
       actionSummary: `${opponent}: ${resolution?.battle?.stat ? statLabelById[resolution.battle.stat] : patch.encounter?.stat ? statLabelById[patch.encounter.stat] : "check"}.`,
       disabledReasons: [],
-      usefulNow: "Use Battle to roll, compare totals, or continue.",
+      usefulNow: opposedBattle
+        ? "Use Arrival to roll, compare battle totals, or continue."
+        : "Use Action to resolve the arrival challenge and continue.",
       lastOutcomeSummary: latestOutcome,
       waitText: "Watch the TV duel.",
-      tone: "battle",
-      targetTab: "battle"
+      tone: opposedBattle ? "battle" : "action",
+      targetTab: opposedBattle ? "battle" : "action"
     };
   }
 
@@ -590,7 +601,7 @@ export function buildCurrentPlayerPrompt(patch: PhonePatchPayload): CurrentPlaye
     const blocker = describeShopBlocker(patch.shopEncounter);
     const isBlocked = patch.shopEncounter.status === "locked" || patch.shopEncounter.blocked || patch.shopEncounter.blockingThreats.length > 0;
     return {
-      phaseLabel: isBlocked ? "Shop blocked" : "Shop",
+      phaseLabel: isBlocked ? "Action · Shop blocked" : "Action · Shop",
       privateText: isBlocked
         ? blocker ?? "Shop is locked until blockers are cleared."
         : `${patch.shopEncounter.shopName} is open. Buy, sell, or leave from the Shop tab.`,
@@ -602,6 +613,21 @@ export function buildCurrentPlayerPrompt(patch: PhonePatchPayload): CurrentPlaye
       waitText: "TV shows the public shop state.",
       tone: "shop",
       targetTab: "shop"
+    };
+  }
+
+  if (patch.phase === "broadcast") {
+    return {
+      phaseLabel: "End Turn · Experience",
+      privateText: "Review rewards and available upgrades while the turn hands off.",
+      requiredAction: "End turn",
+      actionSummary: "Experience upgrades only appear when the authoritative game state allows them.",
+      disabledReasons: [],
+      usefulNow: "Review the result, upgrade if available, then follow the handoff.",
+      lastOutcomeSummary: latestOutcome,
+      waitText: "The next operative activates after the handoff.",
+      tone: "action",
+      targetTab: "action"
     };
   }
 
@@ -630,7 +656,7 @@ export function buildCurrentPlayerPrompt(patch: PhonePatchPayload): CurrentPlaye
       requiredAction: "Choose action",
       actionSummary: getScenarioSummary(patch),
       disabledReasons: [],
-      usefulNow: "Action, Shop, Battle, and Move tabs explain what is available.",
+      usefulNow: "Follow Move → Arrival → Action. Shop appears when it is available.",
       lastOutcomeSummary: latestOutcome,
       waitText: "Watch the TV pressure and objective tracks.",
       tone: "action",
@@ -644,7 +670,7 @@ export function buildCurrentPlayerPrompt(patch: PhonePatchPayload): CurrentPlaye
     requiredAction: "Choose action",
     actionSummary: "No forced prompt is waiting.",
     disabledReasons: [],
-    usefulNow: "Use the tabs to compare legal options.",
+    usefulNow: "Follow the highlighted turn step to compare legal options.",
     lastOutcomeSummary: latestOutcome,
     waitText: "Watch the TV for public state.",
     tone: "action",

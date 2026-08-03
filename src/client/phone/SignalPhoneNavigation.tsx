@@ -49,6 +49,7 @@ interface SignalPhoneNavigationProps {
   activeTab: SignalPhoneTab;
   commandTab: SignalPhoneCommandTab;
   expanded: boolean;
+  commandLabel?: string;
   onTab: (tab: SignalPhoneTab) => void;
   onMore: () => void;
   moreButtonRef?: Ref<HTMLButtonElement>;
@@ -58,12 +59,15 @@ export function SignalPhoneNavigation({
   activeTab,
   commandTab,
   expanded,
+  commandLabel,
   onTab,
   onMore,
   moreButtonRef
 }: SignalPhoneNavigationProps): ReactElement {
   const primaryTabs: SignalPhoneTab[] = ["player", "inventory", "quests", commandTab];
-  const activeLabel = activeTab === "player" ? "Operative — Player Card" : signalPhoneTabLabels[activeTab];
+  const labelForTab = (tab: SignalPhoneTab): string =>
+    tab === commandTab && commandLabel ? commandLabel : signalPhoneTabLabels[tab];
+  const activeLabel = activeTab === "player" ? "Operative — Player Card" : labelForTab(activeTab);
 
   return (
     <div
@@ -81,7 +85,7 @@ export function SignalPhoneNavigation({
             role="tab"
             aria-selected={active}
             data-signal-phone-tab={tab}
-            aria-label={tab === "player" ? "Operative — Player Card" : signalPhoneTabLabels[tab]}
+            aria-label={tab === "player" ? "Operative — Player Card" : labelForTab(tab)}
             className={active ? "is-active" : ""}
             onClick={() => onTab(tab)}
           >
@@ -90,7 +94,7 @@ export function SignalPhoneNavigation({
             </span>
             {tab === "inventory" ? <i className="visually-hidden" aria-hidden="true">KIT</i> : null}
             {tab === "action" ? <i className="visually-hidden" aria-hidden="true">ACT</i> : null}
-            <span>{tab === "player" ? "Operative" : signalPhoneTabLabels[tab]}</span>
+            <span>{tab === "player" ? "Operative" : labelForTab(tab)}</span>
           </button>
         );
       }) : null}
@@ -121,8 +125,8 @@ export function SignalPhoneMoreHeading(): ReactElement {
     <div className="signal-phone-more__heading">
       <ShieldChevronIcon size={28} weight="duotone" aria-hidden="true" />
       <div>
-        <strong>Command sections</strong>
-        <span>Private controls and room actions</span>
+        <strong>Turn controls</strong>
+        <span>Move, Arrival, Action, then End Turn</span>
       </div>
     </div>
   );

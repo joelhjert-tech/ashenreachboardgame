@@ -2110,7 +2110,7 @@ describe("TvApp", () => {
 
     const overlay = await screen.findByTestId("host-shop-overlay");
     const banner = screen.getByTestId("host-live-status");
-    expect(banner).toHaveTextContent(/shop open/i);
+    expect(banner).toHaveTextContent(/action · shop/i);
     expect(banner).toHaveTextContent(/waiting on tarek voss/i);
     expect(banner).toHaveTextContent(/anchor market/i);
     expect(screen.getByTestId("tv-command-main")).toHaveClass("tv-command-main--shop-focus");
