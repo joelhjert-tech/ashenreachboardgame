@@ -123,7 +123,7 @@ describe("authoritative cooperative assistance lifecycle", () => {
     server.handleIntent(client("seat-1"), { type: "COOPERATIVE_ASSISTANCE_REQUESTED", seatId: "seat-1", sourceId: enemy.id, stat: enemy.stat, helperSeatIds: ["seat-2"] });
     server.handleIntent(client("seat-2"), { type: "COOPERATIVE_ASSISTANCE_RESPONDED", seatId: "seat-2", requestId: server.getState().cooperativeAssistance!.id, accept: true });
     server.handleIntent(client("seat-1"), { type: "COOPERATIVE_ASSISTANCE_LOCKED", seatId: "seat-1", requestId: server.getState().cooperativeAssistance!.id });
-    server.resolveCombatIntent({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: enemy.stat });
+    server.handleIntent(client("seat-1"), { type: "COMBAT_REQUESTED", seatId: "seat-1", stat: enemy.stat });
 
     const combatEvent = [...server.getState().eventLog].reverse().find((event) => (event as { type?: string }).type === "COMBAT_RESOLVED") as { roll: { faces: number[] }; enemyRoll: { faces: number[] } };
     expect(combatEvent.roll.faces).toEqual([1, 1]);

@@ -20,6 +20,7 @@ export interface HazardChallengeAction {
   key: string;
   label: string;
   detail?: string;
+  tone?: "primary" | "secondary";
   disabled?: boolean;
   onClick: () => void;
 }
@@ -241,11 +242,12 @@ export function PhoneHazardChallengeView({
   );
   const identity = trialIdentity(patch, resolution, title);
   const [restored, setRestored] = useState(() => wasPhoneTrialSeen(identity));
+  const declaredPrimaryAction = actions.find((action) => action.tone === "primary") ?? null;
   const enabledPromptAction = actions.find((action) => !action.disabled) ?? null;
-  const primary: HazardChallengeAction | null = enabledPromptAction ?? (canContinue
+  const primary: HazardChallengeAction | null = declaredPrimaryAction ?? enabledPromptAction ?? (canContinue
     ? { key: "continue", label: "Continue", disabled: false, onClick: onContinue }
     : actions[0] ?? null);
-  const promptAction = enabledPromptAction ?? (canContinue ? null : actions[0] ?? null);
+  const promptAction = declaredPrimaryAction ?? enabledPromptAction ?? (canContinue ? null : actions[0] ?? null);
   const secondaryActions = actions.filter((action) => action.key !== primary?.key);
   const actionLabel =
     primary?.label ??

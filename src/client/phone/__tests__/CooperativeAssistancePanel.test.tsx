@@ -97,4 +97,40 @@ describe("CooperativeAssistancePanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /Roll Signal/i }));
     expect(onIntent).toHaveBeenCalledWith({ type: "COOPERATIVE_TEST_ROLL_REQUESTED", seatId: "seat-1", testId: "test-1" });
   });
+
+  it("routes a locked enemy assist through the normal combat intent and prevents repeat submissions", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+    const patch = {
+      encounter: {
+        id: "glass-maw",
+        title: "Glass Maw",
+        cardType: "enemy",
+        difficulty: 7,
+        stat: "grit"
+      },
+      cooperativeAssistance: {
+        id: "assist-enemy-1",
+        sourceKind: "encounter",
+        sourceId: "glass-maw",
+        sourceTitle: "Glass Maw",
+        testedStat: "grit",
+        activeSeatId: "seat-1",
+        activePlayerName: "Joel",
+        status: "locked",
+        requestedHelpers: [{ seatId: "seat-2", playerName: "Jonas", characterName: "Signal Witch", response: "accepted", contribution: 3 }],
+        acceptedTotal: 3,
+        viewerRole: "active"
+      }
+    } as unknown as PhonePatchPayload;
+    const view = render(<CooperativeAssistancePanel patch={patch} seatId="seat-1" onIntent={onIntent} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Roll Grit/i }));
+    expect(onIntent).toHaveBeenCalledWith({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: "grit" });
+
+    view.rerender(<CooperativeAssistancePanel patch={patch} seatId="seat-1" onIntent={onIntent} submissionPending />);
+    const pendingRoll = screen.getByRole("button", { name: "Rolling…" });
+    expect(pendingRoll).toBeDisabled();
+    fireEvent.click(pendingRoll);
+    expect(onIntent).toHaveBeenCalledTimes(1);
+  });
 });

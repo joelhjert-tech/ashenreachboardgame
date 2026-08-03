@@ -6250,6 +6250,10 @@ body:has(.phone-page-controller) {
   margin: 0;
 }
 
+.phone-player-essential-state dl.phone-portrait-vitals--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .phone-player-essential-state dl div {
   display: grid;
   gap: 0.08rem;
@@ -28888,7 +28892,30 @@ body {
 
 .phone-priority-stack__section > summary {
   min-height: 44px;
-  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  cursor: pointer;
+}
+
+.phone-priority-stack__disclosure {
+  flex: 0 0 auto;
+  color: #d8c6aa;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+}
+
+.phone-priority-stack__disclosure .is-open {
+  display: none;
+}
+
+.phone-priority-stack__section[open] .phone-priority-stack__disclosure .is-closed {
+  display: none;
+}
+
+.phone-priority-stack__section[open] .phone-priority-stack__disclosure .is-open {
+  display: inline;
 }
 
 .phone-character-option::after {

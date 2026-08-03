@@ -277,6 +277,7 @@ const ignoredButtonPatterns = [
 const snapshotExpression = `(() => {
   const normalize = (value) => String(value ?? "").replace(/\\s+/g, " ").trim();
   const visible = (element) => {
+    if (element.closest('[inert], [aria-hidden="true"]')) return false;
     const rect = element.getBoundingClientRect();
     const style = getComputedStyle(element);
     return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
@@ -1084,6 +1085,29 @@ async function clickMatching(
   );
 }
 
+async function clickMatchingContext(
+  surface: PhoneSurface,
+  buttonPatterns: RegExp[],
+  contextPatterns: RegExp[],
+  timeoutMs = 15_000
+): Promise<DomButton> {
+  const started = Date.now();
+  let latest: DomSnapshot | null = null;
+  while (Date.now() - started < timeoutMs) {
+    latest = await surface.snapshot();
+    const match = visibleEnabled(latest).find((button) =>
+      buttonPatterns.some((pattern) => pattern.test(button.text) || pattern.test(button.ariaLabel)) &&
+      contextPatterns.some((pattern) => pattern.test(button.context))
+    );
+    if (match && await surface.clickButton(match)) return match;
+    await sleep(150);
+  }
+  throw new Error(
+    `${surface.label} timed out waiting for contextual button ${buttonPatterns.map(String).join(", ")} ` +
+    `inside ${contextPatterns.map(String).join(", ")}. Body: ${latest?.text.slice(0, 1200) ?? "unavailable"}`
+  );
+}
+
 async function setupPhone(
   surface: PhoneSurface,
   playerIndex: number,
@@ -1100,7 +1124,9 @@ async function setupPhone(
   await clickMatching(surface, [/^continue to operative$/i]);
   await sleep(350);
   await onCheckpoint?.("operative-selection");
-  await clickMatching(surface, [new RegExp(`^${operativeNames[playerIndex]}`, "i")]);
+  const operativePattern = new RegExp(operativeNames[playerIndex]!, "i");
+  await clickMatchingContext(surface, [/^select operative$/i], [operativePattern], 5_000)
+    .catch(() => clickMatching(surface, [new RegExp(`^${operativeNames[playerIndex]}`, "i")]));
   await sleep(350);
   await waitForText(surface, /choose starting Contract/i);
   await onCheckpoint?.("mission-selection");
@@ -1353,7 +1379,7 @@ async function runCase(browser: Browser, campaignCase: CampaignCase): Promise<Ca
     await waitForText(s21, /command sections/i, 5_000);
     await sleep(350);
     await captureEvidence(caseDirectory, "more-menu", s21, tv.page, screenshots, typography);
-    await clickMatching(s21, [/^more$/i], 5_000);
+    await clickMatching(s21, [/^close menu$/i, /close all phone sections/i], 5_000);
     await sleep(250);
 
     const loopStarted = Date.now();

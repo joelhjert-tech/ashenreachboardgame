@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PhonePatchPayload } from "../../shared/types.js";
 import {
@@ -156,6 +156,34 @@ describe("PhoneHazardChallengeView", () => {
     fireEvent.click(screen.getByRole("button", { name: "Attempt Challenge" }));
     expect(screen.getByRole("button", { name: /Waiting for server/ })).toBeDisabled();
     expect(action).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the Hazard roll in the fixed primary slot when Edge cards are available", () => {
+    const edge = vi.fn();
+    const roll = vi.fn();
+    render(
+      <PhoneHazardChallengeView
+        patch={patch()}
+        resolution={patch().activeResolution ?? null}
+        actions={[
+          { key: "edge-card-quiet-route", label: "Commit Quiet Route — lock 3", tone: "secondary", onClick: edge },
+          { key: "hazard-check", label: "Roll check dice", tone: "primary", onClick: roll }
+        ]}
+        onIntent={vi.fn()}
+        canContinue={false}
+        onContinue={vi.fn()}
+        resultDeltas={[]}
+      />
+    );
+
+    expect(screen.getByTestId("phone-test-primary-action")).toHaveTextContent("Roll check dice");
+    const choices = screen.getByRole("region", { name: "Encounter choices" });
+    expect(within(choices).getByRole("button", { name: /Commit Quiet Route/i })).toBeVisible();
+
+    fireEvent.click(within(choices).getByRole("button", { name: /Commit Quiet Route/i }));
+    expect(edge).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Roll check dice" }));
+    expect(roll).toHaveBeenCalledTimes(1);
   });
 
   it("lets the active operative switch Gear before a challenge roll and locks the loadout once rolling starts", () => {

@@ -347,7 +347,18 @@ function ActionSection({
   if (actions.length === 0) return null;
   const body = actions.map((action) => <PriorityActionCard key={action.id} action={action} onIntent={onIntent} />);
   if (collapsed) {
-    return <details className="phone-priority-stack__section" data-testid={testId}><summary>{title} · {actions.length}</summary>{body}</details>;
+    return (
+      <details className="phone-priority-stack__section" data-testid={testId}>
+        <summary>
+          <span>{title} · {actions.length}</span>
+          <span className="phone-priority-stack__disclosure" aria-hidden="true">
+            <span className="is-closed">View +</span>
+            <span className="is-open">Hide −</span>
+          </span>
+        </summary>
+        {body}
+      </details>
+    );
   }
   return <section className="phone-priority-stack__section" data-testid={testId}><h3>{title}{actions.length > 1 ? ` · ${actions.length}` : ""}</h3>{body}</section>;
 }

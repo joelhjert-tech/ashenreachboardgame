@@ -68,11 +68,11 @@ export function SignalPhoneNavigation({
   return (
     <div
       className="signal-phone-nav__primary"
-      role="tablist"
+      role={expanded ? "navigation" : "tablist"}
       aria-label="Phone navigation"
       data-navigation-state={expanded ? "expanded" : "compact"}
     >
-      {primaryTabs.map((tab) => {
+      {!expanded ? primaryTabs.map((tab) => {
         const active = activeTab === tab;
         return (
           <button
@@ -80,9 +80,6 @@ export function SignalPhoneNavigation({
             type="button"
             role="tab"
             aria-selected={active}
-            aria-hidden={expanded ? "true" : undefined}
-            tabIndex={expanded ? -1 : 0}
-            inert={expanded ? true : undefined}
             data-signal-phone-tab={tab}
             aria-label={tab === "player" ? "Operative — Player Card" : signalPhoneTabLabels[tab]}
             className={active ? "is-active" : ""}
@@ -96,7 +93,7 @@ export function SignalPhoneNavigation({
             <span>{tab === "player" ? "Operative" : signalPhoneTabLabels[tab]}</span>
           </button>
         );
-      })}
+      }) : null}
       <button
         ref={moreButtonRef}
         type="button"
@@ -113,7 +110,7 @@ export function SignalPhoneNavigation({
             ? <CaretUpIcon size={23} weight="bold" />
             : <DotsThreeOutlineIcon size={23} weight="fill" />}
         </span>
-        <span>More</span>
+        <span>{expanded ? "Close menu" : "More"}</span>
       </button>
     </div>
   );

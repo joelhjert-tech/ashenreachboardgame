@@ -917,7 +917,6 @@ function RivalryQuestPanel({
 
 export function PortraitControllerView({
   self,
-  roomCode,
   displayName,
   connectionStatus,
   activeSeatId,
@@ -1141,17 +1140,21 @@ export function PortraitControllerView({
   useEffect(() => {
     if (!pendingRequiredIntent) return;
     const projectionChanged = patch?.requiredAction?.id !== pendingRequiredIntent.projectionId;
-    if (projectionChanged) {
+    const authoritativeStateAdvanced =
+      typeof patchSequence === "number" &&
+      patchSequence > pendingRequiredIntent.sequence;
+    if (projectionChanged || authoritativeStateAdvanced) {
       setPendingRequiredIntent(null);
       setAwaitingRequiredActionResynchronization(false);
       setRequiredActionDisconnectObserved(false);
     }
-  }, [patch?.requiredAction?.id, pendingRequiredIntent]);
+  }, [patch?.requiredAction?.id, patchSequence, pendingRequiredIntent]);
 
   useEffect(() => {
     if (!serverError || !patch?.requiredAction) return;
     const stale = /stale|changed|mismatch|no longer|already resolved|unavailable/i.test(serverError);
     const transportFailure = /not sent|connection|socket|restoring/i.test(serverError);
+    const rejectionReason = serverError.trim().replace(/\s+/g, " ").replace(/[.\s]+$/, "");
     if (pendingRequiredIntent && !transportFailure) setPendingRequiredIntent(null);
     if (transportFailure) {
       setAwaitingRequiredActionResynchronization(true);
@@ -1161,8 +1164,8 @@ export function PortraitControllerView({
       message: transportFailure
         ? "Restoring latest state. The action will not be sent again automatically."
         : stale
-        ? "The turn has advanced. The current required action has been restored."
-        : "The action was not accepted. Restoring the current action.",
+        ? `The turn has advanced: ${rejectionReason}. The current required action has been restored.`
+        : `The action was not accepted: ${rejectionReason}. The current action has been restored.`,
       sequence: patchSequence ?? 0
     });
   }, [connectionSynchronized, patch?.requiredAction, patchSequence, pendingRequiredIntent, serverError]);
@@ -1848,30 +1851,22 @@ export function PortraitControllerView({
                 </div>
                 <div className="phone-portrait-hero-copy">
                   <p className="phone-panel-kicker">{activeSeatId === self.seatId ? "Active turn" : "Standby"}</p>
-                  <h2>{displayName}</h2>
-                  <p>{self.character.name} · {self.character.archetype}</p>
-                  <div className="phone-portrait-chip-row">
-                    <span>{roomCode}</span>
-                    <span>{displayName}</span>
-                    <span>{connectionStatus}</span>
-                    <span>{self.character.status}</span>
-                  </div>
+                  <h2>{self.character.name}</h2>
+                  <p>{self.character.archetype}</p>
                 </div>
               </section>
 
               <section className={`phone-player-essential-state${requiredAction && (!requiredAction.canAct || requiredAction.waiting) ? " is-waiting-summary" : ""}`} aria-label="Essential operative state">
-                {requiredAction && (!requiredAction.canAct || requiredAction.waiting) ? null : (
+                {!requiredAction ? (
                   <div>
                     <span>Current context</span>
                     <strong>{actionGuidance?.title ?? "Operative ready"}</strong>
                     <small>{actionGuidance?.detail ?? `Holding at ${self.sectorId}`}</small>
                   </div>
-                )}
-                <dl className="phone-portrait-vitals">
-                  <span className="visually-hidden">Wounds {self.character.wounds} · Scars {scarCount} · Salvage {self.character.salvage ?? 0} · Status {self.character.status}</span>
-                  <div><dt>Wounds</dt><dd>{self.character.wounds}</dd></div>
+                ) : null}
+                <dl className="phone-portrait-vitals phone-portrait-vitals--compact">
+                  <span className="visually-hidden">Scars {scarCount} · Status {self.character.status}</span>
                   <div><dt>Scars</dt><dd>{scarCount}</dd></div>
-                  <div><dt>Salvage</dt><dd>{self.character.salvage ?? 0}</dd></div>
                   <div><dt>Status</dt><dd>{self.character.status}</dd></div>
                 </dl>
               </section>

@@ -1333,7 +1333,8 @@ describe("PhoneInventoryPanel", () => {
     expect(tablist).toHaveAttribute("data-navigation-state", "expanded");
     expect(tablist).not.toHaveAttribute("aria-hidden");
     expect(tablist).not.toHaveAttribute("inert");
-    expect(within(tablist).getAllByRole("tab", { hidden: true })).toHaveLength(4);
+    expect(within(tablist).queryByRole("tab")).not.toBeInTheDocument();
+    expect(tablist).toHaveTextContent(/close menu/i);
     expect(screen.getByRole("button", { name: /close all phone sections/i })).toBeEnabled();
     const phoneContent = document.querySelector("main[aria-label='Phone content']");
     expect(phoneContent).toHaveAttribute("aria-hidden", "true");
@@ -1466,6 +1467,9 @@ describe("PhoneInventoryPanel", () => {
     expect(within(commandStat).getAllByText("+0").length).toBe(2);
     expect(within(commandStat).getAllByText("5").length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText(/character vitals/i)[0]).toHaveTextContent(/salvage/i);
+    expect(document.querySelector(".phone-portrait-hero-card")).toHaveTextContent(/sable vey/i);
+    expect(document.querySelector(".phone-portrait-hero-card")).not.toHaveTextContent(/RT7P4|Lane ·|open/i);
+    expect(document.querySelector(".phone-portrait-chip-row")).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: /equipped gear bonuses/i })).toHaveTextContent(/coffin rig/i);
     expect(screen.getByRole("region", { name: /equipped gear bonuses/i })).toHaveTextContent(/\+1 forge · always active/i);
 
@@ -1474,6 +1478,7 @@ describe("PhoneInventoryPanel", () => {
     expect(commandStat).toHaveAttribute("aria-expanded", "false");
     expect(within(statsRegion).getByRole("button", { name: /grit current stat 2, details expanded/i })).toHaveAttribute("aria-expanded", "true");
     expect(document.querySelector(".phone-portrait-vitals")).toHaveTextContent(/scars 0/i);
+    expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/wounds|salvage/i);
     expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/heat/i);
     expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/trophies/i);
     expect(screen.getByRole("tab", { name: /player card/i })).toHaveAttribute("aria-selected", "true");
@@ -2000,6 +2005,103 @@ describe("PhoneInventoryPanel", () => {
     );
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/turn has advanced/i));
     expect(screen.getByRole("button", { name: /roll movement/i })).toBeEnabled();
+  });
+
+  it("unlocks the assisted roll when the server locks helpers without changing the required-action id", async () => {
+    const onIntent = vi.fn();
+    const requestedPatch = createPatch({
+      phase: "action",
+      encounter: {
+        id: "glass-maw",
+        title: "Glass Maw",
+        cardType: "enemy",
+        enemyName: "Glass Maw",
+        flavor: "A furnace-jawed scavenger closes over the route.",
+        difficulty: 7,
+        stat: "grit"
+      },
+      requiredAction: {
+        id: "battle:seat-1:glass-maw",
+        kind: "battle",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Lane",
+        requiredTab: "battle",
+        label: "Resolve Glass Maw",
+        detail: "Lock helpers, then roll the opposed battle.",
+        canAct: true,
+        waiting: false,
+        privacy: "owner"
+      },
+      cooperativeAssistance: {
+        id: "assist-enemy-1",
+        sourceKind: "encounter",
+        sourceId: "glass-maw",
+        sourceTitle: "Glass Maw",
+        testedStat: "grit",
+        activeSeatId: "seat-1",
+        activePlayerName: "Lane",
+        status: "requested",
+        requestedHelpers: [{ seatId: "seat-2", playerName: "Mira", characterName: "Signal Witch", response: "accepted", contribution: 3 }],
+        acceptedTotal: 3,
+        viewerRole: "active"
+      }
+    });
+    const renderView = (patch: PhonePatchPayload, patchSequence: number) => (
+      <PortraitControllerView self={patch.self} roomCode="RT7P4" displayName="Lane" connectionStatus="open"
+        activeSeatId="seat-1" activeContractCard={null} patch={patch} patchSequence={patchSequence}
+        characters={characters} onIntent={onIntent} onLeave={vi.fn()} />
+    );
+    const view = render(renderView(requestedPatch, 40));
+    const lockHelpers = await screen.findByRole("button", { name: /proceed with 1 helper/i });
+
+    fireEvent.click(lockHelpers);
+    expect(onIntent).toHaveBeenCalledWith({ type: "COOPERATIVE_ASSISTANCE_LOCKED", seatId: "seat-1", requestId: "assist-enemy-1" });
+    const lockedPatch = {
+      ...requestedPatch,
+      cooperativeAssistance: { ...requestedPatch.cooperativeAssistance!, status: "locked" as const }
+    };
+    view.rerender(renderView(lockedPatch, 41));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /roll grit/i })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: /roll grit/i }));
+    expect(onIntent).toHaveBeenCalledWith({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: "grit" });
+    expect(onIntent).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows the server rejection reason when restoring a required action", async () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "navigation",
+      encounter: null,
+      requiredAction: {
+        id: "movement-roll:seat-1:rejection-copy",
+        kind: "movement",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Lane",
+        requiredTab: "move",
+        label: "Roll for movement",
+        detail: "Roll once to reveal legal destinations.",
+        canAct: true,
+        waiting: false,
+        privacy: "owner"
+      },
+      movementPlanner: null
+    });
+    const view = render(
+      <PortraitControllerView self={patch.self} roomCode="RT7P4" displayName="Lane" connectionStatus="open"
+        activeSeatId="seat-1" activeContractCard={null} patch={patch} patchSequence={50}
+        characters={characters} onIntent={onIntent} onLeave={vi.fn()} />
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /roll movement/i }));
+
+    view.rerender(
+      <PortraitControllerView self={patch.self} roomCode="RT7P4" displayName="Lane" connectionStatus="open"
+        activeSeatId="seat-1" activeContractCard={null} patch={patch} patchSequence={50}
+        serverError="Assisted roll is unavailable while helpers are unlocked."
+        characters={characters} onIntent={onIntent} onLeave={vi.fn()} />
+    );
+
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/assisted roll is unavailable while helpers are unlocked/i));
   });
 
   it("restores a stalled required action after six seconds without resending it", async () => {

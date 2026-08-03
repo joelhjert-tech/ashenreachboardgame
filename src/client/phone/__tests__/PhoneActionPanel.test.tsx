@@ -1879,8 +1879,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /shop/i })).toHaveTextContent(/locked/i);
     expect(screen.getByRole("tab", { name: /shop/i })).not.toHaveTextContent(/shop locked: no shop here/i);
-    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/shop locked/i);
-    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/no shop here/i);
+    expect(screen.queryByTestId("phone-turn-tab-reason")).not.toBeInTheDocument();
     expect(within(screen.getByTestId("phone-action-active-panel")).getByRole("status")).toHaveTextContent(/no shop here/i);
     expect(screen.getByText(/shop services appear when your operative is on a clear market/i)).toBeInTheDocument();
   });
@@ -4599,5 +4598,64 @@ describe("PhoneActionPanel", () => {
       type: "RETURN_TO_LOBBY_REQUESTED",
       seatId: "seat-1"
     });
+  });
+
+  it("does not show stale arrival context or a duplicate status on an empty Battle tab", () => {
+    render(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={createPatch({
+      phase: "navigation",
+      encounter: null,
+      activeResolution: null,
+      requiredAction: {
+        id: "movement-roll:seat-1:turn-8",
+        kind: "movement",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Lane",
+        requiredTab: "move",
+        label: "Roll for movement",
+        detail: "Roll once to reveal legal destinations.",
+        canAct: true,
+        waiting: false,
+        privacy: "owner"
+      },
+      tileArrival: {
+        arrivalId: "arrival:seat-1:ashwake-crossing:7",
+        seatId: "seat-1",
+        tileId: "ashwake-crossing",
+        tileName: "Ashwake Crossing",
+        lore: "Old ash still marks the crossing.",
+        currentRuleId: "hazard",
+        mandatoryRemaining: 1,
+        canEndTurn: false,
+        blockedReason: "Resolve Ashfall Hazard.",
+        rules: [{
+          id: "hazard",
+          order: 1,
+          kind: "tile-challenge",
+          label: "Ashfall Hazard",
+          detail: "Resolve the Hazard before continuing.",
+          mandatory: true,
+          repeatPolicy: "EVERY_ARRIVAL",
+          marker: "HAZARD",
+          supported: true,
+          status: "current"
+        }]
+      }
+    })} />);
+
+    expect(screen.getByText("No battle active.")).toBeVisible();
+    expect(screen.queryByTestId("phone-tile-arrival-presentation")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-action-secondary-status")).not.toBeInTheDocument();
+  });
+
+  it("lets the Shop empty state speak once without a second locked-status strip", () => {
+    render(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="shop" patch={createPatch({
+      encounter: null,
+      activeResolution: null,
+      shopEncounter: null
+    })} />);
+
+    expect(screen.getByText("No shop here")).toBeVisible();
+    expect(screen.queryByTestId("phone-turn-tab-reason")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-action-secondary-status")).not.toBeInTheDocument();
   });
 });

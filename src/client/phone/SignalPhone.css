@@ -683,6 +683,10 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+.signal-phone-nav__primary[data-navigation-state="expanded"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .signal-phone-nav__primary > button {
   min-width: 0;
   min-height: 4.55rem;

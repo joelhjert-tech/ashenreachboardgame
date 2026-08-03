@@ -290,11 +290,13 @@ function ScarDecisionPanel({
 export function CooperativeAssistancePanel({
   patch,
   seatId,
-  onIntent
+  onIntent,
+  submissionPending = false
 }: {
   patch: PhonePatchPayload;
   seatId: string;
   onIntent: (intent: ClientIntent) => void;
+  submissionPending?: boolean;
 }): ReactElement {
   const [selectedHelpers, setSelectedHelpers] = useState<string[]>([]);
   const [choosingHelpers, setChoosingHelpers] = useState(false);
@@ -313,7 +315,9 @@ export function CooperativeAssistancePanel({
   const acceptedCount = request?.requestedHelpers.filter((helper) => helper.response === "accepted").length ?? 0;
   const pendingCount = request?.requestedHelpers.filter((helper) => helper.response === "pending").length ?? 0;
   const allResponded = Boolean(request) && pendingCount === 0;
+  const rollPending = submissionPending || patch.activeResolution?.stage === "dice_roll";
   const roll = () => {
+    if (rollPending) return;
     if (pendingTest) {
       onIntent({ type: "COOPERATIVE_TEST_ROLL_REQUESTED", seatId, testId: pendingTest.id });
       return;
@@ -337,7 +341,7 @@ export function CooperativeAssistancePanel({
 
       {!request && eligibility && !choosingHelpers ? (
         <div className="phone-assistance-actions">
-          {!pendingTest?.requiresHelper ? <GameButton type="button" tone="secondary" onClick={roll}>Continue without help</GameButton> : null}
+          {!pendingTest?.requiresHelper ? <GameButton type="button" tone="secondary" disabled={rollPending} onClick={roll}>{rollPending ? "Rolling…" : "Continue without help"}</GameButton> : null}
           <GameButton type="button" tone="action" onClick={() => setChoosingHelpers(true)}>Ask for Help</GameButton>
         </div>
       ) : null}
@@ -373,7 +377,7 @@ export function CooperativeAssistancePanel({
             <GameButton
               type="button"
               tone="action"
-              disabled={selectedHelpers.length === 0}
+              disabled={selectedHelpers.length === 0 || submissionPending}
               onClick={() => onIntent({
                 type: "COOPERATIVE_ASSISTANCE_REQUESTED",
                 seatId,
@@ -403,8 +407,8 @@ export function CooperativeAssistancePanel({
         <div className="phone-assistance-request">
           <p><strong>{request!.activePlayerName}</strong> asks for your {testedStat} {request!.viewerContribution ?? 0}.</p>
           <div className="phone-assistance-actions">
-            <GameButton type="button" tone="secondary" onClick={() => onIntent({ type: "COOPERATIVE_ASSISTANCE_RESPONDED", seatId, requestId: request!.id, accept: false })}>Decline</GameButton>
-            <GameButton type="button" tone="action" onClick={() => onIntent({ type: "COOPERATIVE_ASSISTANCE_RESPONDED", seatId, requestId: request!.id, accept: true })}>Accept +{request!.viewerContribution ?? 0}</GameButton>
+            <GameButton type="button" tone="secondary" disabled={submissionPending} onClick={() => onIntent({ type: "COOPERATIVE_ASSISTANCE_RESPONDED", seatId, requestId: request!.id, accept: false })}>Decline</GameButton>
+            <GameButton type="button" tone="action" disabled={submissionPending} onClick={() => onIntent({ type: "COOPERATIVE_ASSISTANCE_RESPONDED", seatId, requestId: request!.id, accept: true })}>{submissionPending ? "Submitting…" : `Accept +${request!.viewerContribution ?? 0}`}</GameButton>
           </div>
         </div>
       ) : requestedSelf ? (
@@ -413,21 +417,21 @@ export function CooperativeAssistancePanel({
 
       {activeSelf && request?.status === "requested" ? (
         <div className="phone-assistance-actions">
-          <GameButton type="button" tone="secondary" onClick={() => onIntent({ type: "COOPERATIVE_ASSISTANCE_CANCELLED", seatId, requestId: request.id })}>Change helpers</GameButton>
+          <GameButton type="button" tone="secondary" disabled={submissionPending} onClick={() => onIntent({ type: "COOPERATIVE_ASSISTANCE_CANCELLED", seatId, requestId: request.id })}>Change helpers</GameButton>
           <GameButton
             type="button"
             tone="action"
-            disabled={Boolean(pendingTest?.requiresHelper && acceptedCount === 0) || (!allResponded && acceptedCount === 0)}
+            disabled={submissionPending || Boolean(pendingTest?.requiresHelper && acceptedCount === 0) || (!allResponded && acceptedCount === 0)}
             onClick={() => onIntent({ type: "COOPERATIVE_ASSISTANCE_LOCKED", seatId, requestId: request.id })}
           >
-            {acceptedCount === 0 ? "Proceed without help" : `Proceed with ${acceptedCount} helper${acceptedCount === 1 ? "" : "s"}`}
+            {submissionPending ? "Submitting…" : acceptedCount === 0 ? "Proceed without help" : `Proceed with ${acceptedCount} helper${acceptedCount === 1 ? "" : "s"}`}
           </GameButton>
         </div>
       ) : null}
 
       {activeSelf && request?.status === "locked" ? (
         <div className="phone-assistance-actions is-primary-only">
-          <GameButton type="button" tone="action" onClick={roll}>Roll {testedStat} · +{request.acceptedTotal} help</GameButton>
+          <GameButton type="button" tone="action" disabled={rollPending} onClick={roll}>{rollPending ? "Rolling…" : `Roll ${testedStat} · +${request.acceptedTotal} help`}</GameButton>
         </div>
       ) : null}
 
@@ -1757,17 +1761,19 @@ function CurrentTileCard({ tile }: { tile: CurrentTileViewModel }): ReactElement
 function TurnActionDock({
   tabs,
   activeTab,
-  onSelected
+  onSelected,
+  showActiveReason = true
 }: {
   tabs: TurnActionTabDefinition[];
   activeTab: TurnActionTab;
   onSelected: (tab: TurnActionTab) => void;
+  showActiveReason?: boolean;
 }): ReactElement {
   const activeDefinition = tabs.find((tab) => tab.id === activeTab);
 
   return (
     <div className="phone-turn-dock" aria-label="Turn action dock">
-      <TurnActionReasonStrip tab={activeDefinition} />
+      {showActiveReason ? <TurnActionReasonStrip tab={activeDefinition} /> : null}
       <TurnActionTabs tabs={tabs} activeTab={activeTab} onSelected={onSelected} />
     </div>
   );
@@ -3506,7 +3512,7 @@ export function PhoneActionPanel({
       patch.activeResolution?.assistance?.activeSeatId === self.seatId
     )
   ) {
-    return <CooperativeAssistancePanel patch={patch} seatId={self.seatId} onIntent={onIntent} />;
+    return <CooperativeAssistancePanel patch={patch} seatId={self.seatId} onIntent={onIntent} submissionPending={requiredActionSubmissionPending} />;
   }
 
   if (opposedBattleActive && pendingEnemyRoll) {
@@ -4893,6 +4899,20 @@ export function PhoneActionPanel({
       </>
     );
 
+  const showBattleArrivalSummary =
+    !scarDecisionContent &&
+    !trialPresentationActive &&
+    activeTurnTab === "battle" &&
+    isActiveSeat &&
+    battleRequiresResolution;
+  const showSecondaryStatus =
+    !scarDecisionContent &&
+    activeTurnTab !== "move" &&
+    activeTurnTab !== "action" &&
+    !trialPresentationActive &&
+    !(activeTurnTab === "battle" && !hasBattleContent) &&
+    !(activeTurnTab === "shop" && !hasShopContent);
+
   return (
     <section
       className={`phone-sheet-actions phone-action-panel phone-action-panel--${activeTurnTab}${trialPresentationActive ? " phone-action-panel--trial-active" : ""}`}
@@ -4900,7 +4920,7 @@ export function PhoneActionPanel({
       data-testid="phone-action-panel-root"
     >
       {!patch.requiredAction && !scarDecisionContent && showCurrentPrompt && activeTurnTab !== "move" && activeTurnTab !== "action" ? <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} /> : null}
-      {!scarDecisionContent && !trialPresentationActive && activeTurnTab !== "move" && activeTurnTab !== "shop" && activeTurnTab !== "action" && isActiveSeat ? (
+      {showBattleArrivalSummary ? (
         <PhoneTileArrivalSummary arrival={patch.tileArrival} compact={activeTurnTab === "battle" && Boolean(patch.activeResolution)} />
       ) : null}
       <div
@@ -4911,14 +4931,21 @@ export function PhoneActionPanel({
         data-testid="phone-action-content-root"
       >
         {scarDecisionContent ?? <>{activeTurnTab === "action" || trialPresentationActive ? null : <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />}{activeTabContent}</>}
-        {scarDecisionContent || activeTurnTab === "move" || activeTurnTab === "action" || trialPresentationActive ? null : (
+        {showSecondaryStatus ? (
           <div className="phone-sheet-action-status phone-action-secondary-status" data-testid="phone-action-secondary-status">
             <span>{tabDefinitions.find((tab) => tab.id === activeTurnTab)?.label ?? portraitActionStatusLabel(activeTurnTab)}</span>
             <span>{activeStatusCopy}</span>
           </div>
-        )}
+        ) : null}
       </div>
-      {!hideTurnTabs && !patch.pendingScarChoice && <TurnActionDock tabs={tabDefinitions} activeTab={activeTurnTab} onSelected={setSelectedTurnTab} />}
+      {!hideTurnTabs && !patch.pendingScarChoice && (
+        <TurnActionDock
+          tabs={tabDefinitions}
+          activeTab={activeTurnTab}
+          onSelected={setSelectedTurnTab}
+          showActiveReason={!((activeTurnTab === "battle" && !hasBattleContent) || (activeTurnTab === "shop" && !hasShopContent))}
+        />
+      )}
     </section>
   );
 }

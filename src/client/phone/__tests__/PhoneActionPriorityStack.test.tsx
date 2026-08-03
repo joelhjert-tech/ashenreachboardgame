@@ -104,7 +104,10 @@ describe("production phone Priority Stack", () => {
   it("renders passive effects without controls and blocked reasons accessibly", () => {
     const model = buildPhoneActionViewModel(patch(), sources());
     render(<PhoneActionPriorityStack model={model} onIntent={vi.fn()} />);
+    expect(screen.getByTestId("priority-passive")).toHaveTextContent("View +");
+    expect(screen.getByTestId("priority-blocked")).toHaveTextContent("View +");
     fireEvent.click(screen.getByText(/Passive \/ already applied/));
+    expect(screen.getByTestId("priority-passive")).toHaveTextContent("Hide −");
     const passive = screen.getByText("Rivetplate Vest").closest("article");
     expect(passive).not.toBeNull();
     expect(within(passive!).queryByRole("button")).not.toBeInTheDocument();
