@@ -85,7 +85,8 @@ function createPlayerState(
     sessionMode,
     seatIndex,
     catalogs: loadoutCatalogs,
-    assignStartingContract: false
+    assignStartingContract: false,
+    includeAuthoredInventory: character.qaOnly === true
   });
 
   return {

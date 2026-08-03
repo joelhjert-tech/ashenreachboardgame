@@ -7254,6 +7254,7 @@ body:has(.phone-page-controller) {
   background: rgba(8, 11, 15, 0.74);
   color: #f0d9ae;
   backdrop-filter: blur(3px);
+  touch-action: manipulation;
 }
 
 .phone-character-select-action {
@@ -7273,6 +7274,9 @@ body:has(.phone-page-controller) {
   place-items: stretch center;
   min-width: 0;
   min-height: 0;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
   padding:
     env(safe-area-inset-top)
     env(safe-area-inset-right)
@@ -7568,7 +7572,7 @@ body:has(.phone-page-controller) {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   gap: 0.48rem;
-  padding: 0.62rem 0.72rem;
+  padding: 0.62rem 0.72rem max(0.62rem, env(safe-area-inset-bottom));
   border-top: 1px solid rgba(203, 176, 121, 0.3);
   background: rgba(7, 10, 14, 0.98);
 }
@@ -7578,6 +7582,7 @@ body:has(.phone-page-controller) {
   min-height: 2.9rem;
   padding: 0.48rem 0.55rem;
   white-space: normal;
+  touch-action: manipulation;
 }
 
 @media (max-width: 340px) {

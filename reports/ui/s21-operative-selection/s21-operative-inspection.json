@@ -1,0 +1,31 @@
+{
+  "device": "Samsung Galaxy S21 SM-G996B",
+  "roomCode": "XV0HV",
+  "inspection": {
+    "open": true,
+    "operative": "Bjornis",
+    "statCount": 5,
+    "abilityCount": 2,
+    "footerVisible": true,
+    "viewport": {
+      "innerHeight": 722,
+      "visualHeight": 722.4888916015625
+    },
+    "footerRect": {
+      "top": 655.54443359375,
+      "bottom": 722.4888763427734
+    },
+    "horizontalOverflow": false,
+    "inspectHitTarget": {
+      "width": 111.48333740234375,
+      "height": 44
+    }
+  },
+  "selectedFromDossier": true,
+  "startingInventory": {
+    "provisionPickCount": 2,
+    "readyAfterTwoProvisions": true,
+    "unexpectedThirdProvision": false
+  },
+  "passed": true
+}

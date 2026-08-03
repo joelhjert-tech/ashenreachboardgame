@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadThreatCards } from "../../game/content/threats.js";
+import { loadGear } from "../../game/content/gear.js";
 import type { ConnectedClient } from "../roomServer.js";
 import { GameRoomServer } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
@@ -48,26 +49,31 @@ describe("Popelord display-name rule", () => {
     expect(player.character.id).toBe("char_popelord");
   });
 
-  it("allows an owner to equip an exact starting Gear instance during setup", () => {
+  it("allows an owner to equip an exact chosen provision instance during setup", () => {
     const server = new GameRoomServer(createInitialSessionState("starting-gear-setup", "multiplayer"));
     const joined = server.joinSeat("Lane");
     server.selectSeatCharacter(joined.seatId, "char_deepdale");
     const player = server.getState().players.find((entry) => entry.seatId === joined.seatId)!;
-    const startingGear = player.character.heldGear[0]!;
+    const provision = loadGear().get("rustknife-carbine")!;
+    const chosenGear = {
+      ...provision,
+      instanceId: `${provision.id}:${joined.seatId}:chosen-provision`
+    };
+    player.character.heldGear = [chosenGear];
     const sent: Array<Record<string, unknown>> = [];
 
     server.handleIntent(clientFor(joined.seatId, sent), {
       type: "EQUIP_GEAR",
       seatId: joined.seatId,
-      gearId: startingGear.id,
-      instanceId: startingGear.instanceId,
-      slot: startingGear.slot
+      gearId: chosenGear.id,
+      instanceId: chosenGear.instanceId,
+      slot: chosenGear.slot
     });
 
     expect(sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
     const updated = server.getState().players.find((entry) => entry.seatId === joined.seatId)!;
-    expect(updated.character.equippedGear[startingGear.slot]).toBe(startingGear.id);
-    expect(updated.character.equippedGearInstances?.[startingGear.slot]).toBe(startingGear.instanceId ?? null);
+    expect(updated.character.equippedGear[chosenGear.slot]).toBe(chosenGear.id);
+    expect(updated.character.equippedGearInstances?.[chosenGear.slot]).toBe(chosenGear.instanceId);
   });
 
   it("can stage the next queued enemy after recruiting a replacement", () => {

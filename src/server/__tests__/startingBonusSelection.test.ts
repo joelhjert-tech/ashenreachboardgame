@@ -20,6 +20,7 @@ describe("starting bonus selection", () => {
     const startingSeat = server.getState().seats.find((seat) => seat.seatId === joined.seatId)!;
     const missionId = startingSeat.startingContractOptions[0]!;
     const ownedBefore = ownedBonusCount(server, joined.seatId);
+    expect(ownedBefore).toBe(0);
 
     server.selectStartingContract(joined.seatId, missionId);
 
@@ -88,7 +89,7 @@ describe("starting bonus selection", () => {
     expect(completedSeat.startingBonusSelections).toHaveLength(2);
     expect(completedSeat.startingBonusOfferId).toBeNull();
     expect(completedSeat.startingBonusOfferOptions).toEqual([]);
-    expect(ownedBonusCount(restored, joined.seatId)).toBe(ownedBefore + 2);
+    expect(ownedBonusCount(restored, joined.seatId)).toBe(2);
 
     restored.setSeatReady(joined.seatId, true);
     expect(restored.getState().seats.find((seat) => seat.seatId === joined.seatId)?.ready).toBe(true);

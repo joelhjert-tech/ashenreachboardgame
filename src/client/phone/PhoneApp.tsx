@@ -314,13 +314,10 @@ function OperativeInspectionDialog({
               </section>
               <section className="phone-operative-inspection__section" aria-labelledby={`${titleId}-starting`}>
                 <div className="phone-operative-inspection__section-heading">
-                  <span>Opening plan</span>
-                  <h3 id={`${titleId}-starting`}>Starting guidance</h3>
+                  <span>Setup reminder</span>
+                  <h3 id={`${titleId}-starting`}>Provision choices</h3>
                 </div>
-                <dl className="phone-operative-inspection__starting">
-                  <div><dt>Signature item</dt><dd>{presentation.signatureItemSummary}</dd></div>
-                  <div><dt>Starting Contract</dt><dd>{presentation.startingContractSummary}</dd></div>
-                </dl>
+                <p>This operative brings no automatic Equipment or Followers. After choosing a Contract, choose one provision from each of two randomized pairs. Only those two choices enter your starting inventory.</p>
               </section>
               <section className="phone-operative-inspection__section">
                 <div className="phone-operative-inspection__section-heading"><span>Playstyle</span><h3>How this operative plays</h3></div>

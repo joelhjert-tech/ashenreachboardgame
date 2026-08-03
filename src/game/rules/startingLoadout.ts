@@ -22,6 +22,12 @@ export type StartingLoadoutOptions = {
   seatIndex: number;
   catalogs: StartingLoadoutCatalogs;
   assignStartingContract?: boolean;
+  /**
+   * Authored starting Gear and Followers are presentation/QA metadata during
+   * normal setup. Player-owned inventory comes from the two server-authored
+   * provision choices instead.
+   */
+  includeAuthoredInventory?: boolean;
 };
 
 function cloneCharacter(character: AuthoredCharacter): AuthoredCharacter {
@@ -118,13 +124,14 @@ function resolveStartingEquippedGear(
 export function applyStartingLoadout(character: AuthoredCharacter, options: StartingLoadoutOptions): AuthoredCharacter {
   const nextCharacter = cloneCharacter(character);
   const assignStartingContract = options.assignStartingContract ?? true;
+  const includeAuthoredInventory = options.includeAuthoredInventory ?? true;
   const startingContractId = assignStartingContract
     ? resolveStartingContractId(nextCharacter, options.catalogs.contracts, options.seatIndex)
     : null;
-  const startingGear = resolveStartingGearIds(nextCharacter, options.sessionMode)
+  const startingGear = (includeAuthoredInventory ? resolveStartingGearIds(nextCharacter, options.sessionMode) : [])
     .map((gearId) => options.catalogs.gear.get(gearId))
     .filter((gear): gear is GearItem => Boolean(gear));
-  const startingFollowers = resolveStartingFollowerIds(nextCharacter, options.sessionMode)
+  const startingFollowers = (includeAuthoredInventory ? resolveStartingFollowerIds(nextCharacter, options.sessionMode) : [])
     .map((followerId) => options.catalogs.followers.get(followerId))
     .filter((follower): follower is Follower => Boolean(follower));
 
@@ -138,9 +145,16 @@ export function applyStartingLoadout(character: AuthoredCharacter, options: Star
       : startingContractId
         ? { contractId: startingContractId, progress: 0 }
         : null,
-    heldGear: uniqueById([...nextCharacter.heldGear, ...startingGear]),
-    equippedGear: resolveStartingEquippedGear(nextCharacter.equippedGear, startingGear),
-    followers: uniqueById([...(nextCharacter.followers ?? []), ...startingFollowers])
+    heldGear: includeAuthoredInventory ? uniqueById([...nextCharacter.heldGear, ...startingGear]) : [],
+    equippedGear: includeAuthoredInventory
+      ? resolveStartingEquippedGear(nextCharacter.equippedGear, startingGear)
+      : { weapon: null, armor: null, utility: null },
+    equippedGearInstances: includeAuthoredInventory
+      ? nextCharacter.equippedGearInstances
+      : { weapon: null, armor: null, utility: null },
+    followers: includeAuthoredInventory
+      ? uniqueById([...(nextCharacter.followers ?? []), ...startingFollowers])
+      : []
   };
 }
 

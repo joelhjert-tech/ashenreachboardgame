@@ -569,7 +569,7 @@ describe("PhoneApp", () => {
     expect(lantern).toHaveAttribute("tabindex", "0");
   });
 
-  it("inspects canonical stats, abilities, guidance, and lore without selecting the operative", async () => {
+  it("inspects canonical stats, abilities, provision rules, and lore without selecting the operative", async () => {
     const sendIntent = vi.fn();
     vi.mocked(useRoomSubscription).mockReturnValue({
       patch: createLobbyPhonePatch(),
@@ -610,8 +610,10 @@ describe("PhoneApp", () => {
     expect(within(dossier).getByLabelText(/tarek voss stats/i)).toHaveTextContent(/signal1/i);
     expect(within(dossier).getByText(/hold the line/i)).toBeInTheDocument();
     expect(within(dossier).getByText(/failed command challenge/i)).toBeInTheDocument();
-    expect(within(dossier).getByText(/cinder suture kit/i)).toBeInTheDocument();
-    expect(within(dossier).getByText(/warbell recovery/i)).toBeInTheDocument();
+    expect(within(dossier).getByRole("heading", { name: /provision choices/i })).toBeInTheDocument();
+    expect(within(dossier).getByText(/no automatic equipment or followers/i)).toBeInTheDocument();
+    expect(within(dossier).getByText(/only those two choices enter your starting inventory/i)).toBeInTheDocument();
+    expect(within(dossier).queryByText(/cinder suture kit/i)).not.toBeInTheDocument();
     expect(within(dossier).getByText(/breach-line commander/i)).toBeInTheDocument();
     expect(sendIntent).not.toHaveBeenCalled();
 

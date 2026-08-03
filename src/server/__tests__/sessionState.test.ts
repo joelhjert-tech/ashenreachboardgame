@@ -628,7 +628,7 @@ describe("canonical sector graph", () => {
     }
   });
 
-  it("applies normal starting salvage and character gear without auto-assigning starting contracts", () => {
+  it("applies normal starting salvage without preloading inventory or a Contract", () => {
     const state = createInitialSessionState("session-alpha", "multiplayer");
     const firstPlayer = state.players[0];
 
@@ -636,7 +636,8 @@ describe("canonical sector graph", () => {
     expect(firstPlayer?.character.activeContract).toBeNull();
     expect(state.seats[0]?.startingContractOptions).toEqual([]);
     expect(state.seats[0]?.selectedStartingContractId).toBeNull();
-    expect(firstPlayer?.character.heldGear.map((item) => item.id)).toEqual(["rustknife-carbine", "surveyor-chalk"]);
+    expect(firstPlayer?.character.heldGear).toEqual([]);
+    expect(firstPlayer?.character.equippedGear).toEqual({ weapon: null, armor: null, utility: null });
     expect(firstPlayer?.character.followers ?? []).toEqual([]);
     expect(state.soloRerollCharges).toEqual({});
   });
@@ -677,8 +678,9 @@ describe("canonical sector graph", () => {
     expect(state.players[0]?.character.activeContract).toBeNull();
     expect(state.seats[0]?.startingContractOptions).toEqual([]);
     expect(state.seats[0]?.selectedStartingContractId).toBeNull();
-    expect(state.players[0]?.character.heldGear.map((item) => item.id)).toEqual(["rustknife-carbine", "surveyor-chalk"]);
-    expect(state.players[0]?.character.followers?.map((follower) => follower.id)).toEqual(["grave-scribe"]);
+    expect(state.players[0]?.character.heldGear).toEqual([]);
+    expect(state.players[0]?.character.equippedGear).toEqual({ weapon: null, armor: null, utility: null });
+    expect(state.players[0]?.character.followers).toEqual([]);
     expect(tvProjection.sessionMode).toBe("single-player");
     expect(tvProjection.escalationThreshold).toBe(8);
     expect(tvProjection.seats).toHaveLength(1);

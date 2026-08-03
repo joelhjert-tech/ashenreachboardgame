@@ -1895,7 +1895,8 @@ export class GameRoomServer {
         gear: this.gear,
         followers: this.followers
       },
-      assignStartingContract: false
+      assignStartingContract: false,
+      includeAuthoredInventory: selectedCharacter.qaOnly === true
     });
     const startingContractOptions = this.resolveStartingContractOptions(selectedCharacter, seatIndex);
 
@@ -5592,7 +5593,8 @@ export class GameRoomServer {
         gear: this.gear,
         followers: this.followers
       },
-      assignStartingContract: false
+      assignStartingContract: false,
+      includeAuthoredInventory: template.qaOnly === true
     });
 
     return {
