@@ -315,6 +315,10 @@ async function main(): Promise<void> {
             await page.getByRole("button", { name: "Continue to Operative" }).click();
             await page.getByRole("button", { name: /signal witch/i }).click();
             await page.getByRole("button", { name: "Select Contract" }).first().click();
+            for (let pick = 0; pick < 2; pick += 1) {
+              await page.getByRole("heading", { name: "Choose one provision" }).waitFor({ state: "visible", timeout: 10000 });
+              await page.getByRole("button", { name: /Choose (Equipment|Follower)/ }).first().click();
+            }
             const readyButton = page.getByRole("button", { name: "Ready", exact: true });
             await readyButton.waitFor({ state: "visible", timeout: 10000 });
             await readyButton.click();
