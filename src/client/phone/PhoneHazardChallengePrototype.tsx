@@ -136,9 +136,9 @@ function consequenceCopy(
   }
 
   if (challenge) return success ? challenge.successSummary : challenge.failureSummary;
-  return success
-    ? "The server reveals and applies the authored success effect after the test."
-    : "The server reveals and applies the authored failure effect after the test.";
+  const summary = success ? patch.encounter?.successSummary : patch.encounter?.failureSummary;
+  if (summary) return summary;
+  return "Consequence preview unavailable.";
 }
 
 function defaultActionLabel(kind: TrialKind): string {
@@ -381,6 +381,7 @@ export function PhoneHazardChallengeView({
             outcomeEffects={visibleOutcomeEffects}
             resultDeltas={resultDeltas}
             actionLabel={primary?.label ?? "Continue"}
+            actionDetail={primary?.detail}
             actionDisabledReason={submitted ? "Waiting for server…" : primary?.detail}
             canContinue={actionAvailable}
             onContinue={() => {
@@ -542,7 +543,7 @@ export function PhoneHazardChallengeView({
 
         {secondaryActions.length > 0 ? (
           <section className="phone-trial-choices" aria-label="Encounter choices">
-            <span>Resolve before continuing</span>
+            <span>{secondaryActions.every((action) => action.key.startsWith("edge-card-")) ? "Optional Edge · roll without committing to save your card" : "Encounter options"}</span>
             {secondaryActions.map((action) => (
               <GameButton
                 key={action.key}

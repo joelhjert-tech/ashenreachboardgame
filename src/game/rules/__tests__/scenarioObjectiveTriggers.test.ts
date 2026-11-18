@@ -3,6 +3,21 @@ import { createInitialSessionState } from "../../../server/sessionState.js";
 import { resolveScenarioObjectiveTrigger } from "../scenarioObjectiveTriggers.js";
 
 describe("scenario objective triggers", () => {
+  it.each([
+    ["scenario_throne_of_ash", "throneClaims", "revenant", 6],
+    ["scenario_mirror_of_false_heroes", "mirrorBreaks", "breachborn", 4],
+    ["scenario_devourer_beneath", "mawStrikes", "human", 5]
+  ] as const)("uses the displayed boss track for side objectives in %s", (scenarioId, key, family, required) => {
+    const state = createInitialSessionState("objective-track", "multiplayer", scenarioId, "rivalry");
+    state.status = "active";
+    const event = { type: "threatDefeated", threatId: "ordinary-enemy", threatLane: "red", enemyFamily: family } as const;
+    expect(resolveScenarioObjectiveTrigger(state, event)).toMatchObject({ next: 1, required, completed: false });
+    state.scenarioProgress[key] = required - 1;
+    expect(resolveScenarioObjectiveTrigger(state, event)).toMatchObject({ next: required, required, completed: true });
+    state.scenarioProgress[key] = required;
+    expect(resolveScenarioObjectiveTrigger(state, event)).toBeNull();
+  });
+
   it("advances objective progress from matching contract, threat, and sector-action triggers", () => {
     const brokenSeal = createInitialSessionState("scenario-objective-contract", "single-player", "scenario_broken_seal");
     brokenSeal.status = "active";

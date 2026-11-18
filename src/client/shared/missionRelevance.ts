@@ -18,6 +18,7 @@ export function getMissionObjectiveCategory(contract: ContractCard): string {
 }
 
 interface MissionRelevanceOptions {
+  challenges?: Array<{ id: string; challengeType: string; tags: string[] }>;
   threatIcons?: Array<ThreatIcon | string>;
   faceUpThreatCount?: number;
 }
@@ -80,6 +81,12 @@ export function getMissionRelevanceForSector(
   }
 
   if (contract.objective.type === "tileChallengeResolved") {
+    const objective = contract.objective;
+    if (options.challenges && !options.challenges.some((challenge) =>
+      (!objective.challengeId || challenge.id === objective.challengeId)
+      && (!objective.challengeType || challenge.challengeType === objective.challengeType)
+      && (!objective.challengeTag || challenge.tags.includes(objective.challengeTag))
+    )) return null;
     const sectorMatches = !contract.objective.sectorId || contract.objective.sectorId === sectorId;
     if (sectorMatches) {
       return {

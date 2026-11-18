@@ -11,12 +11,12 @@ type Entry = {
 };
 
 const TARGETS: Entry[] = [
-  { id: "anomaly-cinder-gate-echo", file: "cards/anomalies/anomaly-cinder-gate-echo.json", branch: "resolveEffect.effects", survivingEffects: [{ type: "advance_scenario", progressKey: "gateEchoesPinned", amount: 1, summary: "A Cinder Gate echo was pinned for the final confrontation." }] },
+  { id: "anomaly-cinder-gate-echo", file: "cards/anomalies/anomaly-cinder-gate-echo.json", branch: "resolveEffect.effects", survivingEffects: [{ type: "advance_scenario", progressKey: "gateEchoesPinned", amount: 1, summary: "A Cinder Gate echo was pinned." }, { type: "gain_salvage", amount: 1 }] },
   { id: "anomaly-red-suture-field", file: "cards/anomalies/anomaly-red-suture-field.json", branch: "resolveEffect.effects", survivingEffects: [{ type: "gain_note", text: "Red Suture Field opened: route crews can pass once." }] },
   { id: "anomaly-saint-static-aperture", file: "cards/anomalies/anomaly-saint-static-aperture.json", branch: "resolveEffect.effects", survivingEffects: [{ type: "advance_scenario", progressKey: "sealRestorationMarks", amount: 1, summary: "The aperture stains the Broken Seal with usable signal." }] },
   { id: "anomaly-saltglass-fata-morgana", file: "cards/anomalies/anomaly-saltglass-fata-morgana.json", branch: "resolveEffect.effects", survivingEffects: [{ type: "gain_gear", gearId: "blackstar-ampoule" }] },
   { id: "anomaly-scar-tide-lattice", file: "cards/anomalies/anomaly-scar-tide-lattice.json", branch: "resolveEffect.effects", survivingEffects: [{ type: "heal_wound", amount: 1 }, { type: "gain_note", text: "Scar-tide lattice translated into a living route mark." }] },
-  { id: "anomaly-throne-shadow-jury", file: "cards/anomalies/anomaly-throne-shadow-jury.json", branch: "resolveEffect.effects", survivingEffects: [{ type: "advance_scenario", progressKey: "throneVerdicts", amount: 1, summary: "A throne-shadow verdict was banked for the endgame." }] },
+  { id: "anomaly-throne-shadow-jury", file: "cards/anomalies/anomaly-throne-shadow-jury.json", branch: "resolveEffect.effects", survivingEffects: [{ type: "advance_scenario", progressKey: "throneVerdicts", amount: 1, summary: "A throne-shadow verdict was recorded." }, { type: "gain_trophy", amount: 1 }] },
   { id: "anomaly-webglass-stutter", file: "cards/anomalies/anomaly-webglass-stutter.json", branch: "resolveEffect.effects", survivingEffects: [{ type: "gain_follower", followerId: "red-march-guide" }] },
   { id: "artifact-ember-burden-idol", file: "cards/artifacts/artifact-ember-burden-idol.json", branch: "resolveEffect.effects", survivingEffects: [{ type: "gain_trophy", amount: 1 }, { type: "gain_note", text: "Ember Burden Idol: valuable, heavy, and politically loud." }] },
   { id: "artifact-red-march-warbell", file: "cards/artifacts/artifact-red-march-warbell.json", branch: "resolveEffect.effects", survivingEffects: [{ type: "gain_gear", gearId: "red-march-warbell" }] },

@@ -20,10 +20,14 @@ describe("SignalCartographyPrototype", () => {
     expect(screen.getByTestId("signal-cartography-prototype")).toHaveAttribute("data-design", "schematic");
     expect(view.container.querySelectorAll(".signal-cartography__nodes > g")).toHaveLength(BOARD_SPACES.length);
     expect(view.container.querySelectorAll(".signal-cartography__node-art")).toHaveLength(BOARD_SPACES.length);
-    expect(view.container.querySelector('image[href="/assets/riftfall/ui/signal-cartography/sectors/outer_waymarket.png"]')).toBeInTheDocument();
+    expect(view.container.querySelector('image[href="/assets/riftfall/ui/signal-cartography/void-sector-0.webp"]')).toBeInTheDocument();
     expect(view.container.querySelectorAll(".signal-cartography__connections line.is-route")).toHaveLength(2);
     expect(screen.getByText("Public information only")).toBeVisible();
     expect(screen.getByText(/Encounter detected/i)).toBeVisible();
+    for (const space of BOARD_SPACES) {
+      const tile = view.container.querySelector(`[data-sector-id="${space.id}"]`)!;
+      expect(Array.from(tile.querySelectorAll("[data-threat-lane]")).map((lane) => lane.getAttribute("data-threat-lane"))).toEqual(space.threatIcons);
+    }
     expect(view.container.querySelector("canvas")).not.toBeInTheDocument();
   });
 

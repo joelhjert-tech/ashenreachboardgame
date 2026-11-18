@@ -11,7 +11,7 @@
     "label": "Repair gear twice at shop sectors"
   },
   "reward": {
-    "effects": [],
+    "effects": [{ "type": "gain_salvage", "amount": 1 }],
     "completionText": "Dominion proof marks secured: two repairs entered in the iron register."
   }
 }

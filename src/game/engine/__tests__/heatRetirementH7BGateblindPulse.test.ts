@@ -229,6 +229,14 @@ describe("Heat Retirement H7B Gateblind Pulse guard matrix", () => {
 });
 
 describe("Heat Retirement H7B authority, reactions, and replay", () => {
+  it("allows the guarded zero after a different effect has already reached collapse", () => {
+    const server = new GameRoomServer(createResolutionState({ escalationLevel: 6 }));
+    continueUntilEscalationResolves(server);
+    expect(escalationEvents(server.getState())).toContainEqual(expect.objectContaining({
+      sourceCardId: "gateblind-pulse", amount: 0, newLevel: 6, guardedReason: "oneBeforeCollapseGuard"
+    }));
+    expect(server.getState().status).toBe("ended");
+  });
   it("rejects wrong-seat, stale-source, forged delta, forged guard, and repeated source events", () => {
     const state = createResolutionState({ escalationLevel: 4 });
     const seatId = state.players[0]!.seatId;

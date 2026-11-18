@@ -7,11 +7,15 @@
     "stat": "grit",
     "amount": 1
   },
-  "activeText": "Discard to heal 1 wound with a brutal cinder-stim burn.",
+  "activeText": "During your action phase, discard to heal 1 Wound. Requires an existing Wound.",
+  "effectModel": "consumable",
+  "activationTiming": ["action"],
+  "consumableEffect": "healWound",
+  "consumeOnUse": true,
+  "requiresEquipped": false,
   "useLimit": "discard",
   "timingWindows": [
-    "beforeTakingDamage",
-    "anyTime"
+    "action"
   ],
   "flavor": "A sealed red ampoule that burns the blood clean for a few terrible seconds.",
   "tier": "standard",

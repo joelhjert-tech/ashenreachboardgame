@@ -120,6 +120,17 @@ describe("SignalTheatreHost", () => {
     cleanup();
   });
 
+it("shows Choose as the current step after the roll and directs players to their phone", () => {
+  const patch = makePatch();
+  patch.payload.movementPlanner!.selectedDestinationId = null;
+  renderSignal(patch);
+  const sequence = screen.getByRole("list", { name: "Presentation sequence" });
+  expect(within(sequence).getByText("Choose")).toHaveAttribute("aria-current", "step");
+  expect(within(sequence).getByText("Roll")).toHaveClass("is-complete");
+  expect(screen.getByText(/Compare routes on the active phone/)).toBeInTheDocument();
+  expect(screen.queryByText(/destinations are marked on the board/)).not.toBeInTheDocument();
+});
+
   it("gives a live Trophy upgrade priority over ordinary public overlays", async () => {
     const upgrade = {
       id: "stat-raised:EMBER:15:seat-1:signal",

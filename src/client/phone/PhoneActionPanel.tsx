@@ -8,6 +8,7 @@ import { LockKeyIcon } from "@phosphor-icons/react/dist/csr/LockKey";
 import { MapPinLineIcon } from "@phosphor-icons/react/dist/csr/MapPinLine";
 import { StorefrontIcon } from "@phosphor-icons/react/dist/csr/Storefront";
 import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
+import { describeEquipmentComparison } from "../shared/equipmentComparison.js";
 import type {
   ActiveResolution,
   CharacterCatalogEntry,
@@ -76,10 +77,12 @@ import { buildUsefulNowViewModel, type UsefulNowViewModel } from "./usefulNowPre
 import { getMissionRelevanceForSector, type MissionRelevance } from "../shared/missionRelevance.js";
 import {
   PhoneMovementView,
+  useRouteStarDestinationChange,
   type MovementNavigationTarget
 } from "./PhoneMovementView.js";
 import { CinderWattleAbilityPanel } from "./CinderWattleAbilityPanel.js";
 import { PhoneScarSelector } from "./PhoneScarSelector.js";
+import { PhoneOperativeInspectionDialog } from "./PhoneOperativeInspectionDialog.js";
 import {
   PhoneHazardChallengeView,
   isPhoneChallengeRelevantToSeat
@@ -2161,6 +2164,7 @@ function PhoneShopPanel({
                     : undefined);
                   const isPending = pendingActionId === `buy:${item.cardId}`;
                   const isPurchased = purchasedItemName === item.name;
+                  const comparison = item.ownerDecisionSupport;
                   return (
                     <PhoneWrappedMediaCard
                       key={item.cardId}
@@ -2170,7 +2174,27 @@ function PhoneShopPanel({
                       title={item.name}
                       eyebrow={itemCategory}
                       status={<span className="phone-shop-card-status">{itemCategory}</span>}
-                      description={<><p className="phone-wrap-card__consequence">{item.summary}</p>{item.lore ? <details className="phone-shop-lore"><summary>View lore</summary><p>{item.lore}</p></details> : null}</>}
+                      description={<>
+                        <p className="phone-wrap-card__consequence">{item.summary}</p>
+                        {comparison ? (
+                          <section className="phone-shop-build-comparison" aria-label="Build comparison">
+                            <span>After purchase</span>
+                            {comparison.slot ? <p><strong>{toTitleCase(comparison.slot)}:</strong> {comparison.currentItemName ?? "Empty"} → {item.name}</p> : null}
+                            {comparison.offeredStat && comparison.currentStatValue !== undefined && comparison.projectedStatValue !== undefined ? (
+                              <p>
+                                <strong>{statLabelById[comparison.offeredStat]}:</strong> {comparison.currentStatValue} → {comparison.projectedStatValue}
+                                {comparison.netStatChange !== undefined ? ` (${comparison.netStatChange >= 0 ? "+" : ""}${comparison.netStatChange})` : ""}
+                              </p>
+                            ) : null}
+                            {comparison.currentItemStat && comparison.currentItemStat !== comparison.offeredStat ? (
+                              <p><strong>Replaces:</strong> +{comparison.currentItemBonus ?? 0} {statLabelById[comparison.currentItemStat]}</p>
+                            ) : null}
+                            {comparison.timingSummary ? <p><strong>Timing:</strong> {comparison.timingSummary}</p> : null}
+                            {comparison.salvageAfterPurchase !== undefined ? <p><strong>Salvage:</strong> {ownerSalvage ?? "Private"} → {comparison.salvageAfterPurchase}</p> : null}
+                          </section>
+                        ) : null}
+                        {item.lore ? <details className="phone-shop-lore"><summary>View lore</summary><p>{item.lore}</p></details> : null}
+                      </>}
                       disabledReason={disabledReason ? <small>{disabledReason}. Ignore until you can pay or free the slot.</small> : null}
                       meta={<span>Cost: {formatShopCost(item.cost)}</span>}
                       actions={
@@ -2306,6 +2330,7 @@ function MovementPlanner({
   onIntent: (intent: ClientIntent) => void;
 }): ReactElement | null {
   const [pendingCompassAdjustment, setPendingCompassAdjustment] = useState<-1 | 1 | null>(null);
+  const routeStarChange = useRouteStarDestinationChange(planner, seatId, onIntent, onSelectedSectorId, onSelectedSectorId);
   if (!planner?.active) {
     if (!canRoll) return null;
     return (
@@ -2339,12 +2364,14 @@ function MovementPlanner({
 
   return (
     <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
+      {routeStarChange.confirmation}
       {planner.compassPrompt ? (
         <div className="phone-movement-route-section" aria-label="Ashen Route Compass prompt">
           <strong>Use Ashen Route Compass?</strong>
           <p>Spend 1 charge to adjust movement by −1 or +1.</p>
           {pendingCompassAdjustment ? (
             <>
+              {planner.routeStarCommitted ? <p>This adjustment discards your selected Route Star route. The spent charge is not refunded.</p> : null}
               <p>Roll {planner.originalMovementValue} | Compass {pendingCompassAdjustment > 0 ? "+1" : "−1"} | Move {(planner.originalMovementValue ?? planner.movementValue) + pendingCompassAdjustment}</p>
               <GameButton type="button" tone="move" onClick={() => { onIntent({ type: "ADJUST_MOVEMENT_REQUESTED", seatId, instanceId: planner.compassPrompt!.instanceId, adjustment: pendingCompassAdjustment }); setPendingCompassAdjustment(null); }}>Confirm — spend 1 charge</GameButton>
               <GameButton type="button" tone="secondary" onClick={() => setPendingCompassAdjustment(null)}>Cancel</GameButton>
@@ -2363,7 +2390,7 @@ function MovementPlanner({
         activeContract={activeContract}
         selectedSectorId={selected?.sectorId ?? null}
         seatId={seatId}
-        onSelected={onSelectedSectorId}
+        onSelected={routeStarChange.requestChange}
         onIntent={onIntent}
       />
     </section>
@@ -2764,7 +2791,7 @@ function MovementDestinationDetail({
           <MovementRouteSteps destination={selected} currentSectorId={planner.currentSectorId} />
         </section>
 
-        {routeStarPrompt && routeVariants.length > 1 ? (
+        {!planner.routeStarCommitted && routeStarPrompt && routeVariants.length > 1 ? (
           <section className="phone-movement-detail-section" aria-label="Route Star choices" data-testid="route-star-prompt">
             <span>Use Route Star?</span>
             <p>Spend 1 charge to choose an alternate legal route.</p>
@@ -2788,7 +2815,7 @@ function MovementDestinationDetail({
           </section>
         ) : null}
 
-        {planner.routeStarCommitted && planner.selectedRouteId === selected.routeId ? <p data-testid="route-star-confirmation">Route Star: alternate route selected</p> : null}
+        {planner.routeStarCommitted && planner.selectedRouteId === selected.routeId ? <p data-testid="route-star-confirmation">Route selected · 1 charge spent</p> : null}
 
         <footer className="phone-movement-confirm-footer" data-testid="movement-confirm-footer">
           <p>{canUseVoidKey ? `Use Void Key? Spend 1 charge to ignore this gate for this movement. ${voidKeyPrompt!.currentCharges - 1}/${voidKeyPrompt!.maxCharges} charges will remain.` : routeUnavailable ? "This route is blocked by a scenario effect or sealed sector." : "This will end your movement."}</p>
@@ -2929,6 +2956,7 @@ function PhoneMovePanel({
   const [routeAidDestinationId, setRouteAidDestinationId] = useState<string | null>(null);
 
   usePhoneBackDismissal(selectedSectorId !== null, () => {
+    if (movementPlanner?.routeStarCommitted) return false;
     setSelectedSectorId(null);
     return true;
   });
@@ -3171,6 +3199,7 @@ function PhoneSectorActionPanel({
   tableActions,
   contractActions,
   advanceActions,
+  stillAvailable,
   interactionMode,
   usefulNow
 }: {
@@ -3186,6 +3215,7 @@ function PhoneSectorActionPanel({
   tableActions: ActionButtonDefinition[];
   contractActions: ActionButtonDefinition[];
   advanceActions: ActionButtonDefinition[];
+  stillAvailable: string[];
   interactionMode: PhonePatchPayload["interactionMode"];
   usefulNow: UsefulNowViewModel | null;
 }): ReactElement {
@@ -3196,6 +3226,22 @@ function PhoneSectorActionPanel({
         <strong>{title}</strong>
       </header>
       <SectorOpportunityChips items={sectorOpportunityItems} />
+      {advanceActions.some((action) => action.key === "finish-actions") ? (
+        <aside className="phone-finish-actions-summary" aria-label="Still available before finishing actions" role="note">
+          <span>Before you finish</span>
+          {stillAvailable.length > 0 ? (
+            <>
+              <strong>Still available</strong>
+              <p>{stillAvailable.join(" · ")}</p>
+            </>
+          ) : (
+            <>
+              <strong>No optional actions remain</strong>
+              <p>Continue to Experience when the table is ready.</p>
+            </>
+          )}
+        </aside>
+      ) : null}
       {eligibleTestItemCount > 0 ? (
         <p className="phone-equipment-available" role="status">
           <strong>Equipment available</strong>
@@ -3251,6 +3297,8 @@ export function PhoneActionPanel({
     choiceId: string;
     optionId: "lose-salvage-1" | "next-non-battle-test-minus-1";
   } | null>(null);
+  const [replacementInspectionId, setReplacementInspectionId] = useState<string | null>(null);
+  const [selectedTableTargetId, setSelectedTableTargetId] = useState<string | null>(null);
 
   if (!self) {
     return (
@@ -3608,43 +3656,57 @@ export function PhoneActionPanel({
   }
 
   if (self.character.status === "recalled") {
+    const inspectedReplacement = characters.find((character) => character.id === replacementInspectionId) ?? null;
     return (
-      <section className="phone-sheet-actions" aria-label="Quick actions">
-        <div className="phone-sheet-section-heading">Quick Actions</div>
-        <CurrentPromptCard
-          prompt={{
-            label: "Replacement",
-            title: "Recruit operative",
-            detail: "Your operative has been recalled. Choose a replacement before your command channel can continue.",
-            tone: "action"
-          }}
-        />
-        {resolutionPanel}
-        {battleAssistPanel}
-        <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
-        <p className="phone-sheet-action-copy">Your operative has been recalled. Recruit a replacement to continue.</p>
-        <ActionSections
-          sections={[
-            {
-              key: "recruit",
-              title: "Recruit",
-              defaultOpen: true,
-              actions: characters.map((character) => ({
-                key: character.id,
-                label: `Recruit ${character.name}`,
-                detail: character.archetype,
-                tone: "primary" as const,
-                onClick: () =>
-                  onIntent({
-                    type: "RECRUIT_REPLACEMENT",
-                    seatId: self.seatId,
-                    replacementCharacterId: character.id
-                  })
-              }))
-            }
-          ]}
-        />
-      </section>
+      <>
+        <section className="phone-sheet-actions" aria-label="Quick actions">
+          <div className="phone-sheet-section-heading">Quick Actions</div>
+          <CurrentPromptCard
+            prompt={{
+              label: "Replacement",
+              title: "Recruit operative",
+              detail: "Your operative has been recalled. Inspect a replacement before recruiting.",
+              tone: "action"
+            }}
+          />
+          {resolutionPanel}
+          {battleAssistPanel}
+          <ActionSections
+            sections={[
+              {
+                key: "recruit",
+                title: "Inspect replacements",
+                detail: `${characters.length} available`,
+                defaultOpen: true,
+                actions: characters.map((character) => ({
+                  key: character.id,
+                  label: `Inspect ${character.name}`,
+                  detail: `${character.archetype}${character.presentation?.role ? ` · ${character.presentation.role}` : ""}`,
+                  tone: "primary" as const,
+                  onClick: () => setReplacementInspectionId(character.id)
+                }))
+              }
+            ]}
+          />
+        </section>
+        {inspectedReplacement ? (
+          <PhoneOperativeInspectionDialog
+            character={inspectedReplacement}
+            unavailableReason={null}
+            selecting={false}
+            actionLabel={`Recruit ${inspectedReplacement.name}`}
+            onClose={() => setReplacementInspectionId(null)}
+            onSelect={() => {
+              setReplacementInspectionId(null);
+              onIntent({
+                type: "RECRUIT_REPLACEMENT",
+                seatId: self.seatId,
+                replacementCharacterId: inspectedReplacement.id
+              });
+            }}
+          />
+        ) : null}
+      </>
     );
   }
 
@@ -3688,14 +3750,17 @@ export function PhoneActionPanel({
   const tableActions: ActionButtonDefinition[] = [];
   const contractActions: ActionButtonDefinition[] = [];
   const advanceActions: ActionButtonDefinition[] = [];
+  let stillAvailableActions: string[] = [];
 
   if (patch.pendingGearEquipChoice) {
     const choice = patch.pendingGearEquipChoice;
+    const offeredItem = self.character.heldGear.find((item) => item.instanceId === choice.itemInstanceId);
+    const comparison = offeredItem ? describeEquipmentComparison(offeredItem, self.character) : `Replace ${choice.currentItemName} in the ${toTitleCase(choice.slot)} slot.`;
     resolveActions.push(
       {
         key: `equip-discovered-${choice.choiceId}`,
         label: `Equip ${choice.itemName}`,
-        detail: `Replace ${choice.currentItemName} in the ${toTitleCase(choice.slot)} slot. The current item stays carried.`,
+        detail: `${comparison} The current item stays carried.`,
         tone: "primary",
         onClick: () => onIntent({
           type: "RESOLVE_GEAR_EQUIP_CHOICE",
@@ -4284,7 +4349,9 @@ export function PhoneActionPanel({
       !!boardSpace &&
       (boardSpace.tier === "inner"
         ? !patch.innerApproach?.challengeCleared
-        : boardSpace.tier === "center" || (sector?.encounterDecks.threat.length ?? 0) === 0);
+        : boardSpace.tier === "center" || (patch.sectorExplorationSummary
+          ? !patch.sectorExplorationSummary.sectorTextLocked
+          : (sector?.encounterDecks.threat.length ?? 0) === 0));
 
     if (canResolveSpaceText && !isScenarioConfrontation) {
       if (boardSpace?.textBox.choices && boardSpace.textBox.choices.length > 0) {
@@ -4440,27 +4507,45 @@ export function PhoneActionPanel({
     if (patch.sessionMode !== "single-player") {
       const tableTargets = patch.seats.filter((seat) => seat.seatId !== self.seatId && seat.displayName && !seat.kicked);
       const baseInteractions = patch.interactionMode === "co-op" ? ["trade", "aid"] : ["trade", "aid", "duel", "interfere"];
+      const selectedTarget = tableTargets.find((seat) => seat.seatId === selectedTableTargetId) ?? null;
 
-      tableTargets.forEach((seat) => {
+      if (!selectedTarget) {
+        tableTargets.forEach((seat) => {
+          tableActions.push({
+            key: `table-target-${seat.seatId}`,
+            label: seat.displayName!,
+            detail: "Choose this operative, then select an interaction.",
+            tone: "secondary",
+            onClick: () => setSelectedTableTargetId(seat.seatId)
+          });
+        });
+      } else {
+        tableActions.push({
+          key: "table-change-target",
+          label: `Target: ${selectedTarget.displayName}`,
+          detail: "Change operative",
+          tone: "secondary",
+          onClick: () => setSelectedTableTargetId(null)
+        });
         baseInteractions.forEach((interactionKind) => {
           tableActions.push({
-            key: `${interactionKind}-${seat.seatId}`,
-            label: `${toTitleCase(interactionKind)} ${seat.displayName}`,
+            key: `${interactionKind}-${selectedTarget.seatId}`,
+            label: toTitleCase(interactionKind),
             detail:
               interactionKind === "interfere" && patch.interactionMode !== "ruthless"
-                ? "Bounded rivalry"
-                : toTitleCase(patch.interactionMode ?? "rivalry"),
+                ? `Bounded rivalry with ${selectedTarget.displayName}`
+                : `${toTitleCase(patch.interactionMode ?? "rivalry")} · ${selectedTarget.displayName}`,
             tone: interactionKind === "aid" || interactionKind === "trade" ? "secondary" : "primary",
             onClick: () =>
               onIntent({
                 type: "TABLE_INTERACTION",
                 seatId: self.seatId,
-                targetSeatId: seat.seatId,
+                targetSeatId: selectedTarget.seatId,
                 interactionKind: interactionKind as "trade" | "aid" | "duel" | "interfere"
               })
           });
         });
-      });
+      }
     }
 
     if (!self.character.activeContract) {
@@ -4480,11 +4565,12 @@ export function PhoneActionPanel({
       });
     }
 
-    if (self.character.activeContract && activeContract && isContractObjectiveComplete(activeContract, self.character.activeContract.progress)) {
+    if (!patch.encounter && !patch.activeResolution && self.character.activeContract && activeContract
+      && isContractObjectiveComplete(activeContract, self.character.activeContract)) {
       contractActions.push({
         key: `complete-${activeContract.id}`,
         label: `Complete ${activeContract.name}`,
-        detail: formatContractObjectiveStatus(activeContract, self.character.activeContract.progress),
+        detail: formatContractObjectiveStatus(activeContract, self.character.activeContract),
         tone: "primary",
         onClick: () =>
           onIntent({
@@ -4495,7 +4581,7 @@ export function PhoneActionPanel({
       });
     }
 
-    if (isScenarioConfrontation && patch.activeScenario && !patch.encounter) {
+    if (isScenarioConfrontation && patch.activeScenario && !patch.encounter && patch.gameMode !== "nemesis_relay") {
       if (self.character.id === "cinder-monk") {
         const vowNotes = self.noteResources?.vow ?? 0;
         const cinderOathDisabledReason = vowNotes < 1 ? `Requires 1 Vow Note (${vowNotes} available).` : null;
@@ -4518,7 +4604,8 @@ export function PhoneActionPanel({
       advanceActions.push({
         key: "resolve-scenario",
         label: `Resolve ${patch.activeScenario.confrontationTitle}`,
-        detail: patch.nemesis?.name,
+        detail: patch.scenarioState?.confrontation.blockedReason ?? patch.nemesis?.name,
+        disabled: patch.scenarioState?.confrontation.locked === true,
         tone: "primary",
         onClick: () =>
           onIntent({
@@ -4527,10 +4614,20 @@ export function PhoneActionPanel({
           })
       });
     } else if (!patch.encounter) {
+      stillAvailableActions = [
+        resolveActions.some((action) => !action.disabled) ? "Tile action" : null,
+        shopEncounter && shopEncounter.status !== "locked" ? "Shop" : null,
+        [...gearActions, ...objectActions].some((action) => !action.disabled) ? "Equipment or items" : null,
+        followerActions.some((action) => !action.disabled) ? "Followers" : null,
+        tableActions.some((action) => !action.disabled) ? "Table interaction" : null,
+        contractActions.some((action) => !action.disabled) ? "Contract" : null
+      ].filter((entry): entry is string => Boolean(entry));
       advanceActions.push({
-        key: "end-turn",
-        label: "End turn",
-        detail: "Pass control to the table",
+        key: "finish-actions",
+        label: "Finish Actions",
+        detail: stillAvailableActions.length > 0
+          ? `Still available: ${stillAvailableActions.join(", ")}`
+          : "No optional actions remain. Continue to Experience.",
         tone: "primary",
         onClick: () =>
           onIntent({
@@ -4544,9 +4641,9 @@ export function PhoneActionPanel({
 
   if (patch.phase === "broadcast") {
     advanceActions.push({
-      key: "end-turn",
-      label: "End turn",
-      detail: "Pass to the next operative",
+      key: "pass-turn",
+      label: "Pass Turn",
+      detail: "Begin the next operative's turn",
       tone: "primary",
       onClick: () =>
         onIntent({
@@ -4587,7 +4684,7 @@ export function PhoneActionPanel({
       : patch.phase === "action"
         ? "Resolve your current action, gear, or contract."
       : patch.phase === "broadcast"
-        ? "Review the result, upgrade with trophies, or end your turn."
+        ? "Review the result, upgrade with trophies, or pass the turn."
         : "Waiting for the server to resolve the current step.";
   const movementApproachResolution = activeResolution?.source === "movement" ? activeResolution : null;
   const movementApproachOutcome = orphanResolutionOutcome?.movedToSectorId ? orphanResolutionOutcome : null;
@@ -4894,6 +4991,7 @@ export function PhoneActionPanel({
           tableActions={tableActions}
           contractActions={contractActions}
           advanceActions={advanceActions}
+          stillAvailable={stillAvailableActions}
           interactionMode={patch.interactionMode}
           usefulNow={activeUsefulNow}
         />

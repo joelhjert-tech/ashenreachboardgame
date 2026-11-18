@@ -16,7 +16,21 @@ function joinedServer(name: string, mode: "single-player" | "multiplayer" = "mul
 }
 
 describe("server-authoritative named player rules", () => {
-  it("auto-selects and reserves Popelord for the earliest exact Kebab", () => {
+  it("preserves an ordinary player's Poopydiperlord selection when nobody reserves it", () => {
+    const { server, joined } = joinedServer("Lane");
+    server.selectSeatCharacter(joined.seatId, "char_popelord");
+    expect(server.getState().seats.find((seat) => seat.seatId === joined.seatId)).toMatchObject({
+      characterId: "char_popelord",
+      characterSelected: true
+    });
+    const restored = new GameRoomServer(structuredClone(server.getState()));
+    expect(restored.getState().seats.find((seat) => seat.seatId === joined.seatId)).toMatchObject({
+      characterId: "char_popelord",
+      characterSelected: true
+    });
+  });
+
+  it("auto-selects and reserves Poopydiperlord for the earliest exact Kebab", () => {
     const server = new GameRoomServer(createInitialSessionState("named-kebab", "multiplayer"));
     const first = server.joinSeat("Lane");
     server.selectSeatCharacter(first.seatId, "char_popelord");
@@ -30,14 +44,14 @@ describe("server-authoritative named player rules", () => {
     expect(() => server.selectSeatCharacter(first.seatId, "char_popelord")).toThrow(/reserved/i);
   });
 
-  it("blocks a second Kebab without fabricating another Popelord", () => {
+  it("blocks a second Kebab without fabricating another Poopydiperlord", () => {
     const server = new GameRoomServer(createInitialSessionState("named-two-kebabs", "multiplayer"));
     const first = server.joinSeat("Kebab");
     const second = server.joinSeat("kebab");
     expect(server.getState().seats.find((seat) => seat.seatId === first.seatId)?.characterSelected).toBe(true);
     expect(server.getState().seats.find((seat) => seat.seatId === second.seatId)?.characterSelected).toBe(false);
     expect(getSessionStartReadiness({ sessionMode: "multiplayer", seats: server.getState().seats }).reason)
-      .toBe("Only one Popelord is available. Change one player name before starting.");
+      .toBe("Only one Poopydiperlord is available. Change one player name before starting.");
   });
 
   it.each(["Annette", "NENNE"])("guarantees one bound Fandiablos for %s", (name) => {

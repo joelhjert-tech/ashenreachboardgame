@@ -165,6 +165,7 @@ export function createInitialSessionState(
     sectors: sectorsWithChallenges,
     seats: configuredSeats.map(({ seatId, characterId }, index) => ({
       seatId,
+      controllerType: "human" as const,
       characterId,
       characterSelected: false,
       signalPieceId: getSignalPieceIdForSeat(index),

@@ -74,7 +74,7 @@ export function getSessionStartReadiness(input: {
   }
 
   if (kebabSeats.length > 1) {
-    blockers.push("Only one Popelord is available. Change one player name before starting.");
+    blockers.push("Only one Poopydiperlord is available. Change one player name before starting.");
   }
 
   for (const seat of occupiedSeats) {
@@ -130,7 +130,7 @@ export function getSessionStartReadiness(input: {
     return {
       ...base,
       canStart: false,
-      reason: "Only one Popelord is available. Change one player name before starting.",
+      reason: "Only one Poopydiperlord is available. Change one player name before starting.",
       blockers
     };
   }

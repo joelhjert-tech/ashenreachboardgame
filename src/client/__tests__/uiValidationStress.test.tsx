@@ -441,13 +441,13 @@ describe("Ashen Reach UI validation stress states", () => {
       />
     );
 
-    expect(screen.getByText(/Contract · step 3 of 4/i)).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Setup progress, step 3 of 5" })).toBeInTheDocument();
     expect(screen.getByText("MASTER ALPHA")).toBeInTheDocument();
     expect(screen.queryByText(/QA ONLY - The Broken Commander/i)).not.toBeInTheDocument();
     expect(screen.queryByText(longGearName)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/character stats/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: /inventory/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^ready$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^leave room$/i })).toBeInTheDocument();
   });
 

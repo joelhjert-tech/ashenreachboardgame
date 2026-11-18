@@ -49,7 +49,11 @@ import { useSignalTheatreEnvironmentPreload } from "./useSignalTheatreEnvironmen
 import { isHostShopActive } from "./hostShopState.js";
 import "./SignalTheatreHost.css";
 
+import { LobbyReactionBursts } from "../shared/LobbyReactions.js";
+import { LOBBY_REACTIONS, type LobbyReactionEvent } from "../../shared/lobbyReactions.js";
+
 interface SignalTheatreHostProps {
+  lobbyReactions?: LobbyReactionEvent[];
   patch: StatePatch<PublicPatchPayload> | null;
   previousPatch?: StatePatch<PublicPatchPayload> | null;
   roomCode: string | null;
@@ -222,6 +226,7 @@ function SignalMissionSelection({ ownerName }: { ownerName: string }): ReactElem
 }
 
 function SignalLobby({
+  lobbyReactions,
   patch,
   roomCode,
   synchronized,
@@ -229,6 +234,7 @@ function SignalLobby({
   adminDashboardAvailable,
   onOpenAdminDashboard
 }: {
+  lobbyReactions?: LobbyReactionEvent[];
   patch: StatePatch<PublicPatchPayload> | null;
   roomCode: string | null;
   synchronized: boolean;
@@ -238,6 +244,7 @@ function SignalLobby({
 }): ReactElement {
   const joined = patch?.payload.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
   const ready = joined.filter((seat) => seat.ready).length;
+  const automated = joined.filter((seat) => seat.controllerType === "ai").length;
   const connectionCopy = synchronized ? "Command link ready" : connectionStatus === "open" ? "Synchronizing room" : "Connecting to game server";
 
   return (
@@ -254,8 +261,9 @@ function SignalLobby({
         </button>
       ) : null}
       <section className="signal-theatre__lobby-command">
-        <span>Expedition assembly</span>
-        <h1>{patch?.payload.setup?.title ?? "Gather at the relay"}</h1>
+        <span>{patch?.payload.lobbyConfigured ? "Expedition lobby" : "Expedition assembly"}</span>
+        <h1>{patch?.payload.lobbyConfigured ? "Gather your crew" : patch?.payload.setup?.title ?? "Gather at the relay"}</h1>
+        {patch?.payload.lobbyConfigured ? <h2 className="signal-lobby-scenario">{patch.payload.activeScenario?.name}</h2> : null}
         <p>{patch?.payload.setup?.publicInstruction ?? "Join with a phone, choose an operative, and ready for the expedition."}</p>
       </section>
       <section className="signal-theatre__room" aria-label="Room join">
@@ -264,10 +272,28 @@ function SignalLobby({
         {roomCode ? <JoinQrCard roomCode={roomCode} variant="full" /> : null}
       </section>
       <section className="signal-theatre__lobby-roster" aria-label="Joined operatives">
-        <span>{joined.length} joined</span>
-        <strong>{ready} ready</strong>
-        <p>{joined.map((seat) => seat.displayName).join(" · ") || "Waiting for the first operative"}</p>
+        <span>{joined.length} controlled</span>
+        <strong>{ready} ready{automated > 0 ? ` · ${automated} AI` : ""}</strong>
+        {joined.length > 0 ? (
+          <div className="signal-theatre__lobby-roster-list">
+            {joined.map((seat) => (
+              <span key={seat.seatId} className={seat.controllerType === "ai" ? "is-ai" : undefined}>
+                <b>{seat.displayName}</b>
+                <small>{seat.ready ? "Ready" : seat.connected ? "Setting up" : "Reconnecting"}</small>
+                {seat.controllerType === "ai" ? <em>Standard AI</em> : null}
+              </span>
+            ))}
+          </div>
+        ) : <p>Waiting for the first operative</p>}
       </section>
+      {patch?.payload.lobbyConfigured ? <section className="signal-lobby-reactions" aria-label="Lobby hangout">
+        <div className="signal-lobby-reaction-hint">
+          <div aria-hidden="true">{LOBBY_REACTIONS.map((reaction) => <span key={reaction.id}>{reaction.emoji}</span>)}</div>
+          <p>Send a reaction from your phone</p>
+          <small>Keep the crew company while everyone gets ready.</small>
+        </div>
+        <LobbyReactionBursts reactions={lobbyReactions} />
+      </section> : null}
       <ol className="signal-theatre__sequence" aria-label="Setup sequence">
         {["Join", "Choose", "Ready", "Begin"].map((label, index) => <li key={label} className={index <= (ready > 0 ? 2 : joined.length > 0 ? 1 : 0) ? "is-complete" : ""}>{label}</li>)}
       </ol>
@@ -277,6 +303,7 @@ function SignalLobby({
 }
 
 export function SignalTheatreHost({
+  lobbyReactions,
   patch,
   previousPatch = null,
   roomCode,
@@ -363,7 +390,7 @@ export function SignalTheatreHost({
   useSignalTheatreEnvironmentPreload(preloadRoute, journey?.step ?? 0);
 
   if (!payload || payload.status === "lobby") {
-    return <SignalLobby patch={patch} roomCode={roomCode} synchronized={synchronized} connectionStatus={connectionStatus} adminDashboardAvailable={adminDashboardAvailable} onOpenAdminDashboard={onOpenAdminDashboard} />;
+    return <SignalLobby lobbyReactions={lobbyReactions} patch={patch} roomCode={roomCode} synchronized={synchronized} connectionStatus={connectionStatus} adminDashboardAvailable={adminDashboardAvailable} onOpenAdminDashboard={onOpenAdminDashboard} />;
   }
 
   const endResult = payload.matchProgress?.publicResult ?? null;
@@ -408,7 +435,9 @@ export function SignalTheatreHost({
   const operativeName = journey?.movement.operativeName ?? activePlayer?.character.name ?? activeSeat?.displayName ?? model?.actor ?? "Table";
   const playerName = journey?.movement.playerName ?? activeSeat?.displayName ?? operativeName;
   const kind = endResult ? "ended" : journey ? "movement" : model?.kind ?? "waiting";
-  const activeProgressIndex = endResult ? 3 : journey ? 2 : model?.activeProgressIndex ?? 1;
+  const activeProgressIndex = endResult ? 3 : journey
+    ? journey.phase === "departure" ? 1 : journey.phase === "arrival" ? 3 : 2
+    : model?.activeProgressIndex ?? 1;
   const markerPosition = progressPosition(kind, activeProgressIndex);
   const stableSectorId =
     resolutionPlayer?.sectorId
@@ -645,7 +674,7 @@ export function SignalTheatreHost({
         {!sectorResolution ? (
         <ol className="signal-theatre__sequence" aria-label="Presentation sequence">
           {sequence.map((label, index) => (
-            <li key={`${label}-${index}`} className={index === activeProgressIndex ? "is-current" : index < activeProgressIndex ? "is-complete" : ""}>{label}</li>
+            <li key={`${label}-${index}`} aria-current={index === activeProgressIndex ? "step" : undefined} className={index === activeProgressIndex ? "is-current" : index < activeProgressIndex ? "is-complete" : ""}>{label}</li>
           ))}
         </ol>
         ) : null}
@@ -658,7 +687,7 @@ export function SignalTheatreHost({
           return (
             <span key={seat.seatId} className={seat.seatId === activeSeat?.seatId ? "is-active" : ""}>
               <b>{seat.displayName}</b>
-              <small>{seat.connected ? operativeAndLocation : `Reconnecting / ${operativeAndLocation}`}</small>
+              <small>{seat.controllerType === "ai" ? `Standard AI / ${operativeAndLocation}` : seat.connected ? operativeAndLocation : `Reconnecting / ${operativeAndLocation}`}</small>
             </span>
           );
         })}
@@ -687,12 +716,12 @@ export function SignalTheatreHost({
       ) : missionSelectionActive ? (
         <SignalMissionSelection ownerName={missionOwner?.displayName ?? "The operative"} />
       ) : cardReveal ? (
-        <SignalCardReveal model={cardReveal} onReady={handleCardRevealReady} />
+        <SignalCardReveal model={cardReveal} environmentPath={stageImage} onReady={handleCardRevealReady} />
       ) : sectorResolution ? (
         <SignalSectorResolution model={sectorResolution} onSettled={handleDiceResultSettled} />
       ) : null}
 
-      {!trophyUpgradePresentation ? <SignalEdgeCardBurst play={payload.edgeCardPlay ?? null} onSettled={handleEdgeCardSettled} /> : null}
+      {!trophyUpgradePresentation ? <SignalEdgeCardBurst play={payload.edgeCardPlay ?? null} environmentPath={stageImage} onSettled={handleEdgeCardSettled} /> : null}
 
       {!synchronized ? (
         <section className="signal-theatre__network" role="status" aria-live="polite">

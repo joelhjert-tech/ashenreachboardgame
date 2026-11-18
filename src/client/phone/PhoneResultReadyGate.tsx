@@ -28,6 +28,7 @@ export interface PhoneResultReadyGateProps {
   outcomeEffects: string[];
   resultDeltas?: ResultDelta[];
   actionLabel?: string;
+  actionDetail?: string;
   actionDisabledReason?: string;
   canContinue: boolean;
   onContinue: () => void;
@@ -36,6 +37,11 @@ export interface PhoneResultReadyGateProps {
 export function PhoneResultReadyGate({
   actorName,
   challengeTitle,
+  outcomeTitle,
+  outcomeText,
+  outcomeEffects,
+  playerTotalLabel = "Your total",
+  targetTotalLabel = "Target",
   success,
   playerTotal,
   targetTotal,
@@ -44,6 +50,7 @@ export function PhoneResultReadyGate({
   modifierTotal = 0,
   modifierLabel = "Modifiers",
   actionLabel = "Continue",
+  actionDetail,
   actionDisabledReason,
   canContinue,
   onContinue
@@ -75,6 +82,11 @@ export function PhoneResultReadyGate({
       data-has-dice={diceRevealId ? "true" : "false"}
       aria-label={diceRevealId ? "Authoritative dice roll ready" : "Resolution ready"}
     >
+      <header className="phone-result-gate__summary">
+        <span>{success === null ? "Result" : success ? "Success" : "Failure"}</span>
+        <h2>{challengeTitle}</h2>
+        {playerTotal !== null ? <p><strong>{playerTotalLabel}: {playerTotal}</strong>{targetTotal !== null ? ` · ${targetTotalLabel}: ${targetTotal}` : ""}</p> : null}
+      </header>
       {diceRevealId ? (
         <AuthoritativeDicePresentation
           key={diceRevealId}
@@ -99,6 +111,12 @@ export function PhoneResultReadyGate({
         />
       ) : null}
 
+      <div className="phone-result-gate__summary">
+        <strong>{outcomeTitle}</strong>
+        {outcomeText ? <p>{outcomeText}</p> : null}
+        {Array.from(new Set(outcomeEffects)).filter((effect) => effect && effect !== outcomeText).map((effect) => <p key={effect}>{effect}</p>)}
+      </div>
+
       <GameButton
         tone="primary"
         className="phone-button phone-button-primary phone-resolution-continue phone-result-gate__continue"
@@ -107,6 +125,7 @@ export function PhoneResultReadyGate({
         disabled={!canContinue}
         disabledReason={!canContinue ? actionDisabledReason : undefined}
         onClick={onContinue}
+        sublabel={actionDetail}
       >
         {canContinue ? actionLabel : actionDisabledReason ?? "Applying consequence…"}
       </GameButton>

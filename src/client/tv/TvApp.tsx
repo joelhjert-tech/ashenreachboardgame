@@ -212,6 +212,10 @@ function getSeatStatus(seat: PublicSeat | null, player: PublicPlayer | null, isA
     return "Open Seat";
   }
 
+  if (seat.controllerType === "ai") {
+    return isActive ? "AI Turn" : "Standard AI";
+  }
+
   if (!seat.connected) {
     return "Offline";
   }
@@ -236,6 +240,10 @@ function getCurrentStepCopy(
   }
 
   const boardSpace = activePlayer ? getBoardSpace(activePlayer.sectorId) : null;
+
+  if (publicPatch.payload.aiControllerStatus) {
+    return publicPatch.payload.aiControllerStatus.publicLabel;
+  }
 
   if (publicPatch.payload.requiredAction) {
     return publicPatch.payload.requiredAction.detail;
@@ -640,7 +648,7 @@ function getHostStateBannerModel({ patch, roomCode, activePlayer, connectionStat
 
   const activeSeatId = patch.payload.turnOrder[patch.payload.activeSeatIndex] ?? null;
   const activeSeat = patch.payload.seats.find((seat) => seat.seatId === activeSeatId) ?? null;
-  if (patch.payload.status === "active" && activeSeat?.displayName && activeSeat.connected === false) {
+  if (patch.payload.status === "active" && activeSeat?.displayName && activeSeat.controllerType !== "ai" && activeSeat.connected === false) {
     return {
       label: "Operative disconnected",
       detail: `Reconnecting ${activeSeat.displayName}. The board remains paused at the authoritative state.`,
@@ -656,6 +664,17 @@ function getHostStateBannerModel({ patch, roomCode, activePlayer, connectionStat
       detail: publicResult.reason,
       meta: `${publicResult.missionName} · ${publicResult.modeLabel}`,
       tone: "ended"
+    };
+  }
+
+
+  if (patch.payload.aiControllerStatus) {
+    const status = patch.payload.aiControllerStatus;
+    return {
+      label: status.state === "paused" ? "AI rival paused" : status.state === "waiting-presentation" ? "AI rival waiting" : "AI rival thinking",
+      detail: status.publicLabel,
+      meta: status.state === "paused" ? "Host review required" : "Server-authored Standard AI",
+      tone: status.state === "paused" ? "danger" : "active"
     };
   }
 
@@ -853,7 +872,7 @@ function ActiveOperativeOverlay({
         className="host-player-card-overlay"
         seatId={activeSeat.seatId}
         isOpen={!activeSeat.displayName || activeSeat.kicked}
-        isConnected={activeSeat.connected}
+        isConnected={activeSeat.controllerType === "ai" || activeSeat.connected}
         playerName={activeSeat.displayName}
         characterName={activePlayer?.character.name ?? activeSeat.displayName}
         characterTitle={activePlayer?.character.archetype ?? null}
@@ -863,7 +882,7 @@ function ActiveOperativeOverlay({
             : null
         }
         locationName={getActiveSectorLabel(patch, activePlayer)}
-        fieldStatus={activePlayer?.character.status === "recalled" ? "Field status recalled" : "Field status stable"}
+        fieldStatus={activePlayer?.character.status === "recalled" ? "Field status recalled" : activeSeat.controllerType === "ai" ? "Standard AI rival" : "Field status stable"}
         wounds={activePlayer?.character.wounds ?? null}
         scars={activePlayer?.character.scars.length ?? null}
         attributes={{
@@ -916,6 +935,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
     patch?.payload.seats ??
     Array.from({ length: fallbackSeatCount }, (_, index) => ({
       seatId: `seat-${index + 1}`,
+      controllerType: "human" as const,
       characterId: characterCatalog[index]?.id ?? "void-marshal",
       displayName: null,
       connected: false,
@@ -951,6 +971,10 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
               return "Open";
             }
 
+            if (seat.controllerType === "ai") {
+              return isActive ? "AI Turn" : "Standard AI";
+            }
+
             if (!seat.connected) {
               return "Disconnected";
             }
@@ -967,7 +991,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
           return (
             <article
               key={seat.seatId}
-              className={`tv-operative-card${isActive ? " tv-operative-card-active" : " tv-operative-card-inactive"}${isOpen ? " tv-operative-card-open" : ""}`}
+              className={`tv-operative-card${isActive ? " tv-operative-card-active" : " tv-operative-card-inactive"}${isOpen ? " tv-operative-card-open" : ""}${seat.controllerType === "ai" ? " tv-operative-card-ai" : ""}`}
             >
               <div className="tv-operative-seat" aria-label={`Seat ${seatNumber}`}>{seatNumber}</div>
               <div className="tv-operative-portrait">
@@ -976,7 +1000,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
               <div className="tv-operative-copy">
                 <div className="tv-operative-name-row">
                   <h3>{playerName}</h3>
-                  <span className={`tv-operative-link tv-operative-link-${seat.connected && !isOpen ? "online" : "offline"}`}>
+                  <span className={`tv-operative-link tv-operative-link-${(seat.connected || seat.controllerType === "ai") && !isOpen ? "online" : "offline"}${seat.controllerType === "ai" ? " tv-operative-link-ai" : ""}`}>
                     {statusLabel.toUpperCase()}
                   </span>
                 </div>
@@ -1213,7 +1237,7 @@ function TvStartupScreen({
           <div className="tv-startup-lobby">
             <div className="tv-startup-lobby-header">
               <span>{hostConnected ? `Host Phone · ${hostSeat?.displayName ?? "Connected"}` : "Host Phone not connected"}</span>
-              <strong>{setup ? `${setup.connectedCount}/${setup.seatCapacity} connected` : "Waiting"}</strong>
+              <strong>{setup ? `${setup.controlledCount ?? setup.connectedCount}/${setup.seatCapacity} controlled` : "Waiting"}</strong>
             </div>
             {lobbyConfigured ? (
               <div className="tv-startup-selection-summary" aria-label="Selected game setup">
@@ -1227,10 +1251,10 @@ function TvStartupScreen({
                 const player = playerBySeat.get(seat.seatId);
                 const occupied = Boolean(seat.displayName) && !seat.kicked;
                 return (
-                  <div key={seat.seatId} className={`tv-startup-player-row${occupied ? "" : " is-empty"}${seat.ready ? " is-ready" : ""}`}>
+                  <div key={seat.seatId} className={`tv-startup-player-row${occupied ? "" : " is-empty"}${seat.ready ? " is-ready" : ""}${seat.controllerType === "ai" ? " is-ai" : ""}`}>
                     <span className="tv-startup-seat-number">{index + 1}</span>
-                    <div><strong>{occupied ? seat.displayName : "Open seat"}</strong><small>{occupied ? (seat.connected ? "Connected" : "Reconnecting") : "Scan to join"}</small></div>
-                    <span>{occupied && seat.seatId === patch.payload.setupHostSeatId ? "HOST" : ""}</span>
+                    <div><strong>{occupied ? seat.displayName : "Open seat"}</strong><small>{occupied ? (seat.controllerType === "ai" ? "Standard AI" : seat.connected ? "Connected" : "Reconnecting") : "Scan to join"}</small></div>
+                    <span>{seat.controllerType === "ai" ? "AI" : occupied && seat.seatId === patch.payload.setupHostSeatId ? "HOST" : ""}</span>
                     <span>{player?.character.name ?? (occupied ? "Choosing operative" : "—")}</span>
                     <b>
                       {seat.ready ? "READY" : occupied ? "SETTING UP" : "OPEN"}
@@ -2042,7 +2066,7 @@ function ActiveMissionsPanel({ patch }: { patch: StatePatch<PublicPatchPayload> 
               >
                 <div className="tv-active-mission-owner">
                   <strong>{seat.displayName}</strong>
-                  <span>{seat.connected ? "connected" : "disconnected"}</span>
+                  <span>{seat.controllerType === "ai" ? "Standard AI" : seat.connected ? "connected" : "disconnected"}</span>
                 </div>
                 {isSetup ? (
                   <div className="tv-active-mission-copy">
@@ -2369,7 +2393,7 @@ function TacticalMapPanel({
   const qaArrivalHold = import.meta.env.DEV && new URLSearchParams(window.location.search).get("qaArrivalHold") === "1";
   const qaMovementHold = import.meta.env.DEV && new URLSearchParams(window.location.search).get("qaMovementHold") === "1";
   const battleMode = focusEnabled && !rareStateModel && isHostBattleActive(patch, battlePlayer);
-  const shopMode = focusEnabled && !rareStateModel && activePlayer?.character.status !== "recalled" && activeSeat?.connected !== false && isHostShopActive(patch, activePlayer);
+  const shopMode = focusEnabled && !rareStateModel && activePlayer?.character.status !== "recalled" && (activeSeat?.controllerType === "ai" || activeSeat?.connected !== false) && isHostShopActive(patch, activePlayer);
   const planner = focusEnabled && !rareStateModel && patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
   const arrival = focusEnabled && !rareStateModel ? getMovementArrivalModel(patch?.payload, previousPatch?.payload, patch?.sequence) : null;
   const arrivalKey = arrival?.eventId ?? null;
@@ -2544,6 +2568,7 @@ function HostBottomStatusStrip({
   const activeLabel = activeSeatId ? seatLabels[activeSeatId] ?? "Active operative" : "Awaiting active operative";
   const scenarioLabel = patch?.payload.activeScenario?.name ?? "Scenario pending";
   const latestLog = [
+    patch?.payload.aiControllerStatus?.publicLabel,
     patch?.payload.pendingEncounterDecision
       ? `Waiting for ${activeLabel} to resolve ${patch.payload.pendingEncounterDecision.sourceTitle}.`
       : null,
@@ -2560,8 +2585,8 @@ function HostBottomStatusStrip({
       <div className="tv-host-turn-order" aria-label="Turn order">
         {turnSeats.length > 0 ? (
           turnSeats.map((seatId) => (
-            <span key={seatId} className={seatId === activeSeatId ? "tv-host-turn-active" : ""}>
-              {seatLabels[seatId] ?? seatId}
+            <span key={seatId} className={`${seatId === activeSeatId ? "tv-host-turn-active" : ""}${patch?.payload.seats.find((seat) => seat.seatId === seatId)?.controllerType === "ai" ? " tv-host-turn-ai" : ""}`}>
+              {seatLabels[seatId] ?? seatId}{patch?.payload.seats.find((seat) => seat.seatId === seatId)?.controllerType === "ai" ? " · AI" : ""}
             </span>
           ))
         ) : (
@@ -2929,7 +2954,7 @@ export function TvApp(): ReactElement {
   const [movementPresentation, setMovementPresentation] = useState<MovementArrivalModel | null>(null);
   const [gameIntroVisible, setGameIntroVisible] = useState(false);
   const restoreValidatedRef = useRef(false);
-  const { patch, error, status, synchronized: subscriptionSynchronized, debugEvents, clearDebugEvents, sendIntent } = useRoomSubscription({
+  const { patch, error, status, synchronized: subscriptionSynchronized, debugEvents, clearDebugEvents, sendIntent, lobbyReactions } = useRoomSubscription({
     view: "tv",
     enabled: Boolean(roomCode),
     hostToken
@@ -3065,7 +3090,7 @@ export function TvApp(): ReactElement {
   );
   const movementArrival = authoritativePresentationReady ? getMovementArrivalModel(publicPatch?.payload, previousPatchRef.current?.payload) : null;
   const battleMode = authoritativePresentationReady && !rareStateActive && !movementArrival && !movementPresentation && isHostBattleActive(publicPatch, battlePlayer);
-  const shopMode = authoritativePresentationReady && !rareStateActive && !movementArrival && !movementPresentation && activePlayer?.character.status !== "recalled" && activeSeat?.connected !== false && isHostShopActive(publicPatch, activePlayer);
+  const shopMode = authoritativePresentationReady && !rareStateActive && !movementArrival && !movementPresentation && activePlayer?.character.status !== "recalled" && (activeSeat?.controllerType === "ai" || activeSeat?.connected !== false) && isHostShopActive(publicPatch, activePlayer);
   const movementFocusMode = !battleMode && !shopMode && Boolean(publicPatch?.payload.movementPlanner?.active || movementArrival || movementPresentation);
 
   useEffect(() => {
@@ -3361,7 +3386,7 @@ export function TvApp(): ReactElement {
       </Suspense>
     );
   }
-  if (setupScenarioPreview && publicPatch?.payload.status === "lobby") {
+  if (setupScenarioPreview && publicPatch?.payload.status === "lobby" && !publicPatch.payload.lobbyConfigured) {
     return (
       <TvScenarioBriefing
         key={setupScenarioPreview.revision}
@@ -3401,6 +3426,7 @@ export function TvApp(): ReactElement {
           inert={gameIntroVisible || undefined}
         >
           <SignalTheatreHost
+            lobbyReactions={lobbyReactions}
             patch={publicPatch}
             previousPatch={previousPatchRef.current}
             roomCode={effectiveRoomCode}

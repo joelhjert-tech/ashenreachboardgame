@@ -6,7 +6,7 @@
   "flavor": "A bargain is still a bargain if only the debt is real.",
   "instability": 2,
   "regionHint": "outer",
-  "resolutionSummary": "Named the false stalls and kept one usable shard of salvage.",
+  "resolutionSummary": "Named the false stalls and recovered a Blackstar Ampoule.",
   "resolveEffect": {
     "type": "sequence",
     "effects": [

@@ -148,6 +148,7 @@ describe("canonical Scar system", () => {
   it("has an executable typed result for every one of the 48 Burden and Adaptation keys", () => {
     const cards = [...loadScarCards().values()];
     const contexts: ScarRuleContext[] = [
+      { eventId: "e", timing: "beforeRoll", stat: "grit", mode: "check", helperCount: 0 },
       { eventId: "e", timing: "beforeRoll", stat: "grit", mode: "battle", encounterKind: "enemy", enemyFamily: "machine", elite: true, boss: true, success: true, margin: -1, wounds: 2, battleAwardedSalvage: false },
       { eventId: "e", timing: "beforeRoll", stat: "signal", mode: "check", encounterKind: "anomaly", naturalRoll: 1, success: false, sectorTags: ["rift", "blue"] },
       { eventId: "e", timing: "beforeRoll", stat: "command", mode: "assistance", encounterKind: "gate", helperCount: 0 },

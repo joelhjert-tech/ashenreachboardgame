@@ -5,6 +5,7 @@ import { cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SignalSectorResolutionModel } from "../signalSectorResolutionPresentation.js";
+import { cardRevealPresentationTimings as timings } from "../../shared/motionTokens.js";
 import {
   buildSignalCardRevealModel,
   buildSignalPublicCardRevealModel,
@@ -136,13 +137,55 @@ describe("SignalCardReveal", () => {
     const { unmount } = render(<SignalCardReveal model={model} onReady={onReady} />);
     expect(screen.getByTestId("signal-card-reveal")).toHaveAttribute("data-stage", "sealed");
 
-    act(() => vi.advanceTimersByTime(3260));
+    act(() => vi.advanceTimersByTime(timings.readyMs));
     expect(screen.getByTestId("signal-card-reveal")).toHaveAttribute("data-stage", "ready");
+    expect(onReady).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(timings.completeMs - timings.readyMs));
     expect(onReady).toHaveBeenCalledOnce();
     unmount();
 
     render(<SignalCardReveal model={model} />);
     expect(screen.getByTestId("signal-card-reveal")).toHaveAttribute("data-stage", "ready");
+    expect(screen.getByTestId("signal-card-reveal")).toHaveAttribute("data-motion", "settled");
+  });
+
+  it("keeps its timeline through parent updates and calls the latest completion handler", () => {
+    const model = buildSignalCardRevealModel(baseResolution);
+    const first = vi.fn();
+    const latest = vi.fn();
+    const { rerender } = render(<SignalCardReveal model={model} onReady={first} />);
+    act(() => vi.advanceTimersByTime(1000));
+    rerender(<SignalCardReveal model={{ ...model }} onReady={latest} />);
+    expect(screen.getByTestId("signal-card-reveal")).toHaveAttribute("data-stage", "eject");
+    act(() => vi.advanceTimersByTime(timings.turnMs - 1000));
+    expect(screen.getByTestId("signal-card-reveal")).toHaveAttribute("data-stage", "turn");
+    act(() => vi.advanceTimersByTime(timings.completeMs - timings.turnMs));
+    expect(first).not.toHaveBeenCalled();
+    expect(latest).toHaveBeenCalledOnce();
+    rerender(<SignalCardReveal model={{ ...model }} onReady={vi.fn()} />);
+    expect(latest).toHaveBeenCalledOnce();
+  });
+
+  it("starts a new card sealed without inheriting the previous card's transform", () => {
+    const model = buildSignalCardRevealModel(baseResolution);
+    const { rerender } = render(<SignalCardReveal model={model} />);
+    act(() => vi.advanceTimersByTime(timings.completeMs));
+    rerender(<SignalCardReveal model={{ ...model, id: "next-card" }} />);
+    expect(screen.getByTestId("signal-card-reveal")).toHaveAttribute("data-stage", "sealed");
+  });
+
+  it("settles immediately when reduced motion is enabled during the reveal", () => {
+    let change: (() => void) | undefined;
+    const media = { matches: false, addEventListener: (_event: string, handler: () => void) => { change = handler; }, removeEventListener: vi.fn() };
+    vi.mocked(window.matchMedia).mockReturnValue(media as unknown as MediaQueryList);
+    const onReady = vi.fn();
+    render(<SignalCardReveal model={buildSignalCardRevealModel(baseResolution)} onReady={onReady} />);
+    act(() => vi.advanceTimersByTime(500));
+    act(() => { media.matches = true; change?.(); });
+    expect(screen.getByTestId("signal-card-reveal")).toHaveAttribute("data-stage", "ready");
+    expect(screen.getByTestId("signal-card-reveal")).toHaveAttribute("data-motion", "settled");
+    act(() => vi.advanceTimersByTime(5000));
+    expect(onReady).toHaveBeenCalledOnce();
   });
 
   it("only owns authoritative pre-roll reveal stages", () => {

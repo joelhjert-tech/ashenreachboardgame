@@ -60,3 +60,52 @@ describe("Route Star — Least-Hungry Road", () => {
     expect(cleared.state.players[0]!.character.heldGear[0]!.currentCharges).toBe(1);
   });
 });
+
+
+describe("explicit Route Star abandonment", () => {
+  function select(state = createState()) {
+    const seatId = state.players[0]!.seatId;
+    const revision = state.movementRouteRevisions![seatId]!;
+    const route = buildMovementRoutePlan(state, seatId)!.routes.filter((entry) => entry.sectorId === "destination")[1]!;
+    const result = reduceGameState(state, { type: "SELECT_ROUTE_STAR_VARIANT", seatId, instanceId: "star-a",
+      destinationId: "destination", routeId: route.routeId, movementRevision: revision, createdAt: "2026-09-06T00:00:00Z" });
+    if (!result.ok) throw new Error(result.rejection.reason);
+    return result.state;
+  }
+  function abandon(state: GameState) {
+    const choice = state.routeStarChoices!["seat-1"]!;
+    return { type: "ABANDON_ROUTE_STAR_CHOICE" as const, seatId: "seat-1", destinationId: choice.destinationId,
+      routeId: choice.routeId, movementRevision: choice.movementRevision, toSectorId: null, createdAt: "2026-09-06T00:00:01Z" };
+  }
+  it("clears only the exact paid choice, advances its revision and never refunds", () => {
+    const paid = select();
+    const result = reduceGameState(paid, abandon(paid));
+    expect(result.ok).toBe(true); if (!result.ok) return;
+    expect(result.state.routeStarChoices?.["seat-1"]).toBeUndefined();
+    expect(result.state.movementRouteRevisions?.["seat-1"]).toBe(5);
+    expect(result.state.players).toEqual(paid.players);
+    expect(result.state.movementRolls).toEqual(paid.movementRolls);
+    expect(result.state.phase).toBe(paid.phase);
+    expect((result.state.eventLog.at(-1) as { type?: string })?.type).toBe("ABANDON_ROUTE_STAR_CHOICE");
+  });
+  it("rejects wrong owner, identity, revision, phase and duplicate abandonment without changing state", () => {
+    const paid = select(); const intent = abandon(paid);
+    for (const invalid of [{ ...intent, seatId: "seat-2" }, { ...intent, routeId: "other" },
+      { ...intent, destinationId: "other" }, { ...intent, movementRevision: 3 }]) {
+      const before = JSON.stringify(paid);
+      expect(reduceGameState(paid, invalid).ok).toBe(false);
+      expect(JSON.stringify(paid)).toBe(before);
+    }
+    expect(reduceGameState({ ...paid, phase: "action" }, intent).ok).toBe(false);
+    expect(reduceGameState({ ...paid, status: "ended" }, intent).ok).toBe(false);
+    expect(reduceGameState({ ...paid, movementRolls: {} }, intent).ok).toBe(false);
+    const cleared = reduceGameState(paid, intent); if (!cleared.ok) throw new Error(cleared.rejection.reason);
+    expect(reduceGameState(cleared.state, intent).ok).toBe(false);
+    const newer = select(cleared.state);
+    const before = JSON.stringify(newer);
+    expect(reduceGameState(newer, intent).ok).toBe(false);
+    expect(JSON.stringify(newer)).toBe(before);
+    expect(newer.players[0]!.character.heldGear[0]!.currentCharges).toBe(0);
+    expect(newer.routeStarChoices?.["seat-1"]?.movementRevision).toBe(5);
+  });
+});

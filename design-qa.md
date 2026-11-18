@@ -1,87 +1,31 @@
-# Signal Theatre design QA
-
-Selected direction: option 2, the full-screen Signal Theatre.
-
-Target visual:
-
-`C:\Users\Joel_\.codex\generated_images\019f8f38-8e6e-7791-a3da-5bd6f8aa11ec\call_2CvbruaZE3GS9Fcg8kcO2hIt.png`
-
-Live comparison:
-
-`reports/ui/signal-theatre/design-comparison.png`
-
-Verified live captures:
-
-- `reports/ui/signal-theatre/movement-refined-1366x768.png`
-- `reports/ui/signal-theatre/movement-refined-1600x900.png`
-- `reports/ui/signal-theatre/movement-refined-1920x1080.png`
-- `reports/ui/signal-theatre/encounter-1920x1080.png`
-- `reports/ui/signal-theatre/default-host-1920x1080.png`
-
-## Comparison findings
-
-- The live host preserves the selected concept's full-bleed world stage, dominant operative identity, centered public action, right-side signal seal, mint journey line, and bottom four-step sequence.
-- The live implementation replaces concept-only text with authoritative Ashenreach state: active operative, player, sector, required action, server-authored route, scenario progress, pressure, battle arithmetic, public results, and reconnect status.
-- No former TV dashboard composition, board grid, card rail, portrait panel, or old host artwork is used by the Signal Theatre surface.
-- The operative name initially wrapped and clipped at compact widths. It was reduced and locked to one line; the final captures retain the full name at all three checked browser sizes.
-- Movement and combat preserve a clear viewing order: actor, event, instruction, evidence, sequence.
-- The battle treatment exposes the server-provided base values, raw dice, modifiers, final totals, and result stage without recalculation.
-- The reconnect treatment keeps the last stable public state visible and labels restoration without replaying a completed result.
-
-## Browser checks
-
-- 1366×768: no horizontal or vertical document overflow; operative name remains complete.
-- 1600×900: composition remains balanced and the journey line stays clear of the sequence rail.
-- 1920×1080: document and viewport both measure 1920×1080.
-- Runtime images loaded: 4 of 4, all from `/assets/riftfall/ui/signal-theatre/`.
-- Canvas elements: 0.
-- Browser console errors: 0.
-- Reduced motion removes entrance animation and retains all state text.
-
-## Validation
-
-- Focused Signal Theatre and host motion tests: 17 passed.
-- Complete client suite: 57 files, 468 tests passed.
-- Typecheck: passed.
-- Content validation: passed.
-- Production build: passed.
-- Asset audit: 439 present, 0 missing, 0 invalid, 0 placeholders.
+# Dead Star Expanse design QA
 
 final result: passed
 
-# Signal Theatre Phone — Option 2
+Selected target: exec-ba564446-097e-462f-8023-4fccb033e035.png (the confirmed first space concept).
+Implementation evidence: C:/Users/Joel_/.codex/visualizations/2026/09/12/01a09622-d49b-7970-8da2-967be3ae8889/map-design/implemented-map.png
 
-## Selected reference and implementation
+## Verification
+- Compared selected reference and final screenshot together, both 16:9. Reference is 1672x941, browser evidence is1280x720; evaluated at the same displayed scale.
+- Inspected all49labels at720p and measured each name against its plate: none overflow.
+- Confirmed49canonical spaces and62connections in rendered DOM.
+- Existing route, dense six-player and inner progression fixtures render; active, route and inner trial styles remain visible.
+- Browser console: no errors in inspected fixtures.
+- Full-HD DOM sizing:1920x1080 root, SVG contained in viewport. Native screenshot capture was cropped at this override, so visual acceptance uses complete720p evidence rather than claiming a full-HD screenshot pass.
+- Typecheck and72map/TV tests passed. Updated asset expectation and verified every tile's printed threat sequence against canonical data.
+- Production build passed; nine new optimized WebP assets total480652bytes.
 
-- Selected reference: `C:\Users\Joel_\.codex\generated_images\019f8f38-8e6e-7791-a3da-5bd6f8aa11ec\call_MXWLLYHSOIuZbaAmGJfpk4pc.png`.
-- The implementation follows the selected compact Signal Theatre composition: an operative identity rail, authoritative sector panorama, dominant command stage, activated metal stat seal, vertical route instrument, and fixed five-control navigation.
-- Movement, battle, shop, operative, inventory, objectives, and setup states retain their existing authoritative commands and projections.
-- Existing Signal Theatre environments, portraits, and metal seals are used at runtime. No artwork file was changed or added.
+## Required fidelity surfaces
+- Typography: existing Cinzel heading and Inter labels retained. Larger18-unit bold labels use full names and two-line wrapping; legibility takes priority over the smaller concept labels.
+- Layout: nested outer/middle/inner/core composition retained. Canonical49locations require denser inner placement than the generated concept; no invented or missing spaces. Player coin row stays above labels and threats.
+- Color: charcoal, teal void, ivory/brass frames and crimson core match the reference. Original gameplay state colors retained.
+- Artwork: ImageGen backdrop and eight reusable destination illustrations match original grimdark space direction. Core is exposed above its live label. Reusing eight small images is an intentional loading optimization rather than49unique downloads.
+- Content: names, routes, printed threats and player positions remain code/data driven. Threat colors have R/B/Y redundancy. No generated labels or invented gameplay rules ship in artwork.
 
-## Browser checks
+## Accepted differences and follow-up polish
+- Nameplates are larger and more opaque than the concept, following the user's readability priority.
+- Region names use a compact legend outside the board to avoid obscuring locations.
+- P3: additional unique destination artwork could distinguish more locations without changing the layout.
 
-- 360×800: no document overflow; all five navigation labels fit after the compact-label adjustment.
-- 390×844: document width matches the viewport; the fixed navigation ends within the viewport.
-- 430×932: document width and height match the viewport.
-- Exactly one intentional scrolling region is present: the phone action content.
-- Movement roll, destination selection, operative, inventory, objectives, battle setup, shop, and join/setup states were inspected.
-- Runtime image failures: 0.
-- Canvas elements: 0.
-- WebGL elements: 0.
-- Browser console errors: 0.
-- Reduced motion preserves the complete identity, route, command, and result information.
-
-## Validation
-
-- Focused controller-shell tests: 156 passed.
-- Focused movement and action tests: 80 passed.
-- Focused identity and phone-state tests: 89 passed.
-- Complete client suite: 67 files, 516 tests passed.
-- Server integration suite: 44 files, 380 tests passed.
-- Engine/rules suite: 71 files, 771 tests passed.
-- Typecheck: passed.
-- Content validation: passed.
-- Production build: passed.
-- Asset audit: 501 present, 0 missing, 0 invalid, 0 placeholders, 0 release-blocking.
-
-final result: passed
+## Asset production
+Built-in ImageGen with selected reference: clean teal-space backdrop, central crimson star and fractured orbital ring, edge wrecks, no UI/text. Separate4x2atlas: shipyard, ice moon, fleet wrecks, radiation, asteroid foundry, ring station, relay, broken planet. Converted to WebP in public/assets/riftfall/ui/signal-cartography. Gameplay rendering remains independent of raster content.

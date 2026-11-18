@@ -39,6 +39,20 @@ export const trophyUpgradePresentationTimings = {
   reducedReceiptEndMs: 1600
 } as const;
 
+export const cardRevealPresentationTimings = {
+  ejectMs: 280,
+  turnMs: 1320,
+  identifyMs: 2420,
+  readyMs: 3260,
+  // Let the command panel and seal finish entering before releasing the phone.
+  completeMs: 3940
+} as const;
+
+export const sectorResolutionPresentationTimings = {
+  // Outcome starts at 2960ms and finishes at 3480ms; keep the gate until settled.
+  completeMs: 3600
+} as const;
+
 export type SignalJourneyTimingPhase = "stable" | "departure" | "travel" | "arrival";
 
 export const signalJourneyVisualTimings = {

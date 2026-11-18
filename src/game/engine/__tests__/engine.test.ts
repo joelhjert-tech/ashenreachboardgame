@@ -1062,7 +1062,7 @@ describe("first eligible character timing", () => {
     ["Kira", "char_kira_dog", { command: 1, grit: 5, signal: 1, guile: 1, forge: 1 }, "houndblade-charge", "battle", "grit", { id: "enemy", type: "threat", cardType: "enemy", title: "enemy", enemyName: "enemy", text: "", flavor: "", severity: 1, stat: "grit", difficulty: 6 }],
     ["Rumi", "char_rumi", { command: 1, grit: 1, signal: 5, guile: 4, forge: 1 }, "violet-edge", "check", "signal", hazard("signal-hazard", "signal")],
     ["Lane", "signal-witch", { command: 1, grit: 1, signal: 5, guile: 1, forge: 1 }, "hush-static", "check", "signal", hazard("blue-hazard", "signal", "blue")],
-    ["Popelord", "char_popelord", { command: 1, grit: 5, signal: 1, guile: 1, forge: 1 }, "compost-cape", "check", "grit", hazard("yellow-hazard", "grit", "yellow")]
+    ["Poopydiperlord", "char_popelord", { command: 1, grit: 5, signal: 1, guile: 1, forge: 1 }, "compost-cape", "check", "grit", hazard("yellow-hazard", "grit", "yellow")]
   ] as const)("keeps %s available until its first eligible event, consumes it once, and resets at the intended boundary", (_name, characterId, stats, abilityId, mode, stat, encounter) => {
     const server = timingServer(characterId, stats, encounter as ThreatCard);
     const internals = server as unknown as {
@@ -6803,6 +6803,10 @@ describe("contracts", () => {
     runIntent(server, { type: "PHASE_ADVANCED", seatId: "seat-1", toPhase: "navigation" });
     runIntent(server, { type: "PHASE_ADVANCED", seatId: "seat-1", toPhase: "sector" });
     runIntent(server, { type: "PHASE_ADVANCED", seatId: "seat-1", toPhase: "action" });
+
+    // Complete the new visit's mandatory encounter before claiming the mission.
+    expect(server.getState().currentEncounter?.id).toBe("pike-runner");
+    runIntent(server, { type: "COMBAT_REQUESTED", seatId: "seat-1", stat: "grit" });
 
     runIntent(server, {
       type: "COMPLETE_CONTRACT",

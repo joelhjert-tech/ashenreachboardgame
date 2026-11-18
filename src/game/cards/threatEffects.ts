@@ -41,12 +41,6 @@ const note = (text: string): EncounterEffect => ({ type: "gain_note", text });
 const wound = (amount: number): EncounterEffect => ({ type: "take_wound", amount });
 const trophy = (amount: number): EncounterEffect => ({ type: "gain_trophy", amount });
 
-function slotBonus(ctx: ThreatEffectContext, slot: GearSlot): number {
-  const gearId = ctx.player.character.equippedGear[slot];
-  const item = gearId ? ctx.player.character.heldGear.find((entry) => entry.id === gearId) : null;
-  return item?.statBonus.stat === ctx.card.stat ? item.statBonus.amount : 0;
-}
-
 function regionIsInner(ctx: ThreatEffectContext): boolean {
   return ctx.region === "inner" || ctx.region === "center";
 }
@@ -92,11 +86,11 @@ export const THREAT_CARD_EFFECTS = {
   },
   threat_disable_weapon_bonus: {
     timing: "beforeCombat",
-    resolve: (ctx) => ({ playerBonusModifier: -slotBonus(ctx, "weapon"), disabledSlots: ["weapon"] })
+    resolve: () => ({ disabledSlots: ["weapon"] })
   },
   threat_disable_armor_bonus: {
     timing: "beforeCombat",
-    resolve: (ctx) => ({ playerBonusModifier: -slotBonus(ctx, "armor"), disabledSlots: ["armor"] })
+    resolve: () => ({ disabledSlots: ["armor"] })
   },
   threat_enemy_plus_two: {
     timing: "beforeCombat",

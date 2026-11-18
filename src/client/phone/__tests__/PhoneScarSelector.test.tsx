@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ScarSummary } from "../../shared/types.js";
 import { PhoneScarSelector } from "../PhoneScarSelector.js";
@@ -39,11 +39,15 @@ describe("PhoneScarSelector", () => {
     render(<PhoneScarSelector cards={cards} source="mind" currentCount={0} thresholdWarning={false} onChoose={onChoose} />);
 
     expect(screen.getByRole("region", { name: /compare scar choices/i })).toBeVisible();
+    const comparison = screen.getByLabelText(/scar comparison strip/i);
+    expect(within(comparison).getByText(cards[0]!.burdenText!)).toBeVisible();
+    expect(within(comparison).getByText(cards[0]!.adaptationText!)).toBeVisible();
+    expect(within(comparison).getByText(cards[1]!.burdenText!)).toBeVisible();
+    expect(within(comparison).getByText(cards[1]!.adaptationText!)).toBeVisible();
     expect(screen.getByText(/^choice a$/i)).toBeVisible();
     expect(screen.queryByText(/^choice b$/i)).not.toBeInTheDocument();
-    expect(screen.getByText(cards[0]!.burdenText!)).toBeVisible();
-    expect(screen.getByText(cards[0]!.adaptationText!)).toBeVisible();
-    expect(screen.queryByText(cards[1]!.burdenText!)).not.toBeInTheDocument();
+    expect(screen.getAllByText(cards[0]!.burdenText!)).toHaveLength(2);
+    expect(screen.getAllByText(cards[0]!.adaptationText!)).toHaveLength(2);
     expect(screen.getByRole("button", { name: /inspect relay ghost/i })).toBeVisible();
     expect(screen.queryByRole("button", { name: /inspect choir static/i })).not.toBeInTheDocument();
     expect(screen.getByTestId("phone-scar-choice-art-scar-wound-12")).toHaveAttribute(
@@ -54,9 +58,8 @@ describe("PhoneScarSelector", () => {
     fireEvent.click(screen.getByRole("button", { name: /next scar/i }));
     expect(screen.getByRole("status")).toHaveTextContent(/2 of 2choir static/i);
     expect(screen.getByText(/^choice b$/i)).toBeVisible();
-    expect(screen.queryByText(cards[0]!.burdenText!)).not.toBeInTheDocument();
-    expect(screen.getByText(cards[1]!.burdenText!)).toBeVisible();
-    expect(screen.getByText(cards[1]!.adaptationText!)).toBeVisible();
+    expect(screen.getAllByText(cards[1]!.burdenText!)).toHaveLength(2);
+    expect(screen.getAllByText(cards[1]!.adaptationText!)).toHaveLength(2);
     expect(screen.getByRole("button", { name: /inspect choir static/i })).toBeVisible();
 
     const accept = screen.getByRole("button", { name: /accept choir static/i });

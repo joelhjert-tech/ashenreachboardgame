@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx scripts/dev.ts",
+    "play": "tsx scripts/dev.ts --play",
     "dev:server": "tsx watch src/server/index.ts",
     "dev:client": "vite --host 0.0.0.0",
     "build": "vite build",
@@ -14,6 +15,9 @@
     "test:phone-matrix": "tsx scripts/validate-phone-device-matrix.ts",
     "test:e2e:scenarios": "tsx scripts/validate-six-scenario-e2e.ts",
     "qa:s21-campaign": "tsx scripts/run-s21-full-game-campaign.ts",
+    "qa:bots": "tsx scripts/run-ai-rival-campaign.ts",
+    "qa:bots:watch": "tsx scripts/watch-ai-rival-game.ts",
+    "test:bot-campaign": "vitest run scripts/__tests__/ai-rival-campaign.test.ts",
     "test:s21-scenario-matrix": "tsx scripts/validate-s21-scenario-player-matrix.ts",
     "test:engine": "vitest run src/game/engine/__tests__ src/game/rules/__tests__",
     "test:rules": "vitest run src/game/rules/__tests__",

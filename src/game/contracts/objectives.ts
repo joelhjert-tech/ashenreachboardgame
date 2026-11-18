@@ -134,6 +134,23 @@ function routeTargetMatches(target: NonNullable<ContractObjectiveLike["targets"]
   return target.type === "spaceId" ? target.value === trigger.sectorId : trigger.sectorTags.includes(target.value);
 }
 
+/** Keep credited route steps and visited target identities in sync, including older saves. */
+export function setContractProgressStateFloor<T extends ContractProgressStateLike>(
+  contract: ContractCardLike,
+  currentState: T,
+  minimumProgress: number
+): T {
+  const progress = setContractProgressFloor(contract, currentState.progress, minimumProgress);
+  if (contract.objective.type !== "multiStopRoute") return { ...currentState, progress };
+  const targets = contract.objective.targets ?? [];
+  const completed = new Set((currentState.completedTargetIds ?? []).filter((id) => targets.some((target) => target.id === id)));
+  for (const target of targets) {
+    if (completed.size >= progress) break;
+    completed.add(target.id);
+  }
+  return { ...currentState, progress: completed.size, completedTargetIds: [...completed] };
+}
+
 export function advanceContractObjectiveState(
   contract: ContractCardLike,
   currentState: ContractProgressStateLike,
@@ -142,7 +159,7 @@ export function advanceContractObjectiveState(
   if (contract.objective.type === "multiStopRoute") {
     if (trigger.type !== "sector-visited") return currentState;
     const targets = contract.objective.targets ?? [];
-    const completed = new Set(currentState.completedTargetIds ?? []);
+    const completed = new Set(setContractProgressStateFloor(contract, currentState, 0).completedTargetIds ?? []);
     const candidate = contract.objective.ordered
       ? targets[completed.size]
       : targets.find((target) => !completed.has(target.id) && routeTargetMatches(target, trigger));
@@ -154,9 +171,8 @@ export function advanceContractObjectiveState(
   if (contract.objective.type === "shopTransaction") {
     if (!canAdvanceContractObjective(contract, trigger) || trigger.type !== "shop-transaction") return currentState;
     const salvageSpent = (currentState.salvageSpent ?? 0) + Math.max(0, trigger.salvageSpent ?? 0);
-    const countProgress = currentState.progress + 1;
-    const meetsSpend = !contract.objective.minimumSalvageSpent || salvageSpent >= contract.objective.minimumSalvageSpent;
-    return { ...currentState, progress: meetsSpend ? Math.min(countProgress, getContractObjectiveTarget(contract)) : currentState.progress, salvageSpent };
+    const countProgress = Math.min(currentState.progress + 1, getContractObjectiveTarget(contract));
+    return { ...currentState, progress: countProgress, salvageSpent };
   }
 
   return { ...currentState, progress: advanceContractObjectiveProgress(contract, currentState.progress, trigger) };
@@ -175,11 +191,16 @@ export function isContractObjectiveComplete(
   progressOrState: number | ContractProgressStateLike
 ): boolean {
   const progress = typeof progressOrState === "number" ? progressOrState : progressOrState.progress;
-  return clampContractProgress(contract, progress) >= getContractObjectiveTarget(contract);
+  if (clampContractProgress(contract, progress) < getContractObjectiveTarget(contract)) return false;
+  if (contract.objective.type === "shopTransaction" && contract.objective.minimumSalvageSpent) {
+    return typeof progressOrState !== "number" && (progressOrState.salvageSpent ?? 0) >= contract.objective.minimumSalvageSpent;
+  }
+  return true;
 }
 
-export function formatContractProgress(contract: ContractCardLike, progress: number): string {
+export function formatContractProgress(contract: ContractCardLike, progressOrState: number | ContractProgressStateLike): string {
   const target = getContractObjectiveTarget(contract);
+  const progress = typeof progressOrState === "number" ? progressOrState : progressOrState.progress;
   const clampedProgress = clampContractProgress(contract, progress);
 
   switch (contract.objective.type) {
@@ -190,12 +211,13 @@ export function formatContractProgress(contract: ContractCardLike, progress: num
     case "multiStopRoute":
       return `${clampedProgress}/${target} stops`;
     case "shopTransaction":
-      return `${clampedProgress}/${target} transactions`;
+      return `${clampedProgress}/${target} transactions` + (contract.objective.minimumSalvageSpent && typeof progressOrState !== "number"
+        ? ` · ${Math.min(progressOrState.salvageSpent ?? 0, contract.objective.minimumSalvageSpent)}/${contract.objective.minimumSalvageSpent} Salvage spent` : "");
     case "tileChallengeResolved":
       return `${clampedProgress}/${target} challenges`;
   }
 }
 
-export function formatContractObjectiveStatus(contract: ContractCardLike, progress: number): string {
+export function formatContractObjectiveStatus(contract: ContractCardLike, progress: number | ContractProgressStateLike): string {
   return `${describeContractObjective(contract)} (${formatContractProgress(contract, progress)})`;
 }

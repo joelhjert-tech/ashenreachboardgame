@@ -35,11 +35,9 @@ type JoinResponse = {
 type SmokeMetrics = {
   scenarioVisible: boolean;
   noActiveScenarioVisible: boolean;
-  cinderGateVisible: boolean;
-  boardPresent: boolean;
-  surfacePresent: boolean;
-  tileCount: number;
-  labeledTiles: number;
+  hostPresent: boolean;
+  environmentPresent: boolean;
+  operativeVisible: boolean;
   cardRevealPresent: boolean;
   progressionPresent: boolean;
   insideSafeArea: boolean;
@@ -150,10 +148,13 @@ async function markSeatReady(join: JoinResponse): Promise<WebSocket> {
 
   await new Promise<void>((resolve, reject) => {
     let missionRequested = false;
+    let characterRequested = false;
     let readyRequested = false;
+    const requestedBonusOffers = new Set<string>();
+    let setupDiagnostic = "No state patch received";
     const timeout = setTimeout(() => {
       socket.close();
-      reject(new Error(`Timed out while setting ${join.seatId} ready`));
+      reject(new Error(`Timed out while setting ${join.seatId} ready: ${setupDiagnostic}`));
     }, 5000);
 
     socket.on("message", (raw) => {
@@ -161,9 +162,15 @@ async function markSeatReady(join: JoinResponse): Promise<WebSocket> {
         type?: string;
         reason?: string;
         payload?: {
-          seats?: Array<{ seatId: string; ready: boolean }>;
+          seats?: Array<{ seatId: string; ready: boolean; characterSelected?: boolean; characterId?: string; displayName?: string | null; kicked?: boolean }>;
+          characterOptions?: Array<{ character: { id: string }; eligible: boolean }>;
           startingContractOptions?: Array<{ id: string }>;
           selectedStartingContract?: { id: string } | null;
+          startingBonusSelection?: {
+            offerId: string;
+            options: Array<{ kind: "gear"; item: { id: string } } | { kind: "follower"; follower: { id: string } }>;
+          } | null;
+          startingBonusPickCount?: number;
         };
       };
 
@@ -174,6 +181,22 @@ async function markSeatReady(join: JoinResponse): Promise<WebSocket> {
         return;
       }
 
+      const ownSeat = message.payload?.seats?.find((seat) => seat.seatId === join.seatId);
+      if (message.type === "STATE_PATCH") setupDiagnostic = JSON.stringify({
+        ownSeat,
+        bonusPicks: message.payload?.startingBonusPickCount,
+        selectedContract: message.payload?.selectedStartingContract?.id,
+        eligibleCharacters: message.payload?.characterOptions?.filter((entry) => entry.eligible).map((entry) => entry.character.id)
+      });
+      if (message.type === "STATE_PATCH" && ownSeat && !ownSeat.characterSelected) {
+        const taken = new Set(message.payload?.seats?.filter((seat) => seat.seatId !== join.seatId && seat.displayName && !seat.kicked && seat.characterSelected !== false).map((seat) => seat.characterId));
+        const option = message.payload?.characterOptions?.find((entry) => entry.eligible && !taken.has(entry.character.id));
+        if (option && !characterRequested) {
+          characterRequested = true;
+          socket.send(JSON.stringify({ type: "SELECT_CHARACTER", seatId: join.seatId, characterId: option.character.id }));
+        }
+        return;
+      }
       const firstMissionId = message.payload?.startingContractOptions?.[0]?.id;
       if (message.type === "STATE_PATCH" && firstMissionId && !missionRequested) {
         missionRequested = true;
@@ -187,7 +210,21 @@ async function markSeatReady(join: JoinResponse): Promise<WebSocket> {
         return;
       }
 
-      if (message.type === "STATE_PATCH" && message.payload?.selectedStartingContract && !readyRequested) {
+      const bonusOffer = message.payload?.startingBonusSelection;
+      const bonusOption = bonusOffer?.options[0];
+      if (message.type === "STATE_PATCH" && bonusOffer && bonusOption && !requestedBonusOffers.has(bonusOffer.offerId)) {
+        requestedBonusOffers.add(bonusOffer.offerId);
+        socket.send(JSON.stringify({
+          type: "SELECT_STARTING_BONUS",
+          seatId: join.seatId,
+          offerId: bonusOffer.offerId,
+          optionKind: bonusOption.kind,
+          optionId: bonusOption.kind === "gear" ? bonusOption.item.id : bonusOption.follower.id
+        }));
+        return;
+      }
+
+      if (message.type === "STATE_PATCH" && message.payload?.selectedStartingContract && message.payload.startingBonusPickCount === 2 && !readyRequested) {
         readyRequested = true;
         socket.send(
           JSON.stringify({
@@ -249,7 +286,7 @@ async function inspectTv(browser: Browser, scenario: ScenarioCatalogEntry, sessi
     await page.waitForFunction(
       (scenarioName) => {
         const bodyText = document.body.innerText.toLowerCase();
-        return bodyText.includes(String(scenarioName).toLowerCase()) && document.querySelectorAll(".talisman-board-tile").length >= 27;
+        return bodyText.includes(String(scenarioName).toLowerCase()) && Boolean(document.querySelector('[data-testid="signal-environment-stage"]'));
       },
       scenario.name,
       { timeout: 10000 }
@@ -263,24 +300,18 @@ async function inspectTv(browser: Browser, scenario: ScenarioCatalogEntry, sessi
     const bodyText = document.body.innerText || "";
     const normalizedBody = bodyText.toLowerCase().replace(/\s+/g, " ").trim();
     const normalizedScenario = String(scenarioName).toLowerCase().replace(/\s+/g, " ").trim();
-    const board = document.querySelector(".tv-board-panel");
-    const surface = document.querySelector(".talisman-board-surface");
+    const board = document.querySelector('[data-testid="signal-theatre-host"]');
+    const surface = document.querySelector('[data-testid="signal-environment-stage"]');
     const boardRect = board?.getBoundingClientRect();
-    const tileCount = document.querySelectorAll(".talisman-board-tile").length;
     const cardReveal = document.querySelector('[data-testid="tv-card-reveal"], [aria-label="Card reveal"]');
-    const labeledTiles = Array.from(document.querySelectorAll(".talisman-board-tile")).filter((tile) =>
-      (tile.textContent || tile.getAttribute("aria-label") || "").trim().length > 0
-    ).length;
     return {
       scenarioVisible: normalizedBody.includes(normalizedScenario),
       noActiveScenarioVisible: /no active scenario/i.test(bodyText),
-      cinderGateVisible: /cinder gate|ashen reach core|breach/i.test(bodyText),
-      boardPresent: Boolean(board),
-      surfacePresent: Boolean(surface),
-      tileCount,
-      labeledTiles,
+      hostPresent: Boolean(board),
+      environmentPresent: Boolean(surface),
+      operativeVisible: Boolean(document.querySelector(".signal-theatre__operative h2")?.textContent?.trim()),
       cardRevealPresent: Boolean(cardReveal),
-      progressionPresent: /win progress/i.test(bodyText) && /loss pressure/i.test(bodyText),
+      progressionPresent: Boolean(document.querySelector('[aria-label="Scenario progress and pressure"]')?.textContent?.trim()),
       insideSafeArea:
         !boardRect ||
         (boardRect.left >= 0 &&
@@ -339,11 +370,9 @@ function didPass(result: ScenarioSmokeResult): boolean {
     result.phone.errors.length === 0 &&
     result.tv.metrics.scenarioVisible &&
     !result.tv.metrics.noActiveScenarioVisible &&
-    result.tv.metrics.cinderGateVisible &&
-    result.tv.metrics.boardPresent &&
-    result.tv.metrics.surfacePresent &&
-    result.tv.metrics.tileCount >= 27 &&
-    result.tv.metrics.labeledTiles >= 27 &&
+    result.tv.metrics.hostPresent &&
+    result.tv.metrics.environmentPresent &&
+    result.tv.metrics.operativeVisible &&
     result.tv.metrics.progressionPresent &&
     result.tv.metrics.insideSafeArea &&
     result.phone.metrics.controllerVisible &&
@@ -606,8 +635,7 @@ async function main(): Promise<void> {
           method: "POST",
           body: JSON.stringify({
             roomCode: session.roomCode,
-            displayName,
-            characterId: characters[(scenarioIndex + seatIndex) % characters.length]?.id
+            displayName
           })
         });
         joinedSeats.push({ ...join, displayName });

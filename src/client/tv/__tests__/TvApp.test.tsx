@@ -369,6 +369,22 @@ describe("TvApp", () => {
     });
   });
 
+  it("leaves the scenario briefing for the lobby after the host confirms setup", async () => {
+    window.history.replaceState({}, "", "/tv");
+    const patch = createPatch();
+    patch.payload.status = "lobby";
+    patch.payload.lobbyConfigured = true;
+    patch.payload.setupScenarioPreview = {
+      scenarioId: "scenario_broken_seal", mode: "co-op", playerCount: 6, revision: 1,
+      requester: { seatId: "seat-1", displayName: "Nera" }
+    };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", synchronized: true, debugEvents: [], clearDebugEvents: vi.fn() });
+    render(<TvApp />);
+    expect(await screen.findByRole("heading", { name: "Gather your crew" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "Lobby hangout" })).toBeVisible();
+    expect(screen.queryByTestId("tv-expedition-briefing")).not.toBeInTheDocument();
+  });
+
   it("uses Signal Theatre as the default host design", async () => {
     window.history.replaceState({}, "", "/tv");
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
@@ -591,6 +607,75 @@ describe("TvApp", () => {
     expect(screen.getByRole("generic", { name: /players joined/i })).toHaveTextContent(/contract yes/i);
     expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/exposed object/i)).not.toBeInTheDocument();
+  });
+
+  it("shows Standard AI badges in the default Signal Theatre lobby roster", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.status = "lobby";
+    patch.phase = "start";
+    patch.payload.seats = [
+      { ...patch.payload.seats[0]!, controllerType: "human" },
+      {
+        seatId: "seat-2",
+        controllerType: "ai",
+        characterId: "signal-witch",
+        characterSelected: true,
+        displayName: "Ashen Rival 2",
+        connected: false,
+        ready: true,
+        kicked: false,
+        startingMissionSelected: true
+      }
+    ];
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const roster = await screen.findByLabelText(/players joined and open slots/i);
+    expect(roster).toHaveTextContent(/ashen rival 2.*standard ai/i);
+  });
+
+  it("labels an automated active seat as Standard AI instead of disconnected", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "navigation";
+    patch.payload.status = "active";
+    patch.payload.seats[0] = {
+      ...patch.payload.seats[0]!,
+      controllerType: "ai",
+      displayName: "Ashen Rival 1",
+      connected: false
+    };
+    patch.payload.aiControllerStatus = {
+      seatId: "seat-1",
+      displayName: "Ashen Rival 1",
+      state: "thinking",
+      publicLabel: "Ashen Rival 1 is considering the next move."
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByTestId("host-live-status")).toHaveTextContent(/ai rival thinking/i);
+    expect(screen.getByRole("complementary", { name: /operatives/i })).toHaveTextContent(/ai turn/i);
+    expect(document.body).not.toHaveTextContent(/operative disconnected/i);
   });
 
   it("renders only public-safe private Contract status instead of Contract details", async () => {

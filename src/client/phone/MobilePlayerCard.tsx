@@ -133,7 +133,7 @@ export function MobilePlayerCard({
     ? activeContractCard.name
     : "No active contract";
   const contractStatusCopy = activeContractCard
-    ? formatContractObjectiveStatus(activeContractCard, self.character.activeContract?.progress ?? 0)
+    ? formatContractObjectiveStatus(activeContractCard, self.character.activeContract ?? 0)
     : null;
   const contractObjectiveCopy = activeContractCard
     ? describeContractObjective(activeContractCard)

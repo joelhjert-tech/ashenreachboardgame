@@ -326,6 +326,18 @@ export function PhoneBattleView({
   const outcomeFlavor = resultStage ? presentation?.publicConsequence ?? outcome?.text ?? null : null;
   const loadoutWindow = getPhoneLoadoutWindow(patch, self.seatId);
   const loadoutCardCount = self.character.heldGear.length + (self.character.followers?.length ?? 0);
+  const relevantItemCount = patch.objectUseStates?.filter((state) => state.usableForCurrentTest === true).length ?? 0;
+  const edgeCardCount = patch.edgeHand?.cards.length ?? 0;
+  const helperCount = resolution?.assistance?.contributions.length
+    ?? patch.cooperativeAssistanceEligibility?.helpers.length
+    ?? patch.cooperativeAssistance?.eligibleHelperSeatIds?.length
+    ?? patch.eligibleNemesisAssistSeatIds?.length
+    ?? 0;
+  const conditionCount = presentation?.operative.modifiers.filter((modifier) => modifier.kind === "status" || modifier.kind === "scenario").length
+    ?? patch.pendingTestModifiers?.length
+    ?? 0;
+  const fixedValue = presentation?.test.fixedValue;
+  const requiredDiceTotal = presentation?.test.requiredDiceTotal;
   const victoryReward = !roll ? presentation?.encounter.victoryReward ?? null : null;
   const failureStakes = !roll ? presentation?.encounter.failureStakes ?? null : null;
 
@@ -522,6 +534,25 @@ export function PhoneBattleView({
               victoryReward={victoryReward}
               failureStakes={failureStakes}
             />
+            {!result && resolution?.stage === "battle_setup" ? (
+              <section className="phone-battle-prep-summary" aria-label="Battle preparation" data-testid="phone-battle-prep-summary">
+                <header>
+                  <span>Before you roll</span>
+                  <strong>
+                    {statLabel} {fixedValue ?? operativeValue}
+                    {requiredDiceTotal !== null && requiredDiceTotal !== undefined
+                      ? ` · Need ${requiredDiceTotal}+ on dice`
+                      : " · Opposed roll"}
+                  </strong>
+                </header>
+                <div>
+                  <span><strong>{relevantItemCount}</strong> usable items</span>
+                  <span><strong>{edgeCardCount}</strong> Edge</span>
+                  <span><strong>{helperCount}</strong> helpers</span>
+                  <span><strong>{conditionCount}</strong> conditions</span>
+                </div>
+              </section>
+            ) : null}
             {loadoutWindow && loadoutCardCount > 0 ? (
               <button
                 type="button"

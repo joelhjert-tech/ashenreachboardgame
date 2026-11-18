@@ -129,6 +129,7 @@ export function SignalJourneyTrack({
           role="img"
           aria-label={`${identity.playerName}, ${identity.operativeName}, ${phase === "stable" || phase === "arrival" ? "at the event stop" : "moving"}`}
         >
+          <div className="signal-journey-track__piece">
           <ArtworkFrame
             src={getCharacterPortraitPathOrNull(identity.characterId)}
             alt={`${identity.operativeName} portrait`}
@@ -147,6 +148,7 @@ export function SignalJourneyTrack({
             aria-hidden="true"
           />
           <span>{identity.initials}</span>
+          </div>
         </div>
       ) : null}
     </section>

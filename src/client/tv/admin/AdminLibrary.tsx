@@ -1,9 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactElement } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactElement } from "react";
 import { adminLibraryCards, type AdminLibraryCard } from "./adminLibraryRegistry.js";
-import AdminCardEditor from "./AdminCardEditor.js";
 import { fetchAdminContentStatus, type AdminContentStatus } from "./adminContentApi.js";
 import { HostImage } from "../HostImage.js";
-import AdminSimulationLab, { isCardSimulatable } from "./AdminSimulationLab.js";
+import { buildAdminCodexContext, isCardSimulatable } from "./adminCardHelpers.js";
+
+export { buildAdminCodexContext } from "./adminCardHelpers.js";
+
+const AdminCardEditor = lazy(() => import("./AdminCardEditor.js"));
+const AdminSimulationLab = lazy(() => import("./AdminSimulationLab.js"));
 
 type LibrarySort = "name" | "cardType" | "difficulty" | "skill" | "source" | "warnings";
 const INITIAL_ARCHIVE_WINDOW = 72;
@@ -68,38 +72,6 @@ function DifficultyMark({ card }: { card: AdminLibraryCard }): ReactElement {
       {max > 0 ? <span aria-hidden="true">{Array.from({ length: max }, (_, index) => <i key={index} className={index < Math.ceil(value) ? "is-filled" : ""} />)}</span> : null}
     </span>
   );
-}
-
-export function buildAdminCodexContext(card: AdminLibraryCard): Record<string, unknown> {
-  return {
-    schemaVersion: 1,
-    entity: {
-      id: card.id,
-      name: card.name,
-      family: card.cardType,
-      status: card.status,
-      sourcePath: card.dataSourcePath,
-      artworkPath: card.artworkPath ?? null
-    },
-    gameplay: {
-      difficulty: card.difficulty ?? null,
-      skills: card.skills,
-      encounterType: card.encounterType ?? null,
-      rulesText: card.rulesText ?? null,
-      reward: card.reward ?? null,
-      penalty: card.penalty ?? null,
-      effects: card.effects
-    },
-    lifecycle: card.lifecycle ?? null,
-    relationships: {
-      mapTileIds: card.mapTileIds,
-      relatedIds: card.relatedIds
-    },
-    audit: {
-      warnings: card.metadataWarnings,
-      tests: card.testFiles
-    }
-  };
 }
 
 function downloadJson(name: string, value: unknown): void {
@@ -308,7 +280,7 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, on
     : Math.min(filteredCards.length, archiveWindow);
 
   if (simulation && roomCode && hostToken) {
-    return <AdminSimulationLab card={simulation.card} auth={{ roomCode, hostToken }} draft={simulation.draft} onClose={() => setSimulation(null)} />;
+    return <Suspense fallback={<p role="status">Loading simulator...</p>}><AdminSimulationLab card={simulation.card} auth={{ roomCode, hostToken }} draft={simulation.draft} onClose={() => setSimulation(null)} /></Suspense>;
   }
 
   return (
@@ -346,12 +318,12 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, on
             {filteredCards.length === 0 ? <div className="admin-library-empty"><strong>No cards match this archive query.</strong><button type="button" onClick={clearFilters}>Clear filters</button></div> : null}
           </div>
         </main>
-        {selected && editingId === selected.dataSourcePath && roomCode && hostToken ? <AdminCardEditor card={selected} auth={{ roomCode, hostToken }} onDirtyChange={setEditorDirty} onSimulateDraft={(draft) => setSimulation({ card: selected, draft })} onCancel={() => { setEditingId(null); setEditorDirty(false); }} onSaved={(source) => {
+        <Suspense fallback={<p role="status">Loading editor...</p>}>{selected && editingId === selected.dataSourcePath && roomCode && hostToken ? <AdminCardEditor card={selected} auth={{ roomCode, hostToken }} onDirtyChange={setEditorDirty} onSimulateDraft={(draft) => setSimulation({ card: selected, draft })} onCancel={() => { setEditingId(null); setEditorDirty(false); }} onSaved={(source) => {
           const record = source.record;
           const name = String(record.title ?? record.name ?? record.enemyName ?? selected.name);
           const artworkUrl = source.artwork.path ? `/${source.artwork.path.replace(/^public\//, "")}?revision=${source.revision.slice(0, 12)}` : selected.artworkUrl;
           setLibraryCards((cards) => cards.map((card) => card.dataSourcePath === selected.dataSourcePath ? { ...card, name, artworkUrl, artworkPath: source.artwork.path ?? card.artworkPath } : card));
-        }} /> : selected ? <Inspector card={selected} onClear={() => setSelectedId(null)} onOpenMapTile={onOpenMapTile} editorStatus={editorStatus} onEdit={() => setEditingId(selected.dataSourcePath)} onSimulate={() => setSimulation({ card: selected })} /> : <aside className="admin-library-inspector is-empty"><span>Archive Inspector</span><strong>Select a card</strong><p>Gameplay metadata, lore, audit warnings, and repository paths appear here.</p></aside>}
+        }} /> : selected ? <Inspector card={selected} onClear={() => setSelectedId(null)} onOpenMapTile={onOpenMapTile} editorStatus={editorStatus} onEdit={() => setEditingId(selected.dataSourcePath)} onSimulate={() => setSimulation({ card: selected })} /> : <aside className="admin-library-inspector is-empty"><span>Archive Inspector</span><strong>Select a card</strong><p>Gameplay metadata, lore, audit warnings, and repository paths appear here.</p></aside>}</Suspense>
       </div>
     </section>
   );

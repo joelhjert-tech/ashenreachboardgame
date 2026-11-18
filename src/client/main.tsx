@@ -11,8 +11,11 @@ if (!rootElement) {
 
 const surface = selectClientSurface(window.location.pathname);
 const presentationQa = import.meta.env.DEV && new URLSearchParams(window.location.search).get("qaPresentation") === "p8";
+const motionPreview = import.meta.env.DEV && surface === "tv" && new URLSearchParams(window.location.search).has("motionPreview");
 const App = lazy(() =>
-  presentationQa
+  motionPreview
+    ? import("./tv/SignalMotionPreview.js").then((module) => ({ default: module.SignalMotionPreview }))
+    : presentationQa
     ? import("./shared/SharedPresentationQaFixture.js").then((module) => ({ default: module.SharedPresentationQaFixture }))
     : surface === "tv"
     ? import("./tv/TvApp.js").then((module) => ({ default: module.TvApp }))

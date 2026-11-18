@@ -69,7 +69,7 @@ describe("Heat retirement H4C: Siren Relay Echo", () => {
       return counts;
     }, {})).toEqual({ red: 63, blue: 74, yellow: 67 });
     for (const [id, hash] of [
-      ["relay-husk", "f24c3bf5528e8a54c7756759c2711f4ac686d922a3284e6048a8325f0ad27cd6"],
+      ["relay-husk", "d4165e2c227e15e7bd100f0cb87770bee52cf9d3060d0901ffc01bbd35292f6b"],
       ["signal-rotted-engineer", "a631172f57f167f890a53922b1add8ed5183ab1033f2ba5b16f8a08fff6e374b"]
     ] as const) {
       expect(createHash("sha256").update(JSON.stringify(threats.get(id))).digest("hex"), id).toBe(hash);
@@ -136,7 +136,7 @@ describe("Heat retirement H4C: Siren Relay Echo", () => {
     expect(resolved.activeResolution?.battle?.modifiers.filter((source) => source.label === "Siren Relay Echo")).toEqual([
       { label: "Siren Relay Echo", value: -1 }
     ]);
-    expect(resolved.activeResolution?.roll).toMatchObject({ modifierTotal: 0, finalTotal: 2 });
+    expect(resolved.activeResolution?.roll).toMatchObject({ modifierTotal: -1, finalTotal: 1 });
     expect(resolved.players[0]!.character.stats.command).toBe(0);
     expect(resolved.pendingNextNonBattleTestModifiers).toEqual([expect.objectContaining({ boundTestResolutionId: resolved.activeResolution?.id })]);
     const reroll = (server as unknown as {
@@ -145,8 +145,8 @@ describe("Heat retirement H4C: Siren Relay Echo", () => {
     expect(reroll.modifierSources?.filter((source) => source.label === "Siren Relay Echo")).toEqual([
       { label: "Siren Relay Echo", value: -1 }
     ]);
-    expect(reroll.statBonus).toBe(0);
-    expect(reroll.total).toBe(12);
+    expect(reroll.statBonus).toBe(-1);
+    expect(reroll.total).toBe(11);
   });
 
   it("keeps pending state owner-private and exposes no internal IDs", () => {

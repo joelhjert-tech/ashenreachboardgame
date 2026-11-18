@@ -132,6 +132,15 @@ afterEach(() => {
 });
 
 describe("PhoneHazardChallengeView", () => {
+  it("shows projected hazard stakes before rolling without a sector challenge", () => {
+    const state = patch();
+    state.pendingTileChallenge = null;
+    state.pendingTileChallengePrivate = null;
+    state.encounter = { id: "sanctifier-beads", title: "Sanctifier Beads", cardType: "hazard", flavor: "A sealed relay lantern.", stat: "signal", difficulty: 6, successSummary: "Gain Signal Lantern.", failureSummary: "Choose 1 Machine Scar." };
+    render(<PhoneHazardChallengeView patch={state} resolution={null} actions={[{ key: "hazard-check", label: "Roll check dice", onClick: vi.fn() }]} onIntent={vi.fn()} canContinue={false} onContinue={vi.fn()} resultDeltas={[]} />);
+    expect(screen.getByText("Gain Signal Lantern.")).toBeVisible();
+    expect(screen.getByText("Choose 1 Machine Scar.")).toBeVisible();
+  });
   it("renders the selected cinematic layout from canonical test and effect data", () => {
     const view = renderView();
     expect(screen.getByLabelText(/Anomaly trial: The Broken Processional/i)).toBeVisible();
@@ -177,6 +186,7 @@ describe("PhoneHazardChallengeView", () => {
     );
 
     expect(screen.getByTestId("phone-test-primary-action")).toHaveTextContent("Roll check dice");
+    expect(screen.getByText("Optional Edge · roll without committing to save your card")).toBeVisible();
     const choices = screen.getByRole("region", { name: "Encounter choices" });
     expect(within(choices).getByRole("button", { name: /Commit Quiet Route/i })).toBeVisible();
 
@@ -343,7 +353,8 @@ describe("PhoneHazardChallengeView", () => {
     );
 
     expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-hazard-challenge-layout", "result-gate");
-    expect(screen.getByTestId("phone-resolution-card")).not.toHaveTextContent(/Route broken|Processional loses your trail|your total|anomaly\s*4|vs/i);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent("Your total: 8 · Target: 4");
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent("The Processional loses your trail.");
     expect(screen.getByLabelText("Die 1: 4")).toBeVisible();
     expect(screen.getByLabelText("Die 2: 3")).toBeVisible();
     expect(screen.getByTestId("phone-resolution-card").querySelector("img")).toBeNull();

@@ -6,7 +6,7 @@ import { createSequenceRandomSource } from "../../game/engine/dice.js";
 import type { GameAction } from "../../game/engine/actions.js";
 import type { ThreatCard } from "../../game/schema/card.schema.js";
 import { createInitialSessionState } from "../sessionState.js";
-import { GameRoomServer } from "../roomServer.js";
+import { GameRoomServer, createPhoneProjection } from "../roomServer.js";
 
 function resolvedCheck(server: GameRoomServer): Extract<GameAction, { type: "CHECK_ROLLED" }> {
   return [...server.getState().eventLog].reverse().find(
@@ -21,6 +21,17 @@ function resolvedCombat(server: GameRoomServer): Extract<GameAction, { type: "CO
 }
 
 describe("authoritative Hazard clear rewards", () => {
+  it("projects the revealed hazard stakes before any roll, including standard clear rewards", () => {
+    const state = createInitialSessionState("hazard-stakes", "single-player");
+    const seatId = state.players[0]!.seatId;
+    state.currentEncounter = loadThreatCards().get("sanctifier-beads")!;
+    expect(createPhoneProjection(state, seatId).encounter).toMatchObject({
+      successSummary: "Gain Signal Lantern.",
+      failureSummary: "Choose 1 Machine Scar."
+    });
+    state.currentEncounter = loadThreatCards().get("lantern-moth-swarm")!;
+    expect(createPhoneProjection(state, seatId).encounter).toMatchObject({ successSummary: expect.stringContaining("Gain 1 Salvage.") });
+  });
   it("awards the standard clear reward even when the card has no bespoke success effect", () => {
     const source = loadThreatCards().get("lantern-moth-swarm") as Extract<
       ThreatCard,
@@ -72,7 +83,7 @@ describe("authoritative Hazard clear rewards", () => {
     expect(reroll.effect).toMatchObject({
       type: "sequence",
       effects: [
-        { type: "gain_salvage", amount: 1 },
+        { type: "gain_salvage", amount: 2 },
         { type: "gain_note" }
       ]
     });

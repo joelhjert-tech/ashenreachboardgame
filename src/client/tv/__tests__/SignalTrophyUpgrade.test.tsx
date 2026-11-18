@@ -35,6 +35,19 @@ describe("SignalTrophyUpgrade", () => {
     cleanup();
   });
 
+  it("keeps the ceremony in progress when its completion callback changes", () => {
+    vi.useFakeTimers();
+    const first = vi.fn();
+    const latest = vi.fn();
+    const { rerender } = render(<SignalTrophyUpgrade presentation={presentation} onSettled={first} />);
+    act(() => vi.advanceTimersByTime(4000));
+    rerender(<SignalTrophyUpgrade presentation={presentation} onSettled={latest} />);
+    expect(screen.getByTestId("signal-trophy-upgrade")).toHaveAttribute("data-stage", "trophy-burn");
+    act(() => vi.advanceTimersByTime(4000));
+    expect(first).not.toHaveBeenCalled();
+    expect(latest).toHaveBeenCalledOnce();
+  });
+
   it.each([
     "summon",
     "trophy-display",

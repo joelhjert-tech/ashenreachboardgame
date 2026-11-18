@@ -2,6 +2,7 @@ import { getScenarioDefinition, type ScenarioDefinition } from "../data/scenario
 import type { ThreatFamily, ThreatLane } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
 import type { GameState } from "../schema/session.schema.js";
+import { getScenarioProgressThreshold } from "./scenarioResolver.js";
 
 export type ScenarioObjectiveTriggerType = "contractCompleted" | "threatDefeated" | "sectorActionCompleted";
 
@@ -17,6 +18,7 @@ export type ScenarioObjectiveTriggerEvent =
       threatId: string;
       threatLane?: ThreatLane;
       enemyFamily?: ThreatFamily;
+      crowned?: boolean;
       sectorId?: string;
     }
   | {
@@ -30,6 +32,7 @@ type ScenarioObjectiveTriggerDefinition = {
   amount: number;
   threatLane?: ThreatLane;
   enemyFamily?: ThreatFamily;
+  requiresCrown?: boolean;
   effectKey?: string;
   contractTag?: string;
 };
@@ -55,6 +58,7 @@ const SCENARIO_OBJECTIVE_TRIGGERS: Record<string, ScenarioObjectiveTriggerDefini
   scenario_throne_of_ash: [
     { type: "contractCompleted", amount: 1 },
     { type: "threatDefeated", amount: 1, enemyFamily: "revenant" },
+    { type: "threatDefeated", amount: 1, requiresCrown: true },
     { type: "sectorActionCompleted", amount: 1, effectKey: "middle_rivalryClaim" }
   ],
   scenario_mirror_of_false_heroes: [
@@ -92,6 +96,7 @@ function matchesTrigger(definition: ScenarioObjectiveTriggerDefinition, event: S
   }
 
   if (definition.type === "threatDefeated" && event.type === "threatDefeated") {
+    if (definition.requiresCrown && !event.crowned) return false;
     if (definition.threatLane && definition.threatLane !== event.threatLane) {
       return false;
     }
@@ -110,9 +115,15 @@ function matchesTrigger(definition: ScenarioObjectiveTriggerDefinition, event: S
   return false;
 }
 
+/** Public objective rules, also used by rivals without exposing hidden draws. */
+export function matchesScenarioObjective(scenarioId: string | undefined, event: ScenarioObjectiveTriggerEvent): boolean {
+  return Boolean(scenarioId && getTriggerDefinitions(scenarioId).some((definition) => matchesTrigger(definition, event)));
+}
+
 function describeTrigger(scenario: ScenarioDefinition, event: ScenarioObjectiveTriggerEvent, amount: number, next: number): string {
-  const label = scenario.victoryThreshold === 1 ? "objective mark" : "objective marks";
-  const progress = `${next}/${scenario.victoryThreshold}`;
+  const required = getScenarioProgressThreshold(scenario.id, scenario.victoryThreshold);
+  const label = required === 1 ? "objective mark" : "objective marks";
+  const progress = `${next}/${required}`;
 
   switch (event.type) {
     case "contractCompleted":
@@ -155,7 +166,7 @@ export function resolveScenarioObjectiveTrigger(
     return null;
   }
 
-  const required = Math.max(0, scenario.victoryThreshold);
+  const required = Math.max(0, getScenarioProgressThreshold(scenario.id, scenario.victoryThreshold));
   const previous = Math.max(0, state.scenarioProgress[scenario.winConditionKey] ?? 0);
 
   if (required > 0 && previous >= required) {

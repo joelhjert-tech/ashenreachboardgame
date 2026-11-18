@@ -1,3 +1,4 @@
+export { isCardSimulatable } from "./adminCardHelpers.js";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import type { AdminLibraryCard } from "./adminLibraryRegistry.js";
 import { HostImage } from "../HostImage.js";
@@ -23,11 +24,6 @@ function downloadJson(name: string, value: unknown): void {
 
 function Field({ label, before, after, change }: { label: string; before: unknown; after: unknown; change: string }): ReactElement {
   return <div className="admin-sim-diff-row"><strong>{label}</strong><span>{typeof before === "object" ? JSON.stringify(before) : String(before)}</span><span>{typeof after === "object" ? JSON.stringify(after) : String(after)}</span><b>{change}</b></div>;
-}
-
-export function isCardSimulatable(card: AdminLibraryCard): boolean {
-  if (card.cardType === "threat" || card.cardType === "tile challenge" || ["anomaly", "scar", "escalation", "artifact"].includes(card.cardType)) return true;
-  return /"type"\s*:\s*"(?:take_wound|heal_wound|gain_trophy|gain_salvage|lose_salvage|gain_scar|gain_scar_choice|gain_gear|draw_artifact|gain_follower|gain_note|advance_scenario|advance_escalation|sequence)"/.test(JSON.stringify(card.rawEffectData ?? {}));
 }
 
 export default function AdminSimulationLab({ card, auth, draft, onClose }: Props): ReactElement {

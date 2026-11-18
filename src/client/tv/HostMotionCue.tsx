@@ -209,12 +209,12 @@ export function buildHostMotionCueModel({
       title: destination ? destination.name : `${actor} rolled ${planner.movementValue ?? "—"}`,
       detail: destination
         ? `${destination.distance} steps along the authoritative route.`
-        : "Legal destinations are marked on the board.",
-      next: "Choose a destination on the active phone.",
+        : `${planner.destinations.filter((entry) => !entry.disabledReason || entry.voidKeyPrompt).length} legal destinations. Compare routes on the active phone.`,
+      next: destination ? "Confirm this destination on the active phone." : "Choose a destination on the active phone.",
       actor,
       location: destination?.name ?? planner.currentSectorName ?? location,
       progress: ["Roll", "Choose", "Travel", "Arrive"],
-      activeProgressIndex: destination ? 1 : 0,
+      activeProgressIndex: 1,
       delta: null
     };
   }

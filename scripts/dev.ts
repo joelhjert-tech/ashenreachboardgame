@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import type { AddressInfo } from "node:net";
-import { createServer as createViteServer, type InlineConfig } from "vite";
+import { build, preview, createServer as createViteServer, type InlineConfig, type PreviewServer } from "vite";
+import { resolve } from "node:path";
 import { startAshenReachServer } from "../src/server/index.js";
 import { createPortAvailabilityCheck, findAvailablePort } from "../src/server/ports.js";
 
@@ -35,6 +36,7 @@ function openExternalUrl(url: string): void {
 async function main(): Promise<void> {
   const clientPortArg = process.argv.find((entry) => entry.startsWith("--client-port="))?.split("=")[1];
   const apiPortArg = process.argv.find((entry) => entry.startsWith("--api-port="))?.split("=")[1];
+  const stablePlay = process.argv.includes("--play");
   const openTvOnStart = process.argv.includes("--open-tv");
   const openPhoneOnStart = process.argv.includes("--open-phone");
   const requestedClientPort = Number(clientPortArg ?? process.env.CLIENT_PORT ?? 5173);
@@ -71,11 +73,35 @@ async function main(): Promise<void> {
     }
   };
 
-  const viteServer = await createViteServer(viteConfig);
+  let clientServer: PreviewServer["httpServer"] | undefined;
+  let closeClient: () => Promise<void>;
+  try {
+    if (stablePlay) {
+      // Build once for this play session. Source edits cannot reload connected players.
+      const outDir = resolve("node_modules/.cache/ashen-reach-play", `${server.port}-${resolvedClientPort}`);
+      console.log("Preparing the play build. The browser will open when it is ready...");
+      await build({ build: { outDir, emptyOutDir: true }, logLevel: "warn" });
+      const playServer = await preview({
+        build: { outDir },
+        preview: { host: "0.0.0.0", port: resolvedClientPort, strictPort: true }
+      });
+      clientServer = playServer.httpServer;
+      closeClient = () => new Promise<void>((resolveClose, reject) => {
+        playServer.httpServer.close((error) => error ? reject(error) : resolveClose());
+        if ("closeAllConnections" in playServer.httpServer) playServer.httpServer.closeAllConnections();
+      });
+    } else {
+      const viteServer = await createViteServer(viteConfig);
+      await viteServer.listen();
+      clientServer = viteServer.httpServer ?? undefined;
+      closeClient = () => viteServer.close();
+    }
+  } catch (error) {
+    await server.close();
+    throw error;
+  }
 
-  await viteServer.listen();
-
-  const clientAddress = viteServer.httpServer?.address() as AddressInfo | null;
+  const clientAddress = clientServer?.address() as AddressInfo | null;
   const listeningClientPort = clientAddress?.port ?? resolvedClientPort;
   const clientOrigin = process.env.PUBLIC_CLIENT_ORIGIN || `http://${server.lanHost}:${listeningClientPort}`;
   const localClientOrigin = `http://127.0.0.1:${listeningClientPort}`;
@@ -126,7 +152,7 @@ async function main(): Promise<void> {
       console.log("");
       if (reason) console.log(reason);
       console.log("Stopping Ashen Reach...");
-      await viteServer.close();
+      await closeClient();
       await server.close();
       console.log("Ashen Reach stopped.");
       process.exit(0);

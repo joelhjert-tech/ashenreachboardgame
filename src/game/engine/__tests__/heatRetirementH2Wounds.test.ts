@@ -260,8 +260,8 @@ describe("Heat Retirement H2 normal Wound Threats", () => {
     expect(lantern.getState().pendingEffect).toBeNull();
     expect(lantern.getState().activeResolution?.outcome).toEqual({
       title: "Outcome applied",
-      text: "Resolution: gain 1 Salvage.",
-      effects: ["Resolution: gain 1 Salvage."]
+      text: "Success: gain 1 Salvage.",
+      effects: ["Success: gain 1 Salvage."]
     });
     expect(countEvents(lantern.getState(), "RESOLUTION_APPLIED")).toBe(1);
   });

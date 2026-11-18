@@ -122,6 +122,54 @@ describe("shop encounter public projection", () => {
     expect(tvProjection.shopEncounter?.services).toEqual([]);
   });
 
+  it("projects owner-only after-purchase build math without leaking inventory comparisons", () => {
+    const state = createInitialSessionState("session-shop-owner-support");
+    state.status = "active";
+    state.phase = "action";
+    state.seats[0] = { ...state.seats[0]!, displayName: "Joel", connected: true };
+    state.seats[1] = { ...state.seats[1]!, displayName: "Mira", connected: true };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "outer_waymarket",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "outer_waymarket",
+        salvage: 6,
+        heldGear: [],
+        equippedGear: { weapon: null, armor: null, utility: null },
+        equippedGearInstances: { weapon: null, armor: null, utility: null }
+      }
+    };
+    state.shopStockReveals = [{
+      seatId: state.players[0]!.seatId,
+      sectorId: "outer_waymarket",
+      serviceId: "buy-gear",
+      shopName: "Anchor Market",
+      stockIds: ["ashlock-cleaver"],
+      createdAt: new Date().toISOString()
+    }];
+
+    const owner = createPhoneProjection(state, state.players[0]!.seatId) as {
+      shopEncounter?: { revealedStock?: Array<{ ownerDecisionSupport?: Record<string, unknown> }> };
+    };
+    const waiting = createPhoneProjection(state, state.players[1]!.seatId) as {
+      shopEncounter?: { revealedStock?: Array<{ ownerDecisionSupport?: Record<string, unknown> }> };
+    };
+    const tv = createTvProjection(state) as {
+      shopEncounter?: { revealedStock?: Array<{ ownerDecisionSupport?: Record<string, unknown> }> };
+    };
+
+    expect(owner.shopEncounter?.revealedStock?.[0]?.ownerDecisionSupport).toMatchObject({
+      slot: "weapon",
+      currentItemName: null,
+      netStatChange: 1,
+      timingSummary: "Always while equipped"
+    });
+    expect(owner.shopEncounter?.revealedStock?.[0]?.ownerDecisionSupport?.salvageAfterPurchase).toEqual(expect.any(Number));
+    expect(waiting.shopEncounter?.revealedStock?.[0]?.ownerDecisionSupport).toBeUndefined();
+    expect(tv.shopEncounter?.revealedStock?.[0]?.ownerDecisionSupport).toBeUndefined();
+  });
+
   it("publishes clear shrine and recovery service sectors through the shop encounter model", () => {
     const state = createInitialSessionState("session-service-sector");
     state.status = "active";

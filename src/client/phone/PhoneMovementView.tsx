@@ -10,6 +10,7 @@ import type {
   PhoneTierTransitionOption
 } from "../shared/types.js";
 import { getMissionRelevanceForSector } from "../shared/missionRelevance.js";
+import { statLabelById } from "../shared/statLabels.js";
 import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
 import { getSignalTheatreAssetPaths, getSignalTheatreStatSealPath } from "../shared/assetPaths.js";
 import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
@@ -19,12 +20,74 @@ import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 
 export type MovementNavigationTarget = "player" | "inventory" | "more";
 
+// Shared by both movement render paths. Confirmation is local and is never replayed.
+export function useRouteStarDestinationChange(
+  planner: PublicMovementPlannerState | null | undefined,
+  seatId: string,
+  onIntent: (intent: ClientIntent) => void,
+  onPreview: (destinationId: string | null) => void,
+  onAbandoned: (destinationId: string | null) => void
+) {
+  const [pending, setPending] = useState<{
+    destinationId: string; routeId: string; movementRevision: number;
+    toSectorId: string | null; submitted: boolean;
+  } | null>(null);
+  const pendingRef = useRef(pending);
+  pendingRef.current = pending;
+  const keepRoute = (): void => { pendingRef.current = null; setPending(null); };
+  usePhoneBackDismissal(Boolean(pending), () => { keepRoute(); return true; });
+
+  useEffect(() => {
+    if (!pending) return;
+    if (pending.submitted && planner?.active && !planner.routeStarCommitted &&
+        planner.movementRevision === pending.movementRevision + 1) {
+      // Only update local selection. Never send a follow-up intent from an effect.
+      onAbandoned(pending.toSectorId);
+      setPending(null);
+    } else if (!planner?.active || planner.movementRevision !== pending.movementRevision ||
+               planner.selectedRouteId !== pending.routeId || planner.selectedDestinationId !== pending.destinationId) {
+      setPending(null);
+    }
+  }, [pending, planner?.active, planner?.movementRevision, planner?.routeStarCommitted,
+      planner?.selectedRouteId, planner?.selectedDestinationId, onAbandoned]);
+
+  const requestChange = (toSectorId: string | null): void => {
+    if (pendingRef.current?.submitted) return;
+    if (planner?.routeStarCommitted && toSectorId !== planner.selectedDestinationId &&
+        planner.selectedDestinationId && planner.selectedRouteId && planner.movementRevision !== undefined) {
+      setPending({ destinationId: planner.selectedDestinationId, routeId: planner.selectedRouteId,
+        movementRevision: planner.movementRevision, toSectorId, submitted: false });
+      return;
+    }
+    onPreview(toSectorId);
+  };
+  const discard = (): void => {
+    const current = pendingRef.current;
+    if (!current || current.submitted) return;
+    pendingRef.current = { ...current, submitted: true };
+    setPending(pendingRef.current);
+    onIntent({ type: "ABANDON_ROUTE_STAR_CHOICE", seatId, destinationId: current.destinationId,
+      routeId: current.routeId, movementRevision: current.movementRevision, toSectorId: current.toSectorId });
+  };
+  const confirmation = pending ? (
+    <section className="phone-move-prototype__route-star" role="alertdialog" aria-label="Discard selected Route Star route" aria-describedby="route-star-abandon-description">
+      <p id="route-star-abandon-description">Changing destination discards this route. The spent charge is not refunded.</p>
+      <button type="button" className="phone-button phone-button-secondary" autoFocus disabled={pending.submitted} onClick={keepRoute}>Keep route</button>
+      <button type="button" className="phone-button phone-button-primary" disabled={pending.submitted} onClick={discard}>
+        {pending.submitted ? "Discarding route..." : "Discard route and change destination"}
+      </button>
+    </section>
+  ) : null;
+  return { requestChange, confirmation, confirming: Boolean(pending) };
+}
+
 interface DestinationPresentation {
   destination: PublicMoveDestination;
   typeLabel: string;
   dangerLabel: string;
   rewardLabel: string;
   missionRelevant: boolean;
+  missionReason: string | null;
   routeLine: string;
   specialRules: string[];
   artPath: string | null;
@@ -72,13 +135,15 @@ function dangerLabel(destination: PublicMoveDestination): string {
   if (destination.faceUpThreats.length > 0) {
     return `${destination.faceUpThreats.length} blocker${destination.faceUpThreats.length === 1 ? "" : "s"}`;
   }
-  if (destination.threatIcons.length > 0 || destination.strategicTags.includes("danger")) return "Threat risk";
+  if (destination.threatIcons.length > 0) return `${destination.threatIcons.length} encounter icon${destination.threatIcons.length === 1 ? "" : "s"}`;
+  if (destination.strategicTags.includes("danger")) return "Threat risk";
   return "No visible threat";
 }
 
 function rewardLabel(destination: PublicMoveDestination): string {
   if (destination.shop) return destination.shop.status === "locked" ? "Shop locked" : "Shop / services";
   if (destination.scenarioMarkers?.length) return "Scenario objective";
+  if (destination.opportunityLabel) return destination.opportunityLabel;
   if (destination.strategicTags.includes("reward")) return "Reward opportunity";
   return "Sector opportunity";
 }
@@ -90,9 +155,8 @@ function destinationSpecialRules(destination: PublicMoveDestination): string[] {
     destination.voidKeyPrompt ? `Void Key available · ${destination.voidKeyPrompt.currentCharges}/${destination.voidKeyPrompt.maxCharges} charges` : null,
     destination.routeStarPrompt ? `Route Star available · ${destination.routeStarPrompt.currentCharges}/${destination.routeStarPrompt.maxCharges} charges` : null,
     destination.shop?.servicesPreview.length ? `Services: ${destination.shop.servicesPreview.join(" · ")}` : null,
-    destination.faceUpThreats.length ? `Visible blockers: ${destination.faceUpThreats.map((threat) => threat.name).join(" · ")}` : null,
+    destination.faceUpThreats.length ? `Visible encounters: ${destination.faceUpThreats.map((threat) => `${threat.name}${threat.challenge ? ` (${statLabelById[threat.challenge.stat]} ${threat.challenge.value})` : ""}`).join(" · ")}` : null,
     destination.occupants.length ? `Operatives present: ${destination.occupants.map((occupant) => `${occupant.name} (${occupant.characterName})`).join(" · ")}` : null,
-    destination.ruleText?.trim() || null,
     destination.loreText?.trim() || null
   ].filter((entry): entry is string => Boolean(entry));
 }
@@ -101,15 +165,18 @@ function buildDestinationPresentation(
   destination: PublicMoveDestination,
   activeContract: ContractCard | null
 ): DestinationPresentation {
+  const mission = getMissionRelevanceForSector(activeContract, destination.sectorId, {
+    challenges: destination.challenges,
+    threatIcons: destination.threatIcons,
+    faceUpThreatCount: destination.faceUpThreats.length
+  });
   return {
     destination,
     typeLabel: destinationType(destination),
     dangerLabel: dangerLabel(destination),
     rewardLabel: rewardLabel(destination),
-    missionRelevant: Boolean(getMissionRelevanceForSector(activeContract, destination.sectorId, {
-      threatIcons: destination.threatIcons,
-      faceUpThreatCount: destination.faceUpThreats.length
-    })),
+    missionRelevant: Boolean(mission),
+    missionReason: mission?.reason ?? null,
     routeLine: destination.routeNames?.length
       ? destination.routeNames.join(" → ")
       : `${destination.distance} sector route`,
@@ -145,9 +212,10 @@ function DestinationArtwork({ model }: { model: DestinationPresentation }): Reac
 function DestinationSignals({ model }: { model: DestinationPresentation }): ReactElement {
   return (
     <div className="phone-move-prototype__signals" aria-label="Destination summary">
+      {model.destination.approach ? <span className="is-neutral">{model.destination.approach.failurePrevented ? "Entry guaranteed" : `Guile · Target ${model.destination.approach.difficulty}`}</span> : null}
       <span className={model.dangerLabel === "No visible threat" ? "is-neutral" : "is-danger"}>{model.dangerLabel}</span>
       <span className="is-reward">{model.rewardLabel}</span>
-      {model.missionRelevant ? <span className="is-mission">Mission</span> : null}
+      {model.missionRelevant ? <span className="is-mission">Contract opportunity</span> : null}
     </div>
   );
 }
@@ -178,12 +246,22 @@ function RouteDetails({
     >
       <summary>View details</summary>
       <div>
+        {model.destination.approach ? <section className="phone-route-intel" aria-label="Arrival preview">
+          <span>Arrival</span>
+          <p>{model.destination.approach.failurePrevented ? "Your approach cannot fail in this game. Encounters still resolve after entry." : `Roll 2d6 + Guile against ${model.destination.approach.difficulty}. On failure, you remain at your current sector.`}</p>
+        </section> : null}
+        <section className="phone-route-intel" aria-label="Sector opportunity">
+          <span>Sector opportunity</span>
+          <p>{model.destination.ruleText || "No sector action preview available."}</p>
+          {model.destination.threatIcons.length > 0 ? <p>Printed encounter icons: {model.destination.threatIcons.join(", ")}. Undrawn cards remain unknown.</p> : null}
+        </section>
+        {model.missionReason ? <section className="phone-route-intel" aria-label="Contract relevance"><span>Your Contract</span><p>{model.missionReason}</p></section> : null}
         <span>Route</span>
         <strong>{model.routeLine}</strong>
         <span>Legal movement</span>
         <strong>{model.destination.distance} exact step{model.destination.distance === 1 ? "" : "s"}</strong>
         {model.specialRules.map((rule) => <p key={rule}>{rule}</p>)}
-        {routeStarPrompt && routeVariants.length > 1 ? (
+        {!planner.routeStarCommitted && routeStarPrompt && routeVariants.length > 1 ? (
           <section className="phone-move-prototype__route-star" data-testid="route-star-prompt">
             <span>Route Star</span>
             <p>Spend 1 charge only if you confirm an alternate legal route.</p>
@@ -217,9 +295,6 @@ function RouteDetails({
                 </div>
               );
             })}
-            {planner.routeStarCommitted && planner.selectedRouteId === model.destination.routeId ? (
-              <p data-testid="route-star-confirmation">Alternate route selected.</p>
-            ) : null}
           </section>
         ) : null}
       </div>
@@ -252,6 +327,7 @@ function MovementAdjustments({
             <span>Route Compass · {planner.compassPrompt.currentCharges}/{planner.compassPrompt.maxCharges} charges</span>
             {pendingAdjustment ? (
               <div className="phone-move-prototype__adjustment-actions">
+                {planner.routeStarCommitted ? <p>This adjustment discards your selected Route Star route. The spent charge is not refunded.</p> : null}
                 <button
                   type="button"
                   onClick={() => {
@@ -447,6 +523,7 @@ export function PhoneMovementView({
   const [expandedSectorId, setExpandedSectorId] = useState<string | null>(selectedSectorId);
   const shellRef = useRef<HTMLElement | null>(null);
   usePhoneBackDismissal(Boolean(expandedSectorId), () => {
+    if (routeStarChange.confirming) return false;
     setExpandedSectorId(null);
     return true;
   });
@@ -526,12 +603,18 @@ export function PhoneMovementView({
     : planner?.active
       ? selectedModel ? "needs-confirm" : "needs-destination"
       : canRoll ? "needs-roll" : "complete";
+  const applySelectedDestination = (sectorId: string | null): void => {
+    onSelectedSectorId(sectorId);
+    setExpandedSectorId(sectorId);
+  };
+  const routeStarChange = useRouteStarDestinationChange(planner, seatId, onIntent, (sectorId) => {
+    applySelectedDestination(sectorId);
+    onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: sectorId });
+  }, applySelectedDestination);
   const selectDestination = (sectorId: string): void => {
     const model = models.find((entry) => entry.destination.sectorId === sectorId);
     if (!model || !canSelectDestination(model.destination)) return;
-    onSelectedSectorId(sectorId);
-    setExpandedSectorId(sectorId);
-    onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: sectorId });
+    routeStarChange.requestChange(sectorId);
   };
   const confirm = (): void => {
     if (!selectedModel || submitted || !canSelectDestination(selectedModel.destination)) return;
@@ -579,7 +662,7 @@ export function PhoneMovementView({
           : selectedModel
             ? `Confirm ${selectedModel.destination.name}`
             : "Select a destination";
-  const canSubmit = !submitted && !movementResolving && !travel && (
+  const canSubmit = !routeStarChange.confirming && !submitted && !movementResolving && !travel && (
     (!planner?.active && canRoll) || Boolean(selectedModel && canSelectDestination(selectedModel.destination))
   );
   const performPrimaryAction = (): void => {
@@ -593,9 +676,7 @@ export function PhoneMovementView({
   };
 
   const changeDestination = (): void => {
-    onSelectedSectorId(null);
-    setExpandedSectorId(null);
-    onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: null });
+    routeStarChange.requestChange(null);
   };
 
   return (
@@ -615,6 +696,8 @@ export function PhoneMovementView({
         tierTransitionAvailable={tierTransitionAvailable}
       />
       <div className="phone-move-prototype__content">
+        {planner?.routeStarCommitted ? <p role="status" data-testid="route-star-confirmation">Route selected · 1 charge spent</p> : null}
+        {routeStarChange.confirmation}
         {hostView ? (
           <button
             type="button"

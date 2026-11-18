@@ -860,7 +860,6 @@ describe("server API scenario flow", () => {
       scenarioId: "scenario_broken_seal",
       scenarioProgress: { sealRestorationMarks: 1 } as Record<string, number>,
       stats: { command: 20, grit: 20, signal: 20, guile: 20, forge: 20 },
-      expectedProgress: 3,
       expectedThreshold: 2
     },
     {
@@ -872,7 +871,6 @@ describe("server API scenario flow", () => {
         "crownClaim:seat-1": 2
       } as Record<string, number>,
       stats: { command: 20, grit: 20, signal: 20, guile: 20, forge: 20 },
-      expectedProgress: 7,
       expectedThreshold: 6
     },
     {
@@ -880,7 +878,6 @@ describe("server API scenario flow", () => {
       scenarioId: "scenario_mirror_of_false_heroes",
       scenarioProgress: { mirrorBreaks: 3 } as Record<string, number>,
       stats: { command: 20, grit: 20, signal: 20, guile: 20, forge: 20 },
-      expectedProgress: 4,
       expectedThreshold: 4
     },
     {
@@ -888,7 +885,6 @@ describe("server API scenario flow", () => {
       scenarioId: "scenario_devourer_beneath",
       scenarioProgress: { mawStrikes: 4 } as Record<string, number>,
       stats: { command: 20, grit: 20, signal: 20, guile: 20, forge: 20 },
-      expectedProgress: 5,
       expectedThreshold: 5
     },
     {
@@ -896,7 +892,6 @@ describe("server API scenario flow", () => {
       scenarioId: "scenario_labyrinth_engine",
       scenarioProgress: { shutdownMarks: 4, engineModeIndex: 1 } as Record<string, number>,
       stats: { command: 20, grit: 20, signal: 20, guile: 20, forge: 20 },
-      expectedProgress: 6,
       expectedThreshold: 5
     },
     {
@@ -904,10 +899,9 @@ describe("server API scenario flow", () => {
       scenarioId: "scenario_dying_star",
       scenarioProgress: { ignitionMarks: 3 } as Record<string, number>,
       stats: { command: 20, grit: 20, signal: 20, guile: 20, forge: 20 },
-      expectedProgress: 4,
       expectedThreshold: 4
     }
-  ])("closes a full API/socket $label victory path", async ({ scenarioId, scenarioProgress, stats, expectedProgress, expectedThreshold }) => {
+  ])("closes a full API/socket $label victory path", async ({ scenarioId, scenarioProgress, stats, expectedThreshold }) => {
     harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
     const baseUrl = `http://127.0.0.1:${harness.port}`;
 
@@ -985,9 +979,9 @@ describe("server API scenario flow", () => {
       const authoritativeProgress = scenarioId === "scenario_broken_seal"
         ? harness.roomServer.getState().scenarioConfrontation.progress.restorationMarks
         : (harness.roomServer.getState().scenarioProgress as Record<string, number>)[scenarioDefinition!.winConditionKey];
-      expect(authoritativeProgress).toBe(expectedProgress);
+      expect(authoritativeProgress).toBe(scenarioId === "scenario_broken_seal" ? 3 : expectedThreshold);
       expect(endedPatch.payload.activeScenario?.id).toBe(scenarioId);
-      expect(endedPatch.payload.activeScenario?.progress).toBe(expectedProgress);
+      expect(endedPatch.payload.activeScenario?.progress).toBe(expectedThreshold);
       expect(endedPatch.payload.activeScenario?.threshold).toBe(expectedThreshold);
       expect(harness.roomServer.getState().activeScenarioId).toBe(scenarioId);
     } finally {

@@ -11,6 +11,8 @@ import type {
   StatePatch
 } from "./types.js";
 
+import { LOBBY_REACTION_LIFETIME_MS, type LobbyReactionEvent, type LobbyReactionId } from "../../shared/lobbyReactions.js";
+
 type ConnectionStatus = "idle" | "connecting" | "open" | "closed";
 
 interface TvConnectionConfig {
@@ -47,6 +49,8 @@ export function useRoomSubscription(
   config: RoomConnectionConfig
 ): {
   patch: StatePatch<PublicPatchPayload | PhonePatchPayload> | null;
+  lobbyReactions?: LobbyReactionEvent[];
+  sendLobbyReaction?: (reaction: LobbyReactionId) => boolean;
   error: string | null;
   sendIntent: (intent: ClientIntent | HostCommand) => boolean;
   resynchronize?: () => void;
@@ -56,12 +60,24 @@ export function useRoomSubscription(
   clearDebugEvents: () => void;
 } {
   const [patch, setPatch] = useState<StatePatch<PublicPatchPayload | PhonePatchPayload> | null>(null);
+  const [lobbyReactions, setLobbyReactions] = useState<Array<LobbyReactionEvent & { receivedAt: number }>>([]);
+  const hasLobbyReactions = lobbyReactions.length > 0;
+  useEffect(() => {
+    if (!hasLobbyReactions) return;
+    const timer = window.setInterval(() => setLobbyReactions((events) => events.filter((event) => Date.now() - event.receivedAt < LOBBY_REACTION_LIFETIME_MS)), 250);
+    return () => window.clearInterval(timer);
+  }, [hasLobbyReactions]);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [synchronized, setSynchronized] = useState(false);
   const [resynchronizationRevision, setResynchronizationRevision] = useState(0);
   const [debugEvents, setDebugEvents] = useState<DebugEvent[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
+  const sendLobbyReaction = useCallback((reaction: LobbyReactionId): boolean => {
+    if (socketRef.current?.readyState !== WebSocket.OPEN) return false;
+    socketRef.current.send(JSON.stringify({ type: "LOBBY_REACTION", reaction }));
+    return true;
+  }, []);
   const reconnectTimerRef = useRef<number | null>(null);
   const manualCloseRef = useRef(false);
   const connectionGenerationRef = useRef(0);
@@ -118,6 +134,7 @@ export function useRoomSubscription(
         reconnectTimerRef.current = null;
       }
 
+      setLobbyReactions([]);
       setStatus("connecting");
       setSynchronized(false);
       setError(null);
@@ -175,6 +192,10 @@ export function useRoomSubscription(
         }
 
         const message = JSON.parse(event.data as string) as ServerEnvelope;
+        if (message.type === "LOBBY_REACTION") {
+          setLobbyReactions((events) => [...events, { ...message, receivedAt: Date.now() }].slice(-16));
+          return;
+        }
         appendDebugEvent(setDebugEvents, {
           label: `Received ${message.type}`,
           detail:
@@ -189,6 +210,7 @@ export function useRoomSubscription(
         if (message.type === "STATE_PATCH") {
           const applyPatch = () => {
             if (!isCurrentSocket()) return;
+            if (message.payload.status !== "lobby") setLobbyReactions([]);
             setPatch(message);
             setSynchronized(true);
           };
@@ -305,6 +327,8 @@ export function useRoomSubscription(
   ]);
 
   return {
+    lobbyReactions,
+    sendLobbyReaction,
     patch,
     error,
     status,

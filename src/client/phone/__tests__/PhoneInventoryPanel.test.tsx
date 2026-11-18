@@ -3008,7 +3008,7 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    expect(screen.getByText(/Contract · step 3 of 4/i)).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Setup progress, step 3 of 5" })).toBeInTheDocument();
     expect(screen.getByText(/^sable vey$/i)).toBeInTheDocument();
     expect(screen.getAllByText(/choose starting Contract/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/quietus ledger/i)).toBeInTheDocument();
@@ -3025,7 +3025,7 @@ describe("PhoneInventoryPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /select Contract/i }));
     expect(onIntent).toHaveBeenCalledWith({ type: "SELECT_STARTING_CONTRACT", seatId: "seat-1", contractId: "choir-quietus" });
 
-    fireEvent.click(screen.getByRole("button", { name: /^ready$/i }));
+    expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
 
     expect(onIntent).not.toHaveBeenCalledWith({ type: "SET_READY", seatId: "seat-1", ready: true });
 
@@ -3130,6 +3130,7 @@ describe("PhoneInventoryPanel", () => {
 
   it("shows two private provision choices after mission selection and unlocks Ready after the second pick", () => {
     const onIntent = vi.fn();
+    const onStartSession = vi.fn();
     const mission = {
       id: "choir-quietus",
       name: "Quietus Ledger",
@@ -3218,6 +3219,7 @@ describe("PhoneInventoryPanel", () => {
         patchSequence={patchSequence}
         characters={characters}
         onIntent={onIntent}
+        onStartSession={onStartSession}
         onLeave={vi.fn()}
         onLobbyBack={vi.fn()}
       />
@@ -3263,6 +3265,17 @@ describe("PhoneInventoryPanel", () => {
 
     expect(screen.getByRole("button", { name: /^ready$/i })).toBeEnabled();
     expect(screen.queryByText(/signal rig/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ready your operative" })).toBeVisible();
+    expect(screen.getByRole("list", { name: "Setup progress, step 5 of 5" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "Starting loadout" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Start Game" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ready" }));
+    expect(onIntent).toHaveBeenCalledWith({ type: "SET_READY", seatId: "seat-1", ready: true });
+    view.rerender(renderView({ ...completed, selfIsSetupHost: true, seats: completed.seats.map((seat) => ({ ...seat, ready: true })), setup: { ...completed.setup!, canStart: true, allowedCommand: "start" } }, 10));
+    expect(screen.queryByRole("button", { name: "Ready" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your operative is ready" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
+    expect(onStartSession).toHaveBeenCalledOnce();
   });
 
   it("recovers a stalled setup mission selection without duplicating it", () => {

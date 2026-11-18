@@ -55,6 +55,23 @@ function createContext(
 }
 
 describe("scenario ambient rules", () => {
+  it("uses the same Signal 12 eruption for wounds and turn-end depletion", () => {
+    const state = createScenarioState({ activeScenarioId: "scenario_dying_star", scenarioProgress: { starTokens: 1 } });
+    const context = createContext(state, { roll: 1 });
+    const woundEnd = resolveScenarioWoundsTaken({ ...context, woundDelta: 1 })!.updater(state);
+    const turnEnd = resolveScenarioTurnEnd(context)!.updater(state);
+    expect(woundEnd).toEqual(turnEnd);
+    expect(woundEnd.scenarioProgress.starTokens).toBe(5);
+    expect(woundEnd.players[0]!.character.wounds).toBe(state.players[0]!.character.wounds + 2);
+  });
+
+  it("restores Starfire for contracts and reports only the amount restored at the cap", () => {
+    const state = createScenarioState({ activeScenarioId: "scenario_dying_star", scenarioProgress: { starTokens: 11 } });
+    const context = createContext(state);
+    expect(resolveScenarioContractCompleted(context)!.updater(state).scenarioProgress.starTokens).toBe(12);
+    expect(resolveScenarioGearGained({ ...context, gainedGearCount: 1 })!.summary).toContain("rises by 1 to 12");
+  });
+
   it("seeds initial progress for each authored scenario", () => {
     expect(createInitialScenarioProgress("scenario_broken_seal")).toEqual({});
     expect(createInitialScenarioPreparation("scenario_broken_seal")).toMatchObject({ resources: { sealIntegrity: 6 } });
@@ -360,7 +377,8 @@ describe("scenario ambient rules", () => {
     const thronePressure = describeScenarioPressure(throneState);
     const throneTelemetry = buildScenarioTelemetry(throneState);
 
-    expect(thronePressure).toContain("2/3 crown claims secured");
+    expect(thronePressure).toContain("2/3 Crown tokens held");
+    expect(thronePressure).toContain("already Crowned to earn a throne claim");
     expect(throneTelemetry.map((entry) => entry.label)).toEqual(["Crown Claims", "Crown Holders", "Active Crowns"]);
   });
 });

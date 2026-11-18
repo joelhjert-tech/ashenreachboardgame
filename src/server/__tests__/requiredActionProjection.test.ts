@@ -175,6 +175,10 @@ describe("server required-action projection", () => {
       kind: "test",
       requiredTab: "action"
     });
+    const hazardPresentation = battlePresentation(createPhoneProjection(state, activeSeatId));
+    expect(hazardPresentation.test.requiredDiceTotal).toBe(
+      Math.max(0, 6 - (hazardPresentation.test.fixedValue ?? 0))
+    );
 
     state.activeResolution = {
       id: "enemy-battle-route",
@@ -370,11 +374,20 @@ describe("server required-action projection", () => {
     state.currentEncounter = null;
     state.phase = "action";
     const endTurn = requiredAction(createPhoneProjection(state, ownerSeatId));
-    expect(endTurn).toMatchObject({ transitionStage: "end-turn-available", allowedCommand: "finish-actions", canAct: true });
+    expect(endTurn).toMatchObject({
+      transitionStage: "end-turn-available",
+      allowedCommand: "finish-actions",
+      canAct: true,
+      label: "Finish actions when ready"
+    });
 
     state.phase = "broadcast";
     const finalEndTurn = requiredAction(createPhoneProjection(state, ownerSeatId));
-    expect(finalEndTurn).toMatchObject({ transitionStage: "end-turn-available", allowedCommand: "end-turn" });
+    expect(finalEndTurn).toMatchObject({
+      transitionStage: "end-turn-available",
+      allowedCommand: "end-turn",
+      label: "Pass turn when ready"
+    });
   });
 
   it("keeps a transient battle result in resolving state until consequences settle", () => {
@@ -555,7 +568,7 @@ describe("server required-action projection", () => {
       id: "battle-presentation-1",
       actorSeatId: ownerSeatId,
       encounter: { name: "Cinder-Veil Stalker", category: "Battle" },
-      test: { stat: "grit", opposed: true },
+      test: { stat: "grit", opposed: true, fixedValue: 5, requiredDiceTotal: null },
       operative: { baseValue: 3, rawDice: [4, 2], diceTotal: 6, finalTotal: 11 },
       opponent: { finalTotal: 9 },
       outcome: "success",

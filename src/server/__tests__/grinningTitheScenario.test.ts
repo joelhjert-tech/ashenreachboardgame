@@ -175,7 +175,7 @@ describe("The Grinning Tithe", () => {
     expect(catalog.get(GRINNING_TITHE_HAZARD_ID)).toMatchObject({
       cardType: "hazard",
       faction: "Pallid Retinue",
-      clearReward: { type: "gain_salvage", amount: 1 }
+      clearReward: { type: "gain_salvage", amount: 2 }
     });
 
     expect(isScenarioEligibleForSession(scenario!, "single-player", "co-op", "standard", 1)).toBe(true);
@@ -300,7 +300,7 @@ describe("The Grinning Tithe", () => {
     expect(server.getState().phase).toBe("navigation");
     expect(
       server.getState().players.find((player) => player.seatId === "seat-2")!.character.salvage
-    ).toBe(targetSalvageBefore + 1);
+    ).toBe(targetSalvageBefore + 2);
     expect(
       server.getState().eventLog.some((event) => (event as { type?: string }).type === "SCENARIO_ASSAULT_COMPLETED")
     ).toBe(true);

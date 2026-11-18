@@ -618,9 +618,9 @@ export function buildCurrentPlayerPrompt(patch: PhonePatchPayload): CurrentPlaye
 
   if (patch.phase === "broadcast") {
     return {
-      phaseLabel: "End Turn · Experience",
+      phaseLabel: "Experience",
       privateText: "Review rewards and available upgrades while the turn hands off.",
-      requiredAction: "End turn",
+      requiredAction: "Pass turn",
       actionSummary: "Experience upgrades only appear when the authoritative game state allows them.",
       disabledReasons: [],
       usefulNow: "Review the result, upgrade if available, then follow the handoff.",

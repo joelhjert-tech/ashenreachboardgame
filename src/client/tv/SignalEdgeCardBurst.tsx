@@ -1,7 +1,8 @@
-import { useEffect, useState, type ReactElement } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import { getSignalTheatreEdgeCardPaths } from "../shared/assetPaths.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import type { PublicEdgeCardPlay } from "../shared/types.js";
+import { useReducedMotion } from "../shared/useReducedMotion.js";
 import "./SignalEdgeCardBurst.css";
 
 export type SignalEdgeCardBurstStage =
@@ -27,10 +28,12 @@ function markSeen(id: string): void {
 
 export function SignalEdgeCardBurst({
   play,
+  environmentPath,
   forcedStage = null,
   onSettled
 }: {
   play: PublicEdgeCardPlay | null;
+  environmentPath?: string | null;
   forcedStage?: SignalEdgeCardBurstStage | null;
   onSettled?: () => void;
 }): ReactElement | null {
@@ -38,11 +41,14 @@ export function SignalEdgeCardBurst({
     play && (!wasSeen(play.id) || forcedStage) ? play : null
   );
   const [stage, setStage] = useState<SignalEdgeCardBurstStage>(forcedStage ?? "sealed");
+  const reducedMotion = useReducedMotion();
+  const onSettledRef = useRef(onSettled);
+  onSettledRef.current = onSettled;
 
   useEffect(() => {
     if (!play || wasSeen(play.id)) return;
-    setActivePlay(play);
-    setStage(forcedStage ?? "sealed");
+    setActivePlay((current) => current?.id === play.id ? current : play);
+    if (forcedStage) setStage(forcedStage);
   }, [forcedStage, play]);
 
   useEffect(() => {
@@ -52,16 +58,13 @@ export function SignalEdgeCardBurst({
       return undefined;
     }
 
-    const reducedMotion =
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) {
       setStage("result");
       const timer = window.setTimeout(() => {
         markSeen(activePlay.id);
         setStage("done");
         setActivePlay(null);
-        onSettled?.();
+        onSettledRef.current?.();
       }, 1800);
       return () => window.clearTimeout(timer);
     }
@@ -75,11 +78,11 @@ export function SignalEdgeCardBurst({
         markSeen(activePlay.id);
         setStage("done");
         setActivePlay(null);
-        onSettled?.();
+        onSettledRef.current?.();
       }, 3900)
     ];
     return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [activePlay, forcedStage, onSettled]);
+  }, [activePlay, forcedStage, reducedMotion]);
 
   if (!activePlay || stage === "done") return null;
 
@@ -88,9 +91,11 @@ export function SignalEdgeCardBurst({
       className="signal-edge-burst"
       data-testid="signal-edge-card-burst"
       data-stage={stage}
+      data-environment={environmentPath ? "sector" : "charge"}
       aria-live="assertive"
       aria-labelledby="signal-edge-burst-title"
     >
+      {environmentPath ? <img className="signal-edge-burst__environment" src={environmentPath} alt="" aria-hidden="true" /> : null}
       <img
         className="signal-edge-burst__charge-art"
         src={assets.charge}

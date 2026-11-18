@@ -11,6 +11,7 @@
   isolation: isolate;
 }
 
+.signal-edge-burst__environment,
 .signal-edge-burst__charge-art,
 .signal-edge-burst__detonation-art,
 .signal-edge-burst__shade {
@@ -27,6 +28,14 @@
   filter: brightness(.52) saturate(.88);
   transform: scale(1.04);
   transition: filter 680ms ease, transform 900ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.signal-edge-burst__environment {
+  z-index: -5;
+  filter: brightness(.56) saturate(.72) contrast(1.08);
+}
+.signal-edge-burst[data-environment="sector"] .signal-edge-burst__charge-art {
+  opacity: .42;
 }
 
 .signal-edge-burst__detonation-art {
@@ -103,7 +112,6 @@
 }
 
 .signal-edge-burst__card-face {
-  position: relative;
   padding: 0;
   transform: rotateY(180deg);
   background: #020405;

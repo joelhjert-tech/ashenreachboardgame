@@ -39,10 +39,16 @@ async function joinPhone(page: Page, roomCode: string, name: string, operative: 
   await page.goto(`${client}/?room=${roomCode}&resetAuth=1`);
   await page.getByLabel("Player name").fill(name);
   await page.getByRole("button", { name: "Join Game" }).click();
-  await page.getByRole("heading", { name: "Select operative" }).waitFor();
+  await page.getByRole("heading", { name: "Choose Piece" }).waitFor();
+  await page.getByRole("button", { name: "Continue to Operative" }).click();
+  await page.getByRole("heading", { name: "Choose Operative" }).waitFor();
   await page.getByRole("button", { name: operative }).click();
   await page.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
   await page.getByRole("button", { name: "Select Contract" }).filter({ visible: true }).first().click();
+  for (let pick = 0; pick < 2; pick += 1) {
+    await page.getByRole("heading", { name: "Choose one provision" }).waitFor();
+    await page.getByRole("button", { name: /Choose (Equipment|Follower)/ }).first().click();
+  }
   await page.getByRole("button", { name: "Ready" }).click();
   const auth = await page.evaluate(() => JSON.parse(localStorage.getItem("ashenreach.controllerSession") ?? "null")) as Auth | null;
   if (!auth) throw new Error(`No controller auth for ${name}`);

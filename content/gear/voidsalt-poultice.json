@@ -7,11 +7,15 @@
     "stat": "signal",
     "amount": 1
   },
-  "activeText": "Discard to heal 1 wound with cold voidsalt dressing.",
+  "activeText": "During your action phase, discard to heal 1 Wound. Requires an existing Wound.",
+  "effectModel": "consumable",
+  "activationTiming": ["action"],
+  "consumableEffect": "healWound",
+  "consumeOnUse": true,
+  "requiresEquipped": false,
   "useLimit": "discard",
   "timingWindows": [
-    "beforeTakingDamage",
-    "anyTime"
+    "action"
   ],
   "flavor": "A cold paste of salt and black herbs used to keep a wound from learning your name.",
   "tier": "standard",

@@ -6,6 +6,7 @@ import {
 } from "../data/scenarios.js";
 import { getEquippedGearBonus } from "../engine/gear.js";
 import { getEscalationModifier } from "../engine/escalation.js";
+import { getScenarioProgressThreshold } from "./scenarioResolver.js";
 import { getBrokenSealTokenLimit, isSinglePlayerMode } from "./soloTuning.js";
 
 export type ScenarioAmbientResolution = {
@@ -87,6 +88,47 @@ function getCrownHolderSummary(state: GameState): string {
     .filter((entry) => entry.crowns > 0)
     .map((entry) => `${entry.seatId} x${entry.crowns}`)
     .join(", ");
+}
+
+function burnStarfire({ state, rollDie }: ScenarioAmbientContext, amount: number, fromWounds: boolean): ScenarioAmbientResolution | null {
+  const current = state.scenarioProgress.starTokens;
+  if (current === undefined || amount <= 0) return null;
+  if (current > amount) {
+    const next = current - amount;
+    return {
+      updater: (draft) => ({ ...draft, scenarioProgress: { ...draft.scenarioProgress, starTokens: next } }),
+      summary: fromWounds
+        ? `Fresh wounds strip ${amount} additional Starfire token${amount === 1 ? "" : "s"} from the Dying Star.`
+        : `The Dying Star dims to ${next} remaining Starfire tokens.`
+    };
+  }
+  const damage = new Map<string, number>();
+  for (const player of state.players) {
+    if (player.character.status === "recalled") continue;
+    const total = rollDie() + rollDie() + player.character.stats.signal + getEquippedGearBonus(player.character, "signal");
+    damage.set(player.seatId, total >= 12 ? 1 : 2);
+  }
+  return {
+    updater: (draft) => ({
+      ...draft,
+      scenarioProgress: { ...draft.scenarioProgress, starTokens: 5 },
+      players: draft.players.map((player) => {
+        const wounds = damage.get(player.seatId);
+        return wounds ? { ...player, character: { ...player.character, wounds: player.character.wounds + wounds } } : player;
+      })
+    }),
+    summary: `The Dying Star erupts. Signal 12: ${[...damage].map(([id, wounds]) => `${id} takes ${wounds} Wound${wounds === 1 ? "" : "s"}`).join(", ")}. Starfire resets to 5.`
+  };
+}
+
+function restoreStarfire(state: GameState, amount: number, source: string): ScenarioAmbientResolution | null {
+  const current = state.scenarioProgress.starTokens;
+  if (current === undefined || current >= 12 || amount <= 0) return null;
+  const next = Math.min(12, current + amount);
+  return {
+    updater: (draft) => ({ ...draft, scenarioProgress: { ...draft.scenarioProgress, starTokens: next } }),
+    summary: `${source} steadies the star. Starfire rises by ${next - current} to ${next}.`
+  };
 }
 
 const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
@@ -175,7 +217,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
     describePressure: (state) => {
       const claims = state.scenarioProgress.crownClaims ?? 0;
       const claimedSeats = getCrownHolderSummary(state);
-      return `${claims}/3 crown claims secured.${claimedSeats ? ` Held by ${claimedSeats}.` : ""} Crowned operatives press harder in battle but crack under skill pressure.`;
+      return `${claims}/3 Crown tokens held.${claimedSeats ? ` Held by ${claimedSeats}.` : ""} Win a battle while already Crowned to earn a throne claim. Crowns strengthen battles but hinder skill checks.`;
     },
     buildTelemetry: (state) => {
       const activeSeatId = getActiveSeatId(state);
@@ -281,7 +323,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
           : 0;
 
       return [
-        { label: "Mirror Breaks", value: `${state.scenarioProgress.mirrorBreaks ?? 0}/2` },
+        { label: "Mirror Breaks", value: `${state.scenarioProgress.mirrorBreaks ?? 0}/${getScenarioProgressThreshold(state.activeScenarioId, 2)}` },
         { label: "Scar Pressure", value: `${activeScars} on active operative` },
         { label: "Reflection Feed", value: "Contracts, artifacts, Scars" }
       ];
@@ -450,7 +492,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
       return [
         { label: "Engine Mode", value: getEngineModeLabel(modeIndex) },
         { label: "Rotation", value: "Turn start" },
-        { label: "Shutdown", value: `${state.scenarioProgress.shutdownMarks ?? 0}/2` }
+        { label: "Shutdown", value: `${state.scenarioProgress.shutdownMarks ?? 0}/${getScenarioProgressThreshold(state.activeScenarioId, 2)}` }
       ];
     },
     onTurnStart: ({ state, getCounter }) => {
@@ -504,110 +546,12 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
     buildTelemetry: (state) => [
       { label: "Starfire", value: String(state.scenarioProgress.starTokens ?? 0) },
       { label: "Wound Burn", value: "Fresh wounds strip extra stars" },
-      { label: "Ignition", value: `${state.scenarioProgress.ignitionMarks ?? 0}/3` }
+      { label: "Ignition", value: `${state.scenarioProgress.ignitionMarks ?? 0}/${getScenarioProgressThreshold(state.activeScenarioId, 3)}` }
     ],
-    onTurnEnd: ({ state, getCounter, rollDie }) => {
-      if (!Object.hasOwn(state.scenarioProgress, "starTokens")) {
-        return null;
-      }
-
-      const nextStars = Math.max(0, getCounter("starTokens", 10) - 1);
-      const erupted = nextStars === 0;
-      const eruptionOutcomes = erupted
-        ? state.players.map((player) => {
-            const rollTotal = rollDie() + rollDie();
-            const signalTotal =
-              rollTotal +
-              player.character.stats.signal +
-              getEquippedGearBonus(player.character, "signal");
-            const passed = signalTotal >= 12;
-
-            return {
-              seatId: player.seatId,
-              passed,
-              wounds: passed ? 1 : 2
-            };
-          })
-        : [];
-      const failedSeats = eruptionOutcomes.filter((entry) => !entry.passed).map((entry) => entry.seatId);
-
-      return {
-        updater: (state) => ({
-          ...state,
-          scenarioProgress: {
-            ...state.scenarioProgress,
-            starTokens: erupted ? 5 : nextStars
-          },
-          players: erupted
-            ? state.players.map((player) => {
-                const outcome = eruptionOutcomes.find((entry) => entry.seatId === player.seatId);
-
-                return outcome
-                  ? {
-                      ...player,
-                      character: {
-                        ...player.character,
-                        wounds: player.character.wounds + outcome.wounds
-                      }
-                    }
-                  : player;
-              })
-            : state.players
-        }),
-        summary: erupted
-          ? `The Dying Star erupts. Signal tests fail for ${failedSeats.join(", ") || "no one"}; failed operatives take 2 wounds, passes still take 1 wound, and Starfire resets to 5.`
-          : `The Dying Star dims to ${nextStars} remaining Starfire tokens.`
-      };
-    },
-    onWoundsTaken: ({ getCounter, woundDelta }) => {
-      if (woundDelta <= 0) {
-        return null;
-      }
-
-      const currentStars = getCounter("starTokens", 10);
-      const nextStars = Math.max(0, currentStars - woundDelta);
-      const erupted = nextStars === 0;
-
-      return {
-        updater: (state) => ({
-          ...state,
-          scenarioProgress: {
-            ...state.scenarioProgress,
-            starTokens: erupted ? 5 : nextStars
-          },
-          players: erupted
-            ? state.players.map((player) => ({
-                ...player,
-                character: {
-                  ...player.character,
-                  wounds: player.character.wounds + 1
-                }
-              }))
-            : state.players
-        }),
-        summary: erupted
-          ? `Fresh wounds tear away the final Starfire tokens. The Dying Star erupts, every operative takes 1 wound, and the track resets to 5.`
-          : `Fresh wounds strip ${woundDelta} additional Starfire token${woundDelta === 1 ? "" : "s"} from the Dying Star.`
-      };
-    },
-    onGearGained: ({ getCounter, gainedGearCount }) => {
-      if (gainedGearCount <= 0) {
-        return null;
-      }
-
-      const nextStars = Math.min(12, getCounter("starTokens", 10) + gainedGearCount * 2);
-
-      return {
-        updater: (state) => ({
-          ...state,
-          scenarioProgress: {
-            ...state.scenarioProgress,
-            starTokens: nextStars
-          }
-        }),
-        summary: `Recovered artifact output steadies the star. ${gainedGearCount * 2} Starfire token${gainedGearCount === 1 ? "" : "s"} return to the track.`
-      };
-    }
+    onTurnEnd: (context) => burnStarfire(context, 1, false),
+    onWoundsTaken: (context) => burnStarfire(context, context.woundDelta, true),
+    onGearGained: ({ state, gainedGearCount }) => restoreStarfire(state, gainedGearCount * 2, "Recovered artifact power"),
+    onContractCompleted: ({ state }) => restoreStarfire(state, 1, "A completed contract")
   },
   [GRINNING_TITHE_SCENARIO_ID]: {
     initialProgress: { curatorWounds: 0 },

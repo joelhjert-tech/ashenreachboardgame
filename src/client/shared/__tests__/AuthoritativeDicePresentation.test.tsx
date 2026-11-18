@@ -75,6 +75,16 @@ describe("AuthoritativeDicePresentation", () => {
     expect(screen.getByTestId("authoritative-dice-presentation").classList.contains("is-settled")).toBe(true);
   });
 
+  it("does not extend the dice tumble when a revision or modifier changes", () => {
+    vi.useFakeTimers();
+    const { rerender } = render(<AuthoritativeDicePresentation model={model()} animateOnMount />);
+    act(() => vi.advanceTimersByTime(700));
+    rerender(<AuthoritativeDicePresentation model={model({ revision: 99, finalValue: 10 })} animateOnMount />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(screen.getByTestId("authoritative-dice-presentation").classList.contains("is-settled")).toBe(true);
+    expect(screen.getByLabelText("Dice calculation").textContent).toContain("Final 10");
+  });
+
   it("restores a completed result without replaying the tumble", () => {
     render(<AuthoritativeDicePresentation model={model()} />);
     expect(screen.getByTestId("authoritative-dice-presentation").classList.contains("is-settled")).toBe(true);

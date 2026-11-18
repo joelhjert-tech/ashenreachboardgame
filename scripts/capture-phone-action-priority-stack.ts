@@ -20,10 +20,16 @@ async function startPhone(page: Page): Promise<Auth> {
   await page.goto(`${client}/?room=${session.roomCode}&resetAuth=1`);
   await page.getByLabel("Player name").fill("PriorityQA");
   await page.getByRole("button", { name: "Join Game" }).click();
-  await page.getByRole("heading", { name: "Select operative" }).waitFor();
+  await page.getByRole("heading", { name: "Choose Piece" }).waitFor();
+  await page.getByRole("button", { name: "Continue to Operative" }).click();
+  await page.getByRole("heading", { name: "Choose Operative" }).waitFor();
   await page.getByRole("button", { name: /Bjornis/i }).click();
   await page.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
   await page.getByRole("button", { name: "Select Contract" }).first().click();
+  for (let pick = 0; pick < 2; pick += 1) {
+    await page.getByRole("heading", { name: "Choose one provision" }).waitFor();
+    await page.getByRole("button", { name: /Choose (Equipment|Follower)/ }).first().click();
+  }
   await page.getByRole("button", { name: "Ready" }).click();
   await page.getByRole("button", { name: "Start Game" }).click();
   const auth = await page.evaluate(() => JSON.parse(localStorage.getItem("ashenreach.controllerSession") ?? "null")) as Auth | null;
@@ -35,10 +41,16 @@ async function joinConfiguredPhone(page: Page, roomCode: string, displayName: st
   await page.goto(`${client}/?room=${roomCode}&resetAuth=1`);
   await page.getByLabel("Player name").fill(displayName);
   await page.getByRole("button", { name: "Join Game" }).click();
-  await page.getByRole("heading", { name: "Select operative" }).waitFor();
+  await page.getByRole("heading", { name: "Choose Piece" }).waitFor();
+  await page.getByRole("button", { name: "Continue to Operative" }).click();
+  await page.getByRole("heading", { name: "Choose Operative" }).waitFor();
   await page.getByRole("button", { name: new RegExp(operativeName, "i") }).click();
   await page.getByRole("heading", { name: "Choose Starting Contract" }).waitFor();
   await page.getByRole("button", { name: "Select Contract" }).filter({ visible: true }).first().click();
+  for (let pick = 0; pick < 2; pick += 1) {
+    await page.getByRole("heading", { name: "Choose one provision" }).waitFor();
+    await page.getByRole("button", { name: /Choose (Equipment|Follower)/ }).first().click();
+  }
   await page.getByRole("button", { name: "Ready" }).click();
   const auth = await page.evaluate(() => JSON.parse(localStorage.getItem("ashenreach.controllerSession") ?? "null")) as Auth | null;
   if (!auth) throw new Error(`Controller authentication was not stored for ${displayName}`);
@@ -74,14 +86,19 @@ async function seed(auth: Auth, fixture: unknown): Promise<void> {
 }
 
 async function openAction(page: Page): Promise<void> {
-  if (await page.getByTestId("phone-action-priority-stack").count()) return;
+  const actionSurface = page
+    .getByTestId("phone-action-priority-stack")
+    .or(page.getByTestId("phone-action-active-panel"))
+    .or(page.getByTestId("phone-required-action-shell"))
+    .first();
+  if (await actionSurface.count()) return;
   if (await page.getByRole("button", { name: "Show Tabs" }).count()) {
     await page.getByRole("button", { name: "Show Tabs" }).click();
   }
   const actionTab = page.getByRole("tab", { name: /^Action/i });
   if (await actionTab.count()) await actionTab.click({ force: true });
   try {
-    await page.getByTestId("phone-action-priority-stack").waitFor({ timeout: 8_000 });
+    await actionSurface.waitFor({ timeout: 8_000 });
   } catch (error) {
     const diagnostics = await page.evaluate(() => ({
       tabs: Array.from(document.querySelectorAll('[role="tab"]')).map((node) => ({ text: node.textContent, selected: node.getAttribute("aria-selected"), disabled: node.getAttribute("aria-disabled") })),
@@ -159,7 +176,8 @@ async function main(): Promise<void> {
 
   await seed(auth, { kind: "phone-action", stage: "blocked-start" });
   await openAction(phone);
-  await phone.getByText(/^Blocked/).click();
+  const blockedSummary = phone.getByText(/^Blocked/);
+  if (await blockedSummary.count()) await blockedSummary.click();
   await capture(phone, "many-blocked-actions-390x844.png", 390, 844);
   captures += 1;
 

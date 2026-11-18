@@ -73,7 +73,7 @@ interface ActiveMissionTargets {
 }
 
 const WIDTH = 1600;
-const HEIGHT = 900;
+const HEIGHT = 780;
 const BOARD_CELL_WIDTH = 130;
 const BOARD_CELL_HEIGHT = 100;
 const BOARD_WIDTH = BOARD_CELL_WIDTH * 7;
@@ -281,10 +281,10 @@ function initials(value: string): string {
 }
 
 function splitLabel(value: string): [string, string?] {
-  if (value.length <= 18) return [value];
+  if (value.length <= 17) return [value];
   const words = value.split(" ");
   let first = "";
-  while (words.length > 0 && `${first} ${words[0]}`.trim().length <= 18) {
+  while (words.length > 0 && `${first} ${words[0]}`.trim().length <= 17) {
     first = `${first} ${words.shift()}`.trim();
   }
   return [first || value.slice(0, 18), words.join(" ") || undefined];
@@ -311,10 +311,7 @@ function wrapBoardLabel(value: string): string[] {
 }
 
 function nodeDimensions(tier: BoardTier): { width: number; height: number } {
-  if (tier === "center") return { width: 180, height: 76 };
-  if (tier === "inner") return { width: 118, height: 46 };
-  if (tier === "middle") return { width: 148, height: 56 };
-  return { width: 142, height: 54 };
+  return { width: tier === "center" ? 196 : 180, height: 90 };
 }
 
 function buildFixtureOccupants(fixture: SignalCartographyFixture): Map<string, MapOccupant[]> {
@@ -377,15 +374,12 @@ function PieceCluster({
   return (
     <g className="signal-cartography__pieces" aria-label={occupants.map((entry) => entry.initials).join(", ")}>
       {visible.map((occupant, index) => {
-        const angle = (Math.PI * 2 * index) / Math.max(visible.length, 1) - Math.PI / 2;
-        const radius = visible.length > 1 ? 20 : 0;
-        const px = x + Math.cos(angle) * radius;
-        const py = y + Math.sin(angle) * radius;
+        const px = x + (index - (visible.length - 1) / 2) * 29;
         return (
-          <g key={occupant.seatId} transform={`translate(${px} ${py})`}>
-            <circle r="13" fill="#080b0d" stroke={occupant.color} strokeWidth="4" />
-            <path d="M -7 4 L 0 -8 L 7 4 Z" fill={occupant.color} opacity=".88" />
-            <text y="20" textAnchor="middle">{occupant.initials}</text>
+          <g key={occupant.seatId} transform={`translate(${px} ${y})`}>
+            <title>{occupant.initials}</title>
+            <circle r="13" fill="#080b0d" stroke={occupant.color} strokeWidth="3" />
+            <image href={getCartographyPlayerCoinPath(occupant.markerId)} x="-11" y="-11" width="22" height="22" />
           </g>
         );
       })}
@@ -1120,7 +1114,30 @@ export function SignalCartographyPrototype({
   fixture,
   design = "schematic"
 }: SignalCartographyPrototypeProps): ReactElement {
-  const nodeById = useMemo(() => new Map(RIFTFALL_BOARD_NODES.map((node) => [node.id, node])), []);
+  const nodeById = useMemo(() => {
+    const positions: Record<BoardTier, Array<[number, number]>> = {
+      outer: [
+        ...Array.from({ length: 8 }, (_, i): [number, number] => [105 + i * 198, 60]),
+        ...[192, 324, 456, 588].map((y): [number, number] => [1491, y]),
+        ...Array.from({ length: 8 }, (_, i): [number, number] => [1491 - i * 198, 720]),
+        ...[588, 456, 324, 192].map((y): [number, number] => [105, y])
+      ],
+      middle: [
+        ...Array.from({ length: 6 }, (_, i): [number, number] => [320 + i * 192, 200]),
+        [1280, 340], [1280, 480],
+        ...Array.from({ length: 6 }, (_, i): [number, number] => [1280 - i * 192, 620]),
+        [320, 480], [320, 340]
+      ],
+      inner: [[580, 310], [800, 310], [1020, 310], [1020, 415], [1020, 520], [800, 520], [580, 520], [580, 415]],
+      center: [[800, 405]]
+    };
+    const indices: Record<BoardTier, number> = { outer: 0, middle: 0, inner: 0, center: 0 };
+    return new Map(RIFTFALL_BOARD_NODES.map((node) => {
+      const [x, y] = positions[node.ring][indices[node.ring]++]!;
+      return [node.id, { ...node, x: x / WIDTH, y: y / HEIGHT }];
+    }));
+  }, []);
+  const publicSectorById = useMemo(() => new Map(patch?.payload.sectors.map((sector) => [sector.id, sector]) ?? []), [patch?.payload.sectors]);
   const occupants = useMemo(() => buildOccupants(patch, fixture), [fixture, patch]);
   const selectedDestination = patch?.payload.movementPlanner?.destinations.find(
     (destination) => destination.sectorId === patch.payload.movementPlanner?.selectedDestinationId
@@ -1206,7 +1223,7 @@ export function SignalCartographyPrototype({
 
   return (
     <main
-      className="signal-cartography"
+      className="signal-cartography signal-cartography--dead-star"
       data-fixture={fixture}
       data-design="schematic"
       data-testid="signal-cartography-prototype"
@@ -1214,8 +1231,8 @@ export function SignalCartographyPrototype({
     >
       <header className="signal-cartography__header">
         <div>
-          <span>{fixture === "live" ? "Signal Cartography · public relay" : "Signal Cartography · prototype"}</span>
-          <h1>The Reach, translated into routes</h1>
+          <span>The Dead Star Expanse</span>
+          <h1>Ashen Reach</h1>
         </div>
         <div className="signal-cartography__status">
           <span className="signal-cartography__pulse" aria-hidden="true" />
@@ -1224,7 +1241,7 @@ export function SignalCartographyPrototype({
         </div>
       </header>
 
-      <section className="signal-cartography__frame" aria-label="49-sector public route schematic">
+      <section className="signal-cartography__frame" aria-label="49-sector public space board">
         <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-labelledby="signal-map-title signal-map-desc">
           <title id="signal-map-title">Ashenreach public sector map</title>
           <desc id="signal-map-desc">Four concentric reaches with sector names, routes, printed Threats, public challenges, and operative locations.</desc>
@@ -1238,7 +1255,7 @@ export function SignalCartographyPrototype({
               <feGaussianBlur stdDeviation="4" result="blur" />
               <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
             </filter>
-            {BOARD_SPACES.map((space) => (
+            {BOARD_SPACES.map((space, index) => (
               <pattern
                 key={space.id}
                 id={`cartography-art-${space.id}`}
@@ -1247,7 +1264,7 @@ export function SignalCartographyPrototype({
                 patternContentUnits="objectBoundingBox"
               >
                 <image
-                  href={getSignalCartographySectorArtPath(space.id)}
+                  href={`/assets/riftfall/ui/signal-cartography/void-sector-${index % 8}.webp`}
                   width="1"
                   height="1"
                   preserveAspectRatio="xMidYMid slice"
@@ -1255,7 +1272,7 @@ export function SignalCartographyPrototype({
               </pattern>
             ))}
           </defs>
-          <rect width={WIDTH} height={HEIGHT} fill="url(#cartography-iris)" />
+          <image href="/assets/riftfall/ui/signal-cartography/dead-star-backdrop.webp" width={WIDTH} height={HEIGHT} preserveAspectRatio="xMidYMid slice" />
           <g className="signal-cartography__reach-lines" aria-hidden="true">
             <rect x="70" y="66" width="1460" height="768" rx="44" />
             <rect x="326" y="246" width="948" height="408" rx="34" />
@@ -1263,7 +1280,7 @@ export function SignalCartographyPrototype({
             <circle cx="800" cy="450" r="92" />
           </g>
           <g className="signal-cartography__connections" aria-hidden="true">
-            {RIFTFALL_BOARD_NODES.flatMap((node) =>
+            {Array.from(nodeById.values()).flatMap((node) =>
               node.connections
                 .filter((neighborId) => node.id.localeCompare(neighborId) < 0)
                 .map((neighborId) => {
@@ -1298,14 +1315,15 @@ export function SignalCartographyPrototype({
               const isLegal = legalDestinationIds.has(space.id);
               const isRoute = route.includes(space.id);
               const innerStep = innerApproach?.steps.find((step) => step.sectorId === space.id);
-              const recurring = patch?.payload.sectors
-                .find((sector) => sector.id === space.id)
-                ?.tileChallenges?.[0];
+              const publicSector = publicSectorById.get(space.id);
+              const threats = publicSector?.threatIcons ?? space.threatIcons;
+              const recurring = publicSector?.tileChallenges?.[0];
               const directStat = recurring?.testStat ?? space.textBox.test?.stats[0] ?? null;
               const persistentFixture =
                 (fixture === "challenge" && space.id === "black-relay-spire") ||
                 persistentSectorIds.has(space.id);
               const nodeClass = [
+                space.tier === "center" ? "is-core" : "",
                 isActive ? "is-active" : "",
                 isLegal ? "is-legal" : "",
                 isRoute ? "is-route" : "",
@@ -1321,41 +1339,44 @@ export function SignalCartographyPrototype({
                   className={nodeClass}
                   data-sector-id={space.id}
                   transform={`translate(${x} ${y})`}
-                  aria-label={`${space.name}, ${tierLabels[space.tier]}`}
+                  aria-label={`${space.name}, ${tierLabels[space.tier]}, printed threats: ${threats.join(", ") || "none"}`}
                 >
                   <rect
                     x={-dimensions.width / 2}
                     y={-dimensions.height / 2}
                     width={dimensions.width}
                     height={dimensions.height}
-                    rx="9"
+                    rx="48"
                     className="signal-cartography__node-art"
                     fill={`url(#cartography-art-${space.id})`}
                   />
                   <rect
                     x={-dimensions.width / 2}
-                    y={-dimensions.height / 2}
+                    y={-6}
                     width={dimensions.width}
-                    height={dimensions.height}
-                    rx="9"
+                    height={58}
+                    rx="12"
                     className="signal-cartography__node-plate"
                   />
                   <path
                     d={`M ${-dimensions.width / 2 + 6} ${dimensions.height / 2 - 5} H ${dimensions.width / 2 - 6}`}
                     className="signal-cartography__node-edge"
                   />
-                  <text className="signal-cartography__node-name" textAnchor="middle" y={lineTwo ? -4 : 3}>
+                  <text className="signal-cartography__node-name" textAnchor="middle" y={lineTwo ? 11 : 20}>
                     <tspan x="0">{lineOne}</tspan>
-                    {lineTwo ? <tspan x="0" dy="13">{lineTwo}</tspan> : null}
+                    {lineTwo ? <tspan x="0" dy="18">{lineTwo}</tspan> : null}
                   </text>
-                  <g className="signal-cartography__threats" transform={`translate(${-dimensions.width / 2 + 12} ${dimensions.height / 2 - 8})`}>
-                    {space.threatIcons.map((icon, index) => (
+                  <g className="signal-cartography__threats" aria-label="Printed threats" transform={`translate(${-(threats.length - 1) * 14} 44)`}>
+                    {threats.map((icon, index) => (
+                      <g data-threat-lane={icon} key={`${space.id}-${icon}-${index}`} transform={`translate(${index * 28} 0)`}>
+                      <title>{icon} printed threat</title>
                       <path
                         key={`${space.id}-${icon}-${index}`}
-                        d="M 0 -6 L 6 0 L 0 6 L -6 0 Z"
-                        transform={`translate(${index * 15} 0)`}
+                        d="M 0 -10 L 10 0 L 0 10 L -10 0 Z"
                         fill={threatColors[icon]}
                       />
+                      <text textAnchor="middle" y="4" className="signal-cartography__threat-letter">{icon[0]!.toUpperCase()}</text>
+                      </g>
                     ))}
                   </g>
                   {directStat ? (
@@ -1374,7 +1395,7 @@ export function SignalCartographyPrototype({
                     </g>
                   ) : null}
                   {occupants.has(space.id) ? (
-                    <PieceCluster occupants={occupants.get(space.id)!} x={0} y={-dimensions.height / 2 - 18} />
+                    <PieceCluster occupants={occupants.get(space.id)!} x={0} y={-26} />
                   ) : null}
                 </g>
               );

@@ -46,7 +46,7 @@ for /f "usebackq delims=" %%P in (`powershell.exe -NoProfile -ExecutionPolicy By
   if not defined ASHEN_REACH_LAUNCHER_PID set "ASHEN_REACH_LAUNCHER_PID=%%P"
 )
 
-call npm.cmd run dev -- --open-tv
+call npm.cmd run play -- --open-tv
 set "EXIT_CODE=%ERRORLEVEL%"
 
 echo.

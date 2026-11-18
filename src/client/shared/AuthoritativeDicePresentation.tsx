@@ -33,7 +33,9 @@ function signed(value: number): string {
 
 function resultSignature(model: AuthoritativeDiceModel): string | null {
   if (!model.dice.some((die) => die.value !== null)) return null;
-  return `${model.id}:${model.revision}:${model.dice.map((die) => die.value ?? "-").join(",")}:${model.finalValue ?? "-"}`;
+  // Presentation follows the dice receipt, not unrelated server revisions or
+  // modifier updates. Those must not extend an in-flight animation.
+  return `${model.id}:${model.dice.map((die) => die.value ?? "-").join(",")}`;
 }
 
 export function AuthoritativeDicePresentation({

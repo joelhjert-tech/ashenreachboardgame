@@ -448,7 +448,9 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "anomaly-table-fire-writ",
       "anomaly-gutter-star-orbit",
       "anomaly-webglass-stutter",
-      "anomaly-scar-tide-lattice"
+      "anomaly-scar-tide-lattice",
+      "anomaly-red-suture-field",
+      "anomaly-blackstar-breath"
     ],
     contract: ["choir-well-canticle"],
     artifact: ["artifact-bell-votive", "artifact-choir-static-censer", "artifact-gate-saint-key", "artifact-marrow-route-key", "artifact-rift-anchor-spike"],
@@ -456,7 +458,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   },
   "black-relay-spire": {
     threat: ["choir-static-burst", "moth-carrier-husk", "spindle-static-squall", "siren-relay-echo", "specimen-null-arrives"],
-    anomaly: ["anomaly-choir-static", "anomaly-relay-ghost-loop", "anomaly-webglass-stutter"],
+    anomaly: ["anomaly-choir-static", "anomaly-relay-ghost-loop", "anomaly-webglass-stutter", "anomaly-warbell-parallax", "anomaly-cinder-gate-echo"],
     contract: ["choir-spindle-harmonics", "choir-well-canticle"],
     artifact: ["artifact-choir-static-censer", "artifact-rift-anchor-spike"],
     escalation: ["escalation-choir-feedback", "escalation-webglass-afterimage"]
@@ -507,7 +509,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   },
   "ashen-chapel": {
     threat: ["cracked-censer-novice", "choir-static-burst", "choir-wraith", "veil-censor", "bell-mask-pilgrim", "reliquary-judge"],
-    anomaly: ["anomaly-choir-static", "anomaly-saint-static-aperture", "anomaly-ashfall-murmur"],
+    anomaly: ["anomaly-choir-static", "anomaly-saint-static-aperture", "anomaly-ashfall-murmur", "anomaly-crownfall-echo-court", "anomaly-throne-shadow-jury"],
     contract: ["umbral-shrine-confession", "choir-spindle-harmonics"],
     artifact: ["artifact-choir-static-censer", "artifact-heat-sink-prayer"],
     escalation: ["escalation-choir-feedback", "escalation-gate-saint-wake"]

@@ -28,6 +28,15 @@ function completeBroadcastTurn(server: GameRoomServer, seatId: string): void {
 }
 
 describe("Phase 3A scenario mode pressure foundation", () => {
+  it("refreshes the round after stabilization on the final turn", () => {
+    const state = createActiveState({ activeSeatIndex: 1, escalationLevel: 2 });
+    state.eventLog.push({ type: "ESCALATION_ADVANCED", seatId: "seat-2", amount: -1, reason: "stabilized" });
+    const server = new GameRoomServer(state);
+    completeBroadcastTurn(server, "seat-2");
+    expect(server.getState().eventLog.filter((e) => (e as { type: string }).type === "ROUND_COMPLETED")).toHaveLength(1);
+    expect(server.getState().escalationLevel).toBe(2);
+  });
+
   it("advances shared round pressure once per multiplayer round, not once per player", () => {
     const server = new GameRoomServer(createActiveState());
 

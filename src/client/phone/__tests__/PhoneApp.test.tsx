@@ -5,6 +5,8 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PhoneApp } from "../PhoneApp.js";
 import { useRoomSubscription } from "../../shared/useRoomSubscription.js";
+import { fetchScenarios } from "../../shared/network.js";
+import { SCENARIOS } from "../../../game/data/scenarios.js";
 import type { CharacterCatalogEntry, PhonePatchPayload, StatePatch } from "../../shared/types.js";
 
 const characters: CharacterCatalogEntry[] = [
@@ -399,7 +401,7 @@ describe("PhoneApp", () => {
     fireEvent.click(screen.getByRole("button", { name: /join game/i }));
 
     expect(await screen.findByRole("heading", { name: /choose piece/i })).toBeInTheDocument();
-    expect(screen.getByText(/step 1 of 4/i)).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Setup progress, step 1 of 5" })).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
     const setupScroll = screen.getByRole("main", { name: /choose piece/i });
     setupScroll.scrollTop = 180;
@@ -427,7 +429,7 @@ describe("PhoneApp", () => {
     }
     expect(screen.getAllByRole("heading", { name: /choose operative/i })).toHaveLength(1);
     expect(screen.queryByRole("heading", { name: /choose character/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/step 2 of 4/i)).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Setup progress, step 2 of 5" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /recommended/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /all operatives/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /advanced/i })).toBeInTheDocument();
@@ -443,6 +445,77 @@ describe("PhoneApp", () => {
     });
     expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
     expect(document.body.scrollWidth).toBeLessThanOrEqual(390);
+  });
+
+  it("lets the Host Phone add and remove clearly labelled AI rivals in supported Rivalry scenarios", async () => {
+    storeControllerAuth();
+    const sendIntent = vi.fn(() => true);
+    const patch = createConfirmedCharacterPatch("void-marshal");
+    patch.payload.sessionMode = "multiplayer";
+    patch.payload.interactionMode = "rivalry";
+    patch.payload.activeScenario = {
+      id: "scenario_throne_of_ash",
+      name: "The Throne of Ash"
+    } as PhonePatchPayload["activeScenario"];
+    patch.payload.seats = [
+      { ...patch.payload.seats[0]!, controllerType: "human" },
+      {
+        seatId: "seat-2",
+        controllerType: "ai",
+        characterId: "signal-witch",
+        characterSelected: true,
+        displayName: "Ashen Rival 2",
+        connected: false,
+        ready: true,
+        kicked: false,
+        startingMissionSelected: true,
+        startingMissionTitle: "Hidden AI Contract"
+      },
+      {
+        seatId: "seat-3",
+        controllerType: "human",
+        characterId: "grave-engineer",
+        characterSelected: false,
+        displayName: null,
+        connected: false,
+        ready: false,
+        kicked: false
+      }
+    ];
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch,
+      error: null,
+      sendIntent,
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<PhoneApp />);
+
+    const manager = await screen.findByRole("region", { name: /ai rivals/i });
+    expect(manager).toHaveTextContent(/ashen rival 2/i);
+    expect(manager).toHaveTextContent(/standard ai/i);
+    fireEvent.click(within(manager).getByRole("button", { name: /^remove$/i }));
+    expect(sendIntent).toHaveBeenCalledWith({
+      type: "REMOVE_AI_RIVAL_REQUESTED",
+      seatId: "seat-1",
+      targetSeatId: "seat-2"
+    });
+
+    patch.sequence += 1;
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch,
+      error: null,
+      sendIntent,
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    cleanup();
+    render(<PhoneApp />);
+    fireEvent.click(await screen.findByRole("button", { name: /^add ai rival$/i }));
+    expect(sendIntent).toHaveBeenCalledWith({ type: "ADD_AI_RIVAL_REQUESTED", seatId: "seat-1" });
   });
 
   it("guards Android Back during operative selection and preserves setup after Stay", async () => {
@@ -530,7 +603,7 @@ describe("PhoneApp", () => {
     expect(screen.getByRole("radio", { name: /beacon/i })).toHaveAttribute("tabindex", "-1");
   });
 
-  it("uses roving keyboard navigation and skips occupied Signal pieces", async () => {
+  it("allows keyboard selection of an icon already used by another player", async () => {
     storeControllerAuth();
     const ownSeat = {
       ...createLobbyPhonePatch().payload.seats[0]!,
@@ -559,14 +632,33 @@ describe("PhoneApp", () => {
     render(<PhoneApp />);
     const beacon = await screen.findByRole("radio", { name: /beacon/i });
     const bastion = screen.getByRole("radio", { name: /bastion/i });
-    const lantern = screen.getByRole("radio", { name: /lantern/i });
-    expect(bastion).toBeDisabled();
+    expect(bastion).toBeEnabled();
 
     beacon.focus();
     fireEvent.keyDown(beacon, { key: "ArrowRight" });
-    expect(lantern).toHaveAttribute("aria-checked", "true");
-    expect(lantern).toHaveFocus();
-    expect(lantern).toHaveAttribute("tabindex", "0");
+    expect(bastion).toHaveAttribute("aria-checked", "true");
+    expect(bastion).toHaveFocus();
+    expect(bastion).toHaveAttribute("tabindex", "0");
+  });
+
+  it.each(["lobby", "active"] as const)("lets a player inspect their chosen operative in %s without reselecting it", async (status) => {
+    storeControllerAuth();
+    const sendIntent = vi.fn();
+    const patch = createConfirmedCharacterPatch("void-marshal");
+    patch.payload.status = status;
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch, error: null, sendIntent,
+      status: "open", synchronized: true, debugEvents: [], clearDebugEvents: vi.fn()
+    });
+    render(<PhoneApp />);
+    const inspect = await screen.findByRole("button", { name: "Inspect operative" });
+    fireEvent.click(inspect);
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Back to my operative" })).toBeVisible();
+    expect(within(dialog).queryByRole("button", { name: /^Select / })).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Back to my operative" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(sendIntent).not.toHaveBeenCalled();
   });
 
   it("inspects canonical stats, abilities, provision rules, and lore without selecting the operative", async () => {
@@ -780,9 +872,9 @@ describe("PhoneApp", () => {
 
     const view = render(<PhoneApp />);
 
-    expect(await screen.findByText(/Contract · step 3 of 4/i)).toBeInTheDocument();
+    expect(await screen.findByRole("list", { name: "Setup progress, step 3 of 5" })).toBeInTheDocument();
     expect(screen.getByText(/^deepdale$/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /join game/i })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /join game/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /select Contract/i }));
     expect(sendIntent).toHaveBeenCalledWith({
       type: "SELECT_STARTING_CONTRACT",
@@ -1135,7 +1227,7 @@ describe("PhoneApp", () => {
     });
     expect(screen.queryByRole("button", { name: /join game/i })).not.toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: /choose piece/i })).toBeInTheDocument();
-    expect(screen.getByText(/step 1 of 4/i)).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Setup progress, step 1 of 5" })).toBeInTheDocument();
   });
 
   it("does not reuse a stored seat when a direct link asks for a different seat", async () => {
@@ -1245,6 +1337,33 @@ describe("PhoneApp", () => {
       );
     });
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps a compatible scenario selected when changing modes and supports keyboard comparison", async () => {
+    storeControllerAuth();
+    vi.mocked(fetchScenarios).mockResolvedValueOnce(SCENARIOS.map((scenario) => ({ ...scenario, nemesis: null })));
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch({ lobbyConfigured: false, selfIsSetupHost: true }),
+      error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn()
+    });
+    render(<PhoneApp />);
+    fireEvent.click(await screen.findByRole("button", { name: /^rivalry/i }));
+    fireEvent.click(screen.getByRole("button", { name: /continue to scenario/i }));
+    const throne = await screen.findByRole("radio", { name: /throne of ash/i });
+    expect(throne).toHaveAttribute("aria-checked", "true");
+    expect(screen.queryByRole("radio", { name: /broken seal/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /confirm setup/i })).toBeEnabled();
+    fireEvent.keyDown(throne, { key: "ArrowRight" });
+    const mirror = screen.getByRole("radio", { name: /mirror of false heroes/i });
+    expect(mirror).toHaveAttribute("aria-checked", "true");
+    expect(mirror).toHaveFocus();
+    // The rules disclosure is separate from the radio, so it cannot select a card.
+    expect(mirror.querySelector("details")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^back$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /single player/i }));
+    fireEvent.click(screen.getByRole("button", { name: /continue to scenario/i }));
+    expect(screen.getByRole("radio", { name: /mirror of false heroes/i })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("button", { name: /confirm setup/i })).toBeEnabled();
   });
 
   it("lets the Host Phone correct mode, player count, and scenario before starting", async () => {

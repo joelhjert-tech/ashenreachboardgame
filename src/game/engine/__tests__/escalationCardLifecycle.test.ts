@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadEscalationCards } from "../../content/escalations.js";
+import { loadThreatCards } from "../../content/threats.js";
 import { BOARD_SPACES } from "../../data/boardSpaces.js";
 import { resolveBoardTextEffect } from "../../data/boardTextEffects.js";
 import { createCanonicalSectorGraph } from "../../data/canonicalSectorGraph.js";
@@ -128,6 +129,46 @@ function resolvedCardEvents(state: GameState, cardId: string): SpaceTextResolved
 }
 
 describe("Escalation card lifecycle", () => {
+  it.each(["scenario_broken_seal", "scenario_grinning_tithe"])("respects %s pressure rules on an ordinary failed sector check", (scenarioId) => {
+    const card = loadEscalationCards().get("escalation-emberwatch")!;
+    const state = setup(card, scenarioId);
+    const noPressure = scenarioId === "scenario_grinning_tithe";
+    state.escalationLevel = noPressure ? 0 : 7;
+    state.players[0]!.character.stats.grit = 1;
+    state.players[0]!.character.stats.command = 1;
+    state.sectors.find((sector) => sector.id === liveSectorIdFor(card))!.encounterDecks.escalation = [];
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]));
+    server.resolveSpaceTextIntent({ type: "RESOLVE_SPACE_TEXT", seatId: "seat-1" });
+    expect(server.getState().eventLog).toContainEqual(expect.objectContaining({ type: "SPACE_TEXT_RESOLVED", success: false }));
+    expect(server.getState().escalationLevel).toBe(noPressure ? 0 : 8);
+    expect(server.getState().status).toBe(noPressure ? "active" : "ended");
+  });
+
+  it("cannot change pressure by requesting a blocked sector action", () => {
+    const card = loadEscalationCards().get("escalation-emberwatch")!;
+    const state = setup(card);
+    state.currentEncounter = loadThreatCards().get("ash-rat-skitter")!;
+    const server = new GameRoomServer(state);
+    expect(() => server.resolveSpaceTextIntent({ type: "RESOLVE_SPACE_TEXT", seatId: "seat-1" })).toThrow(/threat/i);
+    expect(server.getState().escalationLevel).toBe(state.escalationLevel);
+    expect(escalationEvents(server.getState())).toHaveLength(0);
+    expect(resolvedCardEvents(server.getState(), card.id)).toHaveLength(0);
+  });
+
+  it("consumes and records the card that triggers collapse", () => {
+    const card = loadEscalationCards().get("escalation-choir-feedback")!;
+    const state = setup(card);
+    state.escalationLevel = 7;
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0, 5, 5]));
+    server.resolveSpaceTextIntent({ type: "RESOLVE_SPACE_TEXT", seatId: "seat-1" });
+    const after = server.getState();
+    expect(after.status).toBe("ended");
+    expect(after.activeResolution).toBeNull();
+    expect(resolvedCardEvents(after, card.id)).toHaveLength(1);
+    expect(after.sectors.find((sector) => sector.id === liveSectorIdFor(card))!.encounterDecks.escalation).toEqual([]);
+    expect(escalationEvents(after)).toEqual([expect.objectContaining({ sourceCardId: card.id, newLevel: 8 })]);
+  });
+
   it("places all 16 authored cards in reachable, progression-banded Escalation actions", () => {
     const cards = loadEscalationCards();
     const sectors = createCanonicalSectorGraph();

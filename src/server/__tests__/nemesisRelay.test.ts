@@ -236,6 +236,7 @@ describe("Nemesis Relay mode", () => {
     expect(server.getState().scenarioProgress["crownKey:seat-1"]).toBe(1);
     expect(server.getState().status).toBe("ended");
     expect(server.getState().lastOutcomeSummary?.summary).toContain("All Nemesis Champions");
+    expect(server.getState().scenarioResult).toMatchObject({ status: "victory", shared: true });
   });
 
   it("grants two trophies without mutating stored legacy Heat for a cross-seat bound Nemesis", () => {
@@ -275,6 +276,10 @@ describe("Nemesis Relay mode", () => {
         character: {
           ...player.character,
           currentSpaceId: playerSectorId,
+          // Isolate the assist bonus from randomly offered starting Equipment.
+          heldGear: [],
+          equippedGear: { weapon: null, armor: null, utility: null },
+          equippedGearInstances: { weapon: null, armor: null, utility: null },
           stats: { ...player.character.stats, grit: player.seatId === "seat-1" ? 1 : player.character.stats.grit }
         }
       }))
@@ -289,6 +294,9 @@ describe("Nemesis Relay mode", () => {
     } satisfies ClientIntent);
 
     expect(server.getState().activeResolution?.roll?.modifierTotal).toBe(2);
+    const resolved = server.getState();
+    server.handleIntent(createClient("seat-1"), { type: "NEMESIS_COMBAT_REQUESTED", seatId: "seat-1", nemesisId: nemesis.id });
+    expect(server.getState()).toBe(resolved);
   });
 
   it("starts a Nexus countdown when a Nemesis reaches the Ashen Crown Nexus", () => {

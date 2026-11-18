@@ -17,8 +17,9 @@ import {
 
 const TARGET_ID = "scenario_mirror_of_false_heroes";
 const OTHER_SCENARIO_HASHES = new Map([
-  ["scenario_broken_seal", "28bc6f457d7adf04bc93ca8ba3e9a9a421fa12ffeedb398611a79d5074e802f3"],
-  ["scenario_throne_of_ash", "8173b26a7459bc4ba9c788a15dca5dad1a69a962a481ffc1bdfb324b5b14f169"],
+  ["scenario_broken_seal", "f5341912012e5b8861b8c492d500840f300950d7be3e0f0451faf2441ce8e6da"],
+  // Includes the reviewed Crowned-battle claim rules and shared six-claim victory track.
+  ["scenario_throne_of_ash", "dfcc733b401a7bcbe5e721c5486922f304d953abf0fb9ca6886d097af0cedb3a"],
   ["scenario_devourer_beneath", "72fd8472daba008a1b5c90f58bebafc782d3b6c01a23f647ab4cd6012a013d63"],
   ["scenario_labyrinth_engine", "df77a95c847d0f54960392d22207d706045ddeea1081963950cae6cc608c5d02"],
   ["scenario_dying_star", "ec10da2c886730da14473eb27e3e7ea7239ea86cb29d6ab1ca05d3914dd8d822"]

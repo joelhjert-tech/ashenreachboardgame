@@ -98,6 +98,7 @@ export function getCompanionStatBonus(character: Pick<GearBearingCharacter, "id"
 export interface GearModifierContext {
   mode: "resting" | "battle" | "check";
   suppressedInstanceIds?: ReadonlySet<string>;
+  disabledSlots?: readonly GearSlot[];
 }
 
 export function isGearModifierActive(item: GearModifierItem, context: GearModifierContext): boolean {
@@ -111,6 +112,7 @@ export function getEquippedGearModifierSources<TItem extends GearModifierItem>(
   context: GearModifierContext = { mode: "resting" }
 ): Array<{ label: string; value: number }> {
   const gearSources = (Object.keys(character.equippedGear) as GearSlot[])
+    .filter((slot) => !context.disabledSlots?.includes(slot))
     .map((slot) => getEquippedGearItem(character, slot))
     .filter((item): item is TItem => item !== undefined && !context.suppressedInstanceIds?.has(item.instanceId ?? "") && item.statBonus.stat === stat && isGearModifierActive(item, context))
     .map((item) => ({
@@ -156,6 +158,7 @@ export function getCharacterStatBreakdown<TItem extends GearModifierItem>(
   const upgrades = character.statUpgrades?.[stat] ?? 0;
   const base = Math.max(0, character.stats[stat] - upgrades);
   const equippedItems = (Object.keys(character.equippedGear) as GearSlot[])
+    .filter((slot) => !options.disabledSlots?.includes(slot))
     .map((slot) => getEquippedGearItem(character, slot))
     .filter((item): item is TItem => item !== undefined);
   const equipped = equippedItems

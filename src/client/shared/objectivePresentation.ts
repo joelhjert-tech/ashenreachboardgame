@@ -1,7 +1,8 @@
 import {
   describeContractObjective,
   formatContractProgress,
-  getContractObjectiveTarget
+  getContractObjectiveTarget,
+  isContractObjectiveComplete
 } from "../../game/contracts/objectives.js";
 import type {
   ContractCard,
@@ -181,6 +182,7 @@ export function buildOwnerContractPresentation(
 ): OwnerContractPresentation {
   const required = getContractObjectiveTarget(contract);
   const current = Math.max(0, Math.min(activeContract.progress, required));
+  const complete = isContractObjectiveComplete(contract, activeContract);
   const completedTargetIds = new Set(activeContract.completedTargetIds ?? []);
   const conditions: ContractConditionPresentation[] = contract.objective.type === "multiStopRoute"
     ? contract.objective.targets.map((target, index) => ({
@@ -193,7 +195,7 @@ export function buildOwnerContractPresentation(
       }))
     : [{
         label: describeContractObjective(contract),
-        state: current >= required ? "completed" : "current"
+        state: complete ? "completed" : "current"
       }];
 
   return {
@@ -203,10 +205,10 @@ export function buildOwnerContractPresentation(
     progress: {
       current,
       required,
-      label: formatContractProgress(contract, current),
-      complete: current >= required
+      label: formatContractProgress(contract, activeContract),
+      complete
     },
-    progressText: formatContractProgress(contract, current),
+    progressText: formatContractProgress(contract, activeContract),
     conditions: [...conditions].sort((left, right) => {
       const rank = { current: 0, remaining: 1, completed: 2 } as const;
       return rank[left.state] - rank[right.state];

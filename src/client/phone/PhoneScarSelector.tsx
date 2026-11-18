@@ -223,6 +223,25 @@ export function PhoneScarSelector({ cards, source, currentCount, thresholdWarnin
           <span>{activeScar.title}</span>
         </div>
       )}
+      {cards.length > 1 ? (
+        <div className="scar-choice-comparison" aria-label="Scar comparison strip">
+          {cards.map((scar, index) => (
+            <button
+              key={scar.id}
+              type="button"
+              className={index === activeIndex ? "is-active" : undefined}
+              aria-pressed={index === activeIndex}
+              disabled={!canNavigate && index !== activeIndex}
+              onClick={() => setSelectedIndex(index)}
+            >
+              <span>Choice {String.fromCharCode(65 + index)} · {scar.title}</span>
+              <small><strong>Trigger:</strong> {scar.trigger}</small>
+              <small><strong>Burden:</strong> {scar.burdenText ?? scar.penalty}</small>
+              <small><strong>Adaptation:</strong> {scar.adaptationText ?? scar.upside ?? "None authored"}</small>
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div className="scar-choice-carousel" data-active-index={activeIndex}>
         <ScarChoiceCard
           key={activeScar.id}

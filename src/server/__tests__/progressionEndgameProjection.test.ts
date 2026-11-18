@@ -77,16 +77,16 @@ describe("P14 progression and endgame projection", () => {
   });
 
   it.each([
-    ["coop-victory", "victory", "Joel"],
-    ["coop-defeat", "defeat", null]
-  ] as const)("projects the authoritative %s result without client winner inference", (stage, outcome, winner) => {
+    ["coop-victory", "victory", ["Joel", "Mira"]],
+    ["coop-defeat", "defeat", []]
+  ] as const)("projects the authoritative %s result without client winner inference", (stage, outcome, winners) => {
     const state = createState();
     applyPhaseOneQaFixture(state, "seat-1", { kind: "progression-endgame", stage });
 
     const projection = tvProgress(state);
     expect(projection.stage).toBe(outcome);
     expect(projection.publicResult?.outcome).toBe(outcome);
-    expect(projection.publicResult?.winningDisplayNames).toEqual(winner ? [winner] : []);
+    expect(projection.publicResult?.winningDisplayNames).toEqual(winners);
     expect(projection.publicResult?.reason).toBe(state.lastOutcomeSummary?.summary);
     expect(projection.allowedCommands).toEqual(["return_to_lobby", "leave_room"]);
     expect(JSON.stringify(projection)).not.toMatch(/seat-[0-9]|victoryConditionId|sourceId/);

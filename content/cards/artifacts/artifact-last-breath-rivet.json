@@ -3,12 +3,11 @@
   "type": "artifact",
   "startingEligible": false,
   "normalShopCommon": false,
-  "artifactKind": "consumableSalvage",
   "title": "Last-Breath Rivet",
   "text": "A coffin nail meant to fail once in exactly the right direction.",
   "flavor": "Every survivor knows the sound of one rivet holding.",
-  "charge": 1,
-  "resolutionSummary": "Recovered a Last-Breath Rivet for one emergency brace.",
+  "charge": 0,
+  "resolutionSummary": "Recovered a Last-Breath Rivet. Gain +1 Grit while it is equipped.",
   "resolveEffect": {
     "type": "gain_gear",
     "gearId": "last-breath-rivet"

@@ -2,6 +2,8 @@ import { getEscalationCollapseLevel, getEscalationModifier } from "../engine/esc
 import { getScenarioDefinition, type ScenarioDefinition } from "../data/scenarios.js";
 import type { GameState } from "../schema/session.schema.js";
 import { getBrokenSealTokenLimit } from "./soloTuning.js";
+import { getScenarioProgressThreshold } from "./scenarioResolver.js";
+import { BROKEN_CONCORDANCE_SCENARIO_ID } from "./brokenConcordance.js";
 
 export type ScenarioPressureMode = "single" | "co-op" | "rivalry" | "ruthless";
 export type ScenarioStatus = "active" | "completed" | "failed";
@@ -146,8 +148,10 @@ export function buildScenarioPressureState(state: GameState, pressureSummary: st
   const lossPressureEnabled = scenario.lossPressureEnabled !== false;
   const objectiveCurrent = scenario.id === "scenario_broken_seal"
     ? state.scenarioConfrontation.progress.restorationMarks ?? 0
-    : state.scenarioProgress[scenario.winConditionKey] ?? 0;
-  const objectiveRequired = scenario.victoryThreshold;
+    : scenario.id === BROKEN_CONCORDANCE_SCENARIO_ID
+      ? state.scenarioConfrontation.progress.concordanceStages ?? 0
+      : state.scenarioProgress[scenario.winConditionKey] ?? 0;
+  const objectiveRequired = getScenarioProgressThreshold(scenario.id, scenario.victoryThreshold);
 
   return {
     scenarioId: scenario.id,
@@ -180,7 +184,7 @@ export function buildScenarioPressureState(state: GameState, pressureSummary: st
     },
     objectiveProgress: {
       label: humanizeProgressKey(scenario.winConditionKey),
-      current: objectiveCurrent,
+      current: Math.min(objectiveRequired, objectiveCurrent),
       required: objectiveRequired,
       completed: objectiveCurrent >= objectiveRequired
     },

@@ -326,8 +326,8 @@ describe("authoritative cooperative assistance lifecycle", () => {
         ? {
             ...player,
             sectorId: "center_cinder_gate",
-            character: { ...player.character, currentSpaceId: "center_cinder_gate", stats: { ...player.character.stats, grit: 6 } },
-            private: { ...player.private, notes: [...player.private.notes, "gate-of-cinders-breached"] },
+            character: { ...player.character, id: "cinder-monk", currentSpaceId: "center_cinder_gate", stats: { ...player.character.stats, grit: 4 } },
+            private: { ...player.private, noteResources: { ...player.private.noteResources, vow: 1 }, notes: [...player.private.notes, "gate-of-cinders-breached"] },
             innerApproachProgress: {
               pathId: "breach-road" as const,
               clearedSectorIds: ["inner_gate_of_cinders"]
@@ -344,10 +344,15 @@ describe("authoritative cooperative assistance lifecycle", () => {
         progress: { concordanceStages: 2 }
       }
     };
-    const server = new GameRoomServer(state, [], createSequenceRandomSource([5, 5]));
+    state.players[1]!.character.stats.grit = 1;
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([3, 3]));
+    server.handleIntent(client("seat-1"), { type: "USE_CHARACTER_ABILITY", seatId: "seat-1", abilityId: "cinder-oath" });
     server.resolveScenarioConfrontationIntent({ type: "SCENARIO_CONFRONTATION_REQUESTED", seatId: "seat-1" });
     const test = server.getState().pendingCooperativeTest!;
     expect(test.sourceId).toBe("hold-your-name");
+    const staged = server.getState();
+    server.handleIntent(client("seat-1"), { type: "SCENARIO_CONFRONTATION_REQUESTED", seatId: "seat-1" });
+    expect(server.getState()).toBe(staged);
     server.handleIntent(client("seat-1"), { type: "COOPERATIVE_ASSISTANCE_REQUESTED", seatId: "seat-1", sourceId: test.sourceId, stat: test.stat, helperSeatIds: ["seat-2"] });
     server.handleIntent(client("seat-2"), { type: "COOPERATIVE_ASSISTANCE_RESPONDED", seatId: "seat-2", requestId: server.getState().cooperativeAssistance!.id, accept: true });
     server.handleIntent(client("seat-1"), { type: "COOPERATIVE_ASSISTANCE_LOCKED", seatId: "seat-1", requestId: server.getState().cooperativeAssistance!.id });
@@ -356,5 +361,8 @@ describe("authoritative cooperative assistance lifecycle", () => {
     expect(server.getState().scenarioConfrontation.progress.concordanceStages).toBe(3);
     expect(server.getState().scenarioResult.status).toBe("victory");
     expect(server.getState().scenarioResult.sourceType).toBe("confrontation");
+    expect(server.getState().phase).toBe("broadcast");
+    expect(server.getState().activeResolution?.outcome?.title).toBe("Scenario victory");
+    expect(server.getState().pendingCooperativeTest).toBeNull();
   });
 });

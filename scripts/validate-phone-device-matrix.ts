@@ -345,6 +345,9 @@ async function main(): Promise<void> {
               pass: failures.length === 0,
               failures
             });
+          } catch (error) {
+            const body = (await page.locator("body").innerText()).replace(/\s+/g, " ").slice(0, 1200);
+            throw new Error(`${browserProfile.label} ${profile.name}: ${body}`, { cause: error });
           } finally {
             await context.close();
           }

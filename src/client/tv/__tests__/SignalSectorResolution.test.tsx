@@ -7,6 +7,7 @@ import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SignalSectorResolution } from "../SignalSectorResolution.js";
 import type { SignalSectorResolutionModel } from "../signalSectorResolutionPresentation.js";
+import { sectorResolutionPresentationTimings as timings } from "../../shared/motionTokens.js";
 
 function model(overrides: Partial<SignalSectorResolutionModel> = {}): SignalSectorResolutionModel {
   return {
@@ -79,6 +80,44 @@ describe("SignalSectorResolution", () => {
     );
   });
 
+  it.each(["SUCCESS", "FAILURE", "DRAW"] as const)("directs the impact from the confirmed %s result", (outcomeLabel) => {
+    const { container, rerender } = render(<SignalSectorResolution model={model({ outcomeLabel })} />);
+    expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-combat-impact", outcomeLabel.toLowerCase());
+    const impact = container.querySelector(".signal-sector-resolution__impact");
+    expect(impact).toHaveAttribute("aria-hidden", "true");
+    rerender(<SignalSectorResolution model={model({ outcomeLabel, revision: 2 })} />);
+    expect(container.querySelector(".signal-sector-resolution__impact")).toBe(impact);
+  });
+
+  it.each([
+    { restored: true },
+    { outcomeLabel: "RESOLVING" as const },
+    { mode: "sector-test" as const }
+  ])("does not play a combat strike for %j", (overrides) => {
+    const { container } = render(<SignalSectorResolution model={model(overrides)} />);
+    expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-combat-impact", "none");
+    expect(container.querySelector(".signal-sector-resolution__impact")).toBeNull();
+  });
+
+  it("synchronizes a late result with the already-running dice rather than restarting the impact delay", () => {
+    vi.useFakeTimers();
+    const { rerender } = render(<SignalSectorResolution model={model({ outcomeLabel: "RESOLVING" })} />);
+    act(() => vi.advanceTimersByTime(2000));
+    rerender(<SignalSectorResolution model={model({ revision: 2 })} />);
+    expect(screen.getByTestId("signal-sector-resolution")).toHaveStyle({ "--combat-impact-delay": "820ms" });
+    act(() => vi.advanceTimersByTime(400));
+    rerender(<SignalSectorResolution model={model({ revision: 3 })} />);
+    expect(screen.getByTestId("signal-sector-resolution")).toHaveStyle({ "--combat-impact-delay": "820ms" });
+  });
+
+  it("does not play an impact after the presentation has already settled", () => {
+    vi.useFakeTimers();
+    const { rerender } = render(<SignalSectorResolution model={model({ outcomeLabel: "RESOLVING" })} />);
+    act(() => vi.advanceTimersByTime(timings.completeMs));
+    rerender(<SignalSectorResolution model={model({ revision: 2 })} />);
+    expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-combat-impact", "none");
+  });
+
   it("flies authoritative dice into a CSS cube reveal without Canvas or WebGL", () => {
     const rendered = render(<SignalSectorResolution model={model({
       operative: {
@@ -108,7 +147,7 @@ describe("SignalSectorResolution", () => {
     const onSettled = vi.fn();
     render(<SignalSectorResolution model={model()} onSettled={onSettled} />);
 
-    act(() => vi.advanceTimersByTime(3299));
+    act(() => vi.advanceTimersByTime(timings.completeMs - 1));
     expect(onSettled).not.toHaveBeenCalled();
     act(() => vi.advanceTimersByTime(1));
     expect(onSettled).toHaveBeenCalledOnce();
@@ -257,13 +296,45 @@ describe("SignalSectorResolution", () => {
     vi.useFakeTimers();
     const first = render(<SignalSectorResolution model={model()} />);
     expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-resolution-restored", "false");
-    act(() => vi.advanceTimersByTime(900));
+    act(() => vi.advanceTimersByTime(timings.completeMs));
     first.unmount();
 
     render(<SignalSectorResolution model={model()} />);
     expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-resolution-restored", "true");
     expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-dice-cinema", "settled");
     expect(document.querySelector(".signal-sector-resolution__dice-cinema")).not.toBeInTheDocument();
+  });
+
+  it("does not remount dice or postpone completion for an unrelated revision", () => {
+    vi.useFakeTimers();
+    const first = vi.fn();
+    const latest = vi.fn();
+    const { container, rerender } = render(<SignalSectorResolution model={model()} onSettled={first} />);
+    const cinema = container.querySelector(".signal-sector-resolution__dice-cinema");
+    act(() => vi.advanceTimersByTime(1700));
+    rerender(<SignalSectorResolution model={model({ revision: 9 })} onSettled={latest} />);
+    expect(container.querySelector(".signal-sector-resolution__dice-cinema")).toBe(cinema);
+    act(() => vi.advanceTimersByTime(timings.completeMs - 1700));
+    expect(first).not.toHaveBeenCalled();
+    expect(latest).toHaveBeenCalledOnce();
+  });
+
+  it("does not mark unfinished dice cinema as completed", () => {
+    vi.useFakeTimers();
+    const first = render(<SignalSectorResolution model={model()} />);
+    act(() => vi.advanceTimersByTime(900));
+    first.unmount();
+    render(<SignalSectorResolution model={model()} />);
+    expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-resolution-restored", "false");
+  });
+
+  it("releases a restored result without waiting for an invisible animation", () => {
+    vi.useFakeTimers();
+    const onSettled = vi.fn();
+    render(<SignalSectorResolution model={model({ restored: true })} onSettled={onSettled} />);
+    act(() => vi.advanceTimersByTime(0));
+    expect(onSettled).toHaveBeenCalledOnce();
+    expect(screen.getByTestId("signal-sector-resolution")).toHaveAttribute("data-dice-cinema", "settled");
   });
 
   it("orchestrates a cinematic reveal and removes it for reduced motion", () => {

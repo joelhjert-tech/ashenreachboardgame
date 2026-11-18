@@ -1,5 +1,12 @@
 # Ashen Reach
 
+### Easy local start (Windows)
+
+Double-click `START_ASHEN_REACH.bat` (or the outer `START ASHEN REACH.cmd`). It prepares a production play build, starts the game, and opens the host TV. Phones join on the same Wi-Fi. Keep the launcher window open while playing; close it to stop.
+
+Play sessions do not watch source files or automatically reload pages when files change. Restart the launcher to pick up updates. Developers can still use `npm run dev` for hot reload; `npm run play` starts the stable play version from a terminal.
+
+
 Ashen Reach is a local-first digital board game with a shared host TV command display, private phone controllers, live WebSocket play, and an original dark gothic sci-fi presentation layer.
 
 This repository currently targets a Talisman/Relic-style play pattern without reusing those games' names, text, layout, lore, or art. The current implementation direction is documented in:

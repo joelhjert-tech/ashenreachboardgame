@@ -69,7 +69,7 @@ describe("scenario pressure foundation", () => {
       objectiveProgress: {
         label: "Maw Strikes",
         current: 0,
-        required: 1
+        required: 5
       },
       modeSpecific: {
         kind: "co-op",
@@ -98,8 +98,8 @@ describe("scenario pressure foundation", () => {
       objectiveProgress: {
         label: "Maw Strikes",
         current: 1,
-        required: 1,
-        completed: true
+        required: 5,
+        completed: false
       },
       modeSpecific: {
         kind: "rivalry",

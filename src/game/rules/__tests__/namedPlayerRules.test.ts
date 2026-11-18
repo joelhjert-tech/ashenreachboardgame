@@ -33,6 +33,6 @@ describe("named player rules", () => {
   it("isolates QA and forced-character eligibility", () => {
     expect(canNamedPlayerSelectCharacter({ displayName: "Joel" }, { id: "char_master_alpha", qaOnly: true }).allowed).toBe(true);
     expect(canNamedPlayerSelectCharacter({ displayName: "Joel2" }, { id: "char_master_alpha", qaOnly: true }).allowed).toBe(false);
-    expect(canNamedPlayerSelectCharacter({ displayName: "Kebab" }, { id: "char_deepdale" }).reason).toMatch(/Popelord is required/i);
+    expect(canNamedPlayerSelectCharacter({ displayName: "Kebab" }, { id: "char_deepdale" }).reason).toMatch(/Poopydiperlord is required/i);
   });
 });

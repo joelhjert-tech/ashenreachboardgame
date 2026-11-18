@@ -1923,7 +1923,6 @@ describe("roomServer websocket integration", () => {
       label: "Broken Seal",
       scenarioId: "scenario_broken_seal" as const,
       scenarioProgress: { sealRestorationMarks: 1 } as Record<string, number>,
-      expectedProgress: 3,
       expectedThreshold: 2
     },
     {
@@ -1934,38 +1933,33 @@ describe("roomServer websocket integration", () => {
         crownClaims: 2,
         "crownClaim:seat-1": 2
       } as Record<string, number>,
-      expectedProgress: 7,
       expectedThreshold: 6
     },
     {
       label: "Mirror of False Heroes",
       scenarioId: "scenario_mirror_of_false_heroes" as const,
       scenarioProgress: { mirrorBreaks: 3 } as Record<string, number>,
-      expectedProgress: 4,
       expectedThreshold: 4
     },
     {
       label: "Devourer Beneath",
       scenarioId: "scenario_devourer_beneath" as const,
       scenarioProgress: { mawStrikes: 4 } as Record<string, number>,
-      expectedProgress: 5,
       expectedThreshold: 5
     },
     {
       label: "Labyrinth Engine",
       scenarioId: "scenario_labyrinth_engine" as const,
       scenarioProgress: { shutdownMarks: 4, engineModeIndex: 1 } as Record<string, number>,
-      expectedProgress: 6,
       expectedThreshold: 5
     },
     {
       label: "Dying Star",
       scenarioId: "scenario_dying_star" as const,
       scenarioProgress: { ignitionMarks: 3 } as Record<string, number>,
-      expectedProgress: 4,
       expectedThreshold: 4
     }
-  ])("closes a live $label victory path over the phone socket", async ({ scenarioId, scenarioProgress, expectedProgress, expectedThreshold }) => {
+  ])("closes a live $label victory path over the phone socket", async ({ scenarioId, scenarioProgress, expectedThreshold }) => {
     const state = createSoloScenarioLiveState({
       scenarioId,
       scenarioProgress,
@@ -1999,7 +1993,7 @@ describe("roomServer websocket integration", () => {
 
     expect(endedSnapshot.phase).toBe("broadcast");
     expect(endedSnapshot.payload.winnerSeatId).toBe("seat-1");
-    expect((endedSnapshot.payload.activeScenario as { progress?: number; threshold?: number } | null)?.progress).toBe(expectedProgress);
+    expect((endedSnapshot.payload.activeScenario as { progress?: number; threshold?: number } | null)?.progress).toBe(expectedThreshold);
     expect((endedSnapshot.payload.activeScenario as { progress?: number; threshold?: number } | null)?.threshold).toBe(expectedThreshold);
   });
 
@@ -3215,7 +3209,8 @@ describe("roomServer websocket integration", () => {
     expect(restartedSeat1?.character).not.toHaveProperty("heat");
     expect(restartedSeat1?.character.wounds).toBe(0);
     expect(restartedSeat1?.character.activeContract).toBeNull();
-    expect(restartedSeat1?.character.equippedGear.utility).toBe("marshal-seal");
+    expect(restartedSeat1?.character.equippedGear.utility).toBeNull();
+    expect(restartedSeat1?.character.heldGear).toEqual([]);
     expect(restartedSeat1?.private.hand).toEqual([]);
 
     const kickSeat2Marker = hostTv.mark();

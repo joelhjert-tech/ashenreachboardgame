@@ -85,6 +85,7 @@ import type {
   RollModifierSource
 } from "./actions.js";
 import { getScenarioDefinition } from "../data/scenarios.js";
+import { getFollowerFailureProtection, protectFollowerFailure } from "../rules/followerEffects.js";
 import { getEquippedGearItem, getHeldGearInstance, getHeldGearItem } from "./gear.js";
 import { createScarChoice, resolveScarChoice, resolveScarThresholdPolicy, removeScarFromOwner } from "../rules/scarSystem.js";
 import { canAdvancePhase, canResolveMovement } from "./phases.js";
@@ -98,6 +99,7 @@ import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { planTrophySpend, trophySpendReceiptsEqual } from "../rules/trophySpend.js";
 import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/afflictions.js";
+import { evaluateOwnedScarRules } from "../rules/scarPersistentRules.js";
 import { buildPendingScarConsequences, getMatchingScarTriggers } from "../rules/scarTriggers.js";
 import { NAMED_PLAYER_FANDIABLOS_ID, requiresBoundFandiablos } from "../rules/namedPlayerRules.js";
 import {
@@ -157,7 +159,7 @@ import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { canRiftAnchorSpikeSuppress } from "../rules/forcedDisplacement.js";
 import { resolveFloorZeroSalvageLoss, THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS } from "../rules/salvageLoss.js";
 import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
-import { canEndTurn, getServiceThreatGate } from "../rules/tileFunctions.js";
+import { canEndTurn, getSectorTextBlockReason, getServiceThreatGate } from "../rules/tileFunctions.js";
 import {
   getStatUpgradeCost,
   getStatUpgradeDisabledReason,
@@ -240,6 +242,21 @@ function beginScarTriggerEvent(state: GameState, event: ScarSourceEvent, created
       ...(afterImmediate.pendingScarConsequence ? pending : pending.slice(1))
     ],
     resolvedScarSourceEventIds: [...(afterImmediate.resolvedScarSourceEventIds ?? []), event.id]
+  };
+}
+
+function scenarioActionResult(
+  state: GameState, condition: string, winningSeatId: string | null, shared: boolean
+): GameState["scenarioResult"] {
+  const sequence = state.sequence + 1;
+  return {
+    status: winningSeatId ? "victory" : "loss",
+    victoryConditionId: winningSeatId ? condition : null,
+    sourceType: "scenarioAction",
+    sourceId: `${condition}:${sequence}`,
+    winningSeatId,
+    shared,
+    achievedAtSequence: sequence
   };
 }
 
@@ -330,7 +347,7 @@ function ensureLegalMovementRoute(state: GameState, seatId: string, toSectorId: 
   throw new Error(getMovementBlockReason(state, seatId, toSectorId) ?? `Sector ${toSectorId} is not reachable by the current movement value`);
 }
 
-function canResolveSpaceText(state: GameState, seatId: string): void {
+export function canResolveSpaceText(state: GameState, seatId: string): void {
   ensureSeatTurn(state, seatId);
   ensureSeatCanTakeNormalTurnAction(state, seatId);
 
@@ -367,9 +384,8 @@ function canResolveSpaceText(state: GameState, seatId: string): void {
     throw new Error(`Unknown sector ${player.character.currentSpaceId}`);
   }
 
-  if ((boardSpace.tier === "outer" || boardSpace.tier === "middle") && sector.encounterDecks.threat.length > 0) {
-    throw new Error("Clear the local threat deck before resolving this sector text");
-  }
+  const blockReason = getSectorTextBlockReason(state, seatId, sector.id);
+  if (blockReason) throw new Error(blockReason);
 }
 
 function reject(state: GameState, action: GameAction, reason: string): ReducerFailure {
@@ -928,6 +944,17 @@ function buildShopOutcomeSummary(args: {
 }
 
 export function applyEffectToState(state: GameState, seatId: string, effect: EncounterEffect): GameState {
+  if (effect.type === "gain_trophy" && effect.amount > 0) {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    const rules = player ? evaluateOwnedScarRules(state, player, "burden", {
+      eventId: `trophy:${seatId}:${state.sequence}`, timing: "onTrophyGained"
+    }).filter((entry) => entry.outcome.modifier === -1) : [];
+    if (rules.length > 0) {
+      return applyEffectToState({
+        ...state, scarUsage: [...(state.scarUsage ?? []), ...rules.flatMap((entry) => entry.usage ? [entry.usage] : [])]
+      }, seatId, { ...effect, amount: Math.max(0, effect.amount - rules.length) });
+    }
+  }
   if (effect.type === "sequence") {
     return effect.effects.reduce(
       (nextState: GameState, entry: EncounterEffect) => applyEffectToState(nextState, seatId, entry),
@@ -1025,9 +1052,10 @@ export function applyEffectToState(state: GameState, seatId: string, effect: Enc
   }
 
   if (effect.type === "advance_escalation") {
+    if (effect.amount > 0 && getScenarioDefinition(state.activeScenarioId)?.lossPressureEnabled === false) return state;
     return {
       ...state,
-      escalationLevel: Math.max(0, state.escalationLevel + effect.amount),
+      escalationLevel: Math.max(0, Math.min(getEscalationCollapseLevel(state.sessionMode), state.escalationLevel + effect.amount)),
       lastOutcomeSummary: state.lastOutcomeSummary
         ? {
             ...state.lastOutcomeSummary,
@@ -2355,11 +2383,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       const chargedState = voidKey ? { ...state, players: updateActivePlayer(state, moveAction.seatId, (entry) => ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((item) => item.instanceId === voidKey.instanceId ? { ...item, currentCharges: keyCharges - 1, maxCharges: item.maxCharges ?? 2 } : item) } })) } : state;
 
-      return succeed(consumeTemporaryAllStatBoost({
+      return succeed({
         ...chargedState,
         sequence: chargedState.sequence + 1,
         eventLog: [...chargedState.eventLog, action]
-      }, action.seatId));
+      });
     }
     case "MOVEMENT_ROLL_REQUESTED": {
       const movementRollRequestedAction = action as MovementRollRequestedAction;
@@ -2411,6 +2439,31 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (!route || !defaultRoute || route.routeId === defaultRoute.routeId) return reject(state, action, "Route Star requires a current non-default authoritative route");
       const next = updateActivePlayer(state, select.seatId, (entry) => ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((gear) => gear.instanceId === select.instanceId ? { ...gear, currentCharges: charges - 1, charges: charges - 1, maxCharges: gear.maxCharges ?? 2 } : gear) } }));
       return succeed({ ...state, players: next, routeStarChoices: { ...(state.routeStarChoices ?? {}), [select.seatId]: { instanceId: select.instanceId, destinationId: select.destinationId, routeId: select.routeId, movementRevision: select.movementRevision } }, sequence: state.sequence + 1, lastOutcomeSummary: { seatId: select.seatId, movedToSectorId: select.destinationId, encounterCardId: null, encounterTitle: "Route Star", encounterCardType: null, checkStat: null, die1: null, die2: null, statBonus: null, checkTotal: null, difficulty: null, enemyRollerSeatId: null, enemyDie1: null, enemyDie2: null, enemyBonus: null, enemyTotal: null, success: true, summary: "Route Star consulted." }, eventLog: [...state.eventLog, action] });
+    }
+    case "ABANDON_ROUTE_STAR_CHOICE": {
+      try {
+        ensureSeatTurn(state, action.seatId);
+        ensureSeatCanTakeNormalTurnAction(state, action.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot abandon a route");
+      }
+      const choice = state.routeStarChoices?.[action.seatId];
+      if (state.status !== "active" || state.phase !== "navigation" || !state.movementRolls?.[action.seatId] ||
+          !choice || choice.destinationId !== action.destinationId || choice.routeId !== action.routeId ||
+          choice.movementRevision !== action.movementRevision ||
+          state.movementRouteRevisions?.[action.seatId] !== action.movementRevision) {
+        return reject(state, action, "Route Star abandonment is stale or unavailable");
+      }
+      const choices = { ...state.routeStarChoices };
+      delete choices[action.seatId];
+      return succeed({
+        ...state,
+        routeStarChoices: Object.keys(choices).length ? choices : undefined,
+        // A later selection of the same route must not match an old abandonment.
+        movementRouteRevisions: { ...state.movementRouteRevisions, [action.seatId]: action.movementRevision + 1 },
+        sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
     }
     case "CLEAR_ROUTE_STAR_CHOICE": {
       const clear = action as ClearRouteStarChoiceAction;
@@ -3284,7 +3337,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "A roll containing a committed Edge value cannot be rerolled");
       }
 
-      return succeed(consumeTemporaryAllStatBoost({
+      return succeed({
         ...state,
         sequence: state.sequence + 1,
         pendingEffect: rerollAction.effect,
@@ -3332,7 +3385,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             }
           : null,
         eventLog: [...state.eventLog, action]
-      }, action.seatId));
+      });
     }
     case "COMBAT_RESOLVED":
       try {
@@ -3342,13 +3395,18 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, error instanceof Error ? error.message : "Seat cannot act");
       }
 
-      if (state.phase !== "action") {
+      if (action.correctedResolutionId
+        ? state.phase !== "resolution" || state.activeResolution?.id !== action.correctedResolutionId
+          || state.activeResolution.playerId !== action.seatId || state.activeResolution.stage !== "roll_result"
+          || state.activeResolution.roll?.success !== false || !action.success
+        : state.phase !== "action") {
         return reject(state, action, `Cannot resolve combat during phase ${state.phase}`);
       }
 
       if (!state.currentEncounter || state.currentEncounter.cardType !== "enemy") {
         return reject(state, action, "No enemy encounter is waiting for combat");
       }
+      if (state.currentEncounter.id !== action.cardId) return reject(state, action, "Combat source is stale");
 
       if (
         state.pendingEnemyRoll &&
@@ -3368,14 +3426,21 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         const trophyConversion = action.success && !forfeitsTrophy
           ? Math.min(totalTrophyAward, Math.max(0, action.edgeTrophyConversion ?? 0))
           : 0;
+        const trophyRules = action.success && !forfeitsTrophy && totalTrophyAward > trophyConversion
+          ? evaluateOwnedScarRules(state, player, "burden", {
+              eventId: `trophy:${action.seatId}:${action.cardId}:${action.createdAt}`,
+              timing: "onTrophyGained", mode: "battle", encounterKind: "enemy", success: true
+            }).filter((entry) => entry.outcome.modifier === -1)
+          : [];
+        const scarTrophyReduction = Math.min(totalTrophyAward - trophyConversion, trophyRules.length);
         const trophyAward = forfeitsTrophy
           ? 0
           : explicitTrophyAward > 0
             ? 0
-            : rawTrophyAward - trophyConversion;
+            : rawTrophyAward - trophyConversion - scarTrophyReduction;
         const explicitTrophyReduction = forfeitsTrophy
           ? explicitTrophyAward
-          : trophyConversion;
+          : trophyConversion + scarTrophyReduction;
         const resolvedEffect =
           explicitTrophyAward > 0 && explicitTrophyReduction > 0
             ? reduceTrophyAwardInEffect(action.effect, explicitTrophyReduction)
@@ -3383,7 +3448,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         const convertedTrophy = action.success && !forfeitsTrophy
           ? {
               ...createTrophyPileEntry(state.currentEncounter),
-              spentValue: trophyConversion
+              trophyValue: totalTrophyAward,
+              spentValue: trophyConversion + scarTrophyReduction
             }
           : null;
         const defeatedTrophy =
@@ -3403,8 +3469,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             : activeMission;
         });
 
-      return succeed({
+      const resolvedCombatState: GameState = {
         ...state,
+        scarUsage: [...(state.scarUsage ?? []), ...trophyRules.flatMap((entry) => entry.usage ? [entry.usage] : [])],
         sequence: state.sequence + 1,
         phase: "resolution",
         resolutionSource: "encounter",
@@ -3412,6 +3479,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         pendingEdgeCommit: null,
         pendingEdgeAbility: null,
         pendingEffect: resolvedEffect,
+        pendingFailureReaction: !action.success && (player.character.followers ?? []).some((follower) =>
+          protectFollowerFailure(resolvedEffect, follower, "battle")) ? {
+            id: `failure:battle:${action.seatId}:${action.createdAt}`, seatId: action.seatId,
+            testType: "battle", sourceId: action.cardId, createdAt: action.createdAt
+          } : null,
         activeResolution: buildRollResolution({
           seatId: action.seatId,
           source: "threat",
@@ -3465,7 +3537,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             }
           : null,
         eventLog: [...state.eventLog, action]
-      });
+      };
+      return succeed(action.correctedResolutionId
+        ? { ...resolvedCombatState, activeResolution: resolvedCombatState.activeResolution
+          ? { ...resolvedCombatState.activeResolution, id: action.correctedResolutionId } : null }
+        : consumeTemporaryAllStatBoost(resolvedCombatState, action.seatId));
       }
     case "RESOLUTION_APPLIED": {
       const resolutionAction = action as ResolutionAppliedAction;
@@ -4882,7 +4958,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (item.effectModel === "exhaust" && item.exhausted) return reject(state, action, `${item.name} is Exhausted. Refreshes next round.`);
 
       try {
-        ensureUseLimitAvailable(state, useGearAction.seatId, item.id, item.name, "gearId", item.useLimit);
+        // Typed exhaustion is authoritative, including character abilities that
+        // explicitly ready an item before the round ends.
+        ensureUseLimitAvailable(state, useGearAction.seatId, item.id, item.name, "gearId",
+          item.effectModel === "exhaust" ? undefined : item.useLimit);
       } catch (error) {
         return reject(state, action, error instanceof Error ? error.message : "Gear use limit reached");
       }
@@ -5020,6 +5099,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const follower = (player.character.followers ?? []).find((entry) =>
         useFollowerAction.followerInstanceId ? entry.instanceId === useFollowerAction.followerInstanceId : entry.id === useFollowerAction.followerId
       );
+      const protection = useFollowerAction.suppressPendingFailure && follower
+        ? getFollowerFailureProtection(state, useFollowerAction.seatId, follower) : null;
+      if (useFollowerAction.suppressPendingFailure && !protection) {
+        return reject(state, action, "No matching consequence can be prevented by this follower");
+      }
 
       try {
         if (useFollowerAction.suppressPendingFailure) {
@@ -5095,18 +5179,18 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ? discardFollower(exhaustedState, useFollowerAction.seatId, useFollowerAction.followerId)
         : exhaustedState;
       const updatedPlayer = requirePlayer(finalState, useFollowerAction.seatId);
+      const resolutionAfterUse = appendPendingRollModifierToResolution(
+        finalState.activeResolution, finalState.currentEncounter, useFollowerAction.rollModifier);
 
       return succeed({
         ...finalState,
-        pendingEffect: useFollowerAction.suppressPendingFailure ? null : finalState.pendingEffect,
-        pendingFailureReaction: useFollowerAction.suppressPendingFailure ? null : finalState.pendingFailureReaction,
+        pendingEffect: protection ? protection.effect : finalState.pendingEffect,
+        pendingFailureReaction: protection && !protection.effect ? null : finalState.pendingFailureReaction,
         sequence: state.sequence + 1,
-        activeResolution: appendPendingRollModifierToResolution(
-          finalState.activeResolution,
-          finalState.currentEncounter,
-          useFollowerAction.rollModifier
-        ),
-        lastOutcomeSummary: {
+        activeResolution: protection && resolutionAfterUse ? { ...resolutionAfterUse,
+          outcome: { title: "Failure mitigated", text: summarizeEffect(protection.effect, false),
+            effects: summarizeEffects(protection.effect, false) } } : resolutionAfterUse,
+        lastOutcomeSummary: protection ? finalState.lastOutcomeSummary : {
           seatId: useFollowerAction.seatId,
           movedToSectorId: updatedPlayer.sectorId,
           encounterCardId: null,
@@ -5878,6 +5962,14 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       const player = requirePlayer(state, acceptAction.seatId);
 
+      if (state.pendingEnemyRoll || state.pendingEffect
+        || (state.activeResolution && !["card_reveal", "battle_setup"].includes(state.activeResolution.stage))
+        || state.pendingMissionSelection || state.pendingMissionRelicExchange) {
+        return reject(state, action, "Resolve the current action before accepting a Contract");
+      }
+      if (getActiveMission(player.character, acceptAction.contractId)) {
+        return reject(state, action, "This contract is already active");
+      }
       if (getActiveMissions(player.character).length >= MAX_ACTIVE_MISSIONS) {
         return reject(state, action, `This seat already has ${MAX_ACTIVE_MISSIONS} active Missions`);
       }
@@ -5889,7 +5981,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "This contract is already completed");
       }
 
-      if (!acceptAction.contract) {
+      if (!acceptAction.contract || acceptAction.contract.id !== acceptAction.contractId) {
         return reject(state, action, `Unknown contract ${acceptAction.contractId}`);
       }
 
@@ -5939,6 +6031,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       const player = requirePlayer(state, completeAction.seatId);
+      if (state.status !== "active" || state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect
+        || state.activeResolution || state.pendingMissionSelection || state.pendingMissionRelicExchange) {
+        return reject(state, action, "Resolve the current action before completing a Contract");
+      }
       const activeContract = getActiveMission(player.character, completeAction.contractId);
 
       if (!activeContract || activeContract.contractId !== completeAction.contractId) {
@@ -5947,15 +6043,16 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       const contract = completeAction.contract ?? requireActiveContractCard(state, completeAction.seatId, completeAction.contractId);
 
-      if (!contract) {
+      if (!contract || contract.id !== completeAction.contractId) {
         return reject(state, action, `Unknown contract ${completeAction.contractId}`);
       }
 
-      if (!isContractObjectiveComplete(contract, activeContract.progress)) {
+      if (!isContractObjectiveComplete(contract, activeContract)) {
         return reject(state, action, "Contract objective is not complete yet");
       }
 
-      if ((player.character.completedMissionRecords ?? []).some((record) => record.missionId === contract.id)) {
+      if ((player.character.completedContracts ?? []).includes(contract.id)
+        || (player.character.completedMissionRecords ?? []).some((record) => record.missionId === contract.id)) {
         return reject(state, action, "This contract is already completed");
       }
 
@@ -6210,6 +6307,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
     case "SCENARIO_CONFRONTATION_REQUESTED": {
       const scenarioAction = action as ScenarioConfrontationRequestedAction;
 
+      if (state.status !== "active" || state.gameMode === "nemesis_relay") {
+        return reject(state, action, "A scenario confrontation requires an active standard game");
+      }
+      if (state.activeResolution || state.pendingCooperativeTest || state.cooperativeAssistance ||
+          state.pendingEffect || state.pendingMissionSelection || state.pendingScarChoice || state.pendingTileChallenge) {
+        return reject(state, action, "Finish the pending action before starting a confrontation");
+      }
       try {
         canResolveScenarioConfrontation(state, scenarioAction.seatId);
       } catch (error) {
@@ -6736,7 +6840,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           sourceType: scenarioAction.sourceType ?? "confrontation",
           sourceId,
           winningSeatId: scenarioAction.seatId,
-          shared: scenarioAction.shared ?? state.interactionMode !== "rivalry",
+          shared: scenarioAction.shared ?? (state.interactionMode ?? "co-op") === "co-op",
           achievedAtSequence: state.sequence + 1
         },
         lastOutcomeSummary: state.lastOutcomeSummary
@@ -6808,6 +6912,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         currentEncounter: null,
         pendingEnemyRoll: null,
         pendingEffect: null,
+        scenarioResult: scenarioActionResult(state, `${scenarioAction.scenarioId}:objective`, scenarioAction.seatId, state.interactionMode === "co-op"),
         lastOutcomeSummary: state.lastOutcomeSummary
           ? {
               ...state.lastOutcomeSummary,
@@ -7243,6 +7348,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ...state,
         status: "ended",
         winnerSeatId: victoryAction.seatId,
+        scenarioResult: scenarioActionResult(state, "nemesis-relay:champions-defeated", victoryAction.seatId, true),
         phase: "broadcast",
         sequence: state.sequence + 1,
         lastOutcomeSummary: {
@@ -7275,6 +7381,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ...state,
         status: "ended",
         winnerSeatId: null,
+        scenarioResult: scenarioActionResult(state, "cooperative-defeat", null, true),
         phase: "broadcast",
         sequence: state.sequence + 1,
         lastOutcomeSummary: {
@@ -7406,7 +7513,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ) {
           return reject(state, action, "Gateblind Pulse escalation result does not match its authoritative one-before-collapse guard");
         }
-        if (state.escalationLevel + escalationAction.amount >= collapseLevel) {
+        if (escalationAction.amount > 0 && state.escalationLevel + escalationAction.amount >= collapseLevel) {
           return reject(state, action, "Gateblind Pulse cannot reach the collapse value");
         }
       }
@@ -7425,6 +7532,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const preservesThreatOutcome =
         Boolean(escalationAction.sourceCardId) &&
         state.lastOutcomeSummary?.encounterCardId === escalationAction.sourceCardId;
+      const preservesRollSummary = preservesThreatOutcome ||
+        (Boolean(state.activeResolution?.roll && state.activeResolution.card?.id) &&
+          state.lastOutcomeSummary?.encounterCardId === state.activeResolution?.card?.id &&
+          state.lastOutcomeSummary?.seatId === state.activeResolution?.playerId);
 
       return succeed({
         ...state,
@@ -7443,7 +7554,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               }
             }
           : state.activeResolution,
-        lastOutcomeSummary: preservesThreatOutcome && state.lastOutcomeSummary
+        lastOutcomeSummary: preservesRollSummary && state.lastOutcomeSummary
           ? {
               ...state.lastOutcomeSummary,
               summary: `${state.lastOutcomeSummary.summary} ${escalationSummary}`
@@ -7478,7 +7589,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ...state,
         status: "ended",
         winnerSeatId: null,
+        scenarioResult: scenarioActionResult(state, "sector-collapse", null, true),
         phase: "broadcast",
+        activeResolution: null,
         sequence: state.sequence + 1,
         resolutionSource: null,
         currentEncounter: null,
@@ -7524,7 +7637,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       return succeed({
         ...state,
-        scarUsage: (state.scarUsage ?? []).filter((entry) => entry.scope !== "turn" && entry.scope !== "battle" && entry.scope !== "visit"),
+        scarUsage: (state.scarUsage ?? []).filter((entry) => entry.scope !== "turn" && entry.scope !== "battle"),
         phase: nextPlayer?.character.status === "recalled" ? "action" : "navigation",
         activeSeatIndex: nextActiveSeatIndex,
         sequence: state.sequence + 1,

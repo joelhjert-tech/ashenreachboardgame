@@ -27,8 +27,8 @@ const TARGETS = [
     rarity: "uncommon",
     amount: 2,
     graphCount: 3,
-    trophyValue: 3,
-    defeatReward: { type: "gain_trophy", amount: 3 },
+    trophyValue: 7,
+    defeatReward: { type: "gain_trophy", amount: 7 },
     failureText: "If you lose this battle, suffer 2 Wounds."
   },
   {
@@ -289,7 +289,7 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
     expect(gameStateSchema.safeParse(replay.state).success).toBe(true);
   });
 
-  it("awards Ashen Doppelganger's explicit 3-Trophy reward exactly once", () => {
+  it("awards Ashen Doppelganger's explicit 7-Trophy reward exactly once", () => {
     const card = requireEnemy("ashen-doppelganger");
     const state = createEncounterState(card);
     state.players[0]!.character.stats.guile = 20;
@@ -299,10 +299,10 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
     server.resolveCombatIntent({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: "guile" });
     const applied = server.getState();
     expect(applied.pendingEffect).toBeNull();
-    expect(applied.players[0]!.character.trophies).toBe(3);
+    expect(applied.players[0]!.character.trophies).toBe(7);
     expect(applied.players[0]!.character.trophyPile).toContainEqual(expect.objectContaining({
       cardId: card.id,
-      trophyValue: 3,
+      trophyValue: 7,
       stat: "guile",
       cardType: "enemy"
     }));
@@ -310,13 +310,13 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
     const replay = reduceGameState(applied, {
       type: "RESOLUTION_APPLIED",
       seatId: "seat-1",
-      effect: { type: "gain_trophy", amount: 3 },
+      effect: { type: "gain_trophy", amount: 7 },
       sourceCardId: card.id,
       success: true,
       createdAt: "h5b-ashen-reward-replay"
     });
     expect(replay.ok).toBe(false);
-    expect(replay.state.players[0]!.character.trophies).toBe(3);
+    expect(replay.state.players[0]!.character.trophies).toBe(7);
     expect(replay.state.players[0]!.character.trophyPile).toHaveLength(1);
   });
 

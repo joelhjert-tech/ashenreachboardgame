@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type CSSProperties, type ReactElement } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import { TROPHY_RESERVE_CARD_ID } from "../../game/rules/trophySpend.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import {
@@ -6,6 +6,7 @@ import {
   getSignalTheatreTrophyUpgradePaths
 } from "../shared/assetPaths.js";
 import { trophyUpgradePresentationTimings } from "../shared/motionTokens.js";
+import { useReducedMotion } from "../shared/useReducedMotion.js";
 import type { TrophyUpgradePresentation } from "../shared/types.js";
 import "./SignalTrophyUpgrade.css";
 
@@ -95,10 +96,10 @@ export function SignalTrophyUpgrade({
   forcedStage?: SignalTrophyUpgradeStage | null;
   onSettled?: () => void;
 }): ReactElement | null {
-  const reducedMotion = !forcedStage
-    && typeof window !== "undefined"
-    && typeof window.matchMedia === "function"
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const motionPreference = useReducedMotion();
+  const reducedMotion = !forcedStage && motionPreference;
+  const onSettledRef = useRef(onSettled);
+  onSettledRef.current = onSettled;
   const [stage, setStage] = useState<SignalTrophyUpgradeStage>(
     forcedStage ?? (reducedMotion ? "trophy-display" : "summon")
   );
@@ -113,7 +114,7 @@ export function SignalTrophyUpgrade({
       setStage("trophy-display");
       const timer = window.setTimeout(() => {
         setStage("settled");
-        onSettled?.();
+        onSettledRef.current?.();
       }, trophyUpgradePresentationTimings.reducedReceiptEndMs);
       return () => window.clearTimeout(timer);
     }
@@ -126,11 +127,11 @@ export function SignalTrophyUpgrade({
       window.setTimeout(() => setStage("minimize"), trophyUpgradePresentationTimings.flipEndMs),
       window.setTimeout(() => {
         setStage("settled");
-        onSettled?.();
+        onSettledRef.current?.();
       }, trophyUpgradePresentationTimings.minimizeEndMs)
     ];
     return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [forcedStage, onSettled, presentation.id, reducedMotion]);
+  }, [forcedStage, presentation.id, reducedMotion]);
 
   if (stage === "settled") return null;
 

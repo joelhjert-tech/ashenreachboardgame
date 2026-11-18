@@ -19,13 +19,18 @@ export interface PhoneTurnFlowPresentation {
 }
 
 function hasEnemyArrival(patch: PhonePatchPayload): boolean {
+  // Hazards also carry the shared `battle` test data. The encounter's category
+  // determines the command surface, not the presence of that math container.
+  if (patch.pendingEnemyRoll) return true;
+  if (patch.encounter) {
+    return patch.encounter.cardType === "enemy" || patch.encounter.presentationType === "enemy"
+      || patch.encounter.presentationType === "nemesis";
+  }
+  if (patch.activeResolution?.card) {
+    return ["enemy", "nemesis"].includes(patch.activeResolution.card.type);
+  }
   return Boolean(
-    patch.pendingEnemyRoll ||
-      patch.encounter?.cardType === "enemy" ||
-      patch.encounter?.presentationType === "enemy" ||
-      patch.encounter?.presentationType === "nemesis" ||
-      patch.activeResolution?.battle ||
-      patch.activeResolution?.card?.type === "enemy"
+    patch.activeResolution?.battle?.enemyName || patch.battlePresentation?.test.opposed
   );
 }
 
@@ -43,6 +48,7 @@ function getArrivalContext(patch: PhonePatchPayload): { label: string; detail: s
     patch.pendingTileChallengePrivate ||
     patch.encounter?.cardType === "hazard" ||
     patch.encounter?.presentationType === "hazard" ||
+    patch.activeResolution?.card?.type === "hazard" ||
     patch.activeResolution?.source === "anomaly"
   ) {
     return { label: "Challenge", detail: "Hazard or anomaly" };
@@ -53,6 +59,7 @@ function getArrivalContext(patch: PhonePatchPayload): { label: string; detail: s
 
 function getCurrentStep(patch: PhonePatchPayload): PhoneTurnFlowStepId {
   if (patch.status === "ended" || patch.phase === "broadcast") return "end";
+  if (patch.activeResolution?.source === "movement") return "move";
 
   if (
     patch.pendingEnemyRoll ||
@@ -70,8 +77,7 @@ function getCurrentStep(patch: PhonePatchPayload): PhoneTurnFlowStepId {
 
   if (
     patch.phase === "navigation" ||
-    patch.movementPlanner?.active ||
-    patch.activeResolution?.source === "movement"
+    patch.movementPlanner?.active
   ) {
     return "move";
   }

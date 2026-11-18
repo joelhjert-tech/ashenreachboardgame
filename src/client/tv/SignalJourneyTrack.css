@@ -146,7 +146,13 @@
   box-shadow: 0 0 0.7rem var(--signal-piece-color);
 }
 
-.signal-journey-track__marker > img {
+.signal-journey-track__piece {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 90%;
+}
+
+.signal-journey-track__piece > img {
   position: absolute;
   z-index: 2;
   inset: 0;
@@ -156,8 +162,8 @@
   filter: drop-shadow(0 0.5rem 0.4rem rgba(0, 0, 0, 0.8));
 }
 
-.signal-journey-track--departure .signal-journey-track__marker > img,
-.signal-journey-track--travel .signal-journey-track__marker > img {
+.signal-journey-track--departure .signal-journey-track__piece,
+.signal-journey-track--travel .signal-journey-track__piece {
   animation: signal-piece-stride 360ms ease-in-out infinite alternate;
 }
 
@@ -193,7 +199,7 @@
   top: 27%; left: 38%; width: 24%; height: 21%;
 }
 
-.signal-journey-track__marker > span {
+.signal-journey-track__piece > span:not(.signal-journey-track__portrait) {
   position: absolute;
   z-index: 5;
   bottom: 6%;
@@ -238,8 +244,9 @@
     transition-duration: 1ms;
   }
 
-  .signal-journey-track__marker > img,
-  .signal-journey-track__node.is-event-stop circle:first-child {
+  .signal-journey-track--departure .signal-journey-track__piece,
+  .signal-journey-track--travel .signal-journey-track__piece,
+  .signal-journey-track--arrival .signal-journey-track__node.is-event-stop circle:first-child {
     animation: none;
   }
 }

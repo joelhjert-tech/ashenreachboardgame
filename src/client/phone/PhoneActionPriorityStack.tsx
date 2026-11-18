@@ -201,7 +201,7 @@ export function buildPhoneActionViewModel(
     ? "Resolve the pending Scar choice to continue."
     : encounter
       ? `${statLabelById[encounter.stat]} test · Difficulty ${encounter.difficulty}`
-      : "Choose one legal action or end the turn.";
+      : undefined;
 
   const add = (action: RawPhoneAction, category: PhoneActionEntry["category"], group: PriorityActionGroup) => {
     pushUnique(groups, seen, toEntry(action, category, group));
@@ -268,8 +268,9 @@ export function buildPhoneActionViewModel(
     });
   }
 
-  const endTurn = sources.advance.find((action) => action.key === "end-turn");
-  for (const action of sources.advance.filter((candidate) => candidate.key !== "end-turn")) {
+  const completionKeys = new Set(["end-turn", "finish-actions", "pass-turn"]);
+  const endTurn = sources.advance.find((action) => completionKeys.has(action.key));
+  for (const action of sources.advance.filter((candidate) => !completionKeys.has(candidate.key))) {
     add(action, "advance", encounterSupport || blocking ? "required" : "optional");
   }
 
@@ -289,9 +290,12 @@ export function buildPhoneActionViewModel(
     && !blocking
   );
   if (endTurn && canEndTurn) {
+    const completionDetail = endTurn.key === "end-turn"
+      ? (patch.sessionMode === "single-player" ? "Begin next round" : "Pass control to next operative")
+      : endTurn.detail ?? (patch.sessionMode === "single-player" ? "Begin next round" : "Pass control to next operative");
     add({
       ...endTurn,
-      detail: patch.sessionMode === "single-player" ? "Begin next round" : "Pass control to next operative"
+      detail: completionDetail
     }, "advance", "advance");
   } else if (endTurn || endTurnBlockedReason) {
     add({
@@ -381,6 +385,10 @@ export function PhoneActionPriorityStack({
   }
 
   const optionalCollapsed = model.groups.optional.length > 3;
+  const completionAction = model.groups.advance[0] ?? null;
+  const completionIsPass = Boolean(completionAction && /pass turn/i.test(completionAction.label));
+  const completionSummary = completionAction?.summary ?? null;
+  const completionActions = model.groups.advance.map((action) => ({ ...action, summary: undefined }));
   return (
     <div className="phone-priority-stack" data-testid="phone-action-priority-stack">
       <header className="phone-priority-stack__header">
@@ -389,7 +397,23 @@ export function PhoneActionPriorityStack({
         {model.summary ? <p>{model.summary}</p> : null}
       </header>
       <ActionSection title="Required now" actions={model.groups.required} onIntent={onIntent} testId="priority-required" />
-      {model.canEndTurn ? <ActionSection title="End turn" actions={model.groups.advance} onIntent={onIntent} testId="priority-advance" /> : null}
+      {model.canEndTurn ? (
+        <>
+          {completionSummary ? (
+            <aside className="phone-finish-actions-summary" aria-label={completionIsPass ? "Turn handoff summary" : "Still available before finishing actions"} role="note">
+              <span>{completionIsPass ? "Turn handoff" : "Before you finish"}</span>
+              <strong>{completionSummary.startsWith("Still available:") ? "Still available" : completionIsPass ? "Ready to pass" : "Ready for Experience"}</strong>
+              <p>{completionSummary.replace(/^Still available:\s*/i, "")}</p>
+            </aside>
+          ) : null}
+          <ActionSection
+            title={completionIsPass ? "Pass turn" : "Finish actions"}
+            actions={completionActions}
+            onIntent={onIntent}
+            testId="priority-advance"
+          />
+        </>
+      ) : null}
       <ActionSection title="Useful now" actions={model.groups.useful} onIntent={onIntent} testId="priority-useful" />
       <ActionSection title="Optional" actions={model.groups.optional} onIntent={onIntent} collapsed={optionalCollapsed} testId="priority-optional" />
       <ActionSection title="Passive / already applied" actions={model.groups.passive} onIntent={onIntent} collapsed testId="priority-passive" />

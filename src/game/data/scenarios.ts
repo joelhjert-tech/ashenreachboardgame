@@ -149,6 +149,26 @@ export function getEngineModeName(modeIndex: number): string {
   return mode.charAt(0).toUpperCase() + mode.slice(1);
 }
 
+export function getBrokenSealChecks(sessionMode: ScenarioConfrontationContext["sessionMode"]): ScenarioConfrontationCheck[] {
+  return [
+    {
+      stat: "grit",
+      difficulty: easeBrokenSealConfrontationDifficulty(sessionMode, 10),
+      label: "Hold the breached ward shut"
+    },
+    {
+      stat: "signal",
+      difficulty: easeBrokenSealConfrontationDifficulty(sessionMode, 10),
+      label: "Realign the broken sigils"
+    },
+    {
+      stat: "guile",
+      difficulty: easeBrokenSealConfrontationDifficulty(sessionMode, 12),
+      label: "Resist the mind behind the breach"
+    }
+  ];
+}
+
 export const SCENARIOS: ScenarioDefinition[] = [
   {
     id: "scenario_broken_seal",
@@ -252,7 +272,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Test Grit 10 to hold the breached ward shut.",
       "Test Signal 10 to realign the broken sigils.",
       "Test Guile 12 to resist the mind behind the breach.",
-      "For each failed test, take 1 wound. If you failed by 3 or more, gain 1 Scar."
+      "Passing two checks reseals the prison immediately. On an unsuccessful attempt, take 1 wound per failed check. If any check missed by 3 or more, gain 1 Mind Scar."
     ],
     victoryText: "If you pass at least 2 of the 3 confrontation stat checks during one engagement, you win the game.",
     designFeel: "Default tutorial scenario: shared pressure, clear board hooks, and a final gate that teaches contracts, artifacts, and shrine choices.",
@@ -264,23 +284,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     victoryThreshold: 2,
     failureEffectKey: "scenario_gainCorruption",
     buildConfrontationPlan: (context) => ({
-      checks: [
-        {
-          stat: "grit",
-          difficulty: easeBrokenSealConfrontationDifficulty(context.sessionMode, 10),
-          label: "Hold the breached ward shut"
-        },
-        {
-          stat: "signal",
-          difficulty: easeBrokenSealConfrontationDifficulty(context.sessionMode, 10),
-          label: "Realign the broken sigils"
-        },
-        {
-          stat: "guile",
-          difficulty: easeBrokenSealConfrontationDifficulty(context.sessionMode, 12),
-          label: "Resist the mind behind the breach"
-        }
-      ],
+      checks: getBrokenSealChecks(context.sessionMode),
       markLabel: "restoration mark",
       effect: null,
       victorySummary: `${context.playerName} sealed the Ashen Reach Core and won the campaign.`
@@ -309,7 +313,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       hiddenAgendaReveal: "future",
       notes: "Supports private Crown leverage later; reveal/scoring remains unwired."
     },
-    victoryCondition: "Earn 6 throne claims before Crown Hunger turns the table against the claimants.",
+    victoryCondition: "Earn 6 throne claims through Crowned battle victories, Revenant defeats, Contracts, claim sectors, or the final confrontation.",
     lossCondition: "Escalation loss or Crown Hunger collapse summons an unrecoverable Regent state.",
     pressureTrack: {
       name: "Crown Hunger",
@@ -325,10 +329,10 @@ export const SCENARIOS: ScenarioDefinition[] = [
       salvage: "Salvage can buy authority, but every shortcut stains the claimant."
     },
     progressSources: [
-      "Defeat an Elite enemy.",
+      "Win a battle while already holding a Crown, or defeat a Revenant, to earn 1 throne claim. A victory counts only once.",
       "Complete a Contract.",
-      "Clear Choir Bastion, The Hollow Customs Gate, or Choir Execution Court.",
-      "Pay 4 Salvage at a Crown shop."
+      "Resolve the claim action at Mirror Barracks or Red Lantern Trenches.",
+      "Each successful check against the Ash Regent adds 1 throne claim."
     ],
     finalGateRequirement: "Attempt the Throne only while holding 1+ Crown or by spending 2 completed Contracts.",
     scenarioRewards: [
@@ -378,6 +382,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Mark Choir Bastion, The Hollow Customs Gate, and Choir Execution Court as Crown sectors."
     ],
     specialRules: [
+      "Winning a battle while already holding a Crown earns 1 throne claim. A Revenant victory also earns 1 claim; matching both conditions still awards only 1.",
       "A player may claim 1 Crown after defeating an Elite enemy, completing a Contract, clearing a Crown sector, or paying 4 Salvage at Contract Spire.",
       "Each Crown gives +1 Grit during battles.",
       "Each Crown gives -1 Guile and -1 Signal during stat checks.",
@@ -394,7 +399,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "3 Crowns: choose 1 of those checks at difficulty 12.",
       "For each failed check, take 1 wound and drop 1 Crown if able."
     ],
-    victoryText: "If you pass all required confrontation stat checks, you win the game.",
+    victoryText: "Reach 6 throne claims to win. Claims from battles, Contracts, sector actions, and confrontation checks share the same track.",
     designFeel: "Rivalry/hybrid scenario where table politics, Crown sectors, and shop bargains shape the final gate.",
     difficulty: "medium",
     recommendedRolloutOrder: 4,

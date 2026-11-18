@@ -57,10 +57,10 @@ export function canNamedPlayerSelectCharacter(
   const profile = resolveNamedPlayerRules(identity);
 
   if (profile.forcedCharacterId && character.id !== profile.forcedCharacterId) {
-    return { allowed: false, reason: "Popelord is required for this player." };
+    return { allowed: false, reason: "Poopydiperlord is required for this player." };
   }
   if (character.id === NAMED_PLAYER_POPELORD_ID && options.popelordReservedForOther) {
-    return { allowed: false, reason: "Popelord is reserved for another player." };
+    return { allowed: false, reason: "Poopydiperlord is reserved for another player." };
   }
   if (character.qaOnly && !profile.allowedRestrictedCharacterIds.includes(character.id)) {
     return { allowed: false, reason: "This operative is restricted to developer testing." };

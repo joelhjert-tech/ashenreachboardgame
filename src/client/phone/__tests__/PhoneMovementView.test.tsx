@@ -24,6 +24,7 @@ const planner: PublicMovementPlannerState = {
       markerLabel: "A",
       sectorId: "votive-engine-room",
       name: longDestinationName,
+      approach: { stat: "guile", difficulty: 7, failurePrevented: false },
       ring: "outer",
       distance: 1,
       route: ["ashwake-crossing", "votive-engine-room"],
@@ -41,6 +42,7 @@ const planner: PublicMovementPlannerState = {
       markerLabel: "B",
       sectorId: "glassmere-spindle",
       name: "Glass Signal Pier",
+      approach: { stat: "guile", difficulty: 2, failurePrevented: true },
       ring: "outer",
       distance: 1,
       route: ["ashwake-crossing", "glassmere-spindle"],
@@ -83,6 +85,16 @@ function Harness({ onIntent }: { onIntent: (intent: ClientIntent) => void }) {
 }
 
 describe("PhoneMovementView", () => {
+  it("previews entry risk before selection and explains it before commitment", () => {
+    const onIntent = vi.fn();
+    render(<Harness onIntent={onIntent} />);
+    expect(screen.getByText("Guile · Target 7")).toBeVisible();
+    expect(screen.getByText("Entry guaranteed")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`Select destination A, ${longDestinationName}`) }));
+    expect(screen.getByText("Roll 2d6 + Guile against 7. On failure, you remain at your current sector.")).toBeVisible();
+    expect(screen.getByText("Pay the bridge toll before using the foundry service.")).toBeVisible();
+    expect(onIntent).not.toHaveBeenCalledWith(expect.objectContaining({ type: "MOVE_REQUESTED" }));
+  });
   it("requests the server-authoritative TV map without changing movement authority", () => {
     const onIntent = vi.fn();
     render(<Harness onIntent={onIntent} />);
@@ -428,5 +440,91 @@ describe("PhoneMovementView", () => {
       instanceId: "compass-1",
       adjustment: 1
     });
+  });
+});
+
+
+function paidRoutePlanner(): PublicMovementPlannerState {
+  return { ...planner, movementRevision: 9, routeStarCommitted: true,
+    selectedDestinationId: planner.destinations[0]!.sectorId, selectedRouteId: "paid-route",
+    destinations: planner.destinations.map((entry, index) => ({ ...entry, routeId: index === 0 ? "paid-route" : "other-route" })) };
+}
+function PaidRouteHarness({ onIntent, current = paidRoutePlanner() }: {
+  onIntent: (intent: ClientIntent) => void; current?: PublicMovementPlannerState;
+}) {
+  const [selected, setSelected] = useState<string | null>(null);
+  return <PhoneMovementView planner={current} seatId="seat-1" activeContract={null}
+    currentSectorName="Ashwalk Bridge" canRoll={false} movementResolving={false} travel={null}
+    selectedSectorId={selected} onSelectedSectorId={setSelected} onIntent={onIntent} showContextNavigation={false} />;
+}
+
+describe("paid Route Star destination changes", () => {
+  it("restores the paid route even without a remaining-charge prompt and keeps it on cancel", () => {
+    const onIntent = vi.fn(); render(<PaidRouteHarness onIntent={onIntent} />);
+    expect(screen.getByText("Route selected · 1 charge spent")).toBeInTheDocument();
+    expect(screen.getByTestId("movement-primary-action")).toHaveTextContent(`Confirm ${longDestinationName}`);
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("Changing destination discards this route. The spent charge is not refunded.");
+    expect(screen.getByTestId("movement-primary-action")).toBeDisabled();
+    expect(onIntent).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Keep route" }));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.getByTestId("movement-primary-action")).toHaveTextContent(`Confirm ${longDestinationName}`);
+    expect(onIntent).not.toHaveBeenCalled();
+  });
+  it("guards another destination and sends only explicit abandonment, then applies accepted selection locally", () => {
+    const onIntent = vi.fn(); const current = paidRoutePlanner();
+    const view = render(<PaidRouteHarness onIntent={onIntent} current={current} />);
+    fireEvent.click(screen.getByRole("button", { name: /Select destination B, Glass Signal Pier/i }));
+    expect(onIntent).not.toHaveBeenCalled();
+    const discard = screen.getByRole("button", { name: "Discard route and change destination" });
+    fireEvent.click(discard); fireEvent.click(discard);
+    expect(onIntent).toHaveBeenCalledTimes(1);
+    expect(onIntent).toHaveBeenCalledWith({ type: "ABANDON_ROUTE_STAR_CHOICE", seatId: "seat-1",
+      destinationId: "votive-engine-room", routeId: "paid-route", movementRevision: 9, toSectorId: "glassmere-spindle" });
+    view.rerender(<PaidRouteHarness onIntent={onIntent} current={{ ...current, movementRevision: 10,
+      routeStarCommitted: false, selectedDestinationId: null, selectedRouteId: null }} />);
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.getByTestId("movement-primary-action")).toHaveTextContent("Confirm Glass Signal Pier");
+    expect(onIntent).toHaveBeenCalledTimes(1);
+  });
+  it("phone Back dismisses confirmation without clearing the paid destination", () => {
+    const onIntent = vi.fn(); render(<PaidRouteHarness onIntent={onIntent} />);
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    act(() => { window.dispatchEvent(new Event("ashenreach:phone-back-dismiss", { cancelable: true })); });
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.getByTestId("movement-primary-action")).toHaveTextContent(`Confirm ${longDestinationName}`);
+    expect(onIntent).not.toHaveBeenCalled();
+  });
+  it("Change submits a null target only after explicit discard", () => {
+    const onIntent = vi.fn(); render(<PaidRouteHarness onIntent={onIntent} />);
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    fireEvent.click(screen.getByRole("button", { name: "Discard route and change destination" }));
+    expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({ type: "ABANDON_ROUTE_STAR_CHOICE", toSectorId: null }));
+  });
+  it("remounting during confirmation restores the paid route without replaying a command", () => {
+    const onIntent = vi.fn(); const view = render(<PaidRouteHarness onIntent={onIntent} />);
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    view.unmount(); render(<PaidRouteHarness onIntent={onIntent} />);
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.getByText("Route selected · 1 charge spent")).toBeInTheDocument();
+    expect(onIntent).not.toHaveBeenCalled();
+  });
+  it("drops stale confirmation when a newer paid route arrives without discarding it", () => {
+    const onIntent = vi.fn(); const current = paidRoutePlanner();
+    const view = render(<PaidRouteHarness onIntent={onIntent} current={current} />);
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    view.rerender(<PaidRouteHarness onIntent={onIntent} current={{ ...current, movementRevision: 11, selectedRouteId: "new-route" }} />);
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(onIntent).not.toHaveBeenCalled();
+  });
+  it("warns before a Compass adjustment invalidates the paid route", () => {
+    const onIntent = vi.fn(); render(<PaidRouteHarness onIntent={onIntent} current={{ ...paidRoutePlanner(),
+      compassPrompt: { instanceId: "compass-a", currentCharges: 2, maxCharges: 2, canDecrease: true, canIncrease: true } }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Move +1" }));
+    expect(screen.getByText("This adjustment discards your selected Route Star route. The spent charge is not refunded.")).toBeInTheDocument();
+    expect(onIntent).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onIntent).not.toHaveBeenCalled();
   });
 });

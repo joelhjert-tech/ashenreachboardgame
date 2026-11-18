@@ -1,4 +1,5 @@
 import { WebSocketServer, type WebSocket } from "ws";
+import { LOBBY_REACTIONS, LOBBY_REACTION_INTERVAL_MS, type LobbyReactionEvent } from "../shared/lobbyReactions.js";
 import {
   SIGNAL_PIECE_IDS,
   getSignalPieceIdForSeat,
@@ -12,6 +13,7 @@ import { loadAnomalyCards } from "../game/content/anomalies.js";
 import { loadArtifactCards } from "../game/content/artifacts.js";
 import { loadEscalationCards } from "../game/content/escalations.js";
 import { loadFollowers } from "../game/content/followers.js";
+import { FOLLOWER_REACTION_ABILITIES, getFollowerFailureProtection, getFollowerSupportDisabledReason } from "../game/rules/followerEffects.js";
 import { loadGear } from "../game/content/gear.js";
 import { loadScarCards } from "../game/content/scars.js";
 import { loadThreatCards } from "../game/content/threats.js";
@@ -26,8 +28,10 @@ import {
 import { getThreatPresentationCategory } from "../game/cards/cardCategories.js";
 import { resolveBoardTextChoice, resolveBoardTextEffect, type BoardTextDeckKind } from "../game/data/boardTextEffects.js";
 import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
+import { getScenarioProgressThreshold } from "../game/rules/scenarioResolver.js";
 import {
   SCENARIOS,
+  getBrokenSealChecks,
   getScenarioDefinition,
   isScenarioEligibleForSession,
   type ScenarioDefinition
@@ -49,7 +53,7 @@ import {
   formatContractObjectiveStatus,
   formatContractProgress,
   isContractObjectiveComplete,
-  setContractProgressFloor
+  setContractProgressStateFloor
 } from "../game/contracts/objectives.js";
 import { getEscalationCollapseLevel, getEscalationModifier } from "../game/engine/escalation.js";
 import {
@@ -72,6 +76,7 @@ import { getReflectionPressureThreshold } from "../game/rules/reflectionPressure
 import {
   getAfflictionWoundPrevention,
   getAfflictionModifierSources,
+  getAfflictionDisabledGearSlots,
   getAfflictionRestrictions,
   preventWoundInEffect,
   summarizeAfflictions
@@ -132,9 +137,8 @@ import {
 } from "../game/rules/cooperativeAssistance.js";
 import { evaluateOwnedScarRules } from "../game/rules/scarPersistentRules.js";
 import { getScarCard } from "../game/rules/scarSystem.js";
-import { getOwnedScarAdaptationControls } from "../game/rules/scarAdaptationControls.js";
+import { getOwnedScarAdaptationControls, getScarDisplacementOptions } from "../game/rules/scarAdaptationControls.js";
 import {
-  BROKEN_CONCORDANCE_CENTER_SECTOR_ID,
   BROKEN_CONCORDANCE_NODES,
   BROKEN_CONCORDANCE_SCENARIO_ID,
   BROKEN_CONCORDANCE_STAGES,
@@ -148,7 +152,7 @@ import {
 import { createInitialSessionState } from "./sessionState.js";
 import { stripLegacyHeatProjection } from "./legacyHeatProjection.js";
 import { resolveBoardSpaceEvent } from "../game/tileResolver.js";
-import { buildTileArrivalProjection, canEndTurn, getServiceThreatGate } from "../game/rules/tileFunctions.js";
+import { buildTileArrivalProjection, canEndTurn, getSectorTextBlockReason, getServiceThreatGate } from "../game/rules/tileFunctions.js";
 import {
   calculateExplorationDraws,
   type BoardThreatCard,
@@ -308,10 +312,10 @@ import type { AuthoredCharacter, Character } from "../game/schema/character.sche
 import type { Stat } from "../game/schema/character.schema.js";
 import type { ContractCard } from "../game/schema/contract.schema.js";
 import type { Follower } from "../game/schema/follower.schema.js";
-import type { GearItem, ShopCategory } from "../game/schema/gear.schema.js";
+import type { GearItem, GearSlot, ShopCategory } from "../game/schema/gear.schema.js";
 import type { AfflictionCard } from "../game/schema/affliction.schema.js";
 import { createSeededRandomSource, rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
-import { applyEffectToState, reduceGameState } from "../game/engine/reducer.js";
+import { applyEffectToState, canResolveSpaceText, reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
 import {
   completeEquipmentSuppressionLifecycle,
@@ -337,6 +341,14 @@ import {
 import { validateHostToken, validateJoinToken } from "./auth.js";
 import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace, type BoardTier, type ThreatIcon } from "../game/data/boardSpaces.js";
 import { getBoardRingTransition } from "../game/data/boardTransitions.js";
+import {
+  AI_RIVAL_THINK_MS,
+  AI_RIVAL_SUPPORTED_SCENARIO_IDS,
+  chooseAiRivalIntent,
+  chooseAiSetupCharacter,
+  chooseAiStartingBonus,
+  type AiRivalDecision
+} from "./aiRival.js";
 
 export const ESCALATION_FEEDERS = {
   woundTaken: 1,
@@ -603,6 +615,21 @@ const NEMESIS_OPPOSITION = {
 } as const;
 
 const CONFRONTATION_BASE_DIFFICULTY = 6;
+
+function getNemesisChecks(nemesis: NemesisDefinition): ScenarioCheck[] {
+  return (["strength", "willpower", "cunning"] as const)
+    .filter((statKey) => nemesis.stats[statKey] != null)
+    .map((statKey) => {
+      const opposition = NEMESIS_OPPOSITION[statKey];
+
+      return {
+        stat: opposition.attackStat,
+        difficulty: CONFRONTATION_BASE_DIFFICULTY + (nemesis.stats[statKey] ?? 0),
+        label: `${opposition.label} ${nemesis.name}`
+      };
+    });
+}
+
 const SCAR_CARDS = loadScarCards();
 const AFFLICTION_CARDS = loadAfflictionCards();
 const PROJECTION_GEAR_CATALOG = loadGear();
@@ -615,11 +642,6 @@ const nemesisByScenarioId = new Map<string, NemesisDefinition>(
 
 function getLinkedNemesis(scenarioId: string | null | undefined): NemesisDefinition | null {
   return scenarioId ? nemesisByScenarioId.get(scenarioId) ?? null : null;
-}
-
-function getScenarioProgressThreshold(scenarioId: string | null | undefined, defaultThreshold: number): number {
-  const nemesis = getLinkedNemesis(scenarioId);
-  return nemesis?.scenarioProgressLife ?? nemesis?.stats.life ?? defaultThreshold;
 }
 
 function collectArtifactGearLinks(effect: AuthoredEncounterEffect): Array<{ gearId: string; artifactCardId: string }> {
@@ -641,11 +663,14 @@ function getMasterAlphaBattleBonus(player: PlayerState): number {
 }
 
 export interface ConnectedClient {
+  lastLobbyReactionAt?: number;
   socket: WebSocket;
   seatId?: string;
   view: "tv" | "phone";
   isHost?: boolean;
   superseded?: boolean;
+  automated?: boolean;
+  onAutomatedRejection?: (reason: string) => void;
 }
 
 interface StatePatchEnvelope {
@@ -732,6 +757,8 @@ interface TvPresentationCandidate {
 }
 
 const CLIENT_INTENT_TYPES = new Set<string>([
+  "ADD_AI_RIVAL_REQUESTED",
+  "REMOVE_AI_RIVAL_REQUESTED",
   "HOST_VIEW_REQUESTED",
   "HOST_SETUP_PREVIEW_REQUESTED",
   "RETURN_TO_LOBBY_REQUESTED",
@@ -742,6 +769,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "USE_TRANSITION_ROUTE_AID",
   "ADJUST_MOVEMENT_REQUESTED",
   "SELECT_ROUTE_STAR_VARIANT",
+  "ABANDON_ROUTE_STAR_CHOICE",
   "ACTIVATE_GATE_SAINT",
   "USE_MARROW_DETOUR",
   "MOVEMENT_ROLL_REQUESTED",
@@ -831,7 +859,6 @@ type SectorCardResolution = {
   effect: EncounterEffect | null;
   revealedCard?: SpaceTextResolvedAction["revealedCard"];
   discoveredContracts?: ContractCard[];
-  escalationDelta?: number;
   consumedDeckCards?: {
     anomaly?: string[];
     artifact?: string[];
@@ -945,6 +972,10 @@ export class GameRoomServer {
   private resolutionAutoContinueTimeout: ReturnType<typeof setTimeout> | null = null;
   private movementPresentationTimeout: ReturnType<typeof setTimeout> | null = null;
   private tvPresentationTimeout: ReturnType<typeof setTimeout> | null = null;
+  private aiDecisionTimeout: ReturnType<typeof setTimeout> | null = null;
+  private aiDecisionKey: string | null = null;
+  private aiControllerStatus: import("../client/shared/types.js").PublicPatchPayload["aiControllerStatus"] = null;
+  private readonly pausedAiDecisionKeys = new Set<string>();
   private readonly completedTvPresentationIds = new Set<string>();
   private readonly movementPreviewBySeatId = new Map<string, { destinationId: string; routeId: string }>();
   private hostView: {
@@ -1003,6 +1034,7 @@ export class GameRoomServer {
     }
     this.reconcileNamedPlayerRules({ autoSelectPopelord: true });
     this.restorePresentationGateTimeouts();
+    this.scheduleAiDecision();
   }
 
   private getNamedPlayerIdentity(seatId: string): { displayName: string | null } {
@@ -1046,7 +1078,7 @@ export class GameRoomServer {
       if (!seat.displayName || seat.kicked) return seat;
       const profile = resolveNamedPlayerRules({ displayName: seat.displayName });
       const selected = seat.characterId ? this.characters.get(seat.characterId) : undefined;
-      const conflictsWithReservation = seat.characterId === NAMED_PLAYER_POPELORD_ID && reservationSeatId !== seat.seatId;
+      const conflictsWithReservation = seat.characterId === NAMED_PLAYER_POPELORD_ID && Boolean(reservationSeatId && reservationSeatId !== seat.seatId);
       const restrictedQa = selected?.qaOnly && !profile.allowedRestrictedCharacterIds.includes(selected.id);
       const incompatibleForcedCharacter = Boolean(profile.forcedCharacterId && seat.characterSelected !== false && seat.characterId !== profile.forcedCharacterId);
       if (!conflictsWithReservation && !restrictedQa && !incompatibleForcedCharacter) return seat;
@@ -1181,6 +1213,10 @@ export class GameRoomServer {
             return;
           }
 
+          if (isRecord(message) && message.type === "LOBBY_REACTION") {
+            this.handleLobbyReaction(client, message);
+            return;
+          }
           this.handleIntent(client, this.parseClientMessage(message));
         } catch (error) {
           this.sendIntentRejected(
@@ -1201,6 +1237,29 @@ export class GameRoomServer {
     });
   }
 
+  private lobbyReactionSequence = 0;
+
+  private handleLobbyReaction(client: ConnectedClient, message: Record<string, unknown>): void {
+    // Ephemeral lobby fun: never apply an engine event or persist gameplay state.
+    if (this.state.status !== "lobby" || !this.state.lobbyConfigured || !this.clients.has(client) || client.superseded) return;
+    const reaction = LOBBY_REACTIONS.find((entry) => entry.id === message.reaction);
+    if (!reaction) return;
+    const seat = this.state.seats.find((entry) => entry.seatId === client.seatId);
+    const authorizedPhone = client.view === "phone" && seat?.connected && seat.displayName && !seat.kicked && seat.controllerType !== "ai";
+    if (!authorizedPhone) return;
+    const now = Date.now();
+    if (client.lastLobbyReactionAt !== undefined && now - client.lastLobbyReactionAt < LOBBY_REACTION_INTERVAL_MS) return;
+    client.lastLobbyReactionAt = now;
+    const event: LobbyReactionEvent = {
+      type: "LOBBY_REACTION", id: `lobby-${++this.lobbyReactionSequence}`, sessionId: this.state.sessionId,
+      reaction: reaction.id, displayName: seat!.displayName!
+    };
+    const serialized = JSON.stringify(event);
+    for (const recipient of this.clients) {
+      if (recipient.view === "tv" && !recipient.superseded && recipient.socket.readyState === 1) recipient.socket.send(serialized);
+    }
+  }
+
   handleIntent(client: ConnectedClient, intent: ClientIntent | HostCommandMessage): void {
     try {
       if (this.isHostCommand(intent)) {
@@ -1215,6 +1274,26 @@ export class GameRoomServer {
 
       if (intent.seatId !== client.seatId) {
         throw new IntentRejectedError(intent.type, "Seat mismatch between token and submitted intent");
+      }
+
+      const controllingSeat = this.state.seats.find((seat) => seat.seatId === intent.seatId);
+      if (client.automated && controllingSeat?.controllerType !== "ai") {
+        throw new IntentRejectedError(intent.type, "Automated control is not authorized for this seat");
+      }
+      if (!client.automated && controllingSeat?.controllerType === "ai") {
+        throw new IntentRejectedError(intent.type, "AI rival seats cannot be controlled by a phone client");
+      }
+
+      if (intent.type === "ADD_AI_RIVAL_REQUESTED") {
+        this.addAiRival(intent.seatId);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "REMOVE_AI_RIVAL_REQUESTED") {
+        this.removeAiRival(intent.seatId, intent.targetSeatId);
+        this.broadcastPatch();
+        return;
       }
 
       if (intent.type === "RETURN_TO_LOBBY_REQUESTED") {
@@ -1309,7 +1388,6 @@ export class GameRoomServer {
           throw new Error("Movement preview is unavailable outside destination selection");
         }
         if (intent.toSectorId === null) {
-          if (this.state.routeStarChoices?.[intent.seatId]) this.applyAction({ type: "CLEAR_ROUTE_STAR_CHOICE", seatId: intent.seatId, createdAt: new Date().toISOString() });
           this.movementPreviewBySeatId.delete(intent.seatId);
         } else {
           const destination = planner.destinations.find(
@@ -1318,8 +1396,6 @@ export class GameRoomServer {
           if (!destination) {
             throw new Error("Movement preview must use a legal destination");
           }
-          const committed = this.state.routeStarChoices?.[intent.seatId];
-          if (committed && committed.destinationId !== intent.toSectorId) this.applyAction({ type: "CLEAR_ROUTE_STAR_CHOICE", seatId: intent.seatId, createdAt: new Date().toISOString() });
           if (intent.routeId !== undefined || intent.movementRevision !== undefined) {
             if (!intent.routeId || intent.movementRevision === undefined || intent.movementRevision !== planner.movementRevision || !destination.routeVariants.some((variant) => variant.routeId === intent.routeId)) {
               throw new Error("Movement preview route is stale or does not belong to this destination");
@@ -1328,6 +1404,32 @@ export class GameRoomServer {
           this.movementPreviewBySeatId.set(intent.seatId, {
             destinationId: destination.sectorId,
             routeId: intent.routeId ?? destination.defaultRouteId
+          });
+        }
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "ABANDON_ROUTE_STAR_CHOICE") {
+        const planner = buildPhoneMovementPlanner(this.state, intent.seatId);
+        if (!planner?.active || planner.movementRevision !== intent.movementRevision) {
+          throw new IntentRejectedError(intent.type, "Route Star abandonment is stale or unavailable");
+        }
+        const destination = intent.toSectorId === null ? null : planner.destinations.find(
+          (entry) => entry.sectorId === intent.toSectorId && (!entry.disabledReason || entry.voidKeyPrompt)
+        );
+        if (intent.toSectorId !== null && !destination) {
+          throw new IntentRejectedError(intent.type, "Choose a legal destination before abandoning the route");
+        }
+        this.applyAction({ ...intent, createdAt: new Date().toISOString() });
+        this.movementPreviewBySeatId.delete(intent.seatId);
+        if (destination) {
+          const revisedDestination = buildPhoneMovementPlanner(this.state, intent.seatId)?.destinations.find(
+            (entry) => entry.sectorId === destination.sectorId
+          );
+          if (revisedDestination) this.movementPreviewBySeatId.set(intent.seatId, {
+            destinationId: revisedDestination.sectorId,
+            routeId: revisedDestination.defaultRouteId
           });
         }
         this.broadcastPatch();
@@ -1437,13 +1539,15 @@ export class GameRoomServer {
 
       if (intent.type === "SELECT_REPLACEMENT_CONTRACT") {
         this.selectReplacementContract(intent);
+        const activeSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? intent.seatId;
+        this.runAutomaticPhases(activeSeatId);
         this.broadcastPatch();
         if (
           this.state.phase === "broadcast" &&
           !this.state.activeResolution &&
           !this.state.pendingMissionSelection
         ) {
-          this.completeBroadcastTurn(intent.seatId);
+          this.completeBroadcastTurn(activeSeatId);
         }
         return;
       }
@@ -1593,17 +1697,16 @@ export class GameRoomServer {
         return;
       }
       const action = this.intentToAction(intent);
-      this.applyAction(action);
+      if (action.type !== "SCENARIO_CONFRONTATION_REQUESTED") this.applyAction(action);
       if (action.type === "COMPLETE_CONTRACT") {
-        this.awardRandomEdgeCard(action.seatId, "contract", action.contractId);
-        this.queueReplacementMissionSelection(action.seatId, action.contractId);
+        this.finishContractCompletion(action.seatId, action.contractId);
       }
 
       if (action.type === "SHOP_PURCHASE_RESOLVED" && action.serviceId === "buy-gear") {
         this.replenishShopEquipmentStock(action.seatId, action.sectorId, action.createdAt);
       }
 
-      if (action.type === "SHOP_PURCHASE_RESOLVED") {
+      if (action.type === "SHOP_PURCHASE_RESOLVED" && action.serviceId === "buy-gear") {
         const space = getBoardSpace(action.sectorId);
         this.maybeAdvanceContractObjective(intent.seatId, {
           type: "shop-transaction", action: "buyEquipment", sectorId: action.sectorId,
@@ -1618,8 +1721,7 @@ export class GameRoomServer {
         const space = getBoardSpace(action.sectorId);
         const missionAction = action.serviceId === "repair-gear" ? "repairGear"
           : action.serviceId === "trade-missions-for-artifact" ? "trade"
-          : action.serviceId.includes("upgrade") ? "upgradeGear"
-          : action.serviceId === "buy-supplies" ? "buyEquipment" : null;
+          : action.serviceId.includes("upgrade") ? "upgradeGear" : null;
         if (missionAction) this.maybeAdvanceContractObjective(intent.seatId, {
           type: "shop-transaction", action: missionAction, sectorId: action.sectorId,
           shopTypes: space?.tags ?? [], salvageSpent: action.cost.salvage ?? 0
@@ -1665,17 +1767,6 @@ export class GameRoomServer {
         this.runAutomaticPhases(client.seatId);
       }
 
-      if (intent.type === "COMPLETE_CONTRACT") {
-        this.applyScenarioOnContractCompleted(client.seatId);
-        this.applyScenarioObjectiveOnContractCompleted(client.seatId, intent.contractId);
-        this.applyRivalryAgendaProgressTrigger(client.seatId, {
-          type: "contractCompleted",
-          seatId: client.seatId,
-          contractId: intent.contractId,
-          sectorId: this.state.players.find((entry) => entry.seatId === client.seatId)?.sectorId
-        });
-      }
-
       if (intent.type === "ACCEPT_CONTRACT") {
         this.maybeTriggerAbilityOnContractAccepted(client.seatId, intent.contractId);
       }
@@ -1696,10 +1787,6 @@ export class GameRoomServer {
           itemId: intent.gearId,
           sectorId: this.state.players.find((entry) => entry.seatId === client.seatId)?.sectorId
         });
-      }
-
-      if (intent.type === "COMPLETE_CONTRACT") {
-        this.maybeTriggerAbilityOnContractCompleted(client.seatId);
       }
 
       const shouldCompleteTurn =
@@ -1751,7 +1838,10 @@ export class GameRoomServer {
   resetSession(state: GameState): void {
     this.clearEnemyRollTimeout();
     this.clearTvPresentationTimeout();
+    this.clearAiDecisionTimeout();
     this.completedTvPresentationIds.clear();
+    this.pausedAiDecisionKeys.clear();
+    this.aiControllerStatus = null;
 
     for (const client of [...this.clients]) {
       client.superseded = true;
@@ -1763,6 +1853,128 @@ export class GameRoomServer {
     this.events.length = 0;
     this.movementPreviewBySeatId.clear();
     this.setupScenarioPreview = null;
+  }
+
+  private assertAiLobbyHost(hostSeatId: string, actionType: "ADD_AI_RIVAL_REQUESTED" | "REMOVE_AI_RIVAL_REQUESTED"): void {
+    if (this.state.status !== "lobby" || this.state.phase !== "start") {
+      throw new IntentRejectedError(actionType, "AI rivals can only be managed before the session starts");
+    }
+    if (this.state.setupHostSeatId !== hostSeatId) {
+      throw new IntentRejectedError(actionType, "Only the Host Phone can manage AI rivals");
+    }
+    if (
+      this.state.lobbyConfigured === false ||
+      this.state.sessionMode !== "multiplayer" ||
+      this.state.gameMode !== "standard" ||
+      this.state.interactionMode !== "rivalry"
+    ) {
+      throw new IntentRejectedError(actionType, "AI rivals are available only in a configured Rivalry lobby");
+    }
+    if (!AI_RIVAL_SUPPORTED_SCENARIO_IDS.has(this.state.activeScenarioId)) {
+      throw new IntentRejectedError(actionType, "AI rivals are not available for this scenario prototype");
+    }
+  }
+
+  private getAiRivalDisplayName(seatId: string): string {
+    const ordinal = Math.max(1, this.state.seats.findIndex((seat) => seat.seatId === seatId) + 1);
+    return `Ashen Rival ${ordinal}`;
+  }
+
+  private appendAiLifecycleEvent(type: "AI_RIVAL_ADDED" | "AI_RIVAL_REMOVED", seatId: string, displayName: string): void {
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      eventLog: [
+        ...this.state.eventLog,
+        {
+          type,
+          seatId,
+          displayName,
+          controllerType: "ai",
+          createdAt: new Date().toISOString()
+        }
+      ]
+    };
+  }
+
+  private autoSetupAiSeat(seatId: string): void {
+    const seat = this.state.seats.find((entry) => entry.seatId === seatId);
+    if (!seat?.displayName || seat.controllerType !== "ai") {
+      throw new Error("AI setup requires an occupied AI seat");
+    }
+    const agendaId = getRivalryAgendaDefinition(this.state, seatId)?.id ?? null;
+    const availableCharacters = [...this.characters.values()].filter((character) =>
+      !character.qaOnly &&
+      this.getCharacterEligibility(seatId, character).allowed &&
+      !this.state.seats.some((entry) =>
+        entry.seatId !== seatId &&
+        Boolean(entry.displayName) &&
+        !entry.kicked &&
+        entry.characterSelected !== false &&
+        entry.characterId === character.id
+      )
+    );
+    const character = chooseAiSetupCharacter(availableCharacters, agendaId);
+    if (!character) throw new Error("No eligible operative remains for the AI rival");
+    this.selectSeatCharacter(seatId, character.id, { suppressBroadcast: true });
+
+    const selectedSeat = this.state.seats.find((entry) => entry.seatId === seatId)!;
+    const contractId = [...selectedSeat.startingContractOptions].sort()[0];
+    if (!contractId) throw new Error("AI rival did not receive a starting Contract offer");
+    this.selectStartingContract(seatId, contractId);
+
+    while ((this.state.seats.find((entry) => entry.seatId === seatId)?.startingBonusSelections?.length ?? 0) < STARTING_BONUS_PICK_COUNT) {
+      const current = this.state.seats.find((entry) => entry.seatId === seatId)!;
+      const option = chooseAiStartingBonus(current.startingBonusOfferOptions ?? []);
+      if (!current.startingBonusOfferId || !option) throw new Error("AI rival did not receive a legal starting provision");
+      this.selectStartingBonus(seatId, current.startingBonusOfferId, option.kind, option.id);
+    }
+    this.setSeatReady(seatId, true);
+  }
+
+  addAiRival(hostSeatId: string): string {
+    this.assertAiLobbyHost(hostSeatId, "ADD_AI_RIVAL_REQUESTED");
+    const seat = this.state.seats.find((entry) => !entry.displayName && !entry.kicked);
+    if (!seat) throw new IntentRejectedError("ADD_AI_RIVAL_REQUESTED", "No open Rivalry seat remains");
+    const previousState = structuredClone(this.state);
+    const displayName = this.getAiRivalDisplayName(seat.seatId);
+    try {
+      this.state = {
+        ...this.state,
+        sequence: this.state.sequence + 1,
+        seats: this.state.seats.map((entry) => entry.seatId === seat.seatId ? {
+          ...entry,
+          controllerType: "ai",
+          displayName,
+          characterSelected: false,
+          startingContractOptions: [],
+          selectedStartingContractId: null,
+          missionSelectedAt: null,
+          startingBonusOfferId: null,
+          startingBonusOfferOptions: [],
+          startingBonusSelections: [],
+          connected: false,
+          ready: false
+        } : entry)
+      };
+      this.autoSetupAiSeat(seat.seatId);
+      this.appendAiLifecycleEvent("AI_RIVAL_ADDED", seat.seatId, displayName);
+      return seat.seatId;
+    } catch (error) {
+      this.state = previousState;
+      throw error;
+    }
+  }
+
+  removeAiRival(hostSeatId: string, targetSeatId: string): void {
+    this.assertAiLobbyHost(hostSeatId, "REMOVE_AI_RIVAL_REQUESTED");
+    const target = this.state.seats.find((entry) => entry.seatId === targetSeatId);
+    if (!target || target.controllerType !== "ai" || !target.displayName || target.kicked) {
+      throw new IntentRejectedError("REMOVE_AI_RIVAL_REQUESTED", "Choose an occupied AI rival seat to remove");
+    }
+    const displayName = target.displayName;
+    this.releaseSeat(targetSeatId);
+    this.appendAiLifecycleEvent("AI_RIVAL_REMOVED", targetSeatId, displayName);
   }
 
   joinSeat(displayName: string, characterId?: string): JoinSeatResult {
@@ -1797,6 +2009,7 @@ export class GameRoomServer {
         entry.seatId === seat.seatId
           ? {
               ...entry,
+              controllerType: "human",
               ...(characterId ? { characterId } : {}),
               characterSelected: false,
               displayName,
@@ -1876,17 +2089,6 @@ export class GameRoomServer {
     const signalPieceId = options.signalPieceId
       ?? seat.signalPieceId
       ?? getSignalPieceIdForSeat(seatIndex);
-    const signalPieceTaken = this.state.seats.some(
-      (entry) =>
-        entry.seatId !== seatId
-        && Boolean(entry.displayName)
-        && !entry.kicked
-        && entry.characterSelected !== false
-        && entry.signalPieceId === signalPieceId
-    );
-    if (signalPieceTaken) {
-      throw new Error("Signal piece already taken");
-    }
     const loadedCharacter = applyStartingLoadout(selectedCharacter, {
       sessionMode: this.state.sessionMode,
       seatIndex,
@@ -1990,19 +2192,30 @@ export class GameRoomServer {
       throw new Error("Host Phone seat is not available in the selected game type");
     }
 
+    const retainAiRivals =
+      input.sessionMode === "multiplayer" &&
+      input.interactionMode === "rivalry" &&
+      (input.gameMode ?? "standard") === "standard" &&
+      AI_RIVAL_SUPPORTED_SCENARIO_IDS.has(scenario.id);
+
     this.state = {
       ...nextState,
       sequence: this.state.sequence + 1,
       seats: nextState.seats.map((entry) => {
         const previousSeat = this.state.seats.find(
-          (candidate) => candidate.seatId === entry.seatId && !candidate.kicked && Boolean(candidate.displayName)
+          (candidate) =>
+            candidate.seatId === entry.seatId &&
+            !candidate.kicked &&
+            Boolean(candidate.displayName) &&
+            (candidate.controllerType !== "ai" || retainAiRivals)
         );
 
         return previousSeat
           ? {
               ...entry,
+              controllerType: previousSeat.controllerType,
               displayName: previousSeat.displayName,
-              connected: previousSeat.connected,
+              connected: previousSeat.controllerType === "ai" ? false : previousSeat.connected,
               joinToken: previousSeat.joinToken,
               characterSelected: false,
               startingContractOptions: [],
@@ -2016,6 +2229,9 @@ export class GameRoomServer {
           : entry;
       })
     };
+    for (const aiSeat of this.state.seats.filter((entry) => entry.controllerType === "ai" && entry.displayName)) {
+      this.autoSetupAiSeat(aiSeat.seatId);
+    }
     this.setupScenarioPreview = {
       scenarioId: scenario.id,
       mode: input.gameMode === "nemesis_relay"
@@ -2434,6 +2650,7 @@ export class GameRoomServer {
         entry.seatId === seatId
           ? {
               ...entry,
+              controllerType: "human",
               displayName: null,
               startingContractOptions: [],
               selectedStartingContractId: null,
@@ -2605,6 +2822,11 @@ export class GameRoomServer {
     requireStringField(message, "seatId", type);
 
     switch (type) {
+      case "ADD_AI_RIVAL_REQUESTED":
+        break;
+      case "REMOVE_AI_RIVAL_REQUESTED":
+        requireStringField(message, "targetSeatId", type);
+        break;
       case "HOST_VIEW_REQUESTED":
         requireEnumField(message, "mode", new Set(["signal", "map"]), type);
         break;
@@ -2653,6 +2875,12 @@ export class GameRoomServer {
       case "ADJUST_MOVEMENT_REQUESTED":
         requireStringField(message, "instanceId", type);
         if (message.adjustment !== -1 && message.adjustment !== 1) throw new IntentRejectedError(type, "Movement adjustment must be -1 or +1");
+        break;
+      case "ABANDON_ROUTE_STAR_CHOICE":
+        requireStringField(message, "destinationId", type);
+        requireStringField(message, "routeId", type);
+        if (message.toSectorId !== null) requireStringField(message, "toSectorId", type);
+        if (!Number.isInteger(message.movementRevision) || Number(message.movementRevision) < 1) throw new IntentRejectedError(type, "Movement revision must be a positive integer");
         break;
       case "SELECT_ROUTE_STAR_VARIANT":
         requireStringField(message, "instanceId", type); requireStringField(message, "destinationId", type); requireStringField(message, "routeId", type);
@@ -2881,6 +3109,12 @@ export class GameRoomServer {
       return;
     }
 
+    if (seat.controllerType === "ai") {
+      this.sendRejoinRejected(client, "AI rival seats cannot be reclaimed by a phone");
+      client.socket.close(4002, "AI-controlled seat");
+      return;
+    }
+
     client.seatId = seat.seatId;
     this.adoptPhoneClient(client);
 
@@ -3060,10 +3294,14 @@ export class GameRoomServer {
 
   private getPendingRollModifierSources(seatId: string, stat: Stat, mode: "battle" | "check"): RollModifierSource[] {
     const sources: RollModifierSource[] = [];
+    let anyRollResolved = false;
+    let matchingRollResolved = false;
+    const nextMatchingCheckAbilities = new Set(["ashwake-step", "old-oaths", "silent-audit", "witchglass-choir", "choir-lash"]);
 
     for (let index = this.state.eventLog.length - 1; index >= 0; index -= 1) {
       const entry = this.state.eventLog[index] as
-        | { type?: string; seatId?: string; rollModifier?: PendingRollModifier }
+        | { type?: string; seatId?: string; abilityId?: string; stat?: string; checkStat?: string; testedStat?: string; mode?: "battle" | "check";
+            roll?: unknown; rollModifier?: PendingRollModifier }
         | undefined;
 
       if (entry?.type === "TURN_COMPLETED") {
@@ -3074,16 +3312,21 @@ export class GameRoomServer {
         entry?.seatId === seatId &&
         (entry.type === "COMBAT_RESOLVED" ||
           entry.type === "CHECK_ROLLED" ||
-          entry.type === "COOPERATIVE_ASSISTED_ROLL_RESOLVED")
+          entry.type === "COOPERATIVE_ASSISTED_ROLL_RESOLVED" ||
+          (entry.type === "SPACE_TEXT_RESOLVED" && entry.roll))
       ) {
-        break;
+        anyRollResolved = true;
+        const resolvedMode = entry.type === "COMBAT_RESOLVED" ? "battle" : entry.mode ?? "check";
+        if (resolvedMode === mode && (entry.stat ?? entry.checkStat ?? entry.testedStat) === stat) matchingRollResolved = true;
       }
 
       if (
         entry?.seatId === seatId &&
         (entry.type === "USE_GEAR" || entry.type === "USE_FOLLOWER" || entry.type === "ABILITY_TRIGGERED" || entry.type === "SCAR_ADAPTATION_ACTIVATED") &&
         entry.rollModifier?.stat === stat &&
-        entry.rollModifier.mode === mode
+        entry.rollModifier.mode === mode &&
+        !(entry.type === "ABILITY_TRIGGERED" && nextMatchingCheckAbilities.has(entry.abilityId ?? "")
+          ? matchingRollResolved : anyRollResolved)
       ) {
         sources.push({
           label: entry.rollModifier.label,
@@ -3115,7 +3358,7 @@ export class GameRoomServer {
     const encounter = this.state.currentEncounter;
     const sector = getBoardSpace(player.sectorId);
     const eventId = this.state.activeResolution?.id ?? `scar-roll:${player.seatId}:${this.state.sequence + 1}`;
-    const encounterKind = encounter?.cardType === "enemy"
+    const encounterKind = this.state.pendingTileChallenge?.challengeType === "anomaly" ? "anomaly" : encounter?.cardType === "enemy"
       ? "enemy"
       : encounter?.cardType === "hazard" ? "hazard" : undefined;
     const context = {
@@ -3124,6 +3367,7 @@ export class GameRoomServer {
       stat,
       mode,
       encounterKind,
+      helperCount: this.state.cooperativeAssistance?.lockedContributions.length ?? 0,
       enemyFamily: encounter?.enemyFamily,
       elite: encounter?.severity === 5,
       boss: false,
@@ -3254,6 +3498,7 @@ export class GameRoomServer {
     options: {
       scenarioModifier?: number;
       keyedPlayerModifier?: number;
+      disabledGearSlots?: GearSlot[];
       masterAlphaModifier?: number;
       extraSources?: RollModifierSource[];
     } = {}
@@ -3273,6 +3518,7 @@ export class GameRoomServer {
     } else {
       sources.push(...getEquippedGearModifierSources(player.character, stat, {
         mode,
+        disabledSlots: [...(options.disabledGearSlots ?? []), ...getAfflictionDisabledGearSlots(player, getAfflictionCatalog(this.state))],
         suppressedInstanceIds: getSuppressedEquipmentInstanceIds(this.state, player.seatId, this.state.activeResolution?.id)
       }));
     }
@@ -3322,7 +3568,7 @@ export class GameRoomServer {
           : player.character.id === "signal-witch" && mode === "check" && encounter.cardType === "hazard" && encounter.threatLane === "blue" && !this.hasAbilityTriggeredThisRound(seatId, "hush-static")
             ? { id: "hush-static", summary: "Hush Static softened Lane's first Blue Anomaly this round.", note: "Hush Static reduced this Blue Anomaly's difficulty." }
             : player.character.id === "char_popelord" && mode === "check" && encounter.cardType === "hazard" && encounter.threatLane === "yellow" && !this.hasAbilityTriggeredThisRound(seatId, "compost-cape")
-              ? { id: "compost-cape", summary: "Compost Cape softened Popelord's first yellow hazard this round.", note: "Compost Cape reduced this yellow hazard's difficulty." }
+              ? { id: "compost-cape", summary: "Compost Cape softened Poopydiperlord's first yellow hazard this round.", note: "Compost Cape reduced this yellow hazard's difficulty." }
               : null;
 
     if (!ability) {
@@ -3489,11 +3735,9 @@ export class GameRoomServer {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const sector = player ? this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId) : null;
     const lane = this.getNextCurrentSectorThreatLane(seatId);
-    const persistentThreatId = lane
-      ? (sector?.persistentThreatIds ?? []).find((cardId) => this.threats.get(cardId)?.threatLane === lane) ?? null
-      : null;
-    const topThreatId = persistentThreatId
-      ?? (lane ? this.peekGlobalThreatId(lane, seatId) : sector?.encounterDecks.threat[0] ?? null);
+    const persistent = this.getNextScheduledPersistentThreat(seatId);
+    const topThreatId = persistent.scheduled ? persistent.id
+      : lane ? this.peekGlobalThreatId(lane, seatId) : sector?.encounterDecks.threat[0] ?? null;
     const topThreat = topThreatId ? this.threats.get(topThreatId) : null;
 
     if (!topThreatId) {
@@ -3503,7 +3747,7 @@ export class GameRoomServer {
     return {
       type: "gain_note",
       text: `Fandiablos Warning Barks revealed the upcoming ${lane ?? "legacy"} Threat: ${topThreat?.title ?? topThreatId}. ${
-        persistentThreatId ? "It is fixed on this sector." : lane ? "The remaining bag order stays hidden." : "The remaining legacy test deck stays hidden."
+        persistent.scheduled ? "It is fixed on this sector." : lane ? "The remaining bag order stays hidden." : "The remaining legacy test deck stays hidden."
       }`
     };
   }
@@ -3644,7 +3888,7 @@ export class GameRoomServer {
       if (player!.private.activeOathchainReveal?.contractSignature === currentSignature) throw new IntentRejectedError("USE_GEAR", "Trace the Promise is already active for this Contract and turn.");
       const targets = deriveOathchainTargets(this.state, player!, contract);
       if (targets.length === 0) throw new IntentRejectedError("USE_GEAR", "No currently visible target can advance this Contract.");
-      oathchainReveal = { revealId: `oathchain:${seatId}:${this.state.sequence + 1}`, ownerSeat: seatId, itemInstanceId: item.instanceId, contractId: contract.id, contractSignature: currentSignature, contractName: contract.name, objectiveProgress: formatContractObjectiveStatus(contract, player!.character.activeContract!.progress), revealedTargets: targets, createdTurn: this.state.sequence, expiresAtTurnEnd: true };
+      oathchainReveal = { revealId: `oathchain:${seatId}:${this.state.sequence + 1}`, ownerSeat: seatId, itemInstanceId: item.instanceId, contractId: contract.id, contractSignature: currentSignature, contractName: contract.name, objectiveProgress: formatContractObjectiveStatus(contract, player!.character.activeContract!), revealedTargets: targets, createdTurn: this.state.sequence, expiresAtTurnEnd: true };
     }
 
     if (item.chargedEffect === "suppressForcedDisplacement") {
@@ -3813,6 +4057,9 @@ export class GameRoomServer {
       throw new IntentRejectedError("USE_FOLLOWER", `${follower.name} is passive and applies automatically.`);
     }
 
+    const supportDisabledReason = getFollowerSupportDisabledReason(this.state, seatId, follower);
+    if (supportDisabledReason) throw new IntentRejectedError("USE_FOLLOWER", supportDisabledReason);
+
     if (follower.effectModel === "exhaust") {
       if (follower.exhausted) throw new IntentRejectedError("USE_FOLLOWER", `${follower.name} is Exhausted. Refreshes next round.`);
       const timings = follower.activationTiming ?? [];
@@ -3831,19 +4078,9 @@ export class GameRoomServer {
     }
 
     const pendingFailure = this.state.pendingFailureReaction;
-    const pendingEffect = this.state.pendingEffect;
-    const isFailedReaction = this.state.phase === "resolution" && Boolean(
-      pendingFailure && pendingFailure.seatId === seatId && pendingEffect && this.state.activeResolution?.roll?.success === false
-    );
-    const middleRoute = getBoardSpace(player!.character.currentSpaceId)?.tier === "middle";
-    const suppressPendingFailure =
-      (follower.abilityId === "ignore_route_failure" && isFailedReaction && pendingFailure?.testType === "movement") ||
-      (follower.abilityId === "ignore_middle_route_failure" && isFailedReaction && pendingFailure?.testType === "movement" && middleRoute) ||
-      (follower.abilityId === "prevent_equipment_loss" && isFailedReaction && this.effectContainsType(pendingEffect!, "equipment_suppression")) ||
-      (follower.abilityId === "prevent_salvage_loss" && isFailedReaction && this.effectContainsType(pendingEffect!, "lose_salvage")) ||
-      (follower.abilityId === "battle_support" && isFailedReaction && this.effectContainsWound(pendingEffect!));
+    const suppressPendingFailure = Boolean(getFollowerFailureProtection(this.state, seatId, follower));
 
-    if (["ignore_route_failure", "ignore_middle_route_failure", "prevent_equipment_loss", "prevent_salvage_loss", "battle_support"].includes(follower.abilityId ?? "") && !suppressPendingFailure) {
+    if (FOLLOWER_REACTION_ABILITIES.has(follower.abilityId ?? "") && !suppressPendingFailure) {
       throw new IntentRejectedError("USE_FOLLOWER", `${follower.name} requires its matching pending failure consequence.`);
     }
 
@@ -4665,10 +4902,14 @@ export class GameRoomServer {
       success ? encounter.successEffectKey : encounter.failEffectKey,
       success ? "onSuccess" : "onFailure"
     );
-    const outcomeEffect = this.maybeApplyKerWoundPrevention(
+    // A second failed roll is the same consequence window. Keep protection
+    // already spent on that failure instead of restoring the printed penalty.
+    const protectedOutcome = success ? this.maybeApplyKerWoundPrevention(
       intent.seatId,
       this.maybeApplyFandiablosWoundPrevention(intent.seatId, resolvedOutcomeEffect)
-    );
+    ) : this.state.pendingEffect;
+    const outcomeEffect = success ? this.combineEffects([protectedOutcome, this.getPendingAfflictionReactionCost(intent.seatId)]
+      .filter((entry): entry is EncounterEffect => Boolean(entry))) : protectedOutcome;
 
     return {
       type: "SOLO_REROLL_RESOLVED",
@@ -4752,45 +4993,50 @@ export class GameRoomServer {
       const baseTotal = resolution.roll.baseTotal - previousFace + nextFace;
       const finalTotal = baseTotal + resolution.roll.modifierTotal;
       const success = finalTotal >= resolution.roll.target;
-      const sourceEffect = encounter.cardType === "enemy"
-        ? (success ? encounter.defeatReward : encounter.woundOnLoss ?? { type: "take_wound", amount: 1 })
-        : this.getHazardOutcomeEffect(encounter, success);
-      const effect = this.resolveThreatOutcomeEffect(intent.seatId, encounter, sourceEffect, success ? encounter.successEffectKey : encounter.failEffectKey, success ? "onSuccess" : "onFailure");
-      this.state = {
-        ...this.state,
-        pendingEffect: effect,
-        activeResolution: {
-          ...resolution,
-          stage: "roll_result",
-          roll: { ...resolution.roll, dice: faces, baseTotal, finalTotal, success },
-          outcome: {
-            title: success ? "Scar reroll passed" : "Scar reroll failed",
-            text: `${control.scarName} rerolled one die: ${previousFace} to ${nextFace}.`,
-            effects: [summary]
-          }
-        },
-        lastOutcomeSummary: this.state.lastOutcomeSummary ? {
-          ...this.state.lastOutcomeSummary,
-          die1: faces[0] ?? null,
-          die2: faces[1] ?? null,
-          checkTotal: finalTotal,
-          success,
-          summary: `${control.scarName} rerolled one die. ${finalTotal}/${resolution.roll.target}.`
-        } : null
-      };
+      if (encounter.cardType === "enemy" && success && !resolution.roll.success) {
+        this.correctFailedBattleFromScar(intent.seatId, faces, resolution.roll.modifierTotal);
+      } else {
+        const sourceEffect = encounter.cardType === "enemy"
+          ? (success ? encounter.defeatReward : encounter.woundOnLoss ?? { type: "take_wound", amount: 1 })
+          : this.getHazardOutcomeEffect(encounter, success);
+        const effect = success === resolution.roll.success ? this.state.pendingEffect
+          : this.combineEffects([this.resolveThreatOutcomeEffect(intent.seatId, encounter, sourceEffect,
+            success ? encounter.successEffectKey : encounter.failEffectKey, success ? "onSuccess" : "onFailure"),
+            this.getPendingAfflictionReactionCost(intent.seatId)].filter((entry): entry is EncounterEffect => Boolean(entry)));
+        this.state = {
+          ...this.state,
+          pendingEffect: effect,
+          pendingFailureReaction: success ? null : this.state.pendingFailureReaction,
+          pendingStaticIntercessionReaction: success ? null : this.state.pendingStaticIntercessionReaction,
+          activeResolution: {
+            ...resolution,
+            stage: "roll_result",
+            roll: { ...resolution.roll, dice: faces, baseTotal, finalTotal, success },
+            outcome: {
+              title: success ? "Scar reroll passed" : "Scar reroll failed",
+              text: `${control.scarName} rerolled one die: ${previousFace} to ${nextFace}.`,
+              effects: [summary]
+            }
+          },
+          lastOutcomeSummary: this.state.lastOutcomeSummary ? {
+            ...this.state.lastOutcomeSummary,
+            die1: faces[0] ?? null,
+            die2: faces[1] ?? null,
+            checkTotal: finalTotal,
+            success,
+            summary: `${control.scarName} rerolled one die. ${finalTotal}/${resolution.roll.target}.`
+          } : null
+        };
+      }
       summary = `${control.scarName} rerolled one die from ${previousFace} to ${nextFace}.`;
       activationEvent.summary = summary;
       activationEvent.reroll = { index, previousFace, nextFace };
     } else if (control.ruleKey === "one-below-battle-bonus") {
       const resolution = this.state.activeResolution;
       const encounter = this.state.currentEncounter;
-      if (!resolution?.roll || !encounter || resolution.roll.finalTotal !== resolution.roll.target - 1) throw new IntentRejectedError(intent.type, "The battle is no longer exactly one point short");
-      const finalTotal = resolution.roll.finalTotal + 1;
-      const successEffect = encounter.cardType === "enemy"
-        ? encounter.defeatReward
-        : this.getHazardOutcomeEffect(encounter, true);
-      const effect = this.resolveThreatOutcomeEffect(intent.seatId, encounter, successEffect, encounter.successEffectKey, "onSuccess");
-      this.state = { ...this.state, pendingEffect: effect, activeResolution: { ...resolution, roll: { ...resolution.roll, modifierTotal: resolution.roll.modifierTotal + 1, finalTotal, success: true }, outcome: { title: "Scar turned the battle", text: `${control.scarName} added +1.`, effects: [control.effectText] } } };
+      if (!resolution?.roll || encounter?.cardType !== "enemy" || resolution.roll.finalTotal !== resolution.roll.target - 1) throw new IntentRejectedError(intent.type, "The battle is no longer exactly one point short");
+      this.correctFailedBattleFromScar(intent.seatId, resolution.roll.dice, resolution.roll.modifierTotal + 1,
+        { label: control.scarName, value: 1 });
     } else if (control.ruleKey === "prevent-equipment-suppression") {
       const pending = this.state.pendingEquipmentSuppressionChoice;
       if (!pending) throw new IntentRejectedError(intent.type, "No Equipment suppression is pending");
@@ -4805,7 +5051,8 @@ export class GameRoomServer {
       if (!pending) throw new IntentRejectedError(intent.type, "No displacement is pending");
       this.state = pending.distance <= 1
         ? { ...this.state, pendingDisplacement: null, resolvedDisplacementSourceEventIds: [...(this.state.resolvedDisplacementSourceEventIds ?? []), pending.sourceEventId] }
-        : { ...this.state, pendingDisplacement: { ...pending, distance: 1 } };
+        : { ...this.state, pendingDisplacement: { ...pending, distance: 1,
+            destinationSectorId: getRingTrackNeighbor(pending.originSectorId, pending.direction === "clockwise" ? 1 : -1)! } };
     } else if (control.ruleKey === "forge-charge-restore") {
       this.state = { ...this.state, players: this.state.players.map((entry) => entry.seatId !== intent.seatId ? entry : ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((item) => {
         if (item.instanceId !== intent.targetId) return item;
@@ -4815,8 +5062,14 @@ export class GameRoomServer {
       }) } })) };
     } else if (control.ruleKey === "choose-displacement-direction") {
       const choice = this.state.pendingForcedDestinationChoice;
-      if (!choice || !intent.targetId) throw new IntentRejectedError(intent.type, "No displacement choice is pending");
-      this.applyAction({ type: "FORCED_DESTINATION_SELECTED", seatId: intent.seatId, choiceId: choice.choiceId, destinationSectorId: intent.targetId, createdAt });
+      const option = getScarDisplacementOptions(this.state, player).find((entry) => entry.sectorId === intent.targetId);
+      if (!option) throw new IntentRejectedError(intent.type, "No legal displacement choice is pending");
+      if (choice) {
+        this.applyAction({ type: "FORCED_DESTINATION_SELECTED", seatId: intent.seatId, choiceId: choice.choiceId, destinationSectorId: option.sectorId, createdAt });
+      } else if (this.state.pendingDisplacement) {
+        this.state = { ...this.state, pendingDisplacement: { ...this.state.pendingDisplacement,
+          destinationSectorId: option.sectorId, direction: option.direction } };
+      }
     } else if (control.ruleKey === "relay-blue-peek") {
       const nextId = this.peekGlobalThreatId("blue", intent.seatId);
       const card = nextId ? this.threats.get(nextId) : null;
@@ -4834,6 +5087,9 @@ export class GameRoomServer {
       scarUsage: [...(this.state.scarUsage ?? []), { ...control.usage, sourceEventId: control.context.eventId, createdAt }],
       eventLog: [...this.state.eventLog, activationEvent]
     };
+    if (control.ruleKey.includes("reroll") || control.ruleKey === "one-below-battle-bonus") {
+      this.runAutomaticPhases(intent.seatId);
+    }
   }
 
   private intentToAction(intent: ClientIntent): GameAction {
@@ -5066,7 +5322,7 @@ export class GameRoomServer {
     const previousWoundsBySeat = new Map(
       previousState.players.map((player) => [player.seatId, player.character.wounds])
     );
-    const previousHeldGearCount = this.getHeldGearCount(action.seatId, previousState);
+    const previousArtifactCount = this.getHeldArtifactCount(action.seatId, previousState);
     const result = reduceGameState(this.state, action);
 
     if (!result.ok) {
@@ -5075,9 +5331,16 @@ export class GameRoomServer {
 
     this.state = result.state;
     this.events.push(action, ...result.emitted);
+    if (this.state.status === "ended") return;
+    const escalationCard = action.type === "SPACE_TEXT_RESOLVED" && action.revealedCard?.type === "escalation"
+      ? action.revealedCard : null;
+    if (action.type !== "ESCALATION_ADVANCED" && (escalationCard || this.state.escalationLevel > previousState.escalationLevel)) {
+      this.finishEscalationCollapse(action.seatId, escalationCard?.title ?? "card effect");
+      if (this.getState().status === "ended") return;
+    }
     this.applyAutomaticScarRules(action, previousState);
 
-    const gainedGearCount = this.getHeldGearCount(action.seatId, this.state) - previousHeldGearCount;
+    const gainedGearCount = this.getHeldArtifactCount(action.seatId, result.state) - previousArtifactCount;
 
     if (previousState.status === "active") {
       for (const player of this.state.players) {
@@ -5161,27 +5424,6 @@ export class GameRoomServer {
         wounds: player.character.wounds,
         battleAwardedSalvage: JSON.stringify(action.effect).includes("gain_salvage")
       });
-      const trophyRules = action.success
-        ? evaluateOwnedScarRules(this.state, player, "burden", { eventId: `${eventId}:trophy`, timing: "onTrophyGained", mode: "battle", encounterKind: "enemy", success: true })
-          .filter((entry) => entry.outcome.modifier === -1)
-        : [];
-      if (trophyRules.length > 0) {
-        const latestIndex = (player.character.trophyPile ?? []).length - 1;
-        this.state = {
-          ...this.state,
-          scarUsage: [...(this.state.scarUsage ?? []), ...trophyRules.flatMap((entry) => entry.usage ? [entry.usage] : [])],
-          players: this.state.players.map((entry) => entry.seatId !== action.seatId ? entry : {
-            ...entry,
-            character: {
-              ...entry.character,
-              trophies: Math.max(0, entry.character.trophies - 1),
-              trophyPile: (entry.character.trophyPile ?? []).map((trophy, index) => index === latestIndex
-                ? { ...trophy, spentValue: Math.min(trophy.trophyValue, (trophy.spentValue ?? 0) + 1) }
-                : trophy)
-            }
-          })
-        };
-      }
       return;
     }
 
@@ -5200,7 +5442,9 @@ export class GameRoomServer {
     }
 
     if (action.type === "ESCALATION_ADVANCED") {
-      apply({ eventId, timing: "onEscalationAdvanced", mode: "event", encounterKind: "escalation" }, false);
+      if (previousState.turnOrder[previousState.activeSeatIndex] === action.seatId) {
+        apply({ eventId, timing: "onEscalationAdvanced", mode: "event", encounterKind: "escalation" }, false);
+      }
       return;
     }
 
@@ -5242,7 +5486,7 @@ export class GameRoomServer {
           scarUsage: [...(this.state.scarUsage ?? []), ...exhaustRules.flatMap((entry) => entry.usage ? [entry.usage] : [])],
           players: this.state.players.map((entry) => entry.seatId !== action.seatId ? entry : {
             ...entry,
-            character: { ...entry.character, heldGear: entry.character.heldGear.map((gear) => gear.instanceId === action.instanceId || gear.id === action.gearId ? { ...gear, exhausted: true } : gear) }
+            character: { ...entry.character, heldGear: entry.character.heldGear.map((gear) => (action.instanceId ? gear.instanceId === action.instanceId : gear.id === action.gearId) ? { ...gear, exhausted: true } : gear) }
           })
         };
       }
@@ -5441,7 +5685,7 @@ export class GameRoomServer {
         sourceTitle: reward.sourceTitle,
         optionIds,
         status: "queued",
-        continuationPhase: "broadcast",
+        continuationPhase: this.state.phase === "resolution" ? "broadcast" : this.state.phase,
         createdAt
       } : null,
       eventLog: [...this.state.eventLog, {
@@ -5483,8 +5727,10 @@ export class GameRoomServer {
     }
     const claimed = this.state.players.some((entry) =>
       getActiveMissions(entry.character).some((mission) => mission.contractId === intent.contractId)
+      || (entry.character.completedContracts ?? []).includes(intent.contractId)
+      || (entry.character.completedMissionRecords ?? []).some((record) => record.missionId === intent.contractId)
     );
-    if (claimed) throw new IntentRejectedError(intent.type, "Mission is already active");
+    if (claimed) throw new IntentRejectedError(intent.type, "Mission is already active or completed");
     const createdAt = new Date().toISOString();
     this.state = {
       ...this.state,
@@ -5785,6 +6031,15 @@ export class GameRoomServer {
       : effect;
   }
 
+  private getPendingAfflictionReactionCost(seatId: string): EncounterEffect | null {
+    const source = [...this.state.eventLog].reverse().find((entry) => {
+      const event = entry as Partial<CheckRolledAction | CombatResolvedAction>;
+      return (event.type === "CHECK_ROLLED" || event.type === "COMBAT_RESOLVED")
+        && event.seatId === seatId && event.cardId === this.state.currentEncounter?.id;
+    }) as CheckRolledAction | CombatResolvedAction | undefined;
+    return source?.afflictionReactionCost ?? null;
+  }
+
   private rebuildThreatResultWithFaces(
     pendingResult: CheckRolledAction | CombatResolvedAction,
     faces: [number, number]
@@ -5856,7 +6111,7 @@ export class GameRoomServer {
       roll,
       total,
       success,
-      effect: effect ?? (pendingResult.type === "COMBAT_RESOLVED"
+      effect: this.combineEffects([effect, pendingResult.afflictionReactionCost].filter((entry): entry is EncounterEffect => Boolean(entry))) ?? (pendingResult.type === "COMBAT_RESOLVED"
         ? { type: "sequence", effects: [] }
         : null),
       createdAt: new Date().toISOString()
@@ -6399,12 +6654,8 @@ export class GameRoomServer {
     return this.state.sectors.filter((sector) => sector.regionTier === "borderlight").map((sector) => sector.id);
   }
 
-  private getTotalWounds(state: GameState): number {
-    return state.players.reduce((total, player) => total + player.character.wounds, 0);
-  }
-
-  private getHeldGearCount(seatId: string, state: GameState = this.state): number {
-    return state.players.find((player) => player.seatId === seatId)?.character.heldGear.length ?? 0;
+  private getHeldArtifactCount(seatId: string, state: GameState): number {
+    return state.players.find((player) => player.seatId === seatId)?.character.heldGear.filter((item) => item.tier === "artifact").length ?? 0;
   }
 
   private getThroneCrownCount(seatId: string, state: GameState = this.state): number {
@@ -6437,75 +6688,6 @@ export class GameRoomServer {
     }
 
     return (state.scenarioProgress.engineModeIndex ?? 0) % 5 === 1 ? 1 : 0;
-  }
-
-  private getCompletedContractCount(seatId: string, state: GameState = this.state): number {
-    return getCompletedContractCountForProjection(state, seatId);
-  }
-
-  private hasScenarioArtifact(player: PlayerState): boolean {
-    return player.character.heldGear.some(
-      (item) => item.tier === "artifact" || item.category === "chargedRelic" || item.id.startsWith("artifact-")
-    );
-  }
-
-  private hasScenarioGear(player: PlayerState, needle: string): boolean {
-    const normalizedNeedle = needle.toLowerCase();
-    return player.character.heldGear.some(
-      (item) => item.id.toLowerCase().includes(normalizedNeedle) || item.name.toLowerCase().includes(normalizedNeedle)
-    );
-  }
-
-  private getScenarioGateBlockReason(player: PlayerState, scenario: ScenarioDefinition): string | null {
-    const completedContracts = this.getCompletedContractCount(player.seatId);
-    const hasArtifact = this.hasScenarioArtifact(player);
-    const progress = this.state.scenarioProgress;
-    const devourerTrophyGate = getDevourerTrophyGate(this.state.sessionMode);
-    const engineKeyGate = getLabyrinthEngineKeyGate(this.state.sessionMode);
-    const starTokenGate = getDyingStarTokenGate(this.state.sessionMode);
-    const starContractGate = getDyingStarContractGate(this.state.sessionMode);
-
-    if (scenario.id !== "scenario_broken_seal" && (progress[scenario.winConditionKey] ?? 0) > 0) {
-      return null;
-    }
-
-    switch (scenario.id) {
-      case "scenario_broken_seal":
-        return (this.state.scenarioPreparation.resources.sealIntegrity ?? 0) >= 4 || hasArtifact || completedContracts >= 3
-          ? null
-          : "Final gate locked: restore 4+ Seal Integrity, hold an Artifact, or complete 3 Contracts.";
-      case "scenario_throne_of_ash":
-        return this.getThroneCrownCount(player.seatId) >= 1 || completedContracts >= 2
-          ? null
-          : "Final gate locked: hold 1 Crown or complete 2 Contracts.";
-      case "scenario_mirror_of_false_heroes":
-        return hasArtifact || completedContracts >= 2 || player.character.scars.length === 0
-          ? null
-          : "Final gate locked: hold an Artifact, complete 2 Contracts, or carry no Scars.";
-      case "scenario_devourer_beneath":
-        return player.character.trophies >= devourerTrophyGate || hasArtifact || this.hasScenarioGear(player, "maw-spike")
-          ? null
-          : `Final gate locked: spend ${devourerTrophyGate} Trophy value, hold an Artifact charge, or carry a Maw Spike.`;
-      case "scenario_labyrinth_engine":
-        return (progress.engineKeys ?? 0) >= engineKeyGate || (progress.shutdownMarks ?? 0) >= engineKeyGate || hasArtifact
-          ? null
-          : `Final gate locked: assemble ${engineKeyGate} Engine Keys or hold an Artifact.`;
-      case "scenario_dying_star":
-        return (progress.starTokens ?? 0) >= starTokenGate && (hasArtifact || completedContracts >= starContractGate)
-          ? null
-          : `Final gate locked: keep ${starTokenGate}+ Starfire and hold an Artifact or complete ${starContractGate} Contracts.`;
-      case BROKEN_CONCORDANCE_SCENARIO_ID: {
-        const completedNodes = new Set(this.state.scenarioPreparation.completedObjectiveIds);
-        const missingNode = BROKEN_CONCORDANCE_NODES.find((node) => !completedNodes.has(node.id));
-        if (missingNode) return `Final gate locked: stabilize ${missingNode.name}.`;
-        if (!isInnerApproachChallengeCleared(this.state, player, "inner_gate_of_cinders")) {
-          return "Final gate locked: breach the Gate of Cinders first.";
-        }
-        return null;
-      }
-      default:
-        return null;
-    }
   }
 
   private hasAbilityTriggeredThisRound(seatId: string, abilityId: string): boolean {
@@ -6693,7 +6875,7 @@ export class GameRoomServer {
     });
     const progressSummary = updates
       .map(({ contract, nextState }) =>
-        `${contract.name} is now ${formatContractObjectiveStatus(contract, nextState.progress)}.`
+        `${contract.name} is now ${formatContractObjectiveStatus(contract, nextState)}.`
       )
       .join(" ");
     const createdAt = new Date().toISOString();
@@ -6748,8 +6930,11 @@ export class GameRoomServer {
       this.state.phase !== "action" ||
       activeSeatId !== seatId ||
       this.state.activeResolution ||
+      this.state.currentEncounter ||
+      this.state.pendingEnemyRoll ||
       this.state.pendingEffect ||
-      this.state.pendingMissionSelection
+      this.state.pendingMissionSelection ||
+      this.state.pendingMissionRelicExchange
     ) return false;
     const contract = this.state.availableContracts.find((entry) => entry.id === activeContract.contractId);
     if (!contract) return false;
@@ -6760,18 +6945,23 @@ export class GameRoomServer {
       contract: this.resolveContract(contract),
       createdAt: new Date().toISOString()
     } satisfies CompleteContractAction);
-    this.queueReplacementMissionSelection(seatId, contract.id);
+    this.finishContractCompletion(seatId, contract.id);
+    this.activateQueuedReplacementMissionSelection(seatId);
+    return true;
+  }
+
+  private finishContractCompletion(seatId: string, contractId: string): void {
+    this.awardRandomEdgeCard(seatId, "contract", contractId);
+    this.queueReplacementMissionSelection(seatId, contractId);
     this.applyScenarioOnContractCompleted(seatId);
-    this.applyScenarioObjectiveOnContractCompleted(seatId, contract.id);
+    this.applyScenarioObjectiveOnContractCompleted(seatId, contractId);
     this.applyRivalryAgendaProgressTrigger(seatId, {
       type: "contractCompleted",
       seatId,
-      contractId: contract.id,
+      contractId,
       sectorId: this.state.players.find((entry) => entry.seatId === seatId)?.sectorId
     });
     this.maybeTriggerAbilityOnContractCompleted(seatId);
-    this.activateQueuedReplacementMissionSelection(seatId);
-    return true;
   }
 
   private maybeTriggerAbilityOnContractAccepted(seatId: string, acceptedContractId?: string): void {
@@ -6805,10 +6995,7 @@ export class GameRoomServer {
                   entry.character,
                   getActiveMissions(entry.character).map((mission) =>
                     mission.contractId === activeMission.contractId
-                      ? {
-                          ...mission,
-                          progress: setContractProgressFloor(contract, mission.progress, 1)
-                        }
+                      ? setContractProgressStateFloor(contract, mission, 1)
                       : mission
                   )
                 )
@@ -6881,10 +7068,7 @@ export class GameRoomServer {
                   entry.character,
                   getActiveMissions(entry.character).map((mission) =>
                     mission.contractId === activeMission.contractId
-                      ? {
-                          ...mission,
-                          progress: setContractProgressFloor(contract, mission.progress, 1)
-                        }
+                      ? setContractProgressStateFloor(contract, mission, 1)
                       : mission
                   )
                 )
@@ -6989,7 +7173,7 @@ export class GameRoomServer {
 
     if (
       player.character.id === "void-marshal" &&
-      sector.encounterDecks.threat.length === 0 &&
+      (sector.persistentThreatIds?.length ?? 0) === 0 &&
       !this.hasAbilityTriggeredThisRound(seatId, "ashwake-step")
     ) {
       this.applyAbilityMutation(
@@ -7633,7 +7817,7 @@ export class GameRoomServer {
     seatId: string,
     delta: number,
     reason: string,
-    source?: { cardId: string; eventId: string; guard?: "oneBeforeCollapse" }
+    source?: { cardId: string; eventId: string; guard?: "oneBeforeCollapse"; finishAfterSectorReveal?: boolean }
   ): void {
     if (this.state.status !== "active" || (delta === 0 && source?.guard !== "oneBeforeCollapse")) {
       return;
@@ -7672,11 +7856,14 @@ export class GameRoomServer {
     } satisfies EscalationAdvancedAction);
 
     this.maybeTriggerEscalationAbility(seatId, actualDelta, reason);
+    if (!source?.finishAfterSectorReveal) this.finishEscalationCollapse(seatId, reason);
+  }
 
-    if (source?.guard === "oneBeforeCollapse") {
-      return;
-    }
-
+  private finishEscalationCollapse(seatId: string, reason: string): void {
+    if (this.state.status !== "active") return;
+    const collapseLevel = getEscalationCollapseLevel(this.state.sessionMode);
+    // A guarded card cannot cause collapse, but it must still finish a loss
+    // if an independent Scar or other effect already reached the threshold.
     const currentLevel = this.state.escalationLevel;
     const currentModifier = getEscalationModifier(currentLevel);
 
@@ -7757,7 +7944,7 @@ export class GameRoomServer {
   }
 
   private applyScenarioAmbientResolution(seatId: string, resolution: ScenarioAmbientResolution | null): void {
-    if (!resolution) {
+    if (!resolution || this.state.status !== "active") {
       return;
     }
 
@@ -7785,8 +7972,9 @@ export class GameRoomServer {
       return;
     }
 
-    const lane = getBoardSpace(sector.id)?.threatIcons[0] ?? null;
-    const drawnThreatId = lane ? this.peekGlobalThreatId(lane, seatId) : null;
+    if (!getBoardSpace(sector.id)?.threatIcons.length) return;
+    const lane = "blue";
+    const drawnThreatId = this.peekGlobalThreatId(lane, seatId);
     const drawnThreat = drawnThreatId ? this.threats.get(drawnThreatId) ?? null : null;
     const threatDrawBags = lane && drawnThreat
       ? {
@@ -8432,6 +8620,7 @@ export class GameRoomServer {
           difficultyModifier: (combined.difficultyModifier ?? 0) + (result.difficultyModifier ?? 0),
           playerBonusModifier: (combined.playerBonusModifier ?? 0) + (result.playerBonusModifier ?? 0),
           enemyBonusModifier: (combined.enemyBonusModifier ?? 0) + (result.enemyBonusModifier ?? 0),
+          disabledSlots: [...new Set([...(combined.disabledSlots ?? []), ...(result.disabledSlots ?? [])])],
           summary: [combined.summary, result.summary].filter(Boolean).join(" ")
         } satisfies ThreatEffectResult;
       },
@@ -8493,13 +8682,15 @@ export class GameRoomServer {
         usedInCycle.add(cardId);
         if (usedInCycle.size >= cards.length) usedInCycle.clear();
       }
+      const ongoing = new Set((player.faceupAfflictions ?? []).map((entry) => entry.cardId));
+      const available = cards.filter((entry) => !ongoing.has(entry.id));
       const excluded = new Set(pending.excludedCardIds);
-      let eligible = cards.filter((entry) => !usedInCycle.has(entry.id) && !excluded.has(entry.id));
+      let eligible = available.filter((entry) => !usedInCycle.has(entry.id) && !excluded.has(entry.id));
       if (eligible.length === 0) {
-        eligible = cards.filter((entry) => !excluded.has(entry.id));
+        eligible = available.filter((entry) => !excluded.has(entry.id));
       }
       if (eligible.length === 0) {
-        eligible = cards;
+        eligible = available;
       }
       affliction = eligible[this.randomSource.nextInt(eligible.length)] ?? null;
       die = this.randomSource.nextInt(6) + 1;
@@ -8567,7 +8758,7 @@ export class GameRoomServer {
   ): void {
     let progressMade = true;
 
-    while (progressMade) {
+    while (progressMade && this.state.status === "active") {
       progressMade = false;
 
       if (this.state.pendingAfflictionReaction) {
@@ -8634,6 +8825,9 @@ export class GameRoomServer {
           policy: this.state.pendingScarThreshold.policy,
           createdAt: new Date().toISOString()
         });
+        // Retirement can occur between two printed arrival threats. Pause at
+        // the replacement decision instead of drawing for a recalled operative.
+        if (this.state.players.find((player) => player.seatId === seatId)?.character.status === "recalled") return;
         progressMade = true;
         continue;
       }
@@ -8732,6 +8926,9 @@ export class GameRoomServer {
         const pendingEffect = this.state.pendingEffect;
         const pendingEncounter = this.state.currentEncounter;
         const pendingResolution = this.state.activeResolution;
+        // Scar burdens and ability-triggered pressure can replace the latest
+        // summary. The encounter's authoritative roll still owns its outcome.
+        const resolutionSuccess = pendingResolution?.roll?.success ?? this.state.lastOutcomeSummary?.success ?? null;
         const failedCheckSource = [...this.state.eventLog].reverse().find((entry) => {
           const candidate = entry as { type?: string; seatId?: string; cardId?: string; success?: boolean };
           return candidate.type === "CHECK_ROLLED" && candidate.seatId === seatId && candidate.cardId === pendingEncounter?.id && candidate.success === false;
@@ -8744,7 +8941,7 @@ export class GameRoomServer {
           pendingEncounter?.id === "shattered-barricade" &&
           pendingEffect.type === "advance_escalation" &&
           pendingEffect.amount === 1 &&
-          this.state.lastOutcomeSummary?.success === false &&
+          resolutionSuccess === false &&
           Boolean(sourceResolutionId)
             ? {
                 cardId: pendingEncounter.id,
@@ -8758,7 +8955,7 @@ export class GameRoomServer {
           pendingEffect.sourceCardId === "gateblind-pulse" &&
           pendingEffect.amount === 1 &&
           pendingEffect.guard === "oneBeforeCollapse" &&
-          this.state.lastOutcomeSummary?.success === false &&
+          resolutionSuccess === false &&
           Boolean(sourceResolutionId)
             ? {
                 cardId: pendingEncounter.id,
@@ -8772,7 +8969,7 @@ export class GameRoomServer {
           seatId,
           effect: pendingEffect,
           sourceCardId: pendingEncounter?.id ?? null,
-          success: this.state.lastOutcomeSummary?.success ?? null,
+          success: resolutionSuccess,
           createdAt: new Date().toISOString()
         });
         if (shatteredBarricadeEscalation) {
@@ -9028,9 +9225,7 @@ export class GameRoomServer {
       this.state.status === "active" &&
       this.didRoundWrap(previousActiveSeatIndex, this.state.activeSeatIndex);
     if (roundWrapped) {
-      if (!suppressRoundEscalation) {
-        this.applyRoundEscalation(seatId);
-      }
+      this.applyRoundEscalation(seatId, suppressRoundEscalation);
     }
 
     const scenarioAssaultStarted =
@@ -9154,13 +9349,13 @@ export class GameRoomServer {
     return nextActiveSeatIndex <= previousActiveSeatIndex;
   }
 
-  private applyRoundEscalation(seatId: string): void {
+  private applyRoundEscalation(seatId: string, suppressPressure = false): void {
     this.applyAction({
       type: "ROUND_COMPLETED",
       seatId,
       createdAt: new Date().toISOString()
     } satisfies RoundCompletedAction);
-    this.feedEscalation(seatId, 1, "round pressure");
+    if (!suppressPressure) this.feedEscalation(seatId, 1, "round pressure");
   }
 
   private checkCoopOperativeDefeat(seatId: string): void {
@@ -9192,14 +9387,12 @@ export class GameRoomServer {
     }
 
     const lane = this.getNextCurrentSectorThreatLane(seatId);
-    const persistentThreatId = lane
-      ? (sector.persistentThreatIds ?? []).find((cardId) => this.threats.get(cardId)?.threatLane === lane) ?? null
-      : null;
-    const drawnThreatId = persistentThreatId
-      ?? (lane
+    const persistent = this.getNextScheduledPersistentThreat(seatId);
+    const drawnThreatId = persistent.scheduled ? persistent.id
+      : (lane
         ? this.peekGlobalThreatId(lane, seatId)
         : this.drawThreatIdWithSoftExile(sector.encounterDecks.threat));
-    const drawSource: EncounterDrawnAction["drawSource"] = persistentThreatId
+    const drawSource: EncounterDrawnAction["drawSource"] = persistent.scheduled
       ? "persistent"
       : lane
         ? "global-bag"
@@ -9306,6 +9499,16 @@ export class GameRoomServer {
     }
 
     return counts.red > 0 || counts.blue > 0 || counts.yellow > 0;
+  }
+
+  private getNextScheduledPersistentThreat(seatId: string): { scheduled: boolean; id: string | null } {
+    const progress = this.getTileArrivalThreatProgress(seatId);
+    const ruleId = progress?.threatRuleIds[progress.nextThreatIconIndex];
+    if (!progress || !ruleId?.startsWith("persistent:")) return { scheduled: false, id: null };
+    const lane = progress.threatLanes[progress.nextThreatIconIndex];
+    const sector = this.state.sectors.find((entry) => entry.id === progress.sectorId);
+    return { scheduled: true, id: (sector?.persistentThreatIds ?? []).find((id) =>
+      ruleId === `persistent:${id}:${lane}`) ?? null };
   }
 
   private getNextCurrentSectorThreatLane(seatId: string): ThreatIcon | null {
@@ -9437,21 +9640,9 @@ export class GameRoomServer {
     const nemesis = this.getActiveNemesis();
 
     if (nemesis && nemesis.scenarioConfrontationMode !== "authored-plan") {
-      const checks: ScenarioCheck[] = (["strength", "willpower", "cunning"] as const)
-        .filter((statKey) => nemesis.stats[statKey] != null)
-        .map((statKey) => {
-          const opposition = NEMESIS_OPPOSITION[statKey];
-
-          return {
-            stat: opposition.attackStat,
-            difficulty: CONFRONTATION_BASE_DIFFICULTY + (nemesis.stats[statKey] ?? 0),
-            label: `${opposition.label} ${nemesis.name}`
-          };
-        });
-
       return {
-        checks,
-        markLabel: "wound on the nemesis",
+        checks: getNemesisChecks(nemesis),
+        markLabel: "boss wound",
         effect: null,
         victorySummary: `${nemesis.name}, ${nemesis.title}, was brought down at the Cinder Gate.`
       };
@@ -9618,7 +9809,7 @@ export class GameRoomServer {
       const helper = this.state.players.find((entry) => entry.seatId === seatId);
       if (!helper?.character.scars.includes("scar-borrowed-name")) return [];
       if ((this.state.scarUsage ?? []).some((entry) => entry.seatId === seatId && entry.scarId === "scar-borrowed-name" && entry.ruleKey === "first-assistance-reduction" && entry.scope === "round")) return [];
-      const scopeId = `round:${getCurrentRoundNumber(this.state)}`;
+      const scopeId = `round:${this.state.eventLog.filter((entry) => (entry as { type?: string }).type === "ROUND_COMPLETED").length}`;
       return [{
         usageId: `${seatId}:scar-borrowed-name:first-assistance-reduction:${scopeId}`,
         seatId,
@@ -9708,6 +9899,7 @@ export class GameRoomServer {
       requestId: request.id,
       sourceId,
       testedStat: request.testedStat,
+      mode: this.state.currentEncounter?.cardType === "enemy" ? "battle" : "check",
       contributions: request.lockedContributions,
       success,
       createdAt: new Date().toISOString()
@@ -9748,6 +9940,10 @@ export class GameRoomServer {
     };
   }
 
+  private getCinderOathBonus(player: PlayerState): number {
+    return player.character.id === "cinder-monk" && this.hasAbilityTriggeredThisRound(player.seatId, "cinder-oath") ? 2 : 0;
+  }
+
   private buildCooperativeTestRoll(
     test: PendingCooperativeTest,
     player: PlayerState
@@ -9765,9 +9961,13 @@ export class GameRoomServer {
       test.stat,
       test.requiresHelper
     );
+    const oathBonus = test.sourceKind === "scenarioConfrontation" ? this.getCinderOathBonus(player) : 0;
     const activeSources: RollModifierSource[] = [
+      ...(oathBonus ? [{ label: "Cinder Oath", value: oathBonus }] : []),
       { label: "Active operative", value: player.character.stats[test.stat] },
-      ...getEquippedGearModifierSources(player.character, test.stat),
+      ...getEquippedGearModifierSources(player.character, test.stat, { mode: "check", disabledSlots: getAfflictionDisabledGearSlots(player, getAfflictionCatalog(this.state)) }),
+      ...getAfflictionModifierSources(player, test.stat, "check", getAfflictionCatalog(this.state)),
+      ...this.consumeScarRollModifierSources(player, test.stat, "check"),
       ...(this.getScenarioSkillModifier(test.activeSeatId)
         ? [{ label: "Scenario", value: this.getScenarioSkillModifier(test.activeSeatId) }]
         : []),
@@ -9853,6 +10053,12 @@ export class GameRoomServer {
           createdAt: new Date().toISOString()
         } satisfies ScenarioVictoryAchievedAction);
       }
+    }
+
+    if (this.state.status === "ended") {
+      this.state = { ...this.state, pendingCooperativeTest: null };
+      this.finishAssistedRoll(intent.seatId, test.sourceId, resolved.success);
+      return;
     }
 
     this.state = {
@@ -10008,15 +10214,35 @@ export class GameRoomServer {
     this.runAutomaticPhases(action.seatId);
   }
 
+  private correctFailedBattleFromScar(seatId: string, faces: number[], statBonus: number, modifier?: RollModifierSource): void {
+    const resolution = this.state.activeResolution;
+    const original = [...this.state.eventLog].reverse().find((entry) => {
+      const event = entry as Partial<CombatResolvedAction>;
+      return event.type === "COMBAT_RESOLVED" && event.seatId === seatId && event.cardId === this.state.currentEncounter?.id;
+    }) as CombatResolvedAction | undefined;
+    if (!original || !resolution || original.success || resolution.roll?.success !== false || faces.length !== 2) {
+      throw new IntentRejectedError("USE_SCAR_ADAPTATION", "The unresolved battle result is unavailable.");
+    }
+    const corrected = this.rebuildThreatResultWithFaces({ ...original, statBonus,
+      modifierSources: [...(original.modifierSources ?? []), ...(modifier ? [modifier] : [])] }, [faces[0]!, faces[1]!]) as CombatResolvedAction;
+    this.finishResolvedCombat({ ...corrected, correctedResolutionId: resolution.id });
+  }
+
   private finishResolvedCombat(action: CombatResolvedAction): void {
     const encounter = this.state.currentEncounter;
     const player = this.state.players.find((entry) => entry.seatId === action.seatId);
+    const crowned = this.getThroneCrownCount(action.seatId) > 0;
     if (!encounter || encounter.cardType !== "enemy" || encounter.id !== action.cardId || !player) {
       throw new Error("Affliction reroll no longer matches the authoritative battle");
     }
     this.applyAction(action);
     this.finishAssistedRoll(action.seatId, encounter.id, action.success);
     this.markFirstEligibleCharacterAbility(action.seatId, action.stat, "battle", encounter);
+    if (!action.success && getOwnedScarAdaptationControls(this.state, action.seatId).some((control) =>
+      control.enabled && (control.ruleKey.includes("reroll") || control.ruleKey === "one-below-battle-bonus"))) {
+      this.state = { ...this.state, pendingFailureReaction: { id: `failure:scar:${this.state.activeResolution!.id}`,
+        seatId: action.seatId, testType: "battle", sourceId: encounter.id, createdAt: action.createdAt } };
+    }
     if (action.success) {
       if (encounter.missionReward && !action.edgeForfeitRewards) {
         this.queueMissionReward({
@@ -10035,6 +10261,7 @@ export class GameRoomServer {
         threatId: encounter.id,
         threatLane: encounter.threatLane,
         enemyFamily: encounter.enemyFamily,
+        crowned,
         sectorId: player.sectorId
       });
       this.applyRivalryAgendaProgressTrigger(action.seatId, {
@@ -10161,10 +10388,13 @@ export class GameRoomServer {
             ? { type: "draw_affliction", amount: 1 }
             : null;
       const effect = this.combineEffects(
-        [outcomeEffect, reactionEffect].filter((entry): entry is EncounterEffect => Boolean(entry))
+        [outcomeEffect, ...(success !== pendingResult.success ? [pendingResult.afflictionReactionCost] : []), reactionEffect]
+          .filter((entry): entry is EncounterEffect => Boolean(entry))
       );
       finalResult = {
         ...pendingResult,
+        afflictionReactionCost: this.combineEffects([pendingResult.afflictionReactionCost, reactionEffect]
+          .filter((entry): entry is EncounterEffect => Boolean(entry))) ?? undefined,
         roll,
         total,
         success,
@@ -10215,7 +10445,8 @@ export class GameRoomServer {
     const modifierSources = [
       ...this.buildStatModifierSources(player, intent.stat, "check", {
       scenarioModifier: this.getScenarioSkillModifier(intent.seatId),
-      keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0
+      keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0,
+      disabledGearSlots: keyedModifiers.disabledSlots
       }),
       ...(this.state.pendingTileChallenge?.modifierSources ?? []).map(({ label, value }) => ({ label, value })),
       ...nextNonBattleTestModifiers,
@@ -10504,7 +10735,7 @@ export class GameRoomServer {
       }
     };
 
-    if (VISIBLE_DICE_ROLL_MS <= 0) {
+    if (this.executionServices.mode === "simulation" || VISIBLE_DICE_ROLL_MS <= 0) {
       completeRoll();
       return;
     }
@@ -10525,18 +10756,15 @@ export class GameRoomServer {
       route: selectedRoute?.route ?? [fromSectorId, intent.toSectorId]
     });
 
-    const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const roll = rollDice(2, 6, this.randomSource);
     const statBonus =
       player.character.stats.guile +
-      getEquippedGearModifierSources(player.character, "guile").reduce((sum, source) => sum + source.value, 0) +
+      getEquippedGearModifierSources(player.character, "guile", { mode: "check", disabledSlots: getAfflictionDisabledGearSlots(player, getAfflictionCatalog(this.state)) }).reduce((sum, source) => sum + source.value, 0) +
+      getAfflictionModifierSources(player, "guile", "check", getAfflictionCatalog(this.state)).reduce((sum, source) => sum + source.value, 0) +
       this.getScenarioSkillModifier(intent.seatId);
     const total = roll.total + statBonus;
-    const routeDifficulty = Math.max(
-      0,
-      targetSector.danger + escalationModifier - getSoloMovementDifficultyEase(this.state.sessionMode)
-    );
-    const difficulty = this.shouldPreventMovementFailure() ? Math.min(routeDifficulty, total) : routeDifficulty;
+    const approach = getMovementApproachPreview(this.state, targetSector.danger);
+    const difficulty = approach.failurePrevented ? Math.min(approach.difficulty, total) : approach.difficulty;
     const success = total >= difficulty;
     const movementCreatedAt = new Date().toISOString();
 
@@ -11114,19 +11342,6 @@ export class GameRoomServer {
     };
   }
 
-  private shouldPreventMovementFailure(): boolean {
-    if (this.state.sessionMode === "single-player") {
-      return true;
-    }
-
-    const occupiedSeatIds = new Set(
-      this.state.seats.filter((seat) => seat.characterId && !seat.kicked).map((seat) => seat.seatId)
-    );
-    const occupiedPlayerCount = this.state.players.filter((player) => occupiedSeatIds.has(player.seatId)).length;
-
-    return occupiedPlayerCount <= 1;
-  }
-
   private assertLegalMove(
     seatId: string,
     toSectorId: string,
@@ -11200,6 +11415,7 @@ export class GameRoomServer {
     }
 
     const boardTextEffect = resolveBoardTextEffect(boardSpace.textBox.effectKey);
+    canResolveSpaceText(this.state, intent.seatId);
     if (boardTextEffect?.choices?.length) {
       if (!intent.choiceId) {
         throw new Error(`Choose how to resolve ${boardSpace.textBox.title} before continuing`);
@@ -11227,7 +11443,8 @@ export class GameRoomServer {
       });
       return;
     }
-    const sectorCardResolution = this.resolveSectorCardResolution(intent.seatId, boardTextEffect?.sectorDeck?.kind ?? null);
+    const deckKind = boardTextEffect?.sectorDeck?.kind ?? null;
+    const drawnSectorCard = this.resolveSectorCardResolution(intent.seatId, deckKind);
     let checkPayload:
       | {
           checkStat: Stat;
@@ -11246,7 +11463,8 @@ export class GameRoomServer {
       const escalationModifier = getEscalationModifier(this.state.escalationLevel);
       const statBonus = cooperativeRoll?.statBonus ?? (
         player.character.stats[resolution.check.stat] +
-        getEquippedGearModifierSources(player.character, resolution.check.stat).reduce((sum, source) => sum + source.value, 0) +
+        getEquippedGearModifierSources(player.character, resolution.check.stat, { mode: "check", disabledSlots: getAfflictionDisabledGearSlots(player, getAfflictionCatalog(this.state)) }).reduce((sum, source) => sum + source.value, 0) +
+        getAfflictionModifierSources(player, resolution.check.stat, "check", getAfflictionCatalog(this.state)).reduce((sum, source) => sum + source.value, 0) +
         this.getScenarioSkillModifier(intent.seatId) +
         this.sumModifierSources(this.getPendingRollModifierSources(intent.seatId, resolution.check.stat, "check"))
       );
@@ -11268,6 +11486,8 @@ export class GameRoomServer {
         : resolution.check.failureEffect ?? null;
     }
 
+    // A failed search leaves the selected relic in the local cache.
+    const sectorCardResolution = deckKind === "artifact" && checkPayload?.success === false ? null : drawnSectorCard;
     const combinedSummary = [baseSummary, sectorCardResolution?.summary].filter(Boolean).join(" ");
     const combinedEffect = this.combineEffects(
       [baseEffect, sectorCardResolution?.effect].filter((effect): effect is EncounterEffect => Boolean(effect)).map((effect) =>
@@ -11275,14 +11495,13 @@ export class GameRoomServer {
       )
     );
 
-    if (sectorCardResolution?.escalationDelta) {
-      this.feedEscalation(intent.seatId, sectorCardResolution.escalationDelta, "sector stabilization");
-
-      if (this.state.status !== "active") {
-        return;
-      }
+    const revealed = sectorCardResolution?.revealedCard;
+    if (revealed?.type === "escalation") {
+      const card = this.escalations.get(revealed.id);
+      if (card?.escalationDelta) this.feedEscalation(intent.seatId, card.escalationDelta, "sector stabilization", {
+        cardId: card.id, eventId: `sector:${this.state.sequence + 1}:${card.id}`, finishAfterSectorReveal: true
+      });
     }
-
     this.applyAction({
       type: "SPACE_TEXT_RESOLVED",
       seatId: intent.seatId,
@@ -11301,6 +11520,7 @@ export class GameRoomServer {
       consumedDeckCards: sectorCardResolution?.consumedDeckCards,
       createdAt: new Date().toISOString()
     } satisfies SpaceTextResolvedAction);
+    if (this.state.status !== "active") return;
     if (cooperativeRoll) {
       this.finishAssistedRoll(intent.seatId, boardSpace.textBox.effectKey, cooperativeRoll.success);
       this.state = {
@@ -11441,7 +11661,16 @@ export class GameRoomServer {
     const mirrorPressure = this.state.scenarioProgress.mirrorPressure ?? player.character.scars.length;
 
     const reflectionPressureThreshold = getReflectionPressureThreshold(this.state);
-    if (scenario.id === "scenario_mirror_of_false_heroes" && mirrorPressure >= reflectionPressureThreshold) {
+    const mirrorRepelled = scenario.id === "scenario_mirror_of_false_heroes" && mirrorPressure >= reflectionPressureThreshold;
+    const gateBlockReason = getScenarioGateBlockReason(this.state, player, scenario);
+    if (!mirrorRepelled && gateBlockReason) throw new IntentRejectedError(intent.type, gateBlockReason);
+    const stage = getBrokenConcordanceStage(this.state.scenarioConfrontation.progress.concordanceStages ?? 0);
+    if (scenario.id === BROKEN_CONCORDANCE_SCENARIO_ID && (!stage || !isCooperativeAssistanceMode(this.state))) {
+      throw new IntentRejectedError(intent.type, "The Hollow Regent requires an unfinished stage in cooperative multiplayer");
+    }
+    this.applyAction(this.intentToAction(intent));
+
+    if (mirrorRepelled) {
       this.applyAmbientScenarioMutation(
         intent.seatId,
         (state) => state,
@@ -11458,18 +11687,7 @@ export class GameRoomServer {
       return;
     }
 
-    const gateBlockReason = this.getScenarioGateBlockReason(player, scenario);
-    if (gateBlockReason) {
-      throw new IntentRejectedError(intent.type, gateBlockReason);
-    }
-
-    if (scenario.id === BROKEN_CONCORDANCE_SCENARIO_ID) {
-      if (player.character.currentSpaceId !== BROKEN_CONCORDANCE_CENTER_SECTOR_ID) {
-        throw new IntentRejectedError(intent.type, "The Hollow Regent can only be confronted at the Cinder Gate");
-      }
-      const stageIndex = this.state.scenarioConfrontation.progress.concordanceStages ?? 0;
-      const stage = getBrokenConcordanceStage(stageIndex);
-      if (!stage) throw new IntentRejectedError(intent.type, "The Hollow Regent confrontation is already complete");
+    if (scenario.id === BROKEN_CONCORDANCE_SCENARIO_ID && stage) {
       const confrontationId = `${scenario.id}:confrontation:${stage.id}:${this.state.sequence + 1}`;
       this.applyAction({
         type: "SCENARIO_CONFRONTATION_STARTED",
@@ -11514,16 +11732,17 @@ export class GameRoomServer {
     const usesNemesisStats = Boolean(nemesis && nemesis.scenarioConfrontationMode !== "authored-plan");
     const confrontationModifier = getEscalationModifier(this.state.escalationLevel);
 
-    const cinderOathBonus = player.character.id === "cinder-monk" && this.hasAbilityTriggeredThisRound(intent.seatId, "cinder-oath") ? 2 : 0;
+    const cinderOathBonus = this.getCinderOathBonus(player);
     const results = plan.checks.map((check, index) => {
       const roll = rollDice(2, 6, this.randomSource);
-      const scrapCrownedBonus = index === 0
+      const preparedRollBonus = index === 0
         ? this.sumModifierSources(this.getPendingRollModifierSources(intent.seatId, check.stat, "check"))
         : 0;
       const statBonus =
         player.character.stats[check.stat] +
-        getEquippedGearModifierSources(player.character, check.stat).reduce((sum, source) => sum + source.value, 0) +
-        this.getScenarioSkillModifier(intent.seatId) + cinderOathBonus + scrapCrownedBonus;
+        getEquippedGearModifierSources(player.character, check.stat, { mode: "check", disabledSlots: getAfflictionDisabledGearSlots(player, getAfflictionCatalog(this.state)) }).reduce((sum, source) => sum + source.value, 0) +
+        getAfflictionModifierSources(player, check.stat, "check", getAfflictionCatalog(this.state)).reduce((sum, source) => sum + source.value, 0) +
+        this.getScenarioSkillModifier(intent.seatId) + cinderOathBonus + preparedRollBonus;
       const difficulty = check.difficulty + confrontationModifier;
       const total = roll.total + statBonus;
 
@@ -11542,8 +11761,10 @@ export class GameRoomServer {
     const currentProgress = scenario.id === "scenario_broken_seal"
       ? 0
       : this.state.scenarioProgress[progressKey] ?? 0;
-    const nextProgress = currentProgress + marksEarned;
     const effectiveThreshold = getScenarioProgressThreshold(scenario.id, scenario.victoryThreshold);
+    const creditedMarks = scenario.id === "scenario_broken_seal" ? marksEarned
+      : Math.min(marksEarned, Math.max(0, effectiveThreshold - currentProgress));
+    const nextProgress = currentProgress + creditedMarks;
     const willWin = nextProgress >= effectiveThreshold;
     const effectParts: EncounterEffect[] = [];
 
@@ -11551,39 +11772,11 @@ export class GameRoomServer {
       effectParts.push(plan.effect);
     }
 
-    if (usesNemesisStats && failedChecks > 0) {
+    if (!willWin && failedChecks > 0 && (usesNemesisStats || scenario.id === "scenario_broken_seal")) {
       effectParts.push({ type: "take_wound", amount: failedChecks });
-    }
-
-    switch (usesNemesisStats ? null : scenario.id) {
-      case "scenario_broken_seal":
-        if (failedChecks > 0) {
-          effectParts.push({ type: "take_wound", amount: failedChecks });
-        }
-        break;
-      case "scenario_mirror_of_false_heroes":
-        if (failedChecks > 0) {
-          effectParts.push({ type: "gain_note", text: `Mirror backlash raised reflection pressure by ${failedChecks}.` });
-        }
-        break;
-      case "scenario_devourer_beneath":
-        if (failedChecks > 0) {
-          effectParts.push({ type: "take_wound", amount: 1 });
-          effectParts.push({ type: "gain_note", text: "Devourer backlash left a scar-safe corruption note instead of deprecated pressure." });
-        }
-        break;
-      case "scenario_labyrinth_engine":
-        if (failedChecks > 0) {
-          effectParts.push({ type: "gain_note", text: `Engine backlash raised instability by ${failedChecks}.` });
-        }
-        break;
-      case "scenario_dying_star":
-        if (failedChecks > 0) {
-          effectParts.push({ type: "take_wound", amount: failedChecks });
-        }
-        break;
-      default:
-        break;
+      if (scenario.id === "scenario_broken_seal" && results.some((result) => result.difficulty - result.total >= 3)) {
+        effectParts.push({ type: "gain_scar_choice", amount: 1, source: "mind", sourceCardId: scenario.id, resolutionId: confrontationId });
+      }
     }
 
     const combinedEffect =
@@ -11592,27 +11785,24 @@ export class GameRoomServer {
         : effectParts.length === 1
           ? effectParts[0]!
           : ({ type: "sequence", effects: effectParts } satisfies EncounterEffect);
-    const rawAppliedEffect = usesNemesisStats && willWin ? plan.effect : combinedEffect;
-    const appliedEffect = scenario.id === "scenario_broken_seal" && rawAppliedEffect
-      ? this.maybeApplyKerWoundPrevention(
-          intent.seatId,
-          this.maybeApplyFandiablosWoundPrevention(intent.seatId, rawAppliedEffect)
-        )
-      : rawAppliedEffect;
+    const appliedEffect = this.maybeApplyKerWoundPrevention(
+      intent.seatId,
+      this.maybeApplyFandiablosWoundPrevention(intent.seatId, combinedEffect)
+    );
     const backlashSummary =
-      usesNemesisStats && willWin && failedChecks > 0
+      willWin && failedChecks > 0
         ? `Backlash ${failedChecks} denied by the killing blow.`
         : failedChecks > 0
           ? `Backlash ${failedChecks}.`
           : "No backlash.";
 
     const summary = [
-      `${scenario.confrontationTitle}: ${marksEarned} ${plan.markLabel}${marksEarned === 1 ? "" : "s"} earned.${cinderOathBonus ? " Cinder Oath +2 applied to each test." : player.character.id === "cinder-monk" ? " Cinder Oath unavailable: no prepared Vow Note." : ""}`,
+      `${scenario.confrontationTitle}: ${creditedMarks} ${plan.markLabel}${creditedMarks === 1 ? "" : "s"} earned.${cinderOathBonus ? " Cinder Oath +2 applied to each test." : player.character.id === "cinder-monk" ? " Cinder Oath unavailable: no prepared Vow Note." : ""}`,
       ...results.map((result) =>
         `${result.label} via ${result.stat} ${result.total}/${result.difficulty} ${result.success ? "passed" : "failed"}`
       ),
       backlashSummary,
-      `Progress ${nextProgress}/${effectiveThreshold}.`
+      scenario.id === "scenario_broken_seal" ? `${marksEarned} of 3 checks passed; ${effectiveThreshold} required.` : `Progress ${nextProgress}/${effectiveThreshold}.`
     ].join(" ");
 
     const confrontationResolutionSourceId = `${confrontationId}:resolved`;
@@ -11637,7 +11827,7 @@ export class GameRoomServer {
         seatId: intent.seatId,
         scenarioId: scenario.id,
         progressKey,
-        amount: marksEarned,
+        amount: creditedMarks,
         effect: appliedEffect,
         summary,
         createdAt: new Date().toISOString()
@@ -11668,29 +11858,6 @@ export class GameRoomServer {
     }
 
     this.maybeApplyScenarioThresholds(intent.seatId);
-
-    if (this.state.status !== "active") {
-      return;
-    }
-
-    if (nextProgress >= effectiveThreshold) {
-      this.applyAction({
-        type: "SCENARIO_VICTORY_ACHIEVED",
-        seatId: intent.seatId,
-        scenarioId: scenario.id,
-        ...(scenario.id === "scenario_broken_seal"
-          ? {
-              victoryConditionId: "broken-seal:resealed",
-              sourceType: "confrontation" as const,
-              sourceId: confrontationResolutionSourceId,
-              shared: true
-            }
-          : {}),
-        summary: `${scenario.name} completed. ${plan.victorySummary}`,
-        createdAt: new Date().toISOString()
-      } satisfies ScenarioVictoryAchievedAction);
-      return;
-    }
   }
 
   resolveStabilizeIntent(intent: Extract<ClientIntent, { type: "STABILIZE_REQUESTED" }>): void {
@@ -11862,6 +12029,15 @@ export class GameRoomServer {
       throw new Error("Nemesis combat is only available in Nemesis Relay mode");
     }
 
+    if (this.state.status !== "active" || this.state.phase !== "action" ||
+        this.state.turnOrder[this.state.activeSeatIndex] !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "Only the active operative may fight a Nemesis during their action phase");
+    }
+    if (this.state.currentEncounter || this.state.activeResolution || this.state.pendingEffect ||
+        this.state.pendingEnemyRoll || this.state.pendingMissionSelection || this.state.pendingScarChoice || this.state.pendingTileChallenge) {
+      throw new IntentRejectedError(intent.type, "Finish the pending action before fighting a Nemesis");
+    }
+
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
     const nemesis = this.state.nemesisChampions.find((champion) => champion.id === intent.nemesisId);
 
@@ -11899,7 +12075,8 @@ export class GameRoomServer {
     const assistBonus = getAssistBonus(this.state, intent.seatId, nemesis, requestedAssistSeatIds);
     const statBonus =
       battlePlayer.character.stats[stat] +
-      getEquippedGearModifierSources(battlePlayer.character, stat, { mode: "battle", suppressedInstanceIds: getSuppressedEquipmentInstanceIds(this.state, intent.seatId, battleLifecycleId) }).reduce((sum, source) => sum + source.value, 0) +
+      getEquippedGearModifierSources(battlePlayer.character, stat, { mode: "battle", disabledSlots: getAfflictionDisabledGearSlots(battlePlayer, getAfflictionCatalog(this.state)), suppressedInstanceIds: getSuppressedEquipmentInstanceIds(this.state, intent.seatId, battleLifecycleId) }).reduce((sum, source) => sum + source.value, 0) +
+      getAfflictionModifierSources(battlePlayer, stat, "battle", getAfflictionCatalog(this.state)).reduce((sum, source) => sum + source.value, 0) +
       this.getScenarioBattleModifier(intent.seatId) +
       assistBonus +
       getMasterAlphaBattleBonus(battlePlayer);
@@ -11952,7 +12129,6 @@ export class GameRoomServer {
 
   private applyNemesisCombatFailure(leadSeatId: string, nemesis: NemesisChampion, assistSeatIds: string[]): void {
     const woundedSeatIds = nemesis.specialRuleId === "cleave" ? [leadSeatId, ...assistSeatIds] : [leadSeatId];
-    const previousTotalWounds = this.getTotalWounds(this.state);
 
     this.state = {
       ...this.state,
@@ -11980,11 +12156,10 @@ export class GameRoomServer {
       ]
     };
 
-    const woundDelta = this.getTotalWounds(this.state) - previousTotalWounds;
-
-    if (woundDelta > 0) {
-      this.feedEscalation(leadSeatId, woundDelta * ESCALATION_FEEDERS.woundTaken, "nemesis wounds");
-      this.applyScenarioOnWoundsTaken(leadSeatId, woundDelta);
+    for (const seatId of woundedSeatIds) {
+      if (this.state.status !== "active") break;
+      this.feedEscalation(seatId, ESCALATION_FEEDERS.woundTaken, "nemesis wounds");
+      if (this.state.status === "active") this.applyScenarioOnWoundsTaken(seatId, 1);
     }
   }
 
@@ -12306,6 +12481,7 @@ export class GameRoomServer {
     const modifierSources = this.buildStatModifierSources(player, stat, "battle", {
       scenarioModifier: this.getScenarioBattleModifier(fighterSeatId),
       keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0,
+      disabledGearSlots: keyedModifiers.disabledSlots,
       masterAlphaModifier: getMasterAlphaBattleBonus(player)
     });
     if (player.character.followers?.some((follower) => follower.abilityId === "battle_support")) {
@@ -12421,16 +12597,8 @@ export class GameRoomServer {
       const player = seatId ? this.state.players.find((entry) => entry.seatId === seatId) : null;
       const sourceSectorId = player?.sectorId;
       const sector = sourceSectorId ? this.state.sectors.find((entry) => entry.id === sourceSectorId) : null;
-      const eligibleArtifactIds = (sector?.encounterDecks.artifact ?? []).filter((candidateId) => {
-        const candidate = this.artifacts.get(candidateId);
-        if (!candidate) return false;
-        const followerIds = this.collectFollowerIds(candidate.resolveEffect);
-        return followerIds.every((followerId) => this.isFollowerAvailableForSeat(followerId, seatId));
-      });
-      const artifactId = eligibleArtifactIds.length > 0
-        ? eligibleArtifactIds[this.randomSource.nextInt(eligibleArtifactIds.length)]
-        : undefined;
-      const artifact = artifactId ? this.artifacts.get(artifactId) : null;
+      const artifact = this.drawAvailableArtifact(sector?.encounterDecks.artifact ?? [], seatId);
+      const artifactId = artifact?.id;
 
       if (!sourceSectorId || !artifactId || !artifact) {
         return { type: "gain_note", text: "No local artifact was available to reclaim." };
@@ -12565,8 +12733,7 @@ export class GameRoomServer {
           : null;
       }
       case "artifact": {
-        const artifactId = this.drawSectorCardId(sector.encounterDecks.artifact);
-        const artifact = artifactId ? this.artifacts.get(artifactId) : null;
+        const artifact = this.drawAvailableArtifact(sector.encounterDecks.artifact, seatId);
 
         return artifact
           ? {
@@ -12630,7 +12797,6 @@ export class GameRoomServer {
                 sourceSectorId: sector.id,
                 privacy: "public"
               },
-              escalationDelta: escalation.escalationDelta,
               consumedDeckCards: { escalation: [escalation.id] }
             }
           : null;
@@ -12638,6 +12804,15 @@ export class GameRoomServer {
       default:
         return null;
     }
+  }
+
+  private drawAvailableArtifact(deck: string[], seatId?: string): ArtifactCard | null {
+    const eligible = deck.filter((id) => {
+      const card = this.artifacts.get(id);
+      return card && this.collectFollowerIds(card.resolveEffect).every((id) => this.isFollowerAvailableForSeat(id, seatId));
+    });
+    const id = this.drawSectorCardId(eligible);
+    return id ? this.artifacts.get(id) ?? null : null;
   }
 
   private drawSectorCardId(deck: string[]): string | null {
@@ -12667,12 +12842,125 @@ export class GameRoomServer {
     }
     this.ensureTvPresentationGate();
     this.reconcileHostView();
+    this.scheduleAiDecision();
     for (const client of this.clients) {
       const envelope = this.createPatchEnvelope(client);
       client.socket.send(JSON.stringify(envelope));
     }
 
     this.scheduleResolutionAutoContinue();
+  }
+
+  private clearAiDecisionTimeout(): void {
+    if (this.aiDecisionTimeout) clearTimeout(this.aiDecisionTimeout);
+    this.aiDecisionTimeout = null;
+    this.aiDecisionKey = null;
+  }
+
+  private getLikelyAiActorSeatId(): string | null {
+    const candidates = [
+      this.state.pendingEnemyRoll?.assignedRollerSeatId,
+      this.state.pendingAfflictionResolution?.ownerSeatId,
+      this.state.pendingAfflictionReaction?.ownerSeatId,
+      this.state.pendingScarChoice?.ownerSeatId,
+      this.state.pendingScarRemovalChoice?.ownerSeatId,
+      this.state.pendingScarConsequence?.seatId,
+      this.state.pendingGearEquipChoice?.ownerSeatId,
+      this.state.pendingEquipmentSuppressionChoice?.ownerSeatId,
+      this.state.pendingEncounterDecision?.seatId,
+      this.state.pendingMemoryTaxChoice?.ownerSeatId,
+      this.state.pendingForcedDestinationChoice?.ownerSeatId,
+      this.state.pendingDisplacement?.seatId,
+      this.state.pendingMissionSelection?.ownerSeatId,
+      this.state.activeResolution?.playerId,
+      this.state.turnOrder[this.state.activeSeatIndex]
+    ].filter((candidate): candidate is string => Boolean(candidate));
+    return candidates.find((seatId) => this.state.seats.find((seat) => seat.seatId === seatId)?.controllerType === "ai") ?? null;
+  }
+
+  private scheduleAiDecision(): void {
+    if (this.executionServices.mode !== "live" || this.state.status !== "active") {
+      this.clearAiDecisionTimeout();
+      this.aiControllerStatus = null;
+      return;
+    }
+
+    if (this.state.tvPresentationGate || this.state.movementPresentationGate) {
+      this.clearAiDecisionTimeout();
+      const seatId = this.getLikelyAiActorSeatId();
+      const seat = seatId ? this.state.seats.find((entry) => entry.seatId === seatId) : null;
+      this.aiControllerStatus = seatId && seat?.displayName ? {
+        seatId,
+        displayName: seat.displayName,
+        state: "waiting-presentation",
+        publicLabel: `${seat.displayName} is waiting for the host presentation.`
+      } : null;
+      return;
+    }
+
+    let selected: { seatId: string; displayName: string; decision: AiRivalDecision; key: string } | null = null;
+    for (const seat of this.state.seats) {
+      if (seat.controllerType !== "ai" || !seat.displayName || seat.kicked) continue;
+      const patch = createPhoneProjection(this.state, seat.seatId, false, this.characters) as unknown as import("../client/shared/types.js").PhonePatchPayload;
+      const aiDecision = chooseAiRivalIntent(patch, seat.seatId);
+      if (!aiDecision) continue;
+      const requiredId = patch.requiredAction?.id ?? patch.activeResolution?.id ?? "state";
+      const key = `${seat.seatId}:${this.state.sequence}:${requiredId}:${aiDecision.intent.type}`;
+      selected = { seatId: seat.seatId, displayName: seat.displayName, decision: aiDecision, key };
+      break;
+    }
+
+    if (!selected) {
+      this.clearAiDecisionTimeout();
+      this.aiControllerStatus = null;
+      return;
+    }
+
+    if (this.pausedAiDecisionKeys.has(selected.key)) {
+      this.clearAiDecisionTimeout();
+      this.aiControllerStatus = {
+        seatId: selected.seatId,
+        displayName: selected.displayName,
+        state: "paused",
+        publicLabel: `${selected.displayName} paused on an unsupported decision.`
+      };
+      return;
+    }
+
+    this.aiControllerStatus = {
+      seatId: selected.seatId,
+      displayName: selected.displayName,
+      state: "thinking",
+      publicLabel: `${selected.displayName} is considering the next move.`
+    };
+    if (this.aiDecisionTimeout && this.aiDecisionKey === selected.key) return;
+    this.clearAiDecisionTimeout();
+    this.aiDecisionKey = selected.key;
+    this.aiDecisionTimeout = setTimeout(() => {
+      const expectedKey = selected!.key;
+      this.aiDecisionTimeout = null;
+      this.aiDecisionKey = null;
+      let rejection: string | null = null;
+      const automatedClient: ConnectedClient = {
+        view: "phone",
+        seatId: selected!.seatId,
+        automated: true,
+        socket: { send: () => undefined, close: () => undefined } as unknown as WebSocket,
+        onAutomatedRejection: (reason) => { rejection = reason; }
+      };
+      this.handleIntent(automatedClient, selected!.decision.intent);
+      if (rejection) {
+        this.pausedAiDecisionKeys.add(expectedKey);
+        this.aiControllerStatus = {
+          seatId: selected!.seatId,
+          displayName: selected!.displayName,
+          state: "paused",
+          publicLabel: `${selected!.displayName} paused on an unsupported decision.`
+        };
+        if (process.env.NODE_ENV !== "test") console.warn("ai-rival-paused", { key: expectedKey, action: selected!.decision.intent.type, rejection });
+        this.broadcastPatch();
+      }
+    }, AI_RIVAL_THINK_MS);
   }
 
   private adoptPhoneClient(client: ConnectedClient): void {
@@ -12755,6 +13043,10 @@ export class GameRoomServer {
   }
 
   private sendIntentRejected(client: ConnectedClient, actionType: string, reason: string): void {
+    if (client.automated) {
+      client.onAutomatedRejection?.(reason);
+      return;
+    }
     const envelope: IntentRejectedEnvelope = {
       type: "INTENT_REJECTED",
       sessionId: this.state.sessionId,
@@ -12788,6 +13080,7 @@ export class GameRoomServer {
       phase: this.state.phase,
       payload: {
         ...payload,
+        aiControllerStatus: this.aiControllerStatus,
         hostView: this.createHostViewProjection(),
         ...(client.view === "tv"
           ? { setupScenarioPreview: this.createSetupScenarioPreviewProjection() }
@@ -12948,6 +13241,18 @@ type PublicShopStockItem = {
   stock: number;
   affordable: boolean;
   disabledReason?: string;
+  ownerDecisionSupport?: {
+    salvageAfterPurchase?: number;
+    slot?: GearItem["slot"];
+    currentItemName?: string | null;
+    currentItemStat?: Stat | null;
+    currentItemBonus?: number | null;
+    offeredStat?: Stat;
+    currentStatValue?: number;
+    projectedStatValue?: number;
+    netStatChange?: number;
+    timingSummary?: string;
+  };
 };
 
 type PublicShopSellItem = {
@@ -12963,6 +13268,9 @@ type PublicShopSellItem = {
 };
 
 type PublicMoveDestination = {
+  approach?: { stat: "guile"; difficulty: number; failurePrevented: boolean };
+  opportunityLabel?: string;
+  challenges?: Array<{ id: string; challengeType: string; tags: string[] }>;
   markerLabel?: string;
   routeId: string;
   defaultRouteId: string;
@@ -13283,8 +13591,10 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
   const equippedInstanceIds = new Set(Object.values(player.character.equippedGearInstances ?? {}).filter((id): id is string => Boolean(id)));
   const equippedCatalogIds = new Set(Object.values(player.character.equippedGear).filter((id): id is string => Boolean(id)));
   const gearStates = player.character.heldGear.map((item) => {
-    const usedThisTurn = hasUsedObjectSinceLogBoundary(state, player.seatId, item.id, "gearId", "TURN_COMPLETED");
-    const usedThisRound = hasUsedObjectSinceLogBoundary(state, player.seatId, item.id, "gearId", "ROUND_COMPLETED");
+    const usedThisTurn = item.effectModel === "exhaust" ? item.exhausted === true
+      : hasUsedObjectSinceLogBoundary(state, player.seatId, item.id, "gearId", "TURN_COMPLETED");
+    const usedThisRound = item.effectModel === "exhaust" ? item.exhausted === true
+      : hasUsedObjectSinceLogBoundary(state, player.seatId, item.id, "gearId", "ROUND_COMPLETED");
     const projectedLimit = getUseLimitProjection({
       useLimit: item.useLimit,
       usedThisTurn,
@@ -13363,25 +13673,23 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
     const projectedLimit = getUseLimitProjection({ useLimit: follower.useLimit, usedThisTurn, usedThisRound, objectName: follower.name });
     const timings = follower.activationTiming ?? follower.timingWindows ?? [];
     const timingEligible = (timings.includes("beforeBattleRoll") && state.phase === "action" && state.currentEncounter?.cardType === "enemy" && !state.activeResolution?.roll) ||
+      (follower.exhaustEffect === "fandiablosSupport" && state.phase === "action" && state.currentEncounter?.cardType === "hazard" && !state.activeResolution?.roll) ||
       (timings.includes("beforeThreatDraw") && state.phase === "sector") || (timings.includes("movement") && state.phase === "navigation") ||
       (timings.includes("beforeTakingDamage") && state.phase === "resolution" && projectedEffectContainsWound(state.pendingEffect));
     const exhaustDisabledReason = follower.effectModel === "exhaust"
       ? follower.exhausted ? `${follower.name} is Exhausted. Refreshes next round.` : timingEligible ? null : `${follower.name} is Ready, but not usable in this timing window.`
       : null;
-    const pending = state.pendingFailureReaction?.seatId === player.seatId && state.phase === "resolution" && state.activeResolution?.roll?.success === false;
-    const abilityDisabledReason = follower.abilityId === "ignore_route_failure"
-      ? pending && state.pendingFailureReaction?.testType === "movement" ? null : "Use after a failed route check."
-      : follower.abilityId === "ignore_middle_route_failure"
-        ? pending && state.pendingFailureReaction?.testType === "movement" && getBoardSpace(player.character.currentSpaceId)?.tier === "middle" ? null : "Use after a failed movement check in the middle ring."
-        : follower.abilityId === "prevent_equipment_loss"
-          ? pending && projectedEffectContainsType(state.pendingEffect, "equipment_suppression") ? null : "Use when an Equipment loss or suppression is pending."
-          : follower.abilityId === "prevent_salvage_loss"
-            ? pending && projectedEffectContainsType(state.pendingEffect, "lose_salvage") ? null : "Use when a failed route or Contract would lose Salvage."
-            : follower.abilityId === "battle_support"
-              ? pending && projectedEffectContainsWound(state.pendingEffect) ? null : "The +1 battle bonus is always active. Discard only when a failed battle would add a Wound."
-              : null;
+    const reactionEligible = Boolean(getFollowerFailureProtection(state, player.seatId, follower));
+    const reactionHint = follower.abilityId === "ignore_route_failure" ? "Use after a failed route check."
+      : follower.abilityId === "ignore_middle_route_failure" ? "Use after a failed movement check in the middle ring."
+      : follower.abilityId === "prevent_equipment_loss" ? "Use when an Equipment suppression is pending."
+      : follower.abilityId === "prevent_salvage_loss" ? "Use when a failed route or Contract would lose Salvage."
+      : "The +1 battle bonus is always active. Discard only when a failed battle would add a Wound.";
+    const abilityDisabledReason = FOLLOWER_REACTION_ABILITIES.has(follower.abilityId ?? "")
+      ? reactionEligible ? null : reactionHint
+      : getFollowerSupportDisabledReason(state, player.seatId, follower);
     const declaredTimings = follower.activationTiming ?? follower.timingWindows ?? [];
-    const matchesPresentationTiming = Boolean(
+    const matchesPresentationTiming = reactionEligible || Boolean(
       presentationContext.timing &&
       ((declaredTimings as readonly string[]).includes(presentationContext.timing) || declaredTimings.includes("anyTime"))
     );
@@ -13406,6 +13714,76 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
   });
 
   return [...gearStates, ...followerStates];
+}
+
+function getPublicConfrontationSteps(scenario: ScenarioDefinition, nemesis: NemesisDefinition | null, state: GameState): string[] {
+  const modifier = getEscalationModifier(state.escalationLevel);
+  const describeCheck = (check: ScenarioCheck) => `${check.label} with ${CHALLENGE_LABELS[check.stat]} ${check.difficulty + modifier}.`;
+  if (nemesis && nemesis.scenarioConfrontationMode !== "authored-plan") {
+    return [
+      ...getNemesisChecks(nemesis).map(describeCheck),
+      "Each pass deals 1 damage. Each failure costs 1 wound unless the boss falls. Damage carries over between visits."
+    ];
+  }
+  if (scenario.id === "scenario_broken_seal") {
+    return [...getBrokenSealChecks(state.sessionMode).map(describeCheck), ...scenario.confrontationSteps.slice(-1)];
+  }
+  if (scenario.id === BROKEN_CONCORDANCE_SCENARIO_ID) {
+    return [...BROKEN_CONCORDANCE_STAGES.map(describeCheck), ...scenario.confrontationSteps.slice(-1)];
+  }
+  return scenario.confrontationSteps;
+}
+
+function getScenarioGateBlockReason(state: GameState, player: PlayerState, scenario: ScenarioDefinition): string | null {
+  const progress = state.scenarioProgress;
+  if (scenario.id !== "scenario_broken_seal" && scenario.id !== BROKEN_CONCORDANCE_SCENARIO_ID && (progress[scenario.winConditionKey] ?? 0) > 0) {
+    return null;
+  }
+
+  const completedContracts = getCompletedContractCountForProjection(state, player.seatId);
+  const hasArtifact = player.character.heldGear.some((item) => item.tier === "artifact" || item.category === "chargedRelic" || item.id.startsWith("artifact-"));
+  const devourerTrophyGate = getDevourerTrophyGate(state.sessionMode);
+  const engineKeyGate = getLabyrinthEngineKeyGate(state.sessionMode);
+  const starTokenGate = getDyingStarTokenGate(state.sessionMode);
+  const starContractGate = getDyingStarContractGate(state.sessionMode);
+
+  switch (scenario.id) {
+    case "scenario_broken_seal":
+      return (state.scenarioPreparation.resources.sealIntegrity ?? 0) >= 4 || hasArtifact || completedContracts >= 3
+        ? null
+        : "Final gate locked: restore 4+ Seal Integrity, hold an Artifact, or complete 3 Contracts.";
+    case "scenario_throne_of_ash":
+      return (progress[getScenarioSeatCounterKey("crownClaim", player.seatId)] ?? 0) >= 1 || completedContracts >= 2
+        ? null
+        : "Final gate locked: hold 1 Crown or complete 2 Contracts.";
+    case "scenario_mirror_of_false_heroes":
+      return hasArtifact || completedContracts >= 2 || player.character.scars.length === 0
+        ? null
+        : "Final gate locked: hold an Artifact, complete 2 Contracts, or carry no Scars.";
+    case "scenario_devourer_beneath":
+      return player.character.trophies >= devourerTrophyGate || hasArtifact || player.character.heldGear.some((item) => /maw[- ]spike/i.test(item.id) || /maw[- ]spike/i.test(item.name))
+        ? null
+        : `Final gate locked: hold ${devourerTrophyGate} Trophy value, hold an Artifact charge, or carry a Maw Spike.`;
+    case "scenario_labyrinth_engine":
+      return (progress.engineKeys ?? 0) >= engineKeyGate || (progress.shutdownMarks ?? 0) >= engineKeyGate || hasArtifact
+        ? null
+        : `Final gate locked: assemble ${engineKeyGate} Engine Keys or hold an Artifact.`;
+    case "scenario_dying_star":
+      return (progress.starTokens ?? 0) >= starTokenGate && (hasArtifact || completedContracts >= starContractGate)
+        ? null
+        : `Final gate locked: keep ${starTokenGate}+ Starfire and hold an Artifact or complete ${starContractGate} Contracts.`;
+    case BROKEN_CONCORDANCE_SCENARIO_ID: {
+      const completedNodes = new Set(state.scenarioPreparation.completedObjectiveIds);
+      const missingNode = BROKEN_CONCORDANCE_NODES.find((node) => !completedNodes.has(node.id));
+      if (missingNode) return `Final gate locked: stabilize ${missingNode.name}.`;
+      if (!isInnerApproachChallengeCleared(state, player, "inner_gate_of_cinders")) {
+        return "Final gate locked: breach the Gate of Cinders first.";
+      }
+      return null;
+    }
+    default:
+      return null;
+  }
 }
 
 function getCompletedContractCountForProjection(state: GameState, seatId: string): number {
@@ -13627,6 +14005,15 @@ function buildStrategicTags(args: {
   return [...tags];
 }
 
+function getMovementApproachPreview(state: GameState, danger: number): { stat: "guile"; difficulty: number; failurePrevented: boolean } {
+  const occupiedSeatIds = new Set(state.seats.filter((seat) => seat.characterId && !seat.kicked).map((seat) => seat.seatId));
+  return {
+    stat: "guile",
+    difficulty: Math.max(0, danger + getEscalationModifier(state.escalationLevel) - getSoloMovementDifficultyEase(state.sessionMode)),
+    failurePrevented: state.sessionMode === "single-player" || state.players.filter((player) => occupiedSeatIds.has(player.seatId)).length <= 1
+  };
+}
+
 function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMovementPlannerState | null {
   const player = state.players.find((entry) => entry.seatId === seatId);
   const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
@@ -13698,6 +14085,9 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
         sectorId: sector.id,
         name: sector.name,
         ring: getPublicRing(boardSpace.tier),
+        approach: getMovementApproachPreview(state, sector.danger),
+        opportunityLabel: boardSpace.textBox.title,
+        challenges: (sector.tileChallenges ?? []).map(({ id, challengeType, tags }) => ({ id, challengeType, tags })),
         distance: routeEntry.distance,
         route: routeEntry.route,
         routeNames,
@@ -13854,13 +14244,14 @@ function buildPublicSectorExplorationSummary(state: GameState, seatId: string | 
   const isShopCapable = isBoardSpaceShopCapable(boardSpace);
   const serviceGate = getServiceThreatGate(state, seatId, sectorId);
   const shopLocked = isShopCapable && !serviceGate.allowed;
-  const sectorTextLocked = !event.engagement.shouldResolveTextBox;
+  const sectorTextBlockReason = getSectorTextBlockReason(state, seatId, sectorId);
+  const sectorTextLocked = Boolean(sectorTextBlockReason) || !event.engagement.shouldResolveTextBox;
   const blocker = unresolvedThreats[0] ?? null;
   const lockedReason = serviceGate.reason && shopLocked
     ? serviceGate.reason
     : blocker
     ? `Clear ${blocker.name} before ${shopLocked ? "shopping or using sector text" : "using sector text"}.`
-    : null;
+    : sectorTextBlockReason;
   const lanesWithBlockers = new Set(unresolvedThreats.flatMap((threat) => (
     threat.deck === "red" || threat.deck === "blue" || threat.deck === "yellow" ? [threat.deck] : []
   )));
@@ -14021,6 +14412,47 @@ function getGearSummary(item: GearItem): string {
   return `${CHALLENGE_LABELS[item.statBonus.stat]} +${item.statBonus.amount}.`;
 }
 
+function buildOwnerShopDecisionSupport(
+  player: PlayerState,
+  item: GearItem,
+  cost: PublicShopStockItem["cost"]
+): NonNullable<PublicShopStockItem["ownerDecisionSupport"]> {
+  const previewInstanceId = `shop-preview:${item.id}`;
+  const currentItem = getEquippedGearItem(player.character, item.slot) ?? null;
+  const mode = item.conditionType === "battle" ? "battle" as const : "resting" as const;
+  const currentStatValue = getCharacterStatBreakdown(player.character, item.statBonus.stat, { mode }).final;
+  const previewItem = { ...item, instanceId: previewInstanceId };
+  const previewCharacter = {
+    ...player.character,
+    heldGear: [...player.character.heldGear, previewItem],
+    equippedGear: { ...player.character.equippedGear, [item.slot]: item.id },
+    equippedGearInstances: {
+      weapon: player.character.equippedGearInstances?.weapon ?? null,
+      armor: player.character.equippedGearInstances?.armor ?? null,
+      utility: player.character.equippedGearInstances?.utility ?? null,
+      [item.slot]: previewInstanceId
+    }
+  };
+  const projectedStatValue = getCharacterStatBreakdown(previewCharacter, item.statBonus.stat, { mode }).final;
+
+  return {
+    ...(cost.salvage !== undefined ? { salvageAfterPurchase: Math.max(0, (player.character.salvage ?? 0) - cost.salvage) } : {}),
+    slot: item.slot,
+    currentItemName: currentItem?.name ?? null,
+    currentItemStat: currentItem?.statBonus.stat ?? null,
+    currentItemBonus: currentItem?.statBonus.amount ?? null,
+    offeredStat: item.statBonus.stat,
+    currentStatValue,
+    projectedStatValue,
+    netStatChange: projectedStatValue - currentStatValue,
+    timingSummary: item.conditionType === "battle"
+      ? "Battle only"
+      : item.effectModel === "conditional"
+        ? "Conditional"
+        : "Always while equipped"
+  };
+}
+
 function buildPublicShopStock(
   state: GameState,
   player: PlayerState,
@@ -14062,7 +14494,10 @@ function buildPublicShopStock(
         rarity: follower.tier ?? "standard",
         stock: 1,
         affordable: payment.enabled && !alreadyOwned,
-        disabledReason: alreadyOwned ? "Already following" : payment.disabledReason
+        disabledReason: alreadyOwned ? "Already following" : payment.disabledReason,
+        ...(privateArtifactSeatId === player.seatId
+          ? { ownerDecisionSupport: { salvageAfterPurchase: Math.max(0, (player.character.salvage ?? 0) - (cost.salvage ?? 0)) } }
+          : {})
       } satisfies PublicShopStockItem];
     }
     const item = PROJECTION_GEAR_CATALOG.get(cardId);
@@ -14086,7 +14521,10 @@ function buildPublicShopStock(
         rarity: item.tier ?? "standard",
         stock: 1,
         affordable: payment.enabled && !alreadyOwned,
-        disabledReason: alreadyOwned ? "Already held" : payment.disabledReason
+        disabledReason: alreadyOwned ? "Already held" : payment.disabledReason,
+        ...(privateArtifactSeatId === player.seatId
+          ? { ownerDecisionSupport: buildOwnerShopDecisionSupport(player, item, cost) }
+          : {})
       } satisfies PublicShopStockItem];
     });
 }
@@ -15236,9 +15674,7 @@ function buildMatchProgressPresentation(
   ) ?? null;
   const latestWinDelta = latestMatchDelta?.type === "scenarioProgress" ? latestMatchDelta : null;
   const latestLossDelta = latestMatchDelta?.type === "scenarioPressure" ? latestMatchDelta : null;
-  const objectiveCurrent = scenario.id === BROKEN_CONCORDANCE_SCENARIO_ID
-    ? state.scenarioConfrontation.progress.concordanceStages ?? 0
-    : pressure.objectiveProgress.current;
+  const objectiveCurrent = pressure.objectiveProgress.current;
   const objectiveRequired = getScenarioProgressThreshold(state.activeScenarioId, pressure.objectiveProgress.required);
   const signedChange = (delta: ResultDelta | null): number | null => {
     if (!delta || typeof delta.value !== "number") return delta ? 1 : null;
@@ -15287,9 +15723,10 @@ function buildMatchProgressPresentation(
 
   const stageIndexMatch = state.scenarioConfrontation.stage?.match(/(?:stage-)?(\d+)/i);
   const stageIndex = stageIndexMatch ? Math.max(0, Number(stageIndexMatch[1]) - 1) : 0;
-  const finalInstruction = scenario.confrontationSteps[stageIndex]
-    ?? scenario.confrontationSteps[0]
-    ?? scenario.finalGateRequirement;
+  const pendingStage = state.pendingCooperativeTest?.sourceKind === "scenarioConfrontation" ? state.pendingCooperativeTest : null;
+  const finalInstruction = pendingStage
+    ? `${pendingStage.sourceTitle} with ${CHALLENGE_LABELS[pendingStage.stat]} ${pendingStage.difficulty}. At least one helper must assist.`
+    : scenario.confrontationSteps[stageIndex] ?? scenario.finalGateRequirement;
   const finalStage = finalStageActive ? {
     id: `final-stage:${state.sequence}`,
     title: scenario.confrontationTitle,
@@ -15305,6 +15742,7 @@ function buildMatchProgressPresentation(
 
   const seatName = (seatId: string | null): string | null =>
     seatId ? state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? null : null;
+  const operativeDisplayNames = state.turnOrder.flatMap((id) => seatName(id) ?? []);
   const resultId = `match-result:${state.scenarioResult.achievedAtSequence ?? state.sequence}`;
   const winnerName = seatName(state.scenarioResult.winningSeatId ?? state.winnerSeatId);
   const publicResult: import("../client/shared/types.js").PublicMatchResult | null = resultStatus === "unresolved" ? null : {
@@ -15319,11 +15757,8 @@ function buildMatchProgressPresentation(
     modeLabel: state.gameMode === "nemesis_relay"
       ? "Nemesis Relay"
       : pressure.modeSpecific.label,
-    winningDisplayNames: winnerName ? [winnerName] : [],
-    operativeDisplayNames: state.turnOrder.flatMap((seatId) => {
-      const name = seatName(seatId);
-      return name ? [name] : [];
-    }),
+    winningDisplayNames: resultStatus === "victory" && state.scenarioResult.shared ? operativeDisplayNames : winnerName ? [winnerName] : [],
+    operativeDisplayNames,
     finalWinProgress: {
       current: objectiveCurrent,
       required: objectiveRequired
@@ -15880,8 +16315,26 @@ function isSeatCharacterSelectedForProjection(state: GameState, seat: GameState[
 
 function summarizeTileChallengeEffect(effect: EncounterEffect): string {
   switch (effect.type) {
+    case "gain_gear": return `Gain ${PROJECTION_GEAR_CATALOG.get(effect.gearId)?.name ?? "Equipment"}.`;
+    case "gain_scar_choice": return `Choose ${effect.amount} ${effect.source === "machine" ? "Machine " : ""}Scar${effect.amount === 1 ? "" : "s"}.`;
+    case "gain_follower": return `Gain ${PROJECTION_FOLLOWER_CATALOG.get(effect.followerId)?.name ?? "a Follower"}.`;
+    case "gain_trophy": return `Gain ${effect.amount} Troph${effect.amount === 1 ? "y" : "ies"}.`;
+    case "draw_artifact": return "Draw 1 local Artifact.";
+    case "draw_affliction": return `Draw ${effect.amount} Affliction${effect.amount === 1 ? "" : "s"}.`;
+    case "advance_escalation": return `Advance Global Escalation by ${effect.amount}.`;
+    case "gain_global_escalation_guarded": return "Advance Global Escalation by 1 unless it is already one step from collapse.";
+    case "return_threat_to_space": return "The Threat remains on this space.";
+    case "next_non_battle_test_modifier": return `Next non-battle ${effect.sourceCardId === "siren-relay-echo" ? "Command " : ""}test: ${effect.amount > 0 ? "+" : ""}${effect.amount}.`;
+    case "next_normal_movement_roll_modifier": return `Next normal movement roll: ${effect.amount}, minimum ${effect.minimumResult}.`;
+    case "equipment_suppression": return `Choose one equipped normal item to suppress ${effect.mode === "throughNextThreat" ? "through your next Threat" : "during your next battle"}.`;
+    case "memory_tax_choice": return "Choose: lose 1 Salvage or suffer -1 on your next non-battle test.";
+    case "encounter_payment": return effect.prompt;
+    case "forcedDisplacement": return "Move to a legal forced destination.";
+    case "ownerSelectedForcedDisplacement": return "Choose a legal false route.";
+    case "advance_scenario": return `Advance scenario progress by ${effect.amount}.`;
+    case "consume_artifact": return "The Artifact leaves this space.";
     case "gain_note": return effect.text;
-    case "gain_scar": return "Gain the authored Scar.";
+    case "gain_scar": return "Gain a Scar.";
     case "take_wound": return `Suffer ${effect.amount} Wound${effect.amount === 1 ? "" : "s"}.`;
     case "heal_wound": return `Heal ${effect.amount} Wound${effect.amount === 1 ? "" : "s"}.`;
     case "gain_salvage": return `Gain ${effect.amount} Salvage.`;
@@ -16058,6 +16511,10 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
         ? (outcomeSummary?.enemyBonus ?? battle?.difficulty ?? encounter?.difficulty ?? 0) - oppositionModifierTotal
         : null
       : authoredOpponentValue !== null ? authoredOpponentValue - oppositionModifierTotal : null);
+  const fixedValue = baseValue + operativeModifiers.reduce((sum, source) => sum + source.value, 0);
+  const requiredDiceTotal = !isBattle && authoredOpponentValue !== null
+    ? Math.max(0, authoredOpponentValue - fixedValue)
+    : null;
   const success = resultStage ? resolution?.roll?.success ?? outcomeSummary?.success ?? null : null;
   const outcome = success === null
     ? operativeTotal !== null && opponentTotal !== null && operativeTotal === opponentTotal ? "draw" : null
@@ -16122,7 +16579,7 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
       victoryReward,
       failureStakes
     },
-    test: { stat, label: CHALLENGE_LABELS[stat], opposed: isBattle },
+    test: { stat, label: CHALLENGE_LABELS[stat], opposed: isBattle, fixedValue, requiredDiceTotal },
     operative: {
       name: getProjectedPlayerName(state, actorSeatId),
       secondaryName: actor.character.name,
@@ -16261,15 +16718,18 @@ function buildCinderWattleAbilityProjection(state: GameState, seatId: string): R
     : null;
   const stat = pending?.stat ?? resolution?.battle?.stat ?? null;
   const sourceTitle = pending?.sourceTitle ?? state.currentEncounter?.title ?? resolution?.card?.title ?? null;
-  const active = state.status === "active" && state.turnOrder[state.activeSeatIndex] === seatId;
-  const available = active && Boolean(stat) && !usedThisRound && !state.pendingEnemyRoll;
+  const active = state.status === "active" && player.character.status === "active" && state.turnOrder[state.activeSeatIndex] === seatId;
+  const ownResolution = state.activeResolution?.playerId === seatId ? state.activeResolution : null;
+  const diceStarted = Boolean(state.pendingEnemyRoll || ownResolution?.roll
+    || ownResolution?.stage === "dice_roll" || ownResolution?.stage === "roll_result");
+  const available = active && Boolean(stat) && !usedThisRound && !diceStarted;
   const disabledReason = prepared
     ? `Prepared: +1 ${stat ? CHALLENGE_LABELS[stat] : "skill"} applies to this roll.`
     : usedThisRound
       ? "Used this round. Resets after the round ends."
       : !active
         ? "Available on CW's active turn."
-        : !stat
+        : !stat || diceStarted
           ? "Available after an eligible test is known and before dice are revealed."
           : null;
 
@@ -16905,17 +17365,22 @@ export function buildRequiredActionProjection(
   const endTurn = activeSeatId ? canEndTurn(state, activeSeatId) : { allowed: false, reason: "No active operative." };
   const endTurnAvailable = endTurn.allowed && (state.phase === "action" || state.phase === "broadcast");
   const endTurnCommand = state.phase === "broadcast" ? "end-turn" as const : endTurnAvailable ? "finish-actions" as const : null;
+  const completionLabel = state.phase === "broadcast" ? "Pass turn when ready" : "Finish actions when ready";
+  const completionOwnerDetail = state.phase === "broadcast"
+    ? (state.sessionMode === "single-player" ? "Pass the turn to begin the next round." : "Pass the turn to the next operative.")
+    : "Finish optional sector actions and continue to Experience.";
+  const completionPublicAction = state.phase === "broadcast" ? "pass the turn when ready" : "finish actions when ready";
 
   return present({
     id: `action:${activeSeatId ?? "none"}:${state.phase}:${endTurnAvailable ? "ready" : "active"}`,
     kind: "action",
     actorSeatId: activeSeatId,
     requiredTab: "action",
-    label: endTurnAvailable ? "End turn when ready" : "Choose an action",
+    label: endTurnAvailable ? completionLabel : "Choose an action",
     ownerDetail: endTurnAvailable
-      ? (state.sessionMode === "single-player" ? "End the turn to begin the next round." : "End the turn to pass control to the next operative.")
+      ? completionOwnerDetail
       : endTurn.reason ?? "Choose a legal sector action.",
-    publicAction: endTurnAvailable ? "end the turn when ready" : "choose an action",
+    publicAction: endTurnAvailable ? completionPublicAction : "choose an action",
     transitionStage: endTurnAvailable ? "end-turn-available" : "turn-actions",
     allowedCommand: endTurnCommand
   });
@@ -17018,6 +17483,8 @@ export function buildSetupProjection(state: GameState): import("../client/shared
   }
 
   const actor = actorSeatId ? state.seats.find((seat) => seat.seatId === actorSeatId) ?? null : null;
+  const connectedCount = occupiedSeats.filter((seat) => seat.connected && seat.controllerType !== "ai").length;
+  const automatedCount = occupiedSeats.filter((seat) => seat.controllerType === "ai").length;
   const startBlockers = state.lobbyConfigured === false
     ? ["Host Phone must select a mode and scenario"]
     : readiness.blockers;
@@ -17032,11 +17499,13 @@ export function buildSetupProjection(state: GameState): import("../client/shared
     activeInstruction,
     waitingInstruction,
     allowedCommand,
-    inputEnabled: Boolean(actor?.connected),
+    inputEnabled: Boolean(actor?.connected || actor?.controllerType === "ai"),
     canStart: state.lobbyConfigured !== false && readiness.canStart,
     startReason: state.lobbyConfigured === false ? "Choose mode and scenario before starting" : readiness.reason,
     startBlockers,
-    connectedCount: occupiedSeats.filter((seat) => seat.connected).length,
+    connectedCount,
+    automatedCount,
+    controlledCount: connectedCount + automatedCount,
     readyCount: readiness.readyCount,
     seatCapacity: state.seats.length,
     revision: state.sequence
@@ -17049,13 +17518,6 @@ export function createTvProjection(
 ): Record<string, unknown> {
   const escalationThreshold = getEscalationCollapseLevel(state.sessionMode);
   const activeScenario = getScenarioDefinition(state.activeScenarioId);
-  const activeScenarioProgress = activeScenario
-    ? activeScenario.id === "scenario_broken_seal"
-      ? state.scenarioConfrontation.progress.restorationMarks ?? 0
-      : activeScenario.id === BROKEN_CONCORDANCE_SCENARIO_ID
-        ? state.scenarioConfrontation.progress.concordanceStages ?? 0
-      : state.scenarioProgress[activeScenario.winConditionKey] ?? 0
-    : 0;
   const activeNemesis = getLinkedNemesis(state.activeScenarioId);
   const activeScenarioThreshold = getScenarioProgressThreshold(state.activeScenarioId, activeScenario?.victoryThreshold ?? 0);
   const escalationModifier = getEscalationModifier(state.escalationLevel);
@@ -17063,10 +17525,8 @@ export function createTvProjection(
   const scenarioTelemetry = buildScenarioTelemetry(state);
   const scenarioPressure = buildScenarioPressureState(state, scenarioPressureSummary);
   const activePlayer = state.players.find((player) => player.seatId === state.turnOrder[state.activeSeatIndex]) ?? null;
-  const brokenSealUnlocked = activePlayer && state.activeScenarioId === "scenario_broken_seal"
-    ? (state.scenarioPreparation.resources.sealIntegrity ?? 0) >= 4 ||
-      activePlayer.character.heldGear.some((item) => item.tier === "artifact" || item.id.startsWith("artifact-")) ||
-      getCompletedContractCountForProjection(state, activePlayer.seatId) >= 3
+  const gateBlockReason = activePlayer && activeScenario
+    ? getScenarioGateBlockReason(state, activePlayer, activeScenario)
     : null;
   const scenarioState = {
     scenarioId: state.activeScenarioId,
@@ -17080,7 +17540,8 @@ export function createTvProjection(
       progress: state.scenarioConfrontation.progress,
       stage: state.scenarioConfrontation.stage,
       locationSectorId: "center_cinder_gate",
-      locked: brokenSealUnlocked === null ? null : !brokenSealUnlocked
+      locked: activePlayer && activeScenario ? state.gameMode === "nemesis_relay" || Boolean(gateBlockReason) : null,
+      blockedReason: gateBlockReason
     },
     result: {
       status: state.scenarioResult.status,
@@ -17137,7 +17598,7 @@ export function createTvProjection(
         title: activeNemesis.title,
         faction: activeNemesis.faction,
         life: activeScenarioThreshold,
-        damageDealt: activeScenarioProgress,
+        damageDealt: Math.min(activeScenarioThreshold, scenarioPressure?.objectiveProgress.current ?? 0),
         abilities: activeNemesis.abilities.map((ability) => ({
           timing: ability.timing,
           text: ability.text
@@ -17271,12 +17732,14 @@ export function createTvProjection(
           publicDisplay: activeScenario.publicDisplay,
           confrontationTitle: activeScenario.confrontationTitle,
           progressLabel: activeScenario.winConditionKey,
-          progress: activeScenarioProgress,
+          progress: scenarioPressure?.objectiveProgress.current ?? 0,
           threshold: activeScenarioThreshold,
           setup: activeScenario.setup,
           specialRules: activeScenario.specialRules,
-          confrontationSteps: activeScenario.confrontationSteps,
-          victoryText: activeScenario.victoryText
+          confrontationSteps: getPublicConfrontationSteps(activeScenario, activeNemesis, state),
+          victoryText: activeNemesis && activeNemesis.scenarioConfrontationMode !== "authored-plan"
+            ? `Reach ${activeScenarioThreshold} on the shared scenario track to defeat ${activeNemesis.name} and win.`
+            : activeScenario.victoryText
         }
       : null,
     scenarioTelemetry,
@@ -17314,6 +17777,7 @@ export function createTvProjection(
     seats: state.seats.map((seat) => {
       return {
         seatId: seat.seatId,
+        controllerType: seat.controllerType ?? "human",
         characterId: seat.characterId,
         characterSelected: isSeatCharacterSelectedForProjection(state, seat, playerSeatIds),
         signalPieceId: isSignalPieceId(seat.signalPieceId)
@@ -17348,7 +17812,8 @@ export function createTvProjection(
       const effectiveStats = Object.fromEntries(
         (["command", "grit", "signal", "guile", "forge"] as const).map((stat) => [
           stat,
-          getCharacterStatBreakdown(player.character, stat, { mode: "resting", suppressedInstanceIds }).final
+          getCharacterStatBreakdown(player.character, stat, { mode: "resting", suppressedInstanceIds, disabledSlots: getAfflictionDisabledGearSlots(player, getAfflictionCatalog(state)) }).final
+            + getAfflictionModifierSources(player, stat, "check", getAfflictionCatalog(state)).reduce((sum, source) => sum + source.value, 0)
         ])
       );
 
@@ -17534,6 +17999,28 @@ export function createTvProjection(
 export function getOathchainContractSignature(player: PlayerState, contract: ContractCard): string {
   const active = player.character.activeContract!;
   return JSON.stringify({ contractId: contract.id, objective: contract.objective, progress: active.progress, completedTargetIds: active.completedTargetIds ?? [], salvageSpent: active.salvageSpent ?? 0 });
+}
+
+function hasHarmfulTableInteractionThisRound(
+  state: GameState,
+  predicate: (entry: { seatId?: string; targetSeatId?: string }) => boolean
+): boolean {
+  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+    const entry = state.eventLog[index] as {
+      type?: string;
+      seatId?: string;
+      targetSeatId?: string;
+      interactionKind?: string;
+    } | undefined;
+
+    if (entry?.type === "ROUND_COMPLETED") return false;
+    if (
+      entry?.type === "TABLE_INTERACTION" &&
+      (entry.interactionKind === "duel" || entry.interactionKind === "interfere") &&
+      predicate(entry)
+    ) return true;
+  }
+  return false;
 }
 
 export function deriveOathchainTargets(state: GameState, player: PlayerState, contract: ContractCard) {
@@ -17835,6 +18322,25 @@ export function createPhoneProjection(
     sessionMode: state.sessionMode,
     gameMode: state.gameMode,
     interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
+    rivalryInteraction: state.sessionMode === "single-player" || state.interactionMode === "co-op"
+      ? null
+      : {
+          actorCanPressure: !hasHarmfulTableInteractionThisRound(
+            state,
+            (entry) => entry.seatId === seatId
+          ),
+          targets: state.players
+            .filter((candidate) => candidate.seatId !== seatId && candidate.character.status === "active")
+            .map((candidate) => ({
+              seatId: candidate.seatId,
+              canPressure:
+                state.interactionMode === "ruthless" ||
+                !hasHarmfulTableInteractionThisRound(
+                  state,
+                  (entry) => entry.targetSeatId === candidate.seatId
+                )
+            }))
+        },
     setupHostSeatId: publicProjection.setupHostSeatId,
     lobbyConfigured: publicProjection.lobbyConfigured,
     hostPhoneConnected: publicProjection.hostPhoneConnected,
@@ -17963,6 +18469,10 @@ export function createPhoneProjection(
     availableContracts: state.availableContracts,
     encounter: state.currentEncounter ? {
       ...state.currentEncounter,
+      ...(state.currentEncounter.cardType === "hazard" ? {
+        successSummary: [state.currentEncounter.clearReward, state.currentEncounter.successEffect].filter((effect): effect is EncounterEffect => Boolean(effect)).map(summarizeTileChallengeEffect).join(" ") || "No additional effect.",
+        failureSummary: summarizeTileChallengeEffect(state.currentEncounter.failEffect)
+      } : {}),
       presentationType: getThreatPresentationCategory(state.currentEncounter)
     } : null,
     pendingEnemyRoll: state.pendingEnemyRoll,

@@ -50,6 +50,7 @@ export const sessionStatusSchema = z.enum(["lobby", "active", "ended"]);
 export const sessionModeSchema = z.enum(["multiplayer", "single-player"]);
 export const gameModeSchema = z.enum(["standard", "nemesis_relay"]);
 export const interactionModeSchema = z.enum(["co-op", "rivalry", "ruthless"]);
+export const seatControllerTypeSchema = z.enum(["human", "ai"]);
 
 export const pendingNextNonBattleTestModifierSchema = z.discriminatedUnion("sourceCardId", [
   z.object({
@@ -226,6 +227,7 @@ export const startingBonusOptionRefSchema = z.object({
 
 export const seatSchema = z.object({
   seatId: z.string().min(1),
+  controllerType: seatControllerTypeSchema.optional(),
   characterId: z.string().min(1),
   characterSelected: z.boolean().optional(),
   signalPieceId: z.enum(SIGNAL_PIECE_IDS).optional(),
@@ -679,7 +681,7 @@ export const gameStateSchema = z.object({
   pendingFailureReaction: z.object({
     id: z.string().min(1),
     seatId: z.string().min(1),
-    testType: z.enum(["movement", "hazard"]),
+    testType: z.enum(["movement", "hazard", "battle"]),
     sourceId: z.string().min(1),
     createdAt: z.string().min(1)
   }).nullable().optional(),
@@ -861,6 +863,7 @@ export type NormalMovementRollDetail = z.infer<typeof normalMovementRollDetailSc
 export type ResolutionStage = z.infer<typeof resolutionStageSchema>;
 export type ActiveResolution = z.infer<typeof activeResolutionSchema>;
 export type StartingBonusOptionRef = z.infer<typeof startingBonusOptionRefSchema>;
+export type SeatControllerType = z.infer<typeof seatControllerTypeSchema>;
 export type Seat = z.infer<typeof seatSchema>;
 export type NoteResource = z.infer<typeof noteResourceSchema>;
 export type PlayerPrivateState = z.infer<typeof playerPrivateStateSchema>;

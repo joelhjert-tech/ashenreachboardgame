@@ -3,7 +3,7 @@
   "type": "scar",
   "title": "Bell-Deafened",
   "source": "mind", "origin": "A command bell burst inside the skull and left every order sounding distant.",
-  "burdenText": "You cannot receive assistance on Command tests.", "adaptationText": "Once per round, after every requested helper declines, add +1 Command.",
+  "burdenText": "You cannot receive assistance on Command tests.", "adaptationText": "Once per round, add +1 to an unassisted Command test.",
   "burden": { "key": "command-assistance-blocked", "timing": "assistance", "limit": "passive", "optional": false, "tags": ["command"] },
   "adaptation": { "key": "declined-help-command-bonus", "timing": "beforeRoll", "limit": "oncePerRound", "optional": true, "tags": ["command", "assistance"] },
   "removalRestrictions": ["purificationService"], "artwork": "/assets/cards/scars/scar-wound-4.png",

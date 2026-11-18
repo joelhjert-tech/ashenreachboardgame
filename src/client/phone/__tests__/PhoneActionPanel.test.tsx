@@ -234,6 +234,11 @@ describe("PhoneActionPanel", () => {
     })} />);
 
     expect(screen.getByRole("region", { name: /compare scar choices/i })).toBeVisible();
+    const comparison = screen.getByLabelText("Scar comparison strip");
+    expect(comparison).toHaveTextContent(/relay ghost/i);
+    expect(comparison).toHaveTextContent(/choir static/i);
+    expect(comparison).toHaveTextContent(/trigger: remote signal tests strain the operative/i);
+    expect(comparison).toHaveTextContent(/adaptation: gain \+1 signal against an escalation test/i);
     expect(screen.getByRole("button", { name: /inspect relay ghost/i })).toBeVisible();
     expect(screen.queryByRole("button", { name: /inspect choir static/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /next scar/i })).toBeVisible();
@@ -1059,7 +1064,8 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-movement-view")).toHaveTextContent(/pilgrim lock/i);
     expect(screen.getByTestId("phone-movement-view")).toHaveTextContent(/1 legal destination/i);
     expect(screen.getAllByTestId("movement-destination")).toHaveLength(1);
-    expect(screen.getByTestId("movement-destination")).toHaveTextContent(/mission/i);
+    expect(screen.getByTestId("movement-destination")).toHaveTextContent("Contract opportunity");
+    expect(screen.getByRole("region", { name: "Contract relevance" })).toHaveTextContent("Anchor Market Ledger");
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
@@ -1067,7 +1073,7 @@ describe("PhoneActionPanel", () => {
     const destinationCard = screen.getByTestId("movement-destination");
     expect(destinationCard).toHaveTextContent(/1 step/i);
     expect(destinationCard).toHaveTextContent(/shop \/ services/i);
-    expect(destinationCard).toHaveTextContent(/threat risk/i);
+    expect(destinationCard).toHaveTextContent("1 encounter icon");
     expect(destinationCard.querySelector('[data-testid="movement-tile-image"]')).toHaveAttribute(
       "src",
       "/assets/riftfall/environments/signal-theatre/sectors/outer_waymarket.png"
@@ -1227,7 +1233,8 @@ describe("PhoneActionPanel", () => {
     );
 
     const result = screen.getByTestId("phone-approach-result");
-    expect(result).not.toHaveTextContent(/Approach Result|Glassmere Spindle|Player total|Difficulty total|vs/i);
+    expect(result).toHaveTextContent("Player total: 7 · Difficulty total: 7");
+    expect(result).toHaveTextContent("Moved into Glassmere Spindle.");
     expect(within(result).getByTestId("authoritative-dice-presentation")).toHaveClass("is-animating");
     expect(within(result).getByLabelText("Die 1: 5")).toBeVisible();
     expect(within(result).queryByRole("img")).not.toBeInTheDocument();
@@ -1294,7 +1301,7 @@ describe("PhoneActionPanel", () => {
       toSectorId: "ashwake-crossing"
     });
     fireEvent.click(screen.getByText("View details"));
-    expect(screen.getByText(/visible blockers: chain-maul salvager/i)).toBeInTheDocument();
+    expect(screen.getByText(/visible encounters: chain-maul salvager/i)).toBeInTheDocument();
     expect(screen.getByText(/operatives present: mira \(signal witch\)/i)).toBeInTheDocument();
     expect(screen.getByText(/pilgrim lock → ashwalk bridge/i)).toBeInTheDocument();
 
@@ -1369,6 +1376,35 @@ describe("PhoneActionPanel", () => {
     expect(onIntent).not.toHaveBeenCalledWith(expect.objectContaining({ type: "SELECT_ROUTE_STAR_VARIANT" }));
     fireEvent.click(screen.getByRole("button", { name: /choose this route/i }));
     expect(onIntent).toHaveBeenCalledWith({ type: "SELECT_ROUTE_STAR_VARIANT", seatId: "seat-1", instanceId: "star-a", destinationId: "destination", routeId: "route-alternate", movementRevision: 9 });
+  });
+
+  it("keeps paid Route Star changes behind explicit confirmation in the movement panel", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+    const patch = createPatch({ phase: "navigation", encounter: null, movementPlanner: {
+      active: true, movementValue: 2, movementRevision: 9, currentSectorId: "origin", currentSectorName: "Origin",
+      routeStarCommitted: true, selectedDestinationId: "destination", selectedRouteId: "paid-route", destinations: [{
+        sectorId: "destination", name: "Ashen Chapel", ring: "outer", distance: 2,
+        routeId: "paid-route", defaultRouteId: "route-default", route: ["origin", "right", "destination"],
+        routeNames: ["Origin", "Blastworks", "Ashen Chapel"], tags: [], threatIcons: [], ruleText: "Arrive normally.",
+        faceUpThreats: [], occupants: [], strategicTags: ["safe"]
+      }]
+    } });
+    const view = render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    expect(screen.getByText("Route selected \u00b7 1 charge spent")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    expect(onIntent).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Keep route" }));
+    expect(onIntent).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    view.unmount();
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.getByText("Route selected \u00b7 1 charge spent")).toBeInTheDocument();
+    expect(onIntent).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    fireEvent.click(screen.getByRole("button", { name: "Discard route and change destination" }));
+    expect(onIntent).toHaveBeenCalledExactlyOnceWith({ type: "ABANDON_ROUTE_STAR_CHOICE", seatId: "seat-1",
+      destinationId: "destination", routeId: "paid-route", movementRevision: 9, toSectorId: null });
   });
 
   it("shows compact movement feedback after a confirmed move outcome", async () => {
@@ -1714,7 +1750,19 @@ describe("PhoneActionPanel", () => {
                 shopCategories: ["forge-armoury"],
                 cost: { salvage: 3 },
                 summary: "Forge +1 while bracing wounds.",
-                affordable: true
+                affordable: true,
+                ownerDecisionSupport: {
+                  salvageAfterPurchase: 3,
+                  slot: "utility",
+                  currentItemName: null,
+                  currentItemStat: null,
+                  currentItemBonus: null,
+                  offeredStat: "forge",
+                  currentStatValue: 1,
+                  projectedStatValue: 2,
+                  netStatChange: 1,
+                  timingSummary: "Always while equipped"
+                }
               },
               {
                 cardId: "saintplate-harness",
@@ -1780,6 +1828,9 @@ describe("PhoneActionPanel", () => {
     expect(buyCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
     expect(buyCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/fallbacks/equipment.svg");
     expect(buyCard?.querySelector(".phone-wrap-card__description")).toHaveTextContent(/forge \+1 while bracing wounds/i);
+    expect(buyCard?.querySelector(".phone-shop-build-comparison")).toHaveTextContent(/utility: empty → coffin rig/i);
+    expect(buyCard?.querySelector(".phone-shop-build-comparison")).toHaveTextContent(/forge: 1 → 2 \(\+1\)/i);
+    expect(buyCard?.querySelector(".phone-shop-build-comparison")).toHaveTextContent(/salvage: 6 → 3/i);
     expect(buyCard?.querySelector(".phone-wrap-card__details")).toHaveTextContent(/cost: 3 salvage/i);
     expect(screen.getAllByRole("button", { name: /^buy /i })).toHaveLength(1);
     expect(buyCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
@@ -2040,9 +2091,49 @@ describe("PhoneActionPanel", () => {
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="action" patch={actionPatch} />);
     expect(screen.getByTestId("phone-action-priority-stack")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /end turn/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /finish actions/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
+  });
+
+  it("chooses a table target before exposing that target's interaction commands", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        selectedTurnTab="action"
+        patch={createPatch({
+          encounter: null,
+          interactionMode: "rivalry",
+          seats: [
+            { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: true, kicked: false },
+            { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira", connected: true, ready: true, kicked: false },
+            { seatId: "seat-3", characterId: "cinder-monk", displayName: "Ash", connected: true, ready: true, kicked: false },
+            { seatId: "seat-4", characterId: "rift-runner", displayName: "Vale", connected: true, ready: true, kicked: false }
+          ],
+          turnOrder: ["seat-1", "seat-2", "seat-3", "seat-4"]
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /mira.*choose this operative/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ash.*choose this operative/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /vale.*choose this operative/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^duel/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /mira.*choose this operative/i }));
+    expect(screen.getByRole("button", { name: /^duel/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^trade/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /ash.*choose this operative/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^duel/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "TABLE_INTERACTION",
+      seatId: "seat-1",
+      targetSeatId: "seat-2",
+      interactionKind: "duel"
+    });
   });
 
   it("shows empty stock and purchase feedback without exposing rivalry agenda details", () => {
@@ -2968,7 +3059,7 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByLabelText("Die 1: 2")).toBeVisible();
     expect(screen.getByLabelText("Die 2: 5")).toBeVisible();
-    expect(screen.queryByText(/failure: the signal collapses/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/failure: the signal collapses/i)).toBeVisible();
     expect(screen.queryByRole("button", { name: /^continue$/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /accept consequence/i })).toBeVisible();
 
@@ -3093,7 +3184,7 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByTestId("phone-resolution-card")).toHaveAttribute("data-result-ready-gate", "true");
-    expect(screen.queryByText("Reward applied")).not.toBeInTheDocument();
+    expect(screen.getByText("Reward applied")).toBeVisible();
     expect(screen.getByLabelText("Die 1: 5")).toBeVisible();
     expect(screen.queryByTestId("phone-action-priority-stack")).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /continue/i })).toHaveLength(1);
@@ -3301,7 +3392,8 @@ describe("PhoneActionPanel", () => {
     );
 
     const result = screen.getByTestId("phone-approach-result");
-    expect(result).not.toHaveTextContent(/player total|difficulty total|vs|approach setback|failed to enter red march outpost/i);
+    expect(result).toHaveTextContent("Player total: 6 · Difficulty total: 7");
+    expect(result).toHaveTextContent("Failed to enter Red March Outpost.");
     expect(within(result).getByLabelText("Die 1: 3")).toBeVisible();
     expect(within(result).getByLabelText("Die 2: 2")).toBeVisible();
     expect(within(result).getByTestId("phone-resolution-continue")).toBeInTheDocument();
@@ -3320,6 +3412,35 @@ describe("PhoneActionPanel", () => {
         characters={characters}
         onIntent={vi.fn()}
         patch={createPatch({
+          battlePresentation: {
+            id: "seat-1:threat:cinder-veil-stalker:test",
+            revision: 12,
+            stage: "battle_ready",
+            actorSeatId: "seat-1",
+            actorDisplayName: "Lane",
+            encounter: { name: "Cinder-Veil Stalker", category: "Battle" },
+            test: { stat: "grit", label: "Grit", opposed: true, fixedValue: 5, requiredDiceTotal: null },
+            operative: {
+              name: "Lane", secondaryName: "Sable Vey", baseValue: 2,
+              modifiers: [{ label: "Black Route Fuse", value: 3, kind: "equipment" }],
+              rawDice: [], diceCount: 2, diceTotal: null, finalTotal: null
+            },
+            opponent: {
+              name: "Cinder-Veil Stalker", baseValue: 8, modifiers: [],
+              rawDice: [], diceCount: 2, diceTotal: null, finalTotal: null
+            },
+            outcome: null, publicConsequence: null, publicRewardSummary: null, waiting: null, restored: false
+          },
+          objectUseStates: [{ source: "gear", id: "black-route-fuse", usedThisTurn: false, usedThisRound: false, usableForCurrentTest: true }],
+          edgeHand: {
+            cards: [{
+              id: "edge-test", name: "Held Line", edgeValue: 2, commitText: "Commit +2.", abilityText: "Hold the line.", tradeoffText: null,
+              ability: { label: "Hold", enabled: true, disabledReason: null, resolutionId: "seat-1:threat:cinder-veil-stalker:test", targets: [] }
+            }],
+            limit: 4, awardRule: "Server awarded", canCommit: true, disabledReason: null,
+            resolutionId: "seat-1:threat:cinder-veil-stalker:test", reaction: null
+          },
+          eligibleNemesisAssistSeatIds: ["seat-2"],
           activeResolution: {
             id: "seat-1:threat:cinder-veil-stalker:test",
             playerId: "seat-1",
@@ -3352,9 +3473,12 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByLabelText(/lane versus cinder-veil stalker/i)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /cinder-veil stalker/i })).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//));
     expect(screen.getByTestId("phone-battle-cinematic-stage")).toHaveTextContent(/difficulty\s*8/i);
+    expect(screen.getByTestId("phone-battle-prep-summary")).toHaveTextContent(/grit 5 · opposed roll/i);
+    expect(screen.getByTestId("phone-battle-prep-summary")).toHaveTextContent(/1 usable items/i);
+    expect(screen.getByTestId("phone-battle-prep-summary")).toHaveTextContent(/1 edge/i);
+    expect(screen.getByTestId("phone-battle-prep-summary")).toHaveTextContent(/1 helpers/i);
     expect(screen.queryByLabelText(/^battle totals$/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /view details/i }));
-    expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/base grit \+2/i);
     expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/black route fuse \+3/i);
   });
 
@@ -4315,7 +4439,7 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-resolution-card")).toHaveAttribute("data-result-ready-gate", "true");
     expect(screen.getByTestId("phone-resolution-card")).toHaveAttribute("data-has-dice", "false");
-    expect(screen.getByTestId("phone-resolution-card")).not.toHaveTextContent(/scenario pressure|doom rises by 1/i);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent("Doom rises by 1.");
   });
 
   it("replaces completed cooperative assistance controls with a stable result gate", () => {
@@ -4406,7 +4530,17 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.queryByRole("button", { name: /^continue$/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /recruit sable vey/i })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: /inspect sable vey/i }));
+    expect(screen.getByTestId("phone-operative-inspection")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /starting stats/i })).toBeInTheDocument();
+    const recruit = screen.getByRole("button", { name: /recruit sable vey/i });
+    expect(recruit).toBeEnabled();
+    fireEvent.click(recruit);
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "RECRUIT_REPLACEMENT",
+      seatId: "seat-1",
+      replacementCharacterId: "void-marshal"
+    });
   });
 
   it("requires a recalled operative to bind its pending Scar before recruitment", () => {
@@ -4488,7 +4622,7 @@ describe("PhoneActionPanel", () => {
 
     const resolutionCard = screen.getByTestId("phone-resolution-card");
 
-    expect(within(resolutionCard).queryByText(/you found a loophole in a dead empire tariff/i)).not.toBeInTheDocument();
+    expect(within(resolutionCard).getAllByText(/you found a loophole in a dead empire tariff/i)).toHaveLength(1);
     expect(within(resolutionCard).queryByRole("listitem", { name: /you found a loophole/i })).not.toBeInTheDocument();
   });
 
@@ -4557,6 +4691,18 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByRole("heading", { name: /your moment is playing on tv/i })).toBeInTheDocument();
     expect(screen.getByText(/actions unlock when the animation settles/i)).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("uses Finish Actions before Experience and Pass Turn during the handoff", () => {
+    const actionView = render(<PhoneActionPanel characters={characters} onIntent={vi.fn()} patch={createPatch({ encounter: null })} />);
+    expect(screen.getByRole("button", { name: /finish actions/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/still available before finishing actions/i)).toBeInTheDocument();
+
+    actionView.rerender(
+      <PhoneActionPanel characters={characters} onIntent={vi.fn()} patch={createPatch({ phase: "broadcast", encounter: null })} />
+    );
+    expect(screen.getByRole("button", { name: /pass turn/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /end turn/i })).not.toBeInTheDocument();
   });
 
   it("offers the setup host one direct Start New Game action after defeat", () => {

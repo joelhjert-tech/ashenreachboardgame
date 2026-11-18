@@ -1,4 +1,6 @@
-import { useEffect, useState, type CSSProperties, type ReactElement } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
+import { cardRevealPresentationTimings as timings } from "../shared/motionTokens.js";
+import { useReducedMotion } from "../shared/useReducedMotion.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import {
   getCardArtPath,
@@ -66,8 +68,8 @@ export function buildSignalCardRevealModel(
     sourceLabel: model.mode === "tile-challenge"
       ? "Recurring sector challenge"
       : model.mode === "battle"
-        ? "Authoritative Threat draw"
-        : "Authoritative sector test",
+        ? "Threat deck"
+        : "Sector challenge",
     locationName: model.locationName,
     actorDisplayName: model.actorDisplayName,
     publicSummary: model.publicSummary,
@@ -111,16 +113,29 @@ function markSeen(id: string): void {
   }
 }
 
-export function SignalCardReveal({
-  model,
-  forcedStage = null,
-  onReady
-}: {
+interface SignalCardRevealProps {
   model: SignalCardRevealModel;
+  environmentPath?: string | null;
   forcedStage?: SignalCardRevealStage | null;
   onReady?: () => void;
-}): ReactElement {
-  const restoreImmediately = model.restored || wasSeen(model.id);
+}
+
+export function SignalCardReveal(props: SignalCardRevealProps): ReactElement {
+  return <SignalCardRevealSequence key={props.model.id} {...props} />;
+}
+
+function SignalCardRevealSequence({
+  model,
+  environmentPath,
+  forcedStage = null,
+  onReady
+}: SignalCardRevealProps): ReactElement {
+  const reducedMotion = useReducedMotion();
+  const [previouslySeen] = useState(() => wasSeen(model.id));
+  const restoreImmediately = model.restored || previouslySeen || reducedMotion;
+  const onReadyRef = useRef(onReady);
+  const notified = useRef(false);
+  onReadyRef.current = onReady;
   const [stage, setStage] = useState<SignalCardRevealStage>(
     forcedStage ?? (restoreImmediately ? "ready" : "sealed")
   );
@@ -130,28 +145,29 @@ export function SignalCardReveal({
       setStage(forcedStage);
       return undefined;
     }
-    const reducedMotion = typeof window.matchMedia === "function"
-      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (model.restored || wasSeen(model.id) || reducedMotion) {
+    const complete = () => {
       markSeen(model.id);
+      if (!notified.current) {
+        notified.current = true;
+        onReadyRef.current?.();
+      }
+    };
+    if (restoreImmediately) {
       setStage("ready");
-      onReady?.();
+      complete();
       return undefined;
     }
 
     setStage("sealed");
     const timers = [
-      window.setTimeout(() => setStage("eject"), 280),
-      window.setTimeout(() => setStage("turn"), 1320),
-      window.setTimeout(() => setStage("identify"), 2420),
-      window.setTimeout(() => {
-        markSeen(model.id);
-        setStage("ready");
-        onReady?.();
-      }, 3260)
+      window.setTimeout(() => setStage("eject"), timings.ejectMs),
+      window.setTimeout(() => setStage("turn"), timings.turnMs),
+      window.setTimeout(() => setStage("identify"), timings.identifyMs),
+      window.setTimeout(() => setStage("ready"), timings.readyMs),
+      window.setTimeout(complete, timings.completeMs)
     ];
     return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [forcedStage, model.id, model.restored, onReady]);
+  }, [forcedStage, model.id, restoreImmediately]);
 
   const actionVerb = model.category === "Enemy" ? "roll" : "test";
   const isReward = model.revealKind === "reward";
@@ -162,10 +178,13 @@ export function SignalCardReveal({
       className="signal-card-reveal"
       data-testid="signal-card-reveal"
       data-stage={stage}
+      data-motion={restoreImmediately ? "settled" : "live"}
       data-card-category={model.category.toLowerCase()}
+      data-environment={environmentPath ? "sector" : "chamber"}
       style={themeStyle}
       aria-labelledby="signal-card-reveal-title"
     >
+      {environmentPath ? <img className="signal-card-reveal__environment" src={environmentPath} alt="" aria-hidden="true" /> : null}
       <img
         className="signal-card-reveal__chamber"
         src={revealAssets.chamber}
@@ -176,6 +195,7 @@ export function SignalCardReveal({
         aria-hidden="true"
       />
       <div className="signal-card-reveal__shade" aria-hidden="true" />
+      <div className="signal-card-reveal__light" aria-hidden="true" />
       <div className="signal-card-reveal__scan" aria-hidden="true" />
 
       <header className="signal-card-reveal__header">
@@ -184,7 +204,7 @@ export function SignalCardReveal({
           <strong>{model.locationName}</strong>
         </div>
         <div className="signal-card-reveal__heading">
-          <span>{isReward ? "Authoritative acquisition" : "Authoritative encounter"}</span>
+          <span>{isReward ? "Acquisition" : "Incoming encounter"}</span>
           <h1>{isReward ? "Reward secured" : "The deck answers"}</h1>
         </div>
         <div className="signal-card-reveal__queue">
@@ -197,7 +217,7 @@ export function SignalCardReveal({
         <aside className="signal-card-reveal__classification signal-card-reveal__classification--left">
           <span>{isReward ? "Awarded by" : "Drawn from"}</span>
           <strong>{model.sourceLabel}</strong>
-          <small>Server-confirmed</small>
+          <small>{isReward ? "Spoils of the Reach" : "The Reach reveals its hand"}</small>
         </aside>
 
         <div className="signal-card-reveal__aperture" aria-hidden="true">
@@ -220,6 +240,13 @@ export function SignalCardReveal({
                   fallback={model.category === "Enemy" ? "enemy" : "card"}
                   priority
                 />
+                {!restoreImmediately && (stage === "identify" || stage === "ready") ? (
+                  <div className="signal-card-reveal__atmosphere" aria-hidden="true">
+                    <i className="signal-card-reveal__haze" />
+                    <i className="signal-card-reveal__embers" />
+                    <i className="signal-card-reveal__aura" />
+                  </div>
+                ) : null}
                 <div className="signal-card-reveal__front-vignette" aria-hidden="true" />
               </div>
             </div>
@@ -230,7 +257,7 @@ export function SignalCardReveal({
         <aside className="signal-card-reveal__classification signal-card-reveal__classification--right">
           <span>Card type</span>
           <strong>{model.category}</strong>
-          <small>{isReward ? "Added by the server" : "Resolve once before continuing"}</small>
+          <small>{isReward ? "Added to your inventory" : "Resolve before continuing"}</small>
         </aside>
 
         <div className="signal-card-reveal__identity">
@@ -248,7 +275,7 @@ export function SignalCardReveal({
         <div className="signal-card-reveal__command-copy">
           <span>What happens now</span>
           <strong>{isReward ? `${model.actorDisplayName} receives ${model.title}` : `${model.actorDisplayName} must ${actionVerb} ${model.statLabel}`}</strong>
-          <small>{isReward ? "The card is now available in the operative inventory." : "The authoritative result and consequences appear only after the roll."}</small>
+          <small>{isReward ? "The card is now available in the operative inventory." : "Make your move. The dice decide what follows."}</small>
         </div>
         <div className="signal-card-reveal__phone">
           <span>{isReward ? "Owner inventory" : "Private control"}</span>

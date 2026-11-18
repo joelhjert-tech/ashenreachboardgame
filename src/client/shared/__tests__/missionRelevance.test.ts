@@ -43,5 +43,8 @@ describe("mission relevance", () => {
     expect(getMissionObjectiveCategory(contract)).toBe("Tile challenge");
     expect(getMissionTargetClue(contract)).toMatch(/challenge at Ashen Chapel: Quiet the Rift Whispers/i);
     expect(getMissionRelevanceForSector(contract, "ashen-chapel")?.reason).toMatch(/resolve Quiet the Rift Whispers/i);
+    expect(getMissionRelevanceForSector(contract, "ashen-chapel", { challenges: [] })).toBeNull();
+    expect(getMissionRelevanceForSector(contract, "ashen-chapel", { challenges: [{ id: "other-challenge", challengeType: "anomaly", tags: [] }] })).toBeNull();
+    expect(getMissionRelevanceForSector(contract, "ashen-chapel", { challenges: [{ id: "rift-whispers-ashen-chapel", challengeType: "anomaly", tags: [] }] })?.reason).toMatch(/Quiet the Rift Whispers/);
   });
 });

@@ -3,12 +3,11 @@
   "type": "artifact",
   "startingEligible": false,
   "normalShopCommon": false,
-  "artifactKind": "consumableSalvage",
   "title": "Saintwire Splint",
   "text": "A sainted emergency brace for a body already past sensible limits.",
   "flavor": "The wire is kind in the way a locked door is kind during a fire.",
-  "charge": 1,
-  "resolutionSummary": "Recovered a Saintwire Splint for a last-second rescue.",
+  "charge": 0,
+  "resolutionSummary": "Recovered a Saintwire Splint. Gain +1 Forge while it is equipped.",
   "resolveEffect": {
     "type": "gain_gear",
     "gearId": "saintwire-splint"

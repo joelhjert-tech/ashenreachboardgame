@@ -85,4 +85,17 @@ describe("SignalEdgeCardBurst", () => {
     act(() => vi.advanceTimersByTime(1));
     expect(onSettled).toHaveBeenCalledOnce();
   });
+
+  it("continues the sequence across updates and calls the latest callback", () => {
+    vi.useFakeTimers();
+    const first = vi.fn();
+    const latest = vi.fn();
+    const { rerender } = render(<SignalEdgeCardBurst play={play} onSettled={first} />);
+    act(() => vi.advanceTimersByTime(1500));
+    rerender(<SignalEdgeCardBurst play={{ ...play }} onSettled={latest} />);
+    expect(screen.getByTestId("signal-edge-card-burst")).toHaveAttribute("data-stage", "detonate");
+    act(() => vi.advanceTimersByTime(2400));
+    expect(first).not.toHaveBeenCalled();
+    expect(latest).toHaveBeenCalledOnce();
+  });
 });

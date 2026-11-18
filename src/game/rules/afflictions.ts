@@ -2,6 +2,7 @@ import type { EncounterEffect } from "../schema/card.schema.js";
 import type { Character, Stat } from "../schema/character.schema.js";
 import type { PlayerState } from "../schema/session.schema.js";
 import type { AfflictionCard, AfflictionInstance } from "../schema/affliction.schema.js";
+import type { GearSlot } from "../schema/gear.schema.js";
 
 export type AfflictionCatalog = Map<string, AfflictionCard>;
 
@@ -149,13 +150,14 @@ export function getAfflictionModifierSources(
   catalog: AfflictionCatalog
 ): AfflictionModifierSource[] {
   const sources: AfflictionModifierSource[] = [];
+  let modifiedStat = player.character.stats[stat] ?? 0;
 
   for (const card of getFaceupAfflictionCards(player, catalog)) {
     if (card.effectKind === "testModifier" && card.effectPayload.stat === stat) {
       const amount = card.effectPayload.amount ?? 0;
       const floor = card.effectPayload.floor ?? Number.NEGATIVE_INFINITY;
-      const currentStat = player.character.stats[stat] ?? 0;
-      const flooredAmount = Math.max(amount, floor - currentStat);
+      const flooredAmount = Math.max(amount, floor - modifiedStat);
+      modifiedStat += flooredAmount;
       sources.push({ label: `Affliction: ${card.name}`, value: flooredAmount });
     }
 
@@ -165,6 +167,14 @@ export function getAfflictionModifierSources(
   }
 
   return sources.filter((source) => source.value !== 0);
+}
+
+export function getAfflictionDisabledGearSlots(player: PlayerState, catalog: AfflictionCatalog): GearSlot[] {
+  const restrictions = getAfflictionRestrictions(player, catalog);
+  return [
+    ...(restrictions.cannotUseArmor ? ["armor" as const] : []),
+    ...(restrictions.cannotUseWeapons ? ["weapon" as const] : [])
+  ];
 }
 
 export function resolveAfflictionDraw(
@@ -187,7 +197,8 @@ export function resolveAfflictionDraw(
   };
 
   if (card.isFaceupOngoing) {
-    nextPlayer.faceupAfflictions = [...(nextPlayer.faceupAfflictions ?? []), instance];
+    nextPlayer.faceupAfflictions = (nextPlayer.faceupAfflictions ?? []).some((entry) => entry.cardId === card.id)
+      ? nextPlayer.faceupAfflictions : [...(nextPlayer.faceupAfflictions ?? []), instance];
     deltas.push(`${card.name} stays faceup.`);
   } else {
     nextPlayer = applyImmediateAffliction(nextPlayer, card, options.die ?? 1, deltas);
@@ -301,30 +312,21 @@ export function getAfflictionWoundPrevention(
 }
 
 export function preventWoundInEffect(effect: EncounterEffect, amount: number): EncounterEffect {
-  if (amount <= 0) {
-    return effect;
-  }
-
-  if (effect.type === "take_wound") {
-    return { ...effect, amount: Math.max(0, effect.amount - amount) };
-  }
-
-  if (effect.type === "sequence") {
-    let remaining = amount;
-    const effects = effect.effects.map((entry) => {
-      if (remaining <= 0 || entry.type !== "take_wound") {
-        return entry;
-      }
-
+  let remaining = Math.max(0, amount);
+  const visit = (entry: EncounterEffect): EncounterEffect => {
+    if (remaining <= 0) return entry;
+    if (entry.type === "take_wound") {
       const prevented = Math.min(remaining, entry.amount);
       remaining -= prevented;
-      return { ...entry, amount: Math.max(0, entry.amount - prevented) };
-    }).filter((entry) => entry.type !== "take_wound" || entry.amount > 0);
-
-    return { ...effect, effects };
-  }
-
-  return effect;
+      return { ...entry, amount: entry.amount - prevented };
+    }
+    if (entry.type === "sequence") {
+      return { ...entry, effects: entry.effects.map(visit)
+        .filter((child) => child.type !== "take_wound" || child.amount > 0) };
+    }
+    return entry;
+  };
+  return visit(effect);
 }
 
 function adjustCharacterStat(
@@ -345,7 +347,11 @@ function adjustCharacterStat(
       stats: {
         ...player.character.stats,
         [stat]: nextValue
-      }
+      },
+      statUpgrades: player.character.statUpgrades ? {
+        ...player.character.statUpgrades,
+        [stat]: Math.min(player.character.statUpgrades[stat] ?? 0, Math.max(0, nextValue - 1))
+      } : undefined
     }
   };
 }

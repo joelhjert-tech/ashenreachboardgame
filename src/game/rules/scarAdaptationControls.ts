@@ -1,4 +1,4 @@
-import type { ScarRuleKey } from "../schema/card.schema.js";
+import type { EncounterEffect, ScarRuleKey } from "../schema/card.schema.js";
 import type { Stat } from "../schema/character.schema.js";
 import type { GameState, PlayerState } from "../schema/session.schema.js";
 import type { ScarUsageEntry } from "../schema/scarChoice.schema.js";
@@ -6,6 +6,7 @@ import { getBoardSpace } from "../data/boardSpaces.js";
 import { threatBlocksRerolls } from "../cards/threatEffects.js";
 import { evaluateOwnedScarRules, type ScarRuleContext } from "./scarPersistentRules.js";
 import { getScarCard } from "./scarSystem.js";
+import { getMovementStepBlockReason, getRingTrackNeighbor } from "./movementPlanner.js";
 
 export interface ScarAdaptationTarget {
   id: string;
@@ -83,6 +84,34 @@ function currentContext(state: GameState, player: PlayerState, timing: string): 
   };
 }
 
+export function getScarDisplacementOptions(state: GameState, player: PlayerState): Array<{ sectorId: string; direction: "clockwise" | "counterclockwise" }> {
+  if (state.pendingForcedDestinationChoice?.ownerSeatId === player.seatId) return state.pendingForcedDestinationChoice.candidates;
+  const pending = state.pendingDisplacement;
+  if (!pending || pending.seatId !== player.seatId) return [];
+  return (["clockwise", "counterclockwise"] as const).flatMap((direction) => {
+    let sectorId = pending.originSectorId;
+    for (let step = 0; step < pending.distance; step += 1) {
+      const next = getRingTrackNeighbor(sectorId, direction === "clockwise" ? 1 : -1);
+      if (!next || getMovementStepBlockReason(state, player, sectorId, next)) return [];
+      sectorId = next;
+    }
+    return [{ sectorId, direction }];
+  });
+}
+
+function containsWound(effect: EncounterEffect | null | undefined): boolean {
+  return effect?.type === "take_wound" ? effect.amount > 0
+    : effect?.type === "sequence" ? effect.effects.some(containsWound) : false;
+}
+
+function isOwnerOnlyEffect(effect: EncounterEffect | null | undefined): boolean {
+  if (!effect) return false;
+  if (effect.type === "sequence") return effect.effects.length > 0 && effect.effects.every(isOwnerOnlyEffect);
+  return ["take_wound", "heal_wound", "gain_salvage", "lose_salvage", "gain_trophy", "gain_note",
+    "gain_gear", "gain_follower", "gain_scar_choice", "draw_affliction", "draw_artifact",
+    "next_non_battle_test_modifier", "next_normal_movement_roll_modifier"].includes(effect.type);
+}
+
 function targetsFor(state: GameState, player: PlayerState, ruleKey: ScarRuleKey): ScarAdaptationTarget[] {
   if (["guile-reroll", "grit-hazard-reroll", "rift-signal-reroll", "guile-anomaly-reroll"].includes(ruleKey)) {
     const committedEdgeDieIndex =
@@ -104,7 +133,7 @@ function targetsFor(state: GameState, player: PlayerState, ruleKey: ScarRuleKey)
     });
   }
   if (ruleKey === "choose-displacement-direction") {
-    return state.pendingForcedDestinationChoice?.candidates.map((option) => ({ id: option.sectorId, label: `${getBoardSpace(option.sectorId)?.name ?? option.sectorId} (${option.direction})` })) ?? [];
+    return getScarDisplacementOptions(state, player).map((option) => ({ id: option.sectorId, label: `${getBoardSpace(option.sectorId)?.name ?? option.sectorId} (${option.direction})` }));
   }
   return [];
 }
@@ -122,8 +151,20 @@ export function getOwnedScarAdaptationControls(state: GameState, seatId: string)
     const targets = targetsFor(state, player, scar.adaptation.key);
     const rerollRule = ["guile-reroll", "grit-hazard-reroll", "rift-signal-reroll", "guile-anomaly-reroll"].includes(scar.adaptation.key);
     const targetRequired = scar.adaptation.key === "forge-charge-restore" || scar.adaptation.key === "choose-displacement-direction" || rerollRule;
-    const disabledReason = rerollRule && threatBlocksRerolls(state.currentEncounter)
+    const invalidConsequence = scar.adaptation.key === "prevent-equipment-suppression"
+      ? state.pendingEquipmentSuppressionChoice?.ownerSeatId !== seatId
+      : scar.adaptation.key === "prevent-grit-displacement" ? state.pendingDisplacement?.seatId !== seatId
+      : scar.adaptation.key === "toxic-wound-immunity" ? !containsWound(state.pendingEffect)
+      : scar.adaptation.key === "ignore-blue-event" ? state.currentEncounter?.threatLane !== "blue"
+        || state.currentEncounter?.resolutionType !== "event" || !isOwnerOnlyEffect(state.pendingEffect)
+      : false;
+    const disabledReason = invalidConsequence ? "No matching consequence is pending."
+      : rerollRule && threatBlocksRerolls(state.currentEncounter)
       ? `${state.currentEncounter?.title ?? "This threat"} blocks rerolls.`
+      : (rerollRule || scar.adaptation.key === "one-below-battle-bonus") && state.activeResolution?.stage !== "roll_result"
+        ? "This result has already been accepted."
+      : rerollRule && state.currentEncounter?.cardType === "enemy" && state.activeResolution?.roll?.success === true
+        ? "This battle has already succeeded."
       : !evaluated
         ? `Not valid for the current ${context.stat ?? "game"} window.`
         : targetRequired && targets.length === 0

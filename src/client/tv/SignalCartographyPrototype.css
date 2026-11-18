@@ -1124,3 +1124,43 @@
     animation: none;
   }
 }
+
+/* Dead Star Expanse: live labels and threats remain separate from the artwork. */
+.signal-cartography--dead-star { background: #03080d; }
+.signal-cartography--dead-star::before { display: none; }
+.signal-cartography--dead-star .signal-cartography__header { padding: .4rem 1.4rem; }
+.signal-cartography--dead-star .signal-cartography__header h1 { margin: 0; font-size: clamp(1.4rem, 2.8vw, 2.8rem); text-transform: uppercase; letter-spacing: .15em; }
+.signal-cartography--dead-star .signal-cartography__header > div:first-child { display: flex; flex-direction: column-reverse; }
+.signal-cartography--dead-star .signal-cartography__frame { margin: 0 .55rem; background: #03080d; }
+.signal-cartography--dead-star .signal-cartography__reach-lines { display: none; }
+.signal-cartography--dead-star .signal-cartography__connections line { stroke: #ac996c; stroke-width: 2; opacity: .72; }
+.signal-cartography--dead-star .signal-cartography__connections line.is-route { stroke: #ffd074; stroke-width: 6; opacity: 1; }
+.signal-cartography--dead-star .signal-cartography__node-art { opacity: 1; filter: none; stroke: #c5a66d; stroke-width: 2; }
+.signal-cartography--dead-star .signal-cartography__node-plate { fill: #080f17; stroke: #bda06d; stroke-width: 1.7; }
+.signal-cartography--dead-star .signal-cartography__node-name { fill: #fff0d3; font-size: 17px; letter-spacing: 0; }
+.signal-cartography--dead-star .signal-cartography__threat-letter { fill: #05090d; font: 900 11px "Inter", sans-serif; }
+.signal-cartography--dead-star .signal-cartography__threats path { stroke: #fff1d2; stroke-width: .8; }
+.signal-cartography--dead-star .signal-cartography__reach-key { position: static; transform: none; display: flex; justify-content: center; border: 0; background: transparent; padding: .2rem; font-size: .65rem; }
+.signal-cartography--dead-star .signal-cartography__reach-key span { width: 1rem; height: 1rem; }
+.signal-cartography--dead-star .signal-cartography__legend { position: static; transform: none; display: flex; justify-content: center; flex-wrap: wrap; border: 0; box-shadow: none; padding: .3rem; font-size: .68rem; }
+.signal-cartography--dead-star .signal-cartography__frame { display: grid; grid-template-rows: minmax(0, 1fr) auto auto; }
+.signal-cartography--dead-star .signal-cartography__footer { padding: .3rem .8rem; font-size: .6rem; gap: .5rem; }
+.signal-cartography--dead-star .signal-cartography__nodes > g.is-active .signal-cartography__node-plate { fill: #13232c; }
+.signal-cartography--dead-star .signal-cartography__nodes > g.is-route .signal-cartography__node-plate { fill: #302315; }
+@media (max-height: 600px) {
+  .signal-cartography--dead-star .signal-cartography__header { padding-block: .15rem; }
+  .signal-cartography--dead-star .signal-cartography__header h1 { font-size: 1.2rem; }
+  .signal-cartography--dead-star .signal-cartography__header > div > span,
+  .signal-cartography--dead-star .signal-cartography__footer { display: none; }
+}
+
+.signal-cartography--dead-star .signal-cartography__node-name { font-size: 19px; }
+.signal-cartography--dead-star .signal-cartography__header h1 { font-size: clamp(1.4rem, 2.3vw, 2.3rem); }
+.signal-cartography--dead-star .signal-cartography__frame > svg > image { opacity: .65; }
+
+.signal-cartography--dead-star .signal-cartography__node-name { font-size: 18px; }
+
+.signal-cartography--dead-star .is-core .signal-cartography__node-art { opacity: 0; }
+.signal-cartography--dead-star .is-core .signal-cartography__node-plate,
+.signal-cartography--dead-star .is-core .signal-cartography__node-name,
+.signal-cartography--dead-star .is-core .signal-cartography__node-edge { transform: translateY(15px); }

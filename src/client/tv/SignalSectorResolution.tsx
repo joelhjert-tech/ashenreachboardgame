@@ -1,4 +1,6 @@
-import { useEffect, useState, type CSSProperties, type ReactElement } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
+import { sectorResolutionPresentationTimings } from "../shared/motionTokens.js";
+import { useReducedMotion } from "../shared/useReducedMotion.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import {
   getCardArtPath,
@@ -138,7 +140,7 @@ function AuthoritativeDiceCinema({
   return (
     <div
       className="signal-sector-resolution__dice-cinema"
-      key={`${model.id}:${model.revision}:${rawDice.join("-")}`}
+      key={`${model.id}:${rawDice.join("-")}`}
       role="img"
       aria-label={`Authoritative roll ${rawDice.join(" and ")}. ${model.statLabel} total ${totalText(finalTotal)}.`}
       style={style}
@@ -167,22 +169,44 @@ function AuthoritativeDiceCinema({
   );
 }
 
-export function SignalSectorResolution({
-  model,
-  onSettled
-}: {
+interface SignalSectorResolutionProps {
   model: SignalSectorResolutionModel;
   onSettled?: () => void;
-}): ReactElement {
-  const [restored, setRestored] = useState(() => model.restored || wasResolutionSeen(model.id));
+}
+
+export function SignalSectorResolution(props: SignalSectorResolutionProps): ReactElement {
+  return <SignalSectorResolutionSequence key={props.model.id} {...props} />;
+}
+
+function SignalSectorResolutionSequence({
+  model,
+  onSettled
+}: SignalSectorResolutionProps): ReactElement {
+  const [previouslySeen] = useState(() => wasResolutionSeen(model.id));
+  const restored = model.restored || previouslySeen;
+  const reducedMotion = useReducedMotion();
+  const onSettledRef = useRef(onSettled);
+  onSettledRef.current = onSettled;
   const operativeArt = model.operativeImageKey
     ? getCharacterPortraitPathOrNull(model.operativeImageKey)
     : null;
   const oppositionArt = oppositionArtPath(model);
   const resultVisible = model.outcomeLabel !== "RESOLVING";
-  const showDiceCinema = !restored
-    && model.operative.rawDice.length > 0
+  const hasDiceResult = model.operative.rawDice.length > 0
     && model.operative.finalTotal !== null;
+  const showDiceCinema = !restored && !reducedMotion && hasDiceResult;
+  const rollSignature = model.operative.rawDice.join(",");
+  const impactClock = useRef<{ roll: string; startedAt: number; elapsedAtResult: number | null } | null>(null);
+  if (!showDiceCinema) impactClock.current = null;
+  else if (impactClock.current?.roll !== rollSignature) {
+    impactClock.current = { roll: rollSignature, startedAt: Date.now(), elapsedAtResult: null };
+  }
+  if (showDiceCinema && resultVisible && impactClock.current?.elapsedAtResult === null) {
+    impactClock.current.elapsedAtResult = Date.now() - impactClock.current.startedAt;
+  }
+  const impactElapsed = impactClock.current?.elapsedAtResult ?? 0;
+  const showImpact = model.mode === "battle" && resultVisible && showDiceCinema
+    && impactElapsed < sectorResolutionPresentationTimings.completeMs;
   const resolutionRole = model.mode === "battle"
     ? "Battle"
     : model.mode === "tile-challenge"
@@ -198,26 +222,13 @@ export function SignalSectorResolution({
       : null;
 
   useEffect(() => {
-    const alreadySeen = model.restored || wasResolutionSeen(model.id);
-    setRestored(alreadySeen);
-    if (typeof window === "undefined") return undefined;
-    if (model.restored) {
+    if (!hasDiceResult) return undefined;
+    const handle = window.setTimeout(() => {
       window.sessionStorage.setItem(`ashenreach:signal-resolution-seen:${model.id}`, "1");
-      return undefined;
-    }
-    const seenHandle = window.setTimeout(() => {
-      window.sessionStorage.setItem(`ashenreach:signal-resolution-seen:${model.id}`, "1");
-    }, 900);
-    return () => window.clearTimeout(seenHandle);
-  }, [model.id, model.restored]);
-
-  useEffect(() => {
-    if (!showDiceCinema || !onSettled) return undefined;
-    const reducedMotion = typeof window.matchMedia === "function"
-      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const handle = window.setTimeout(onSettled, reducedMotion ? 0 : 3300);
+      onSettledRef.current?.();
+    }, restored || reducedMotion ? 0 : sectorResolutionPresentationTimings.completeMs);
     return () => window.clearTimeout(handle);
-  }, [model.id, onSettled, showDiceCinema]);
+  }, [hasDiceResult, model.id, reducedMotion, restored, rollSignature]);
 
   return (
     <section
@@ -228,7 +239,10 @@ export function SignalSectorResolution({
       data-resolution-stage={model.stage}
       data-resolution-restored={restored ? "true" : "false"}
       data-dice-cinema={showDiceCinema ? "playing" : "settled"}
-      style={getChallengeThemeStyle(model.stat) as CSSProperties}
+      data-combat-impact={showImpact ? model.outcomeLabel.toLowerCase() : "none"}
+      style={{ ...getChallengeThemeStyle(model.stat),
+        "--combat-impact-delay": `${Math.max(0, 2820 - impactElapsed)}ms`,
+        "--combat-advance-delay": `${Math.max(0, 2480 - impactElapsed)}ms` } as CSSProperties}
     >
       <div className="signal-sector-resolution__cinema-veil" aria-hidden="true" />
 
@@ -240,6 +254,12 @@ export function SignalSectorResolution({
       </header>
 
       <section className="signal-sector-resolution__duel" aria-label="Authoritative total comparison">
+        {showImpact ? (
+          <div className="signal-sector-resolution__impact" aria-hidden="true">
+            <i className="signal-sector-resolution__impact-ring" />
+            <i className="signal-sector-resolution__impact-sparks" />
+          </div>
+        ) : null}
         <article className="signal-sector-resolution__portrait signal-sector-resolution__portrait--operative">
           <ArtworkFrame
             src={operativeArt}

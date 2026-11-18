@@ -53,10 +53,11 @@ describe("buildCurrentPlayerPrompt turn flow", () => {
     expect(prompt.tone).toBe("action");
   });
 
-  it("labels broadcast as the End Turn experience window", () => {
+  it("labels broadcast as Experience before the explicit turn handoff", () => {
     const prompt = buildCurrentPlayerPrompt(phonePatch({ phase: "broadcast" }));
 
-    expect(prompt.phaseLabel).toBe("End Turn · Experience");
+    expect(prompt.phaseLabel).toBe("Experience");
+    expect(prompt.requiredAction).toBe("Pass turn");
     expect(prompt.targetTab).toBe("action");
   });
 });

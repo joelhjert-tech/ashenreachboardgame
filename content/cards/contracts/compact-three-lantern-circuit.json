@@ -28,7 +28,7 @@
     ]
   },
   "reward": {
-    "effects": [],
+    "effects": [{ "type": "gain_salvage", "amount": 1 }],
     "completionText": "Compact route writ earned: the three lanterns answer as one."
   }
 }

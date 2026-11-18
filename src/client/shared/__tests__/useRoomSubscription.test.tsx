@@ -57,6 +57,10 @@ class TestWebSocket {
     this.emit("open", {});
   }
 
+  receive(message: unknown): void {
+    this.emit("message", { data: JSON.stringify(message) });
+  }
+
   private emit(type: string, detail: Record<string, unknown>): void {
     const event = Object.assign(new Event(type), detail);
     for (const listener of [...(this.listeners.get(type) ?? [])]) listener(event);
@@ -80,6 +84,24 @@ describe("useRoomSubscription submission recovery", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("caps emoji bursts, removes them after four seconds, and clears them when play starts", () => {
+    vi.useFakeTimers();
+    render(<Harness />);
+    const socket = TestWebSocket.instances[0]!;
+    act(() => socket.open());
+    act(() => {
+      for (let index = 0; index < 30; index++) socket.receive({ type: "LOBBY_REACTION", id: `lobby-${index}`, sessionId: "ROOM", reaction: "fire", displayName: "Nera" });
+    });
+    expect(latestSubscription?.lobbyReactions).toHaveLength(16);
+    act(() => vi.advanceTimersByTime(4250));
+    expect(latestSubscription?.lobbyReactions).toHaveLength(0);
+    act(() => socket.receive({ type: "LOBBY_REACTION", id: "lobby-31", reaction: "heart", sessionId: "ROOM", displayName: "Nera" }));
+    expect(latestSubscription?.lobbyReactions).toHaveLength(1);
+    act(() => socket.receive({ type: "STATE_PATCH", sessionId: "ROOM", phase: "start", sequence: 1, payload: { status: "active" } }));
+    expect(latestSubscription?.lobbyReactions).toHaveLength(0);
   });
 
   it("reports a dropped send, never retries it, and reconnects only when explicitly requested", () => {

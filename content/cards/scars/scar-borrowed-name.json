@@ -4,7 +4,7 @@
   "origin": "A chorus fragment survived by hiding inside the operative's identity.",
   "burdenText": "The first assistance contribution each round is reduced by 1, minimum zero.", "adaptationText": "After that assisted test succeeds, gain +1 on your next unassisted skill test that round.",
   "burden": { "key": "first-assistance-reduction", "timing": "assistance", "limit": "oncePerRound", "optional": false, "tags": ["assistance"] },
-  "adaptation": { "key": "next-unassisted-bonus", "timing": "afterTest", "limit": "oncePerRound", "optional": false, "tags": ["assistance", "test"] },
+  "adaptation": { "key": "next-unassisted-bonus", "timing": "beforeTest", "limit": "oncePerRound", "optional": false, "tags": ["assistance", "test"] },
   "trigger": "The first assistance contribution each round.", "penalty": "Reduce that contribution by 1, minimum zero.",
   "effect": { "type": "gain_note", "text": "Borrowed Name retained an echo of the assisted test." },
   "relief": "Purge this Scar at the Sable Machine Choir.", "upside": "A successful assisted test primes the next unassisted test for +1.",

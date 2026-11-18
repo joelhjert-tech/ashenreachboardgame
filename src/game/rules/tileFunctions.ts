@@ -12,6 +12,27 @@ export type TileRuleStatus = "current" | "pending" | "completed" | "failed" | "o
 export const SERVICE_THREAT_CLEAR_LOCK_REASON =
   "Service locked — clear every Threat successfully during this arrival.";
 
+export function getSectorTextBlockReason(state: GameState, seatId: string, sectorId: string): string | null {
+  const space = getBoardSpace(sectorId);
+  const sector = state.sectors.find((entry) => entry.id === sectorId);
+  if (!space || !sector) return "Unknown sector.";
+  if (space.tier !== "outer" && space.tier !== "middle") return null;
+  if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect || state.pendingTileChallenge
+    || (sector.persistentThreatIds?.length ?? 0) > 0) {
+    return "Clear the current Threats before resolving this sector text.";
+  }
+  const progress = state.tileArrivalThreatProgress;
+  if (progress?.seatId === seatId && progress.sectorId === sectorId) {
+    // Shared threat bags leave the old local deck intact. Only the current
+    // arrival can establish that the printed threats have been cleared.
+    return progress.nextThreatIconIndex >= (progress.threatLanes?.length ?? space.threatIcons.length)
+      ? null
+      : "Finish the Threats during this arrival before resolving sector text.";
+  }
+  // Legacy states without arrival records still use the local deck.
+  return sector.encounterDecks.threat.length > 0 ? "Clear the local threat deck before resolving this sector text" : null;
+}
+
 export function getServiceThreatGate(
   state: GameState,
   seatId: string,
@@ -327,6 +348,7 @@ export function buildTileArrivalProjection(state: GameState, seatId: string): Ti
     if (rule.kind === "service") {
       status = getServiceThreatGate(state, seatId, space.id).allowed ? "optional" : "locked";
     }
+    else if (rule.kind === "board-action" && getSectorTextBlockReason(state, seatId, space.id)) status = "locked";
     else if (!rule.mandatory) status = "optional";
     else if (rule.kind === "tile-challenge" && rule.sourceId && completedChallenges.has(rule.sourceId)) status = "completed";
     else if (rule.kind === "tile-challenge" && state.pendingTileChallenge?.challengeId === rule.sourceId) {

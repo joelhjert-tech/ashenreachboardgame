@@ -166,8 +166,10 @@ describe("Heat Retirement H1 removal-only Threats", () => {
     );
   });
 
-  it.each(TARGETS)("$id success applies only the standard Hazard clear reward", (target) => {
+  it.each(TARGETS)("$id success applies only its category-appropriate clear reward", (target) => {
     const card = requireTarget(target.id);
+    const reward = target.id === "webglass-snarefield" ? 3 : 0;
+    const outcome = reward ? { title: "Outcome applied", text: "Success: gain 3 Salvage.", effects: ["Success: gain 3 Salvage."] } : { title: "Check passed", text: "Success: no additional effect.", effects: [] };
     const server = resolveCheck(card, false);
     const state = server.getState();
     const check = [...state.eventLog].reverse().find(
@@ -178,21 +180,17 @@ describe("Heat Retirement H1 removal-only Threats", () => {
 
     expect(check).toMatchObject({
       success: true,
-      effect: { type: "gain_salvage", amount: 1 }
+      effect: reward ? { type: "gain_salvage", amount: 3 } : null
     });
     expect(state.phase).toBe("resolution");
     expect(state.pendingEffect).toBeNull();
     expect(state.pendingFailureReaction).toBeNull();
-    expect(state.activeResolution?.outcome).toEqual({
-      title: "Outcome applied",
-      text: "Resolution: gain 1 Salvage.",
-      effects: ["Resolution: gain 1 Salvage."]
-    });
-    expect(state.players[0]!.character).toMatchObject({ wounds: 0, salvage: 5, scars: [] });
+    expect(state.activeResolution?.outcome).toEqual(outcome);
+    expect(state.players[0]!.character).toMatchObject({ wounds: 0, salvage: 4 + reward, scars: [] });
     expect(state.pendingNextNonBattleTestModifiers).toEqual([]);
     expect(state.pendingNextNormalMovementRollModifiers).toEqual([]);
     expect(state.escalationLevel).toBe(0);
-    expect(countEvents(state, "RESOLUTION_APPLIED")).toBe(1);
+    expect(countEvents(state, "RESOLUTION_APPLIED")).toBe(reward ? 1 : 0);
     expect(gameStateSchema.safeParse(state).success).toBe(true);
 
     const phone = createPhoneProjection(state, "seat-1", true) as ResolutionProjection;
@@ -203,16 +201,17 @@ describe("Heat Retirement H1 removal-only Threats", () => {
       tvOutcome: tv.activeResolution?.outcome,
       tvDeltas: tv.publicResultDeltas
     })).not.toMatch(/\bHeat\b|\bRisk\b|gain_heat|lose_heat/i);
-    expect(phone.activeResolution?.outcome?.text).toBe("Resolution: gain 1 Salvage.");
-    expect(phone.activeResolution?.outcome?.effects).toEqual(["Resolution: gain 1 Salvage."]);
-    expect(tv.activeResolution?.outcome?.text).toBe("Resolution: gain 1 Salvage.");
-    expect(tv.activeResolution?.outcome?.effects).toEqual(["Resolution: gain 1 Salvage."]);
+    expect(phone.activeResolution?.outcome?.text).toBe(outcome.text);
+    expect(phone.activeResolution?.outcome?.effects).toEqual(outcome.effects);
+    expect(tv.activeResolution?.outcome?.text).toBe(outcome.text);
+    expect(tv.activeResolution?.outcome?.effects).toEqual(outcome.effects);
     expect(() => server.resolveCheckIntent({ type: "CHECK_REQUESTED", seatId: "seat-1", stat: card.stat })).toThrow(
       /Cannot resolve a check during phase resolution/
     );
   });
 
   it.each(TARGETS)("$id clear reward survives reconnect without duplicating", (target) => {
+    const reward = target.id === "webglass-snarefield" ? 3 : 0;
     const resolved = resolveCheck(requireTarget(target.id), false).getState();
     const restored = new GameRoomServer(structuredClone(resolved), [], createSequenceRandomSource([5, 5]));
     expect(restored.getState().pendingEffect).toBeNull();
@@ -220,8 +219,8 @@ describe("Heat Retirement H1 removal-only Threats", () => {
     (restored as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
     const state = restored.getState();
     expect(countEvents(state, "CHECK_ROLLED")).toBe(1);
-    expect(countEvents(state, "RESOLUTION_APPLIED")).toBe(1);
-    expect(state.players[0]!.character).toMatchObject({ wounds: 0, salvage: 5, scars: [] });
+    expect(countEvents(state, "RESOLUTION_APPLIED")).toBe(reward ? 1 : 0);
+    expect(state.players[0]!.character).toMatchObject({ wounds: 0, salvage: 4 + reward, scars: [] });
     expect(state.pendingNextNonBattleTestModifiers).toEqual([]);
     expect(state.pendingNextNormalMovementRollModifiers).toEqual([]);
     expect(state.escalationLevel).toBe(0);

@@ -76,6 +76,22 @@ describe("PhoneTurnFlow", () => {
     expect(presentation.commandTab).toBe("action");
   });
 
+  it("keeps a hazard on Challenge even when its resolution carries shared battle math", () => {
+    const resolution = { id: "hazard-roll", playerId: "seat-1", source: "threat" as const, stage: "battle_setup" as const,
+      card: { id: "hazard-1", title: "Grave-Silt Press", type: "hazard" },
+      battle: { stat: "command" as const, difficulty: 5, modifiers: [] } };
+    expect(buildPhoneTurnFlow(patch({ activeResolution: resolution }))).toMatchObject({
+      currentStep: "arrival", contextLabel: "Challenge", commandTab: "action"
+    });
+  });
+
+  it("keeps the movement result current until acknowledged even with an arrival encounter queued", () => {
+    expect(buildPhoneTurnFlow(patch({
+      activeResolution: { id: "movement", playerId: "seat-1", source: "movement", stage: "roll_result" },
+      encounter: { id: "enemy", title: "Waiting enemy", cardType: "enemy", flavor: "", difficulty: 5, stat: "grit" }
+    }))).toMatchObject({ currentStep: "move", commandTab: "move" });
+  });
+
   it("keeps Shop inside the Action step", () => {
     const presentation = buildPhoneTurnFlow(patch({ shopEncounter: {} as PhonePatchPayload["shopEncounter"] }));
 

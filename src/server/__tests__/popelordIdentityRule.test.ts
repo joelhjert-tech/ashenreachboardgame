@@ -16,17 +16,17 @@ function clientFor(seatId: string, sent: Array<Record<string, unknown>>): Connec
   };
 }
 
-describe("Popelord display-name rule", () => {
-  it("forces a kebab-named player to select Popelord during setup", () => {
+describe("Poopydiperlord display-name rule", () => {
+  it("forces a kebab-named player to select Poopydiperlord during setup", () => {
     const server = new GameRoomServer(createInitialSessionState("popelord-setup", "multiplayer"));
     const joined = server.joinSeat("KeBaB");
 
-    expect(() => server.selectSeatCharacter(joined.seatId, "char_deepdale")).toThrow(/Popelord is required/i);
+    expect(() => server.selectSeatCharacter(joined.seatId, "char_deepdale")).toThrow(/Poopydiperlord is required/i);
     expect(() => server.selectSeatCharacter(joined.seatId, "char_popelord")).not.toThrow();
     expect(server.getState().seats.find((seat) => seat.seatId === joined.seatId)?.characterId).toBe("char_popelord");
   });
 
-  it("enforces Popelord again when Wounds require a replacement", () => {
+  it("enforces Poopydiperlord again when Wounds require a replacement", () => {
     const server = new GameRoomServer(createInitialSessionState("popelord-replacement", "multiplayer"));
     const joined = server.joinSeat("Kebab");
     server.selectSeatCharacter(joined.seatId, "char_popelord");
@@ -45,7 +45,7 @@ describe("Popelord display-name rule", () => {
       replacementCharacterId: "char_deepdale"
     });
 
-    expect(sent.find((message) => message.type === "INTENT_REJECTED")?.reason).toMatch(/Popelord is required/i);
+    expect(sent.find((message) => message.type === "INTENT_REJECTED")?.reason).toMatch(/Poopydiperlord is required/i);
     expect(player.character.id).toBe("char_popelord");
   });
 

@@ -3,7 +3,9 @@ import { createSequenceRandomSource } from "../../game/engine/dice.js";
 import type { ClientIntent } from "../../game/engine/actions.js";
 import type { GameState } from "../../game/schema/session.schema.js";
 import type { EncounterEffect } from "../../game/schema/card.schema.js";
-import { GameRoomServer } from "../roomServer.js";
+import { createPhoneProjection, GameRoomServer } from "../roomServer.js";
+import { chooseAiRivalIntent } from "../aiRival.js";
+import type { PhonePatchPayload } from "../../client/shared/types.js";
 import { createInitialSessionState } from "../sessionState.js";
 
 function createScenarioState(overrides: Partial<GameState> = {}): GameState {
@@ -116,6 +118,47 @@ function createSoloAmbientState(overrides: Partial<GameState> = {}): GameState {
 }
 
 describe("scenario confrontation flow", () => {
+  it("lets a bot initiate the Ash Regent fight, shows its real checks, and caps the finishing damage", () => {
+    const state = createScenarioState({ activeScenarioId: "scenario_throne_of_ash", interactionMode: "ruthless" });
+    state.scenarioProgress = { throneClaims: 5 };
+    state.players[0]!.character.stats.signal = 15;
+    state.players[0]!.character.stats.guile = 15;
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]));
+    const phone = createPhoneProjection(server.getState(), "seat-1") as unknown as PhonePatchPayload;
+    expect(phone.scenarioState?.confrontation).toMatchObject({ locked: false, active: false });
+    expect(phone.activeScenario?.confrontationSteps.slice(0, 2)).toEqual([
+      "Outlast The Ash Regent with Signal 11.", "Outwit The Ash Regent with Guile 11."
+    ]);
+    const decision = chooseAiRivalIntent(phone, "seat-1");
+    expect(decision?.intent.type).toBe("SCENARIO_CONFRONTATION_REQUESTED");
+    server.handleIntent(createPhoneClient("seat-1") as never, decision!.intent);
+    expect(server.getState().scenarioProgress.throneClaims).toBe(6);
+    expect(server.getState().scenarioResult).toMatchObject({ status: "victory", shared: false, winningSeatId: "seat-1" });
+  });
+
+  it("rejects a locked gate without recording a start or consuming a turn", () => {
+    const server = new GameRoomServer(createScenarioState({ activeScenarioId: "scenario_throne_of_ash", scenarioProgress: {} }));
+    const before = server.getState();
+    const client = createPhoneClient("seat-1");
+    const phone = createPhoneProjection(before, "seat-1") as unknown as PhonePatchPayload;
+    expect(phone.scenarioState?.confrontation.locked).toBe(true);
+    expect(chooseAiRivalIntent(phone, "seat-1")?.intent.type).not.toBe("SCENARIO_CONFRONTATION_REQUESTED");
+    server.handleIntent(client as never, { type: "SCENARIO_CONFRONTATION_REQUESTED", seatId: "seat-1" });
+    expect(String(client.socket.send.mock.calls[0]?.[0])).toContain("Final gate locked");
+    expect(server.getState()).toBe(before);
+  });
+
+  it("reseals the prison on two passes at the collapse limit", () => {
+    const state = createScenarioState({ escalationLevel: 5 });
+    state.players[0]!.character.stats = { command: 0, grit: 20, signal: 20, guile: 0, forge: 0 };
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]));
+    server.handleIntent(createPhoneClient("seat-1") as never, { type: "SCENARIO_CONFRONTATION_REQUESTED", seatId: "seat-1" });
+    expect(server.getState().scenarioConfrontation.progress.restorationMarks).toBe(2);
+    expect(server.getState().scenarioResult.status).toBe("victory");
+    expect(server.getState().escalationLevel).toBe(5);
+    expect(server.getState().pendingScarChoice).toBeNull();
+  });
+
   it("advances scenario progress below threshold without ending the game", () => {
     const roomServer = new GameRoomServer(
       createScenarioState(),
@@ -133,6 +176,7 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().winnerSeatId).toBeNull();
     expect(roomServer.getState().scenarioConfrontation.progress.restorationMarks).toBe(1);
     expect(roomServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.wounds).toBe(2);
+    expect(roomServer.getState().pendingScarChoice).toMatchObject({ ownerSeatId: "seat-1", source: "mind" });
     expect(roomServer.getState().activeResolution).toMatchObject({
       source: "scenario",
       stage: "outcome_summary"
@@ -662,7 +706,12 @@ describe("scenario confrontation flow", () => {
 
   it("reveals a local threat on the Broken Seal turn after opening movement", () => {
     const state = createInitialSessionState("session-alpha", "single-player");
-    const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([2, 0]));
+    // Provision offers and deck shuffles also use the server RNG. Keep the
+    // ambient roll deterministic independently of how many setup draws occur.
+    let ambientTurn = false;
+    const roomServer = new GameRoomServer(state, [], {
+      nextInt: (maxExclusive) => ambientTurn && maxExclusive === 6 ? 2 : 0
+    });
 
     roomServer.joinSeat("Solo", "signal-witch");
     selectFirstStartingContract(roomServer, "seat-1");
@@ -672,11 +721,13 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().phase).toBe("navigation");
     expect(roomServer.getState().currentEncounter).toBeNull();
     roomServer.getState().phase = "broadcast";
+    ambientTurn = true;
     endBroadcastTurn(roomServer);
 
     expect(roomServer.getState().phase).toBe("action");
     expect(roomServer.getState().currentEncounter).not.toBeNull();
     expect(roomServer.getState().lastOutcomeSummary?.summary).toContain("rouses a local threat");
+    expect(roomServer.getState().currentEncounter?.threatLane).toBe("blue");
   });
 
   it("eases single-player movement checks before heat is assigned", () => {

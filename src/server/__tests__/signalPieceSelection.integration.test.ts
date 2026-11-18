@@ -34,14 +34,17 @@ describe("Signal Theatre piece selection", () => {
     expect(restored.getState().seats.find((entry) => entry.seatId === joined.seatId)?.signalPieceId).toBe("lantern");
   });
 
-  it("keeps every occupied player's silhouette distinct", () => {
+  it("allows multiple players to choose the same icon", () => {
     const server = new GameRoomServer(createInitialSessionState("signal-piece-exclusive", "multiplayer"));
     const first = server.joinSeat("Nera");
     const second = server.joinSeat("Oran");
     server.selectSeatCharacter(first.seatId, "char_deepdale", { signalPieceId: "reliquary" });
 
-    expect(() =>
-      server.selectSeatCharacter(second.seatId, "char_bjornis", { signalPieceId: "reliquary" })
-    ).toThrow(/already taken/i);
+    server.selectSeatCharacter(second.seatId, "char_bjornis", { signalPieceId: "reliquary" });
+    const seats = server.getState().seats.filter((seat) => seat.seatId === first.seatId || seat.seatId === second.seatId);
+    expect(seats.map((seat) => seat.signalPieceId)).toEqual(["reliquary", "reliquary"]);
+    expect(seats.map((seat) => seat.characterId)).toEqual(["char_deepdale", "char_bjornis"]);
+    const projection = createTvProjection(server.getState()) as unknown as PublicPatchPayload;
+    expect(projection.seats.filter((seat) => seat.displayName && seat.signalPieceId === "reliquary")).toHaveLength(2);
   });
 });

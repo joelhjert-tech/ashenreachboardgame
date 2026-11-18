@@ -32,7 +32,7 @@ describe("player display-name boundary", () => {
     );
   });
 
-  it("binds only an exact normalized Kebab name to Popelord", () => {
+  it("binds only an exact normalized Kebab name to Poopydiperlord", () => {
     expect(FORCED_POPELORD_CHARACTER_ID).toBe("char_popelord");
     expect(requiresPopelordForDisplayName("Kebab")).toBe(true);
     expect(requiresPopelordForDisplayName(" KEBAB ")).toBe(true);

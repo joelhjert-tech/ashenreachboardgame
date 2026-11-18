@@ -132,6 +132,7 @@ export interface MovementRollRequestedAction extends BaseAction {
 }
 export interface AdjustMovementRequestedAction extends BaseAction { type: "ADJUST_MOVEMENT_REQUESTED"; instanceId: string; adjustment: -1 | 1 }
 export interface SelectRouteStarVariantAction extends BaseAction { type: "SELECT_ROUTE_STAR_VARIANT"; instanceId: string; destinationId: string; routeId: string; movementRevision: number }
+export interface AbandonRouteStarChoiceAction extends BaseAction { type: "ABANDON_ROUTE_STAR_CHOICE"; destinationId: string; routeId: string; movementRevision: number; toSectorId: string | null }
 export interface ClearRouteStarChoiceAction extends BaseAction { type: "CLEAR_ROUTE_STAR_CHOICE" }
 export interface ActivateGateSaintAction extends BaseAction { type: "ACTIVATE_GATE_SAINT"; instanceId: string }
 export interface UseMarrowDetourAction extends BaseAction { type: "USE_MARROW_DETOUR"; instanceId: string; reactionId: string; toSectorId: string }
@@ -242,6 +243,8 @@ export interface DiceRollStartedAction extends BaseAction {
 
 export interface CheckRolledAction extends BaseAction {
   type: "CHECK_ROLLED";
+  /** Costs already incurred by Affliction rerolls, independent of the final outcome. */
+  afflictionReactionCost?: EncounterEffect;
   stat: CheckStat;
   difficulty: number;
   roll: DiceRollResult;
@@ -270,6 +273,10 @@ export interface SoloRerollResolvedAction extends BaseAction {
 
 export interface CombatResolvedAction extends BaseAction {
   type: "COMBAT_RESOLVED";
+  /** Costs already incurred by Affliction rerolls, independent of the final outcome. */
+  afflictionReactionCost?: EncounterEffect;
+  /** Server-only correction of an unresolved loss after a Scar reaction. */
+  correctedResolutionId?: string;
   stat: CheckStat;
   difficulty: number;
   roll: DiceRollResult;
@@ -919,6 +926,7 @@ export type GameAction =
   | AdjustMovementRequestedAction
   | SelectRouteStarVariantAction
   | ClearRouteStarChoiceAction
+  | AbandonRouteStarChoiceAction
   | ActivateGateSaintAction
   | UseMarrowDetourAction
   | MovementRolledAction
@@ -1050,6 +1058,15 @@ export type LegacyCompatibleGameAction =
 
 export type ClientIntent =
   | {
+      type: "ADD_AI_RIVAL_REQUESTED";
+      seatId: string;
+    }
+  | {
+      type: "REMOVE_AI_RIVAL_REQUESTED";
+      seatId: string;
+      targetSeatId: string;
+    }
+  | {
       type: "HOST_SETUP_PREVIEW_REQUESTED";
       seatId: string;
       scenarioId: string;
@@ -1107,6 +1124,7 @@ export type ClientIntent =
     }
   | { type: "ADJUST_MOVEMENT_REQUESTED"; seatId: string; instanceId: string; adjustment: -1 | 1 }
   | { type: "SELECT_ROUTE_STAR_VARIANT"; seatId: string; instanceId: string; destinationId: string; routeId: string; movementRevision: number }
+  | { type: "ABANDON_ROUTE_STAR_CHOICE"; seatId: string; destinationId: string; routeId: string; movementRevision: number; toSectorId: string | null }
   | { type: "ACTIVATE_GATE_SAINT"; seatId: string; instanceId: string }
   | { type: "USE_MARROW_DETOUR"; seatId: string; instanceId: string; reactionId: string; toSectorId: string }
   | {

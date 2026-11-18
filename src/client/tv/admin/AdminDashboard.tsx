@@ -6,10 +6,8 @@ import { GaugeIcon } from "@phosphor-icons/react/dist/csr/Gauge";
 import { MapTrifoldIcon } from "@phosphor-icons/react/dist/csr/MapTrifold";
 import { ShieldWarningIcon } from "@phosphor-icons/react/dist/csr/ShieldWarning";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
-import { useEffect, useMemo, useState, type ReactElement } from "react";
-import AdminLibrary, { buildAdminCodexContext } from "./AdminLibrary.js";
-import AdminLoreBible from "./AdminLoreBible.js";
-import AdminMapInspector from "./AdminMapInspector.js";
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactElement } from "react";
+import { buildAdminCodexContext, isCardSimulatable } from "./adminCardHelpers.js";
 import {
   fetchAdminContentStatus,
   fetchAdminReports,
@@ -18,7 +16,10 @@ import {
 } from "./adminContentApi.js";
 import { adminLibraryCards, type AdminLibraryCard } from "./adminLibraryRegistry.js";
 import { adminMapAudit } from "./adminMapRegistry.js";
-import { isCardSimulatable } from "./AdminSimulationLab.js";
+
+const AdminLibrary = lazy(() => import("./AdminLibrary.js"));
+const AdminLoreBible = lazy(() => import("./AdminLoreBible.js"));
+const AdminMapInspector = lazy(() => import("./AdminMapInspector.js"));
 
 export type AdminDashboardTab = "overview" | "lore" | "library" | "map" | "test" | "reports";
 
@@ -383,12 +384,14 @@ export default function AdminDashboard({
           <p>{error ?? "The room continues synchronizing behind this isolated development surface."}</p>
         </header>
         <div className="admin-dashboard__stage">
+          <Suspense fallback={<p role="status">Loading {tabDefinitions.find((entry) => entry.id === tab)?.label}...</p>}>
           {tab === "overview" ? <Overview capabilities={capabilities} reports={reports} selectedCard={selectedCard} phoneManifest={phoneManifest} onOpen={setTab} /> : null}
           {tab === "lore" ? <AdminLoreBible onOpenLibraryCard={openLibraryCard} onOpenMapTile={(tileId) => { setSelectedTileId(tileId); setTab("map"); }} /> : null}
           {tab === "library" ? <AdminLibrary embedded roomCode={roomCode} hostToken={hostToken} capabilities={capabilities} initialCardId={selectedCardId} onSelectedCardChange={setSelectedCard} onOpenMapTile={(tileId) => { setSelectedTileId(tileId); setTab("map"); }} onClose={() => setTab("overview")} /> : null}
           {tab === "map" ? <AdminMapInspector embedded initialTileId={selectedTileId} onOpenLibraryCard={openLibraryCard} onClose={() => setTab("overview")} /> : null}
           {tab === "test" ? <TestLab capabilities={capabilities} onSelectCard={openLibraryCard} /> : null}
           {tab === "reports" ? <ReportsAndCodex reports={reports} selectedCard={selectedCard} /> : null}
+          </Suspense>
         </div>
       </section>
     </main>

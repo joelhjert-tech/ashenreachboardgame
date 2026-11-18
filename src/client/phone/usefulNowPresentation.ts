@@ -197,8 +197,8 @@ export function buildUsefulNowViewModel(patch: PhonePatchPayload): UsefulNowView
   if (activeContract && self.character.activeContract) {
     questItems.push({
       label: activeContract.name,
-      detail: `${formatContractObjectiveStatus(activeContract, self.character.activeContract.progress)}. ${describeContractObjective(activeContract)}`,
-      tone: isContractObjectiveComplete(activeContract, self.character.activeContract.progress) ? "ready" : "passive"
+      detail: `${formatContractObjectiveStatus(activeContract, self.character.activeContract)}. ${describeContractObjective(activeContract)}`,
+      tone: isContractObjectiveComplete(activeContract, self.character.activeContract) ? "ready" : "passive"
     });
   }
 

@@ -76,11 +76,11 @@ export function evaluateScarRule(key: ScarRuleKey, context: ScarRuleContext): Sc
     case "guile-anomaly-reroll": return context.stat === "guile" && context.encounterKind === "anomaly" ? { summary: "Webglass Afterimage permits one Guile reroll" } : null;
     case "guile-reroll": return context.stat === "guile" ? { summary: "Hollow Reflection permits one Guile reroll" } : null;
     case "ignore-blue-event": return (context.sectorTags ?? []).includes("blue") ? { blocksEffect: true, summary: "Static Burn ignored one owner-only Blue Event" } : null;
-    case "declined-help-command-bonus": return context.stat === "command" && context.helperCount === 0 ? positive("Bell-Deafened declined-help Command +1") : null;
+    case "declined-help-command-bonus": return context.stat === "command" && context.helperCount === 0 ? positive("Bell-Deafened unassisted Command +1") : null;
     case "relay-blue-peek": return (context.sectorTags ?? []).some((tag) => tag === "relay" || tag === "shrine") ? { summary: "Relay Ghost may inspect the next Blue Threat" } : null;
     case "choose-displacement-direction": return { summary: "Split Horizon permits a legal displacement direction choice" };
     case "inspect-hidden-consequence": return { summary: "The Voice Below permits one hidden consequence inspection" };
-    case "next-unassisted-bonus": return context.mode !== "assistance" ? positive("Borrowed Name next unassisted test +1") : null;
+    case "next-unassisted-bonus": return context.helperCount === 0 && (context.mode === "battle" || context.mode === "check") ? positive("Borrowed Name next unassisted test +1") : null;
   }
   return null;
 }
@@ -104,6 +104,21 @@ export function evaluateOwnedScarRules(
     const scar = getScarCard(scarId);
     if (!scar) continue;
     const rule = scar[kind];
+    // Tests and rolls share the same preparation window; all other timings
+    // belong to their own event and must not spend a Scar's limited use.
+    const timing = (value: string) => value === "beforeTest" ? "beforeRoll" : value;
+    if (timing(rule.timing) !== timing(context.timing)) continue;
+    if (rule.key === "next-unassisted-bonus") {
+      const burden = (state.scarUsage ?? []).find((entry) => entry.seatId === player.seatId
+        && entry.scarId === scarId && entry.ruleKey === "first-assistance-reduction"
+        && entry.scopeId === scopeId(state, "oncePerRound", context));
+      const primed = burden && state.eventLog.some((entry) => {
+        const event = entry as { type?: string; requestId?: string; success?: boolean; contributions?: Array<{ seatId: string }> };
+        return event.type === "COOPERATIVE_ASSISTED_ROLL_RESOLVED" && event.requestId === burden.sourceEventId
+          && event.success === true && event.contributions?.some((helper) => helper.seatId === player.seatId);
+      });
+      if (!primed) continue;
+    }
     const outcome = evaluateScarRule(rule.key, context);
     if (!outcome) continue;
     const id = scopeId(state, rule.limit, context);

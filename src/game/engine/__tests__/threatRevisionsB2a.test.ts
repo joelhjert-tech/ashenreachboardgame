@@ -109,6 +109,9 @@ describe("Phase B2A threat revision content", () => {
   it("pins the implemented Glass-Chime and Spindle definitions", () => {
     for (const [id, expectedHash] of untouchedHeatLinkedHashes) {
       const authoredCard = JSON.parse(readFileSync(join(process.cwd(), "content", "cards", "threats", `${id}.json`), "utf8"));
+      // Reward balancing added a clear reward; preserve the original effect fingerprint.
+      expect(authoredCard.clearReward).toEqual({ type: "gain_salvage", amount: 1 });
+      delete authoredCard.clearReward;
       expect(createHash("sha256").update(JSON.stringify(authoredCard)).digest("hex"), id).toBe(expectedHash);
     }
   });

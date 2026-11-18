@@ -1,0 +1,16 @@
+.lobby-reactions { padding: 14px; border: 1px solid #9f80414d; border-radius: 16px; background: #111a20e8; color: #f5ead7; }
+.lobby-reactions strong, .lobby-reactions small { display: block; }
+.lobby-reactions strong { font-size: 15px; }
+.lobby-reactions small { margin-top: 4px; font-size: 12px; color: #bec4c6; }
+.lobby-reactions__buttons { display: flex; gap: 8px; margin-top: 12px; }
+.lobby-reactions__buttons button { flex: 1; min-width: 0; min-height: 48px; border: 1px solid #ae914c66; border-radius: 12px; background: #273034; font-size: 27px; cursor: pointer; touch-action: manipulation; }
+.lobby-reactions__buttons button:active { transform: scale(.9); background: #554b32; }
+.lobby-reactions__buttons button:focus-visible { outline: 3px solid #eccc81; outline-offset: 3px; }
+.lobby-reactions__buttons button:disabled { opacity: .4; cursor: default; }
+.lobby-reaction-bursts { position: fixed; inset: 0; z-index: 60; overflow: hidden; pointer-events: none; }
+.lobby-reaction-burst { position: absolute; bottom: 12%; display: grid; justify-items: center; gap: 8px; animation: lobby-reaction-float 4s ease-out forwards; }
+.lobby-reaction-burst > span { font-size: clamp(44px, 6vw, 88px); filter: drop-shadow(0 6px 12px #0009); }
+.lobby-reaction-burst small { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 5px 12px; border-radius: 30px; background: #0a101bea; color: #fff; font: 600 15px system-ui; }
+@keyframes lobby-reaction-float { 0% { opacity: 0; transform: translateY(0) scale(.6); } 10%,65% { opacity: 1; } 20% { transform: translateY(-8vh) scale(1.1); } 100% { opacity: 0; transform: translateY(-55vh) scale(.9); } }
+@media (prefers-reduced-motion: reduce) { .lobby-reaction-burst { animation: lobby-reaction-fade 4s linear forwards; bottom: 30%; } .lobby-reactions__buttons button:active { transform: none; } }
+@keyframes lobby-reaction-fade { 0%,80% { opacity: 1; } 100% { opacity: 0; } }

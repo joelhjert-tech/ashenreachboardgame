@@ -65,6 +65,7 @@ export interface CharacterPresentation {
 
 export interface PublicSeat {
   seatId: string;
+  controllerType?: "human" | "ai";
   characterId: string;
   characterSelected?: boolean;
   signalPieceId?: import("../../shared/signalPieceCatalog.js").SignalPieceId;
@@ -103,6 +104,8 @@ export interface SetupProjection {
   startReason: string;
   startBlockers: string[];
   connectedCount: number;
+  automatedCount?: number;
+  controlledCount?: number;
   readyCount: number;
   seatCapacity: number;
   revision: number;
@@ -562,6 +565,8 @@ export interface SectorNode {
 }
 
 export interface EncounterCard {
+  successSummary?: string;
+  failureSummary?: string;
   id: string;
   title: string;
   cardType: "hazard" | "enemy";
@@ -768,6 +773,10 @@ export interface BattlePresentation {
     stat: Stat;
     label: string;
     opposed: boolean;
+    /** Server-authored value before dice are added. */
+    fixedValue?: number;
+    /** Server-authored dice total required for a fixed-difficulty test; null for opposed rolls. */
+    requiredDiceTotal?: number | null;
   };
   operative: BattleSidePresentation;
   opponent: BattleSidePresentation;
@@ -935,6 +944,19 @@ export interface PublicShopEncounterState {
     stock?: number;
     affordable: boolean;
     disabledReason?: string;
+    /** Owner-private, server-authored comparison. Omitted from the TV and other seats. */
+    ownerDecisionSupport?: {
+      salvageAfterPurchase?: number;
+      slot?: GearSlot;
+      currentItemName?: string | null;
+      currentItemStat?: Stat | null;
+      currentItemBonus?: number | null;
+      offeredStat?: Stat;
+      currentStatValue?: number;
+      projectedStatValue?: number;
+      netStatChange?: number;
+      timingSummary?: string;
+    };
   }>;
   sellInventory?: Array<{
     gearId: string;
@@ -967,6 +989,9 @@ export interface PublicShopEncounterState {
 export type PublicMoveStrategicTag = "safe" | "shop" | "locked" | "danger" | "reward" | "nemesis" | "gate";
 
 export interface PublicMoveDestination {
+  approach?: { stat: "guile"; difficulty: number; failurePrevented: boolean };
+  opportunityLabel?: string;
+  challenges?: Array<{ id: string; challengeType: string; tags: string[] }>;
   markerLabel?: string;
   routeId?: string;
   defaultRouteId?: string;
@@ -1324,6 +1349,7 @@ export interface ScenarioOwnershipState {
     stage: string | null;
     locationSectorId: string;
     locked: boolean | null;
+    blockedReason?: string | null;
   };
   result: {
     status: "unresolved" | "victory" | "loss";
@@ -1588,6 +1614,12 @@ export interface PublicPatchPayload {
   sectorExplorationSummary?: PublicSectorExplorationSummary | null;
   tileArrival?: PublicTileArrivalState | null;
   requiredAction?: RequiredActionProjection | null;
+  aiControllerStatus?: {
+    seatId: string;
+    displayName: string;
+    state: "thinking" | "waiting-presentation" | "paused";
+    publicLabel: string;
+  } | null;
   recentAbilityTriggers: AbilityTriggerSummary[];
   nemesis: ActiveNemesisSummary | null;
   hostView?: PublicHostViewState;
@@ -1695,6 +1727,13 @@ export interface RequiredActionProjection {
 export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
+  rivalryInteraction?: {
+    actorCanPressure: boolean;
+    targets: Array<{
+      seatId: string;
+      canPressure: boolean;
+    }>;
+  } | null;
   tierTransitions?: {
     revision: number;
     options: PhoneTierTransitionOption[];
@@ -1950,12 +1989,22 @@ export interface DebugEvent {
 }
 
 export type ServerEnvelope =
+  | import("../../shared/lobbyReactions.js").LobbyReactionEvent
   | StatePatch<PublicPatchPayload | PhonePatchPayload>
   | IntentRejectedEnvelope
   | RejoinAcceptedEnvelope
   | RejoinRejectedEnvelope;
 
 export type ClientIntent =
+  | {
+      type: "ADD_AI_RIVAL_REQUESTED";
+      seatId: string;
+    }
+  | {
+      type: "REMOVE_AI_RIVAL_REQUESTED";
+      seatId: string;
+      targetSeatId: string;
+    }
   | {
       type: "HOST_SETUP_PREVIEW_REQUESTED";
       seatId: string;
@@ -2009,6 +2058,7 @@ export type ClientIntent =
       movementRevision: number;
     }
   | { type: "SELECT_ROUTE_STAR_VARIANT"; seatId: string; instanceId: string; destinationId: string; routeId: string; movementRevision: number }
+  | { type: "ABANDON_ROUTE_STAR_CHOICE"; seatId: string; destinationId: string; routeId: string; movementRevision: number; toSectorId: string | null }
   | {
       type: "MOVEMENT_ROLL_REQUESTED";
       seatId: string;

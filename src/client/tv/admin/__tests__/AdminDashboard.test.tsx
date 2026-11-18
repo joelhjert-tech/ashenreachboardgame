@@ -60,7 +60,7 @@ describe("Host Admin Dashboard", () => {
     expect(screen.queryByText("host:ROOM9:secret")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /lore bible/i }));
-    expect(screen.getByRole("heading", { name: /ashen reach lore bible/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /ashen reach lore bible/i })).toBeInTheDocument();
     expect(screen.getByText(/authored canon only/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /reports & codex/i }));

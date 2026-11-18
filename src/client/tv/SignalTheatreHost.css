@@ -238,18 +238,18 @@
 
 .signal-theatre__scenario dt {
   overflow: hidden;
-  color: #a8a39b;
-  font-size: clamp(0.48rem, 0.6vw, 0.7rem);
+  color: #c5bfb5;
+  font-size: clamp(0.7rem, 0.8vw, 0.95rem);
   font-weight: 800;
   letter-spacing: 0.09em;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .signal-theatre__scenario dd {
   margin: 0;
   color: var(--signal-bone);
-  font-size: clamp(0.78rem, 1vw, 1.2rem);
+  font-size: clamp(1rem, 1.25vw, 1.5rem);
   font-weight: 900;
 }
 
@@ -630,6 +630,41 @@
   white-space: nowrap;
 }
 
+.signal-theatre__lobby-roster-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.26rem;
+}
+
+.signal-theatre__lobby-roster-list > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+  padding: 0.12rem 0.28rem;
+  border: 1px solid rgba(183, 177, 166, 0.2);
+  color: #b7b1a6;
+  background: rgba(5, 5, 12, 0.72);
+  font-size: clamp(0.48rem, 0.6vw, 0.7rem);
+  text-transform: none;
+}
+
+.signal-theatre__lobby-roster-list > span.is-ai {
+  border-color: rgba(230, 178, 100, 0.54);
+  color: #f2d39b;
+}
+
+.signal-theatre__lobby-roster-list b {
+  font-weight: 760;
+}
+
+.signal-theatre__lobby-roster-list em {
+  color: #f2d39b;
+  font-size: 0.82em;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 1500px), (max-height: 820px) {
   .signal-theatre__command {
     left: 24vw;
@@ -870,7 +905,7 @@
 .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command p {
   max-width: 62ch;
   margin-top: .38rem;
-  font-size: clamp(.58rem, .7vw, .8rem);
+  font-size: clamp(.9rem, 1vw, 1.2rem);
 }
 
 .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command small {
@@ -1311,7 +1346,7 @@
   .signal-theatre:not(.signal-theatre--lobby) .signal-theatre__command p {
     display: -webkit-box;
     overflow: hidden;
-    font-size: clamp(.75rem, .82vw, .9rem);
+    font-size: clamp(.9rem, 1vw, 1.1rem);
     line-height: 1.3;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -1364,3 +1399,20 @@
     transition: none !important;
   }
 }
+
+/* Confirmed scenario lobby: room and readiness remain visible while players react. */
+.signal-lobby-scenario { margin: 16px 0 0; color: #eccc81; font-size: clamp(18px, 2vw, 32px); }
+.signal-lobby-reactions { position: absolute; z-index: 6; left: 36%; right: 30%; bottom: 16%; text-transform: none; }
+.signal-lobby-reactions > p { color: #e0d4c4; font-size: 13px; text-align: center; }
+.signal-lobby-reactions .lobby-reactions { background: #090e16db; }
+.signal-theatre__lobby-roster-list small { color: #d8d6c9; font-size: 12px; }
+@media (max-width: 900px) {
+  .signal-lobby-reactions { left: 32%; right: 27%; bottom: 14%; }
+  .signal-lobby-reactions .lobby-reactions__buttons { gap: 4px; }
+  .signal-lobby-reactions .lobby-reactions__buttons button { font-size: 22px; }
+}
+
+.signal-lobby-reaction-hint { padding: 20px; text-align: center; background: #090e16c9; border: 1px solid #d2b07740; border-radius: 20px; }
+.signal-lobby-reaction-hint > div { display: flex; justify-content: center; gap: 18px; font-size: clamp(24px, 2.5vw, 38px); }
+.signal-lobby-reaction-hint p { color: #f5ead7; font-size: clamp(13px, 1.2vw, 18px); margin: 14px 0 6px; }
+.signal-lobby-reaction-hint small { color: #c7c1b5; font-size: 12px; }

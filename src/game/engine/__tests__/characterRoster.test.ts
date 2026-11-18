@@ -90,10 +90,10 @@ describe("character roster content", () => {
     ]));
   });
 
-  it("includes Popelord as a playable Mire Sovereign", () => {
+  it("includes Poopydiperlord as a playable Mire Sovereign", () => {
     const popelord = loadCharacters().get("char_popelord");
 
-    expect(popelord?.name).toBe("Popelord");
+    expect(popelord?.name).toBe("Poopydiperlord");
     expect(popelord?.archetype).toBe("Mire Sovereign");
     expect(popelord?.currentSpaceId).toBe("mirecoil-beacon");
   });

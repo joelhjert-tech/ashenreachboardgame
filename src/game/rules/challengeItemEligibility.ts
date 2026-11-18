@@ -134,6 +134,27 @@ export function getChallengeItemEligibility(
     return { ...current, challengeLinked: true, eligible: false, disabledReason: `${item.name} is Exhausted.` };
   }
 
+  if (item.activationCost?.type === "salvage" && (player.character.salvage ?? 0) < item.activationCost.amount) {
+    return { ...current, challengeLinked: true, eligible: false,
+      disabledReason: `${item.name} requires ${item.activationCost.amount} Salvage.` };
+  }
+
+  if (item.exhaustEffect === "mirrorReroll") {
+    if (!state.pendingFailureReaction || state.currentEncounter?.cardType !== "hazard") {
+      return { ...current, challengeLinked: true, eligible: false,
+        disabledReason: `${item.name} requires a failed hazard check awaiting its consequences.` };
+    }
+    if (state.lastEdgeCardPlay?.seatId === seatId && state.lastEdgeCardPlay.mode === "commit-value") {
+      return { ...current, challengeLinked: true, eligible: false,
+        disabledReason: "A roll containing a committed Edge value cannot be rerolled." };
+    }
+  }
+
+  if (item.consumableEffect === "ignoreFailedMovementOrHazard" && state.pendingFailureReaction?.testType === "battle") {
+    return { ...current, challengeLinked: true, eligible: false,
+      disabledReason: "Blackstar Ampoule protects failed movement or hazard tests, not battles." };
+  }
+
   if (item.useLimit === "charge" && (item.currentCharges ?? item.charges ?? item.startingCharges ?? 0) < (item.chargeCost ?? 1)) {
     return { ...current, challengeLinked: true, eligible: false, disabledReason: `${item.name} has no charges remaining.` };
   }

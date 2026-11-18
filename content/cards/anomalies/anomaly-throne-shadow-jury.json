@@ -6,7 +6,7 @@
   "flavor": "Every crown casts a court.",
   "instability": 4,
   "regionHint": "inner",
-  "resolutionSummary": "Survived the shadow jury and stole one verdict for the final confrontation.",
+  "resolutionSummary": "Survived the shadow jury and claimed its verdict as 1 Trophy.",
   "resolveEffect": {
     "type": "sequence",
     "effects": [
@@ -14,8 +14,9 @@
         "type": "advance_scenario",
         "progressKey": "throneVerdicts",
         "amount": 1,
-        "summary": "A throne-shadow verdict was banked for the endgame."
-      }
+        "summary": "A throne-shadow verdict was recorded."
+      },
+      { "type": "gain_trophy", "amount": 1 }
     ]
   }
 }

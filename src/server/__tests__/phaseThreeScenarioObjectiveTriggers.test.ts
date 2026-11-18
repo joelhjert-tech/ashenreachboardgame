@@ -229,9 +229,11 @@ describe("Phase 3B scenario objective progress triggers", () => {
     const tvJson = JSON.stringify(tvProjection);
 
     expect(tvProjection.scenarioPressure?.objectiveProgress.current).toBe(1);
+    expect(server.getState().status).toBe("active");
+    expect(server.getState().winnerSeatId).toBeNull();
     expect(tvProjection.privateRivalry).toBeUndefined();
     expect(tvJson).not.toContain("Secret maw timing");
-    expect(ownerPhone.privateRivalry?.recentPrivateNotes).toEqual(["Secret maw timing"]);
+    expect(ownerPhone.privateRivalry?.recentPrivateNotes).toContain("Secret maw timing");
     expect(otherPhone.privateRivalry?.recentPrivateNotes).toEqual([]);
   });
 });
