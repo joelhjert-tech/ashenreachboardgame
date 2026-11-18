@@ -20,13 +20,11 @@ export const THREAT_FACTION_CARD_QUOTA = {
   hazard: 4
 } as const;
 
-export const ENEMY_LANE_TARGET = 50;
-
-export const ENEMY_DIFFICULTY_BAND_TARGETS = {
-  entry: 26,
-  standard: 15,
-  severe: 5,
-  extreme: 4
+// The Grinning Tithe assigns Bell-Ear Stalker to blue and Copper-Snout Bailiff to yellow.
+export const ENEMY_LANE_TARGETS = {
+  red: { total: 48, entry: 26, standard: 14, severe: 4, extreme: 4, primary: 43 },
+  blue: { total: 51, entry: 26, standard: 16, severe: 5, extreme: 4, primary: 45 },
+  yellow: { total: 51, entry: 26, standard: 15, severe: 6, extreme: 4, primary: 45 }
 } as const;
 
 export const ENEMY_LANE_PRIMARY_STATS = {

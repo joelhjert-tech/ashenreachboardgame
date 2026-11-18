@@ -7,7 +7,7 @@ import { createPhoneProjection, GameRoomServer, type ConnectedClient } from "../
 import { createInitialSessionState } from "../sessionState.js";
 
 describe("encounter outcomes survive incidental escalation", () => {
-  it.each(["route-splice", "gateblind-pulse", "memory-tax-gate"])("resolves %s after Glasslung and Cold Brace", (cardId) => {
+  it.each(["route-splice", "gateblind-pulse", "memory-tax-gate"])("resolves %s after Cinder Nerve and Cold Brace", (cardId) => {
     const state = createInitialSessionState("scar-outcome-authority", "multiplayer", "scenario_mirror_of_false_heroes", "rivalry", "standard", 2);
     const threat = loadThreatCards().get(cardId)!;
     state.status = "active";
@@ -18,7 +18,7 @@ describe("encounter outcomes survive incidental escalation", () => {
     const player = state.players[0]!;
     player.character.id = "grave-engineer";
     player.character.stats = { command: 1, grit: 1, signal: 1, forge: 1, guile: 1 };
-    player.character.scars = ["scar-wound-5"];
+    player.character.scars = ["scar-wound-11"];
     player.character.heldGear = [];
     player.character.equippedGear = { weapon: null, armor: null, utility: null };
     player.sectorId = player.character.currentSpaceId = "black-relay-spire";
@@ -37,6 +37,7 @@ describe("encounter outcomes survive incidental escalation", () => {
     room.handleIntent(client, { type: "CHECK_REQUESTED", seatId: "seat-1", stat: threat.stat });
     expect(rejected).toEqual([]);
     expect(room.getState().activeResolution?.roll?.success).toBe(false);
+    expect(room.getState().eventLog).toContainEqual(expect.objectContaining({ type: "SCAR_RULE_APPLIED", scarId: "scar-wound-11", seatId: "seat-1" }));
     expect(room.getState().eventLog).toContainEqual(expect.objectContaining({ type: "ABILITY_TRIGGERED", abilityId: "cold-brace" }));
     expect(room.getState().lastOutcomeSummary).toMatchObject({ encounterCardId: cardId, success: false });
     for (let i = 0; i < 8 && (room.getState().pendingEffect || room.getState().activeResolution); i++) {

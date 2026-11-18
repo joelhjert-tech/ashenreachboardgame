@@ -29,6 +29,8 @@ describe("P23 server-authoritative Affliction lifecycle", () => {
   it("draws without replacement, persists history, and does not replay after reconnect", () => {
     const catalog = loadAfflictionCards();
     const state = createInitialSessionState("p23-affliction-cycle", "single-player");
+    state.status = "active";
+    state.phase = "resolution";
     state.availableAfflictions = [catalog.get("blood-fury")!, catalog.get("bile-spit")!];
     state.pendingAfflictionResolution = {
       id: "cycle-1",

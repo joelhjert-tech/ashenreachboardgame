@@ -10,7 +10,7 @@
     "dev:client": "vite --host 0.0.0.0",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run src/game/engine/__tests__ src/game/rules/__tests__ src/server/__tests__ src/client",
+    "test": "vitest run",
     "test:client": "vitest run src/client",
     "test:phone-matrix": "tsx scripts/validate-phone-device-matrix.ts",
     "test:e2e:scenarios": "tsx scripts/validate-six-scenario-e2e.ts",

@@ -130,7 +130,11 @@ describe("Heat-to-Salvage reward batch 1", () => {
     expect(loseHeat).toHaveLength(0);
     expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(2);
     expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(7);
-    expect(collectEffects("gain_salvage")).toHaveLength(42);
+    const salvageIds = collectEffects("gain_salvage");
+    expect(salvageIds).toHaveLength(45);
+    for (const id of ["anomaly-cinder-gate-echo", "compact-three-lantern-circuit", "dominion-foundry-proof-marks"]) {
+      expect(salvageIds.filter((cardId) => cardId === id)).toHaveLength(1);
+    }
     expect(TARGET_IDS.every((id) => !heatIds.has(id))).toBe(true);
   });
 
