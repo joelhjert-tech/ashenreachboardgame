@@ -499,6 +499,7 @@ function TacticalDestinationList({
               className="phone-move-option-a__select"
               onClick={() => !disabled && onSelect(model.destination.sectorId)}
               disabled={disabled}
+              aria-pressed={selected}
               aria-label={`${selected ? "Selected" : "Select"}${markerLabel ? ` destination ${markerLabel},` : ""} ${model.destination.name}; ${model.destination.distance} exact sectors`}
             >
               <DestinationArtwork model={model} />
@@ -638,6 +639,9 @@ export function PhoneMovementView({
       ? selectedModel ? "needs-confirm" : "needs-destination"
       : canRoll ? "needs-roll" : "complete";
   const applySelectedDestination = (sectorId: string | null): void => {
+    if (sectorId === null) {
+      shellRef.current?.querySelector<HTMLButtonElement>('.phone-move-option-a__select[aria-pressed="true"]')?.focus();
+    }
     onSelectedSectorId(sectorId);
     setExpandedSectorId(sectorId);
   };
@@ -734,38 +738,40 @@ export function PhoneMovementView({
       <div className="phone-move-prototype__content">
         {planner?.routeStarCommitted ? <p role="status" data-testid="route-star-confirmation">Route selected · 1 charge spent</p> : null}
         {routeStarChange.confirmation}
-        {tabletopSectorId && !travel && !movementResolving ? (
-          <PhoneTabletopToggle
-            publicState={tabletopPublicState}
-            currentSectorId={tabletopSectorId}
-            currentSectorName={currentSectorName}
-            destinations={planner?.active ? planner.destinations : undefined}
-            selectedDestination={selectedModel?.destination}
-            selectionDisabled={submitted || routeStarChange.confirming || Boolean(innerApproach)}
-            innerApproach={innerApproach}
-            tierTransitions={canRoll ? tierTransitions?.options : undefined}
-            onSelectSector={selectDestination}
-          />
-        ) : null}
-        {hostView ? (
-          <button
-            type="button"
-            className="phone-move-prototype__map-request"
-            aria-pressed={hostView.mode === "map"}
-            disabled={hostView.mode !== "map" && !hostView.canRequestMap}
-            onClick={() => onIntent({
-              type: "HOST_VIEW_REQUESTED",
-              seatId,
-              mode: hostView.mode === "map" ? "signal" : "map"
-            })}
-          >
-            <MapTrifoldIcon size={24} weight={hostView.mode === "map" ? "fill" : "duotone"} aria-hidden="true" />
-            <span>
-              <strong>{hostView.mode === "map" ? "Return to Signal Theatre" : "Show map on TV"}</strong>
-              <small>{hostView.unavailableReason ?? "Shared public display"}</small>
-            </span>
-          </button>
-        ) : null}
+        <div className="phone-move-map-controls">
+          {tabletopSectorId && !travel && !movementResolving ? (
+            <PhoneTabletopToggle
+              publicState={tabletopPublicState}
+              currentSectorId={tabletopSectorId}
+              currentSectorName={currentSectorName}
+              destinations={planner?.active ? planner.destinations : undefined}
+              selectedDestination={selectedModel?.destination}
+              selectionDisabled={submitted || routeStarChange.confirming || Boolean(innerApproach)}
+              innerApproach={innerApproach}
+              tierTransitions={canRoll ? tierTransitions?.options : undefined}
+              onSelectSector={selectDestination}
+            />
+          ) : null}
+          {hostView ? (
+            <button
+              type="button"
+              className="phone-move-prototype__map-request"
+              aria-pressed={hostView.mode === "map"}
+              disabled={hostView.mode !== "map" && !hostView.canRequestMap}
+              onClick={() => onIntent({
+                type: "HOST_VIEW_REQUESTED",
+                seatId,
+                mode: hostView.mode === "map" ? "signal" : "map"
+              })}
+            >
+              <MapTrifoldIcon size={24} weight={hostView.mode === "map" ? "fill" : "duotone"} aria-hidden="true" />
+              <span>
+                <strong>{hostView.mode === "map" ? "Return to Signal Theatre" : "Show map on TV"}</strong>
+                <small>{hostView.unavailableReason ?? "Shared public display"}</small>
+              </span>
+            </button>
+          ) : null}
+        </div>
         {innerApproach ? (
           <section className="phone-inner-approach" aria-label={`${innerApproach.pathLabel} progression`}>
             <header>

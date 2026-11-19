@@ -970,7 +970,7 @@
 .signal-phone-shell .phone-move-instrument__header {
   grid-template-columns: minmax(0, 1fr) 5.2rem;
   gap: 0.3rem 0.65rem;
-  min-height: 8.1rem;
+  flex: none;
   padding: 0.72rem 0.78rem 0.68rem 0.9rem;
   overflow: hidden;
   background:
@@ -983,7 +983,6 @@
 }
 
 .signal-phone-shell .phone-move-instrument__heading > strong {
-  max-width: 13ch;
   margin-top: 0.14rem;
   font-size: clamp(1.28rem, 6.2vw, 1.65rem);
   text-transform: uppercase;
@@ -1064,6 +1063,26 @@
 
 .signal-phone-shell .phone-move-prototype__content {
   padding: 0.62rem 0.7rem 0.8rem;
+}
+
+.phone-move-map-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: 0.35rem;
+  margin-bottom: 0.45rem;
+}
+
+.phone-move-map-controls:empty {
+  display: none;
+}
+
+.phone-move-map-controls:has(> [aria-expanded="true"]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.signal-phone-shell .phone-move-map-controls > button {
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.45rem;
 }
 
 .signal-phone-shell .phone-move-prototype__map-request {

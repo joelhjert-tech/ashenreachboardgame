@@ -192,7 +192,12 @@ describe("PhoneMovementView", () => {
     const onIntent = vi.fn();
     render(<Harness onIntent={onIntent} />);
     fireEvent.click(screen.getByRole("button", { name: new RegExp(`Select destination A, ${longDestinationName}`) }));
-    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    const selected = screen.getByRole("button", { pressed: true, name: /Selected destination A/i });
+    const change = screen.getByRole("button", { name: "Change" });
+    change.focus();
+    fireEvent.click(change);
+    expect(selected).toHaveFocus();
+    expect(selected).toHaveAttribute("aria-pressed", "false");
     expect(onIntent).toHaveBeenLastCalledWith({
       type: "MOVEMENT_DESTINATION_PREVIEWED",
       seatId: "seat-1",
