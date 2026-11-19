@@ -148,6 +148,18 @@ export function isInnerApproachChallengeCleared(
   return getInnerApproachProgress(state, player).clearedSectorIds.includes(sectorId);
 }
 
+/** A trial passed on arrival can earn a second step, once in the same turn. */
+export function canEarnInnerArrivalStep(state: GameState, seatId: string, sectorId: string): boolean {
+  let moves = 0;
+  for (let index = state.eventLog.length - 1; index >= 0; index--) {
+    const event = state.eventLog[index] as { type?: string; seatId?: string; toSectorId?: string; direction?: string } | null;
+    if (event?.type === "TURN_COMPLETED") break;
+    if (event?.seatId !== seatId || (event.type !== "INNER_APPROACH_MOVED" && event.type !== "TIER_TRANSITION_COMPLETED")) continue;
+    if (++moves > 1 || event.toSectorId !== sectorId || event.direction === "retreat" || event.direction === "outward") return false;
+  }
+  return moves === 1;
+}
+
 function displayName(state: GameState, sectorId: string): string {
   return state.sectors.find((sector) => sector.id === sectorId)?.name
     ?? getBoardSpace(sectorId)?.name

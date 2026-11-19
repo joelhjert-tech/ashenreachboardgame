@@ -769,7 +769,7 @@ export function PhoneMovementView({
         {innerApproach ? (
           <section className="phone-inner-approach" aria-label={`${innerApproach.pathLabel} progression`}>
             <header>
-              <span>{innerApproach.pathLabel}: one step per turn</span>
+              <span>{innerApproach.pathLabel}: one step, plus a second for clearing a trial on arrival</span>
               <strong>{innerApproach.currentSectorName}</strong>
               <p>
                 {innerApproach.challengeCleared

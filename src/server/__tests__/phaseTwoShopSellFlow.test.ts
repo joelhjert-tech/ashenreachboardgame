@@ -103,6 +103,31 @@ function requireGear(id: string): GearItem {
 }
 
 describe("Phase 2B shop sell flow", () => {
+  it("can open the route-aid cabinet after an encounter and receives a receipt only after buying", () => {
+    const { server, client, sent } = createShopServer({ salvage: 7 });
+    const state = server.getState();
+    state.lastOutcomeSummary = {
+      seatId: "seat-1", movedToSectorId: "outer_waymarket", encounterCardId: "ash-static-1",
+      encounterTitle: "Ash Static", encounterCardType: "hazard", checkStat: "signal",
+      die1: 4, die2: 4, statBonus: 2, checkTotal: 10, difficulty: 9, enemyRollerSeatId: null,
+      enemyDie1: null, enemyDie2: null, enemyBonus: null, enemyTotal: null,
+      success: true, summary: "Previous encounter cleared."
+    };
+    const shop = () => createPhoneProjection(server.getState(), "seat-1").shopEncounter;
+    expect(shop()).toMatchObject({ recentOutcome: null, presentation: { stage: "category_selection" } });
+    server.handleIntent(client, { type: "SHOP_SERVICE_REQUESTED", seatId: "seat-1", serviceId: "buy-route-aids" });
+    expect(shop()).toMatchObject({ recentOutcome: null, presentation: { stage: "item_selection" } });
+    const stock = server.getState().shopStockReveals[0]!.stockIds;
+    const gear = stock.find((id) => loadGear().get(id)?.chargedEffect === "selectTransitionSector")!;
+    server.handleIntent(client, { type: "SHOP_PURCHASE_REQUESTED", seatId: "seat-1", cardId: gear });
+    expect(getRejectedReason(sent)).toBeUndefined();
+    expect(shop()).toMatchObject({ recentOutcome: { action: "buy", remainingSalvage: 2 } });
+    const owned = server.getState().players[0]!.character.heldGear.find((item) => item.id === gear)!;
+    expect(owned.instanceId).toBeTruthy();
+    server.handleIntent(client, { type: "EQUIP_GEAR", seatId: "seat-1", slot: "utility", gearId: gear, instanceId: owned.instanceId });
+    expect(server.getState().players[0]!.character.equippedGear.utility).toBe(gear);
+  });
+
   it("removes an equipped permanent passive and its modifier when sold", () => {
     const vest = requireGear("rivetplate-vest");
     const { server, client } = createShopServer({ heldGear: [vest], equippedGearId: vest.id, salvage: 1 });

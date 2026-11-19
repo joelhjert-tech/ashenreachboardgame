@@ -3,6 +3,18 @@ import type { Character } from "../schema/character.schema.js";
 import type { GearItem, ShopCategory } from "../schema/gear.schema.js";
 import { filterGearByShopCategory, getGearShopCategories, isGearInShopCategory, SHOP_CATEGORY_LABELS } from "./shopCategories.js";
 
+export const ROUTE_AID_GEAR_SALVAGE_COST = 5;
+
+export function getShopRevealService(view: string) {
+  switch (view) {
+    case "equipment": return "buy-gear";
+    case "supplies": return "buy-supplies";
+    case "artifacts": return "trade-missions-for-artifact";
+    case "route-aids": return "buy-route-aids";
+    default: return null;
+  }
+}
+
 export const SHOP_FAILURE_REASONS = {
   notAtShop: "notAtShop",
   shopBlockedByThreat: "shopBlockedByThreat",

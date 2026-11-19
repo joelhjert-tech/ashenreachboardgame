@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialSessionState } from "../../../server/sessionState.js";
+import { loadGear } from "../../content/gear.js";
 import { createNemesisChampionsForSeats } from "../../rules/nemesisRelay.js";
 import { legacySessionSnapshotSchemaV0, sessionSnapshotSchema, sessionSnapshotSchemaV1 } from "../../schema/session.schema.js";
 import {
@@ -33,6 +34,20 @@ function v1Snapshot(heats: number[] = [0]) {
 }
 
 describe("versioned session snapshot migration", () => {
+  it("restores a usable, stable instance for a route aid purchased in an older save", () => {
+    const state = createInitialSessionState("legacy-route-aid", "single-player");
+    const character = state.players[0]!.character;
+    const guide = loadGear().get("gateward-spindle")!;
+    character.heldGear.push({ ...guide, currentCharges: 1 });
+    character.equippedGear.utility = guide.id;
+    const restored = parseAndMigrateSessionSnapshot(serializeSessionSnapshotV2(state));
+    const owned = restored.state.players[0]!.character.heldGear.find((item) => item.id === guide.id)!;
+    expect(owned.currentCharges).toBe(1);
+    expect(owned.instanceId).toBeTruthy();
+    expect(restored.state.players[0]!.character.equippedGearInstances?.utility).toBe(owned.instanceId);
+    expect(parseAndMigrateSessionSnapshot(restored).state.players[0]!.character).toEqual(restored.state.players[0]!.character);
+  });
+
   it("strictly parses unversioned v0 Heat and rejects missing or malformed legacy Heat", () => {
     expect(legacySessionSnapshotSchemaV0.parse(legacySnapshot([0])).state.players[0]!.character.heat).toBe(0);
     expect(legacySessionSnapshotSchemaV0.parse(legacySnapshot([7])).state.players[0]!.character.heat).toBe(7);

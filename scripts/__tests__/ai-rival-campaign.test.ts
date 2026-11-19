@@ -21,13 +21,17 @@ describe("complete AI rival campaigns", () => {
   }, 30000);
 
   it("can win Throne of Ash by reaching the Cinder Gate from normal setup", () => {
-    const game = runAiRivalGame("scenario_throne_of_ash", 3, 62, 1500);
-    expect(game.failure).toBeNull();
-    expect(game.enteredInnerReach).toBe(true);
-    expect(game.reachedCinderGate).toBe(true);
-    expect(game.confrontations).toBeGreaterThan(0);
-    expect(game.result?.sourceType).toBe("confrontation");
-    expect(game.result?.status).toBe("victory");
+    // A legitimate objective victory can beat a gate runner on any one seed.
+    const games = ([[2, 61], [3, 62], [4, 63]] as const).map(([seats, seed]) =>
+      runAiRivalGame("scenario_throne_of_ash", seats, seed, 1500));
+    for (const game of games) {
+      expect(game.failure).toBeNull();
+      expect(game.status).toBe("ended");
+    }
+    expect(games).toContainEqual(expect.objectContaining({
+      enteredInnerReach: true, reachedCinderGate: true,
+      result: expect.objectContaining({ sourceType: "confrontation", status: "victory" })
+    }));
   }, 30000);
 
   it("replays setup and game decisions from a seed", () => {

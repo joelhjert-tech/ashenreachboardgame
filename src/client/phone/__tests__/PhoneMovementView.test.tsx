@@ -341,7 +341,7 @@ describe("PhoneMovementView", () => {
       />
     );
 
-    expect(screen.getByRole("region", { name: "Breach Road progression" })).toHaveTextContent("one step per turn");
+    expect(screen.getByRole("region", { name: "Breach Road progression" })).toHaveTextContent("a second for clearing a trial on arrival");
     expect(screen.queryByRole("button", { name: "Roll movement" })).not.toBeInTheDocument();
     expect(screen.queryByTestId("movement-action-region")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Advance.*Dead Star Reliquary/i }));

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ensureOwnedGearInstanceIds } from "../rules/equipmentSuppression.js";
 import {
   gameStateSchema,
   legacyCompatibleSessionSnapshotSchemaV2,
@@ -108,10 +109,11 @@ function normalizeScenarioOwnershipState(state: GameState): GameState {
 function normalizeLegacyGameState(state: LegacyCompatibleGameState): GameState {
   return gameStateSchema.parse({
     ...state,
-    players: state.players.map((player) => ({
-      ...player,
-      character: normalizeLegacyCharacter(player.character)
-    })),
+    players: state.players.map((player) => {
+      const character = normalizeLegacyCharacter(player.character);
+      const missingGuideId = character.heldGear.some((item) => item.chargedEffect === "selectTransitionSector" && !item.instanceId);
+      return { ...player, character: missingGuideId ? ensureOwnedGearInstanceIds(character, player.seatId) : character };
+    }),
     sectors: state.sectors.map((sector) => ({
       ...sector,
       tileChallenges: sector.tileChallenges?.map((challenge) => ({

@@ -184,7 +184,9 @@ import {
   isGearAvailableFromShopCategory,
   SHOP_FAILURE_LABELS,
   SHOP_FAILURE_REASONS,
-  type ShopFailureReason
+  type ShopFailureReason,
+  getShopRevealService,
+  ROUTE_AID_GEAR_SALVAGE_COST
 } from "../game/rules/shopAvailability.js";
 import {
   CW_ENEMY_MODIFIER_LABEL,
@@ -4189,16 +4191,7 @@ export class GameRoomServer {
     const reveal = this.state.shopStockReveals.find(
       (entry) => entry.seatId === intent.seatId && entry.sectorId === player.character.currentSpaceId
     );
-    const expectedService = intent.view === "equipment"
-      ? "buy-gear"
-      : intent.view === "supplies"
-        ? "buy-supplies"
-        : intent.view === "artifacts"
-          ? "trade-missions-for-artifact"
-          : intent.view === "route-aids"
-            ? "buy-route-aids"
-          : null;
-
+    const expectedService = getShopRevealService(intent.view);
     if (expectedService && (!reveal || reveal.serviceId !== expectedService)) {
       throw new IntentRejectedError(intent.type, "Reveal this category before selecting its stock");
     }
@@ -4658,7 +4651,7 @@ export class GameRoomServer {
 
     const isArtifactExchange = reveal.serviceId === "trade-missions-for-artifact";
     const baseCost = isRouteAid
-      ? { salvage: 5 }
+      ? { salvage: ROUTE_AID_GEAR_SALVAGE_COST }
       : isArtifactExchange
       ? { completedContracts: ARTIFACT_EXCHANGE_CONTRACT_COST }
       : { salvage: getShopGearCost(gear) };
@@ -11427,6 +11420,9 @@ export class GameRoomServer {
     }
 
     const resolution = resolveSpaceText(boardSpace.textBox.effectKey, intent.choiceId);
+    // Fixed inner trials already gate each of five consecutive steps. Keep their
+    // printed difficulty while the global clock continues to pressure the table.
+    const pressureModifier = boardSpace.tier === "inner" ? 0 : getEscalationModifier(this.state.escalationLevel);
     if (resolution.check?.stat && isCooperativeAssistanceMode(this.state) && !cooperativeRoll) {
       const createdAt = new Date().toISOString();
       this.stagePendingCooperativeTest({
@@ -11436,7 +11432,7 @@ export class GameRoomServer {
         sourceId: boardSpace.textBox.effectKey,
         sourceTitle: boardSpace.textBox.title,
         stat: resolution.check.stat,
-        difficulty: resolution.check.difficulty + getEscalationModifier(this.state.escalationLevel),
+        difficulty: resolution.check.difficulty + pressureModifier,
         requiresHelper: false,
         ...(intent.choiceId ? { choiceId: intent.choiceId } : {}),
         createdAt
@@ -11460,7 +11456,6 @@ export class GameRoomServer {
 
     if (resolution.check?.stat) {
       const roll = cooperativeRoll?.roll ?? rollDice(2, 6, this.randomSource);
-      const escalationModifier = getEscalationModifier(this.state.escalationLevel);
       const statBonus = cooperativeRoll?.statBonus ?? (
         player.character.stats[resolution.check.stat] +
         getEquippedGearModifierSources(player.character, resolution.check.stat, { mode: "check", disabledSlots: getAfflictionDisabledGearSlots(player, getAfflictionCatalog(this.state)) }).reduce((sum, source) => sum + source.value, 0) +
@@ -11468,7 +11463,7 @@ export class GameRoomServer {
         this.getScenarioSkillModifier(intent.seatId) +
         this.sumModifierSources(this.getPendingRollModifierSources(intent.seatId, resolution.check.stat, "check"))
       );
-      const difficulty = cooperativeRoll?.difficulty ?? (resolution.check.difficulty + escalationModifier);
+      const difficulty = cooperativeRoll?.difficulty ?? (resolution.check.difficulty + pressureModifier);
       const total = cooperativeRoll?.total ?? (roll.total + statBonus);
       const success = cooperativeRoll?.success ?? (total >= difficulty);
 
@@ -11540,6 +11535,9 @@ export class GameRoomServer {
             }
           : this.state.activeResolution
       };
+    }
+    if (boardSpace.tier === "inner" && checkPayload?.success && this.state.escalationLevel > 0) {
+      this.feedEscalation(intent.seatId, -1, "inner trial cleared");
     }
     if (checkPayload) {
       this.applyScenarioOnSkillResolved(intent.seatId, checkPayload.checkStat, checkPayload.success);
@@ -13853,7 +13851,7 @@ function buildPublicInnerApproach(state: GameState, seatId: string) {
     currentIndex: route.currentIndex,
     challengeCleared: cleared.has(currentSpace.id),
     challengeTitle: currentSpace.textBox.title,
-    challengeDetail: currentSpace.textBox.text,
+    challengeDetail: currentSpace.textBox.text + " Passing this trial reduces Global Escalation by 1.",
     revision: state.movementRouteRevisions?.[seatId] ?? 0,
     steps: route.sectorIds.map((sectorId, index) => ({
       sectorId,
@@ -14510,7 +14508,7 @@ function buildPublicShopStock(
       const cost = artifactExchange
         ? { completedContracts: ARTIFACT_EXCHANGE_CONTRACT_COST }
         : reveal.serviceId === "buy-route-aids"
-          ? { salvage: 5 }
+          ? { salvage: ROUTE_AID_GEAR_SALVAGE_COST }
           : { salvage: getPublicGearShopCost(item) };
       const payment = canPayShopCost(player, state, cost);
       const alreadyOwned = ownedGearIds.has(item.id);
@@ -14694,6 +14692,30 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
   return services.slice(0, 6);
 }
 
+function getShopReceiptForVisit(state: GameState, player: PlayerState) {
+  for (let index = state.eventLog.length - 1; index >= 0; index--) {
+    const action = state.eventLog[index] as GameAction | null;
+    if (action?.type === "TURN_COMPLETED") break;
+    if (!action || action.seatId !== player.seatId) continue;
+    switch (action.type) {
+      case "MOVED":
+      case "TIER_TRANSITION_COMPLETED":
+      case "INNER_APPROACH_MOVED":
+      case "TRANSITION_ROUTE_AID_USED":
+      case "SHOP_BROWSE_SELECTED":
+      case "SHOP_STOCK_REVEALED":
+      case "SHOP_SKIPPED":
+        return null;
+      case "SHOP_SELL_RESOLVED":
+      case "SHOP_PURCHASE_RESOLVED":
+      case "SHOP_FOLLOWER_PURCHASE_RESOLVED":
+      case "SHOP_SERVICE_RESOLVED":
+        return action.sectorId === player.sectorId ? action : null;
+    }
+  }
+  return null;
+}
+
 function buildPublicShopEncounter(
   state: GameState,
   visiblePlayers: PlayerState[],
@@ -14750,20 +14772,10 @@ function buildPublicShopEncounter(
           : [];
       })
     : undefined;
-  const latest = state.lastOutcomeSummary?.seatId === activePlayer.seatId ? state.lastOutcomeSummary : null;
-  const latestAction = state.eventLog.at(-1) as GameAction | undefined;
-  const latestPurchase =
-    latestAction?.type === "SHOP_PURCHASE_RESOLVED" && latestAction.seatId === activePlayer.seatId
-      ? (latestAction as ShopPurchaseResolvedAction)
-      : null;
-  const latestFollowerPurchase =
-    latestAction?.type === "SHOP_FOLLOWER_PURCHASE_RESOLVED" && latestAction.seatId === activePlayer.seatId
-      ? latestAction
-      : null;
-  const latestSale =
-    latestAction?.type === "SHOP_SELL_RESOLVED" && latestAction.seatId === activePlayer.seatId
-      ? (latestAction as ShopSellResolvedAction)
-      : null;
+  const latest = getShopReceiptForVisit(state, activePlayer);
+  const latestPurchase = latest?.type === "SHOP_PURCHASE_RESOLVED" ? latest : null;
+  const latestFollowerPurchase = latest?.type === "SHOP_FOLLOWER_PURCHASE_RESOLVED" ? latest : null;
+  const latestSale = latest?.type === "SHOP_SELL_RESOLVED" ? latest : null;
   const blockedReason = getPublicShopBlockedReason(state, blockingThreats.length, activePlayer);
   const shopCategory = getBoardSpaceShopCategory(boardSpace);
   const stockCategory =
@@ -14940,7 +14952,7 @@ function buildPublicShopEncounter(
               ? "buy"
             : latestPurchase?.serviceId === "trade-missions-for-artifact"
               ? "artifactExchange"
-              : latestPurchase ? "buy" : "Recent outcome",
+              : latestPurchase ? "buy" : "service",
           gained: latestPurchase?.gainedGear.name ?? latestFollowerPurchase?.gainedFollower.name,
           sold: latestSale?.soldGear.name,
           salvageDelta: latestSale?.salvageDelta,
@@ -17301,8 +17313,8 @@ export function buildRequiredActionProjection(
       requiredTab: innerApproach.challengeCleared ? "move" : "action",
       label: innerApproach.challengeCleared ? "Advance one inner step" : `Clear ${innerApproach.currentSectorName}`,
       ownerDetail: innerApproach.challengeCleared
-        ? "Choose the next connected approach step or retreat. Movement ends after one step."
-        : `Resolve ${innerApproach.challengeTitle}. Success permanently clears this step for your operative.`,
+        ? "Choose the next connected approach step or retreat. Passing the trial on your first inward arrival can earn one extra step."
+        : `Resolve ${innerApproach.challengeTitle}. Pass at the printed difficulty to clear this step and advance this turn.`,
       publicAction: innerApproach.challengeCleared
         ? "choose one inner approach step"
         : `resolve the challenge at ${innerApproach.currentSectorName}`,

@@ -1546,7 +1546,7 @@ export function SignalCartographyPrototype({
             : "Requested from the Movement screen"}
         </span>
         <strong>Encounter detected → Signal Theatre returns automatically</strong>
-        <span>{innerApproach ? "One cleared inner step per turn" : "49 sectors · authoritative routes"}</span>
+        <span>{innerApproach ? "Clear the trial on first arrival to earn a second step" : "49 sectors · authoritative routes"}</span>
       </footer>
     </main>
   );

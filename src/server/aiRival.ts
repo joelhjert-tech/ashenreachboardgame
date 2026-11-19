@@ -5,6 +5,7 @@ import { getBoardSpace, isScenarioConfrontationSpace } from "../game/data/boardS
 import { advanceContractObjectiveState, canAdvanceContractObjective, isContractObjectiveComplete } from "../game/contracts/objectives.js";
 import type { ClientIntent } from "../game/engine/actions.js";
 import { getEquippedGearItem, isGearModifierActive } from "../game/engine/gear.js";
+import { getShopRevealService, ROUTE_AID_GEAR_SALVAGE_COST } from "../game/rules/shopAvailability.js";
 import { getStatUpgradeCost, getStatUpgradeDisabledReason } from "../game/rules/statUpgrades.js";
 import { matchesScenarioObjective } from "../game/rules/scenarioObjectiveTriggers.js";
 import type { GearSlot } from "../game/schema/gear.schema.js";
@@ -100,6 +101,18 @@ function seeksGate(patch: PhonePatchPayload): boolean {
   return patch.turnOrder.indexOf(patch.self?.seatId ?? "") % 2 === 1;
 }
 
+const inwardCrossings = BOARD_RING_TRANSITIONS.filter((edge) => edge.direction === "inward" &&
+  (!edge.allowedFrom.length || edge.allowedFrom.includes(edge.sourceSectorId)));
+
+function crossesDirectlyToInnerApproach(sourceId: string): boolean {
+  return inwardCrossings.some((edge) => edge.sourceSectorId === sourceId &&
+    inwardCrossings.some((next) => next.sourceSectorId === edge.destinationSectorId && next.destinationRing === "inner"));
+}
+
+function canBuyGateArtifact(patch: PhonePatchPayload): boolean {
+  return !holdsArtifact(patch) && (patch.self?.character.salvage ?? 0) >= ROUTE_AID_GEAR_SALVAGE_COST;
+}
+
 function gateRouteScore(sectorId: string, ring: PublicMoveDestination["ring"], patch: PhonePatchPayload): number {
   if (!seeksGate(patch)) return 0;
   if (ring !== "outer" && ring !== "middle") return 0;
@@ -109,21 +122,22 @@ function gateRouteScore(sectorId: string, ring: PublicMoveDestination["ring"], p
 
   const needsArtifact = !holdsArtifact(patch);
   const caches = needsArtifact ? patch.sectors.filter(hasArtifactCache).map((sector) => sector.id) : [];
-  const crossings = BOARD_RING_TRANSITIONS.filter((edge) => edge.direction === "inward" &&
-    edge.sourceRing === ring && (!edge.allowedFrom.length || edge.allowedFrom.includes(edge.sourceSectorId)));
-  const targets = needsArtifact && caches.some((id) => track.includes(id)) ? caches : crossings.map((edge) => edge.sourceSectorId);
-  // Exact rolls can overshoot. Aim for a landing on the milestone, then use
-  // distance around the circular track to break ties between near misses.
+  const targets = needsArtifact && caches.some((id) => track.includes(id)) ? caches :
+    inwardCrossings.filter((edge) => edge.sourceRing === ring).map((edge) => edge.sourceSectorId);
   if (caches.includes(sectorId)) return 65;
-  if (targets.includes(sectorId)) return 48;
-  let distance = Infinity;
-  for (const target of targets) {
-    const targetIndex = track.indexOf(target);
-    if (targetIndex < 0) continue;
-    const gap = Math.abs(index - targetIndex);
-    distance = Math.min(distance, gap, track.length - gap);
+  if (targets.includes(sectorId)) return !needsArtifact && crossesDirectlyToInnerApproach(sectorId) ? 72 : 48;
+
+  // Movement is an exact roll in either direction. A landing that puts several
+  // die faces in range of a target is more useful than simply being adjacent.
+  let usefulFaces = 0;
+  for (let roll = 1; roll <= 6; roll++) {
+    if (targets.includes(track[(index + roll) % track.length]!) ||
+        targets.includes(track[(index - roll + track.length) % track.length]!)) usefulFaces++;
   }
-  return Math.max(0, 18 - distance * 4);
+  const gaps = targets.map((target) => track.indexOf(target)).filter((target) => target >= 0)
+    .map((target) => Math.abs(target - index));
+  const nearest = Math.min(...gaps.map((gap) => Math.min(gap, track.length - gap)));
+  return Math.max(0, 18 - nearest * 4) + usefulFaces * 2;
 }
 
 function bestBoardCheck(effectKey: string, stats: Record<Stat, number>) {
@@ -136,6 +150,8 @@ function bestBoardCheck(effectKey: string, stats: Record<Stat, number>) {
 
 function scoreDestination(destination: PublicMoveDestination, patch: PhonePatchPayload): number {
   let score = RING_PROGRESS[destination.ring] - destination.distance + gateRouteScore(destination.sectorId, destination.ring, patch);
+  if (canBuyGateArtifact(patch) && destination.shop && destination.shop.status !== "locked" &&
+      getBoardSpace(destination.sectorId)?.tags.includes("shop") && !patch.scenarioState?.confrontation.repelled) score += 65;
   if (destination.strategicTags.includes("reward")) score += 9;
   if (destination.strategicTags.includes("shop")) score += 5;
   if (destination.strategicTags.includes("gate")) score += 7;
@@ -311,11 +327,14 @@ function chooseShopIntent(patch: PhonePatchPayload): ClientIntent | null {
   const view = shop.browseSelection?.view ?? "categories";
   if (view === "categories") {
     const wantsArtifact = !holdsArtifact(patch) && shop.services.some((service) => service.id === "trade-missions-for-artifact" && service.enabled);
-    const preferredViews = [...(wantsArtifact ? ["artifacts" as const] : []), "equipment", "route-aids", "services", "sell", "supplies", "artifacts"] as const;
+    const wantsGuide = canBuyGateArtifact(patch) && !patch.scenarioState?.confrontation.repelled;
+    const preferredViews = [...(wantsGuide ? ["route-aids" as const] : []), ...(wantsArtifact ? ["artifacts" as const] : []), "equipment", "route-aids", "services", "sell", "supplies", "artifacts"] as const;
     const category = preferredViews
       .map((candidate) => shop.presentation?.categories.find((entry) => entry.view === candidate && entry.available))
       .find(Boolean);
     if (!category) return { type: "SHOP_SKIP_REQUESTED", seatId: self.seatId };
+    const serviceId = getShopRevealService(category.view);
+    if (serviceId) return { type: "SHOP_SERVICE_REQUESTED", seatId: self.seatId, serviceId };
     return { type: "SHOP_BROWSE_SELECTED", seatId: self.seatId, view: category.view, selectedId: null };
   }
 
@@ -580,9 +599,10 @@ export function chooseAiRivalIntent(patch: PhonePatchPayload, seatId: string): A
     }
     const aid = patch.transitionRouteAid;
     if (aid && holdsArtifact(patch) && seeksGate(patch) && aid.sources[0]) {
-      const destination = aid.destinations.find((candidate) => BOARD_RING_TRANSITIONS.some((edge) =>
-        edge.sourceSectorId === candidate.sectorId && edge.direction === "inward" &&
-        (!edge.allowedFrom.length || edge.allowedFrom.includes(candidate.sectorId))));
+      const destination = aid.destinations.filter((candidate) =>
+        inwardCrossings.some((edge) => edge.sourceSectorId === candidate.sectorId))
+        .sort((left, right) => Number(crossesDirectlyToInnerApproach(right.sectorId)) -
+          Number(crossesDirectlyToInnerApproach(left.sectorId)))[0];
       if (destination) {
         const source = aid.sources[0];
         return decision({ type: "USE_TRANSITION_ROUTE_AID", seatId, sourceKind: source.sourceKind,
@@ -651,9 +671,19 @@ export function chooseAiRivalIntent(patch: PhonePatchPayload, seatId: string): A
       rule.kind === "board-action" && rule.supported && (rule.status === "optional" || rule.status === "current"));
     const pursuingGate = boardSpace?.tier === "inner" || (sector && !holdsArtifact(patch) && hasArtifactCache(sector));
     // Leave room for a two-Wound loss and the next round's pressure tick.
+    const winningSector = objectiveAction && optionalBoardAction && scenario && scenario.progress + 1 >= scenario.threshold;
+    const needsGuide = (boardSpace?.tier === "outer" || boardSpace?.tier === "middle") &&
+      !winningSector && !patch.scenarioState?.confrontation.repelled &&
+      !inwardCrossings.some((edge) => edge.sourceSectorId === self.sectorId);
+    const guide = needsGuide && self.character.heldGear.find((item) => item.chargedEffect === "selectTransitionSector" &&
+      item.instanceId && (item.currentCharges ?? item.charges ?? 0) > 0);
+    if (guide && self.character.equippedGear[guide.slot] !== guide.id) {
+      return decision({ type: "EQUIP_GEAR", seatId, gearId: guide.id, instanceId: guide.instanceId, slot: guide.slot },
+        "preparing a route aid for the next move", "equip-route-aid");
+    }
     const normalMargin = patch.activeSeatIndex === patch.turnOrder.length - 1 ? 3 : 2;
     const safetyMargin = pursuingGate ? 1 : normalMargin;
-    if (patch.escalationLevel > 0 && patch.escalationThreshold - patch.escalationLevel <= safetyMargin) {
+    if (!winningSector && patch.escalationLevel > 0 && patch.escalationThreshold - patch.escalationLevel <= safetyMargin) {
       return decision(
         { type: "STABILIZE_REQUESTED", seatId },
         "stabilizing the Reach",
@@ -661,11 +691,18 @@ export function chooseAiRivalIntent(patch: PhonePatchPayload, seatId: string): A
       );
     }
 
+    const buyingGuide = canBuyGateArtifact(patch) && patch.shopEncounter?.services.some((entry) =>
+      entry.id === "buy-route-aids" && entry.enabled);
+    if (buyingGuide && !winningSector && !patch.scenarioState?.confrontation.repelled && !(sector && hasArtifactCache(sector))) {
+      const shop = chooseShopIntent(patch);
+      if (shop) return decision(shop, "shopping for a gate route", "shop-action");
+    }
+
     if (boardSpace && !patch.innerApproach?.challengeCleared && boardSpace.textBox.intent !== "scenario-confrontation" && ((mayResolveSpace && patch.requiredAction.allowedCommand === null)
       || ((objectiveAction || pursuingGate) && optionalBoardAction && !patch.sectorExplorationSummary?.sectorTextLocked))) {
       const trial = bestBoardCheck(boardSpace.textBox.effectKey, ownCheckStats);
       const equipment = trial?.stat && bestGearIntent(patch, trial.stat);
-      if (equipment) return decision(equipment, "equipping for the sector trial", "prepare-sector-trial");
+      if (equipment && !(guide && equipment.type === "EQUIP_GEAR" && equipment.slot === guide.slot)) return decision(equipment, "equipping for the sector trial", "prepare-sector-trial");
       const choiceId = trial?.id ?? boardSpace.textBox.choices?.[0]?.id;
       return decision({ type: "RESOLVE_SPACE_TEXT", seatId, ...(choiceId ? { choiceId } : {}) }, "resolving the sector", "sector-action");
     }

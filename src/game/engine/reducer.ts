@@ -151,6 +151,7 @@ import { buildMovementRoutePlan, buildTierTransitionOptions, buildTransitionRout
 import {
   buildInnerApproachMoveOptions,
   getInnerApproachPathForEntry,
+  canEarnInnerArrivalStep,
   getInnerApproachProgress,
   isInnerApproachChallengeCleared,
   isInnerApproachSector
@@ -850,7 +851,7 @@ function applyShopCostOnlyToPlayer(player: PlayerState, cost: ShopServiceCost): 
   };
 }
 
-function applyShopPurchaseToPlayer(player: PlayerState, action: ShopPurchaseResolvedAction): PlayerState {
+function applyShopPurchaseToPlayer(player: PlayerState, action: ShopPurchaseResolvedAction, sequence: number): PlayerState {
   const afterCost = applyShopCostOnlyToPlayer(player, {
     ...action.cost,
     completedContracts: action.spentCompletedContractIds ? 0 : action.cost.completedContracts
@@ -884,7 +885,7 @@ function applyShopPurchaseToPlayer(player: PlayerState, action: ShopPurchaseReso
   return addHeldGearToPlayer(afterExactContractSpend, {
     type: "gain_gear",
     gearId: action.gainedGear.id,
-    gear: action.gainedGear
+    gear: { ...action.gainedGear, instanceId: action.gainedGear.instanceId ?? `${action.gainedGear.id}:${player.seatId}:${sequence}` }
   });
 }
 
@@ -2263,6 +2264,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       } catch (error) {
         return reject(state, action, error instanceof Error ? error.message : "Seat cannot traverse the inner approach");
       }
+      if (state.activeResolution) return reject(state, action, "Finish the trial result before taking an inner step");
       if (state.phase !== "navigation" || state.movementRolls?.[approachAction.seatId]) {
         return reject(state, action, "Inner approach movement is available only before rolling movement");
       }
@@ -5775,7 +5777,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         }
       }
 
-      const nextPlayers = updateActivePlayer(state, purchaseAction.seatId, (entry) => applyShopPurchaseToPlayer(entry, purchaseAction));
+      const nextPlayers = updateActivePlayer(state, purchaseAction.seatId, (entry) => applyShopPurchaseToPlayer(entry, purchaseAction, state.sequence));
       const updatedPlayer = nextPlayers.find((entry) => entry.seatId === purchaseAction.seatId) ?? player;
 
       return succeed({
@@ -6472,7 +6474,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       return succeed({
         ...withInnerApproachClear,
         sequence: state.sequence + 1,
-        phase: "broadcast",
+        phase: spaceTextAction.success && isInnerApproachSector(player.sectorId) &&
+          (state.phase === "navigation" || canEarnInnerArrivalStep(state, player.seatId, player.sectorId))
+          ? "navigation" : "broadcast",
         resolutionSource: null,
         currentEncounter: null,
         pendingEnemyRoll: null,

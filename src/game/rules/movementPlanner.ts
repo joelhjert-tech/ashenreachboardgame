@@ -415,7 +415,7 @@ export function getMovementStepBlockReason(
     (fromSpace?.tier === "inner" || targetSpace?.tier === "inner") &&
     fromSpace?.tier === targetSpace?.tier
   ) {
-    return "Inner Reach movement follows one cleared approach step per turn";
+    return "Inner Reach movement follows connected, cleared approach steps";
   }
 
   if (targetSpace?.tier === "center") {

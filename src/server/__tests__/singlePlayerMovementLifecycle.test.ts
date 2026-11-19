@@ -204,6 +204,44 @@ describe("single-player movement lifecycle", () => {
     )).toHaveLength(1);
   });
 
+  it.each([
+    { phase: "navigation", moves: 0, die: 5, next: "navigation" },
+    { phase: "action", moves: 1, die: 5, next: "navigation" },
+    { phase: "action", moves: 2, die: 5, next: "broadcast" },
+    { phase: "navigation", moves: 0, die: 0, next: "broadcast" }
+  ] as const)("resolves a fixed trial at high pressure ($phase, $moves moves, die index $die)", ({ phase, moves, die, next }) => {
+    const state = createInitialSessionState("trial-tempo", "single-player", "scenario_throne_of_ash");
+    state.status = "active";
+    state.phase = phase;
+    state.turnOrder = ["seat-1"];
+    state.escalationLevel = 4;
+    const player = state.players[0]!;
+    const tile = moves === 2 ? "inner_cinder_lattice" : "inner_veil_rift";
+    player.character.currentSpaceId = player.sectorId = tile;
+    player.character.stats.signal = 2;
+    if (moves) state.eventLog.push({ type: "TIER_TRANSITION_COMPLETED", direction: "inward", seatId: player.seatId,
+      toSectorId: moves === 2 ? "choir-execution-court" : tile });
+    if (moves === 2) state.eventLog.push({ type: "INNER_APPROACH_MOVED", direction: "advance", seatId: player.seatId, toSectorId: tile });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([die]));
+    server.handleIntent(client(), { type: "RESOLVE_SPACE_TEXT", seatId: player.seatId,
+      choiceId: moves === 2 ? "trace-embers" : "anchor-surge" });
+    const result = server.getState();
+    expect(result.eventLog).toContainEqual(expect.objectContaining({ type: "SPACE_TEXT_RESOLVED",
+      sectorId: tile, difficulty: 10, success: die === 5 }));
+    expect(result.escalationLevel).toBe(die === 5 ? 3 : 4);
+    expect(result.phase).toBe(next);
+    if (next === "navigation") {
+      const move = { type: "INNER_APPROACH_MOVE_REQUESTED", seatId: player.seatId,
+        destinationSectorId: "inner_tomb_gate", movementRevision: result.movementRouteRevisions?.[player.seatId] ?? 0 } as const;
+      const sent: Array<Record<string, unknown>> = [];
+      server.handleIntent(client(player.seatId, sent), move);
+      expect(sent).toContainEqual(expect.objectContaining({ type: "INTENT_REJECTED" }));
+      drainResolution(server);
+      server.handleIntent(client(), move);
+      expect(server.getState().players[0]!.sectorId).toBe("inner_tomb_gate");
+    }
+  });
+
   it("resolves one cleared inner approach step and rejects stale replay", () => {
     const state = createInitialSessionState("solo-inner-approach", "single-player");
     state.status = "active";

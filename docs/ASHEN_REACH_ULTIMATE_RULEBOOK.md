@@ -132,7 +132,7 @@ The server applies mandatory start-of-turn scenario, Scar, Affliction, operative
 
 When navigation begins outside the Inner Reach, the active phone offers any canonical tier transition available from the current sector and **Roll Movement**. If the operative does not cross tiers, the server rolls and computes destinations at the exact accepted distance. Before the roll, only tier transitions and effects whose timing explicitly permits pre-roll use may appear.
 
-Inside the Inner Reach, no movement die is rolled. The operative follows one of two authored final-approach roads and may move exactly one connected step per turn. The current sector's fixed challenge must have been cleared successfully by that operative before an inward step is legal. A failed challenge leaves the operative in place for a later attempt. Retreating one prior step remains legal.
+Inside the Inner Reach, no movement die is rolled. The operative follows one of two authored final-approach roads and moves one connected step at a time. Passing the fixed trial on the first inward arrival of a turn earns one additional step that turn. Entering from the Middle Reach counts as the first step. The current sector's fixed challenge must have been cleared successfully by that operative before an inward step is legal. Inner trials use their printed difficulty. Each successful clearance reduces Global Escalation by 1, to a minimum of 0. A failed trial ends movement for that turn. Passing a retry before moving leaves the normal step available. Retreating one prior step remains legal.
 
 Movement distance cannot be changed by table agreement. The Ashen Route Compass may apply its exact `-1` or `+1` adjustment only through its prompt and charge rules.
 
