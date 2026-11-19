@@ -50,6 +50,8 @@ describe("PhoneResultReadyGate", () => {
     expect(screen.getByText("Threat defeated")).toBeVisible();
     expect(screen.getByText("Gain 1 Trophy.")).toBeVisible();
     expect(screen.getByText("Your total: 9")).toBeVisible();
+    const breakdown = screen.getByRole("group", { name: "Roll breakdown" });
+    expect(breakdown).toHaveTextContent(/Dice83 \+ 5Skill \+ effects\+1Total9Target8/);
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent("Target: 8");
     expect(document.querySelector("img")).toBeNull();
   });

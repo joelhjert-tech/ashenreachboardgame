@@ -1348,6 +1348,7 @@ export interface ScenarioOwnershipState {
     progress: Record<string, number>;
     stage: string | null;
     locationSectorId: string;
+    repelled?: boolean;
     locked: boolean | null;
     blockedReason?: string | null;
   };

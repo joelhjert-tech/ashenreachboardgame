@@ -1,7 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent, type ReactElement, type ReactNode, type RefObject } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { describeContractObjective as describeObjective, formatContractProgress } from "../../game/contracts/objectives.js";
-import { getEquippedGearItem } from "../../game/engine/gear.js";
 import { getCharacterPortraitPath, getObjectiveCategoryIconPath, type ObjectiveCategoryIcon } from "../shared/assetPaths.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
@@ -21,8 +20,6 @@ import type {
   CharacterCatalogEntry,
   ClientIntent,
   ContractCard,
-  GearItem,
-  GearSlot,
   Stat,
   NemesisChampionSummary,
   PhonePatchPayload,
@@ -32,13 +29,14 @@ import type {
   StartingBonusOption
 } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
+import { PhoneOperativeSummary } from "./PhoneOperativeSummary.js";
 import { PhoneSetupProgress } from "./PhoneSetupProgress.js";
 import { describeEquipmentComparison } from "../shared/equipmentComparison.js";
 import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
 import { buildPhoneTurnFlow, PhoneTurnFlow } from "./PhoneTurnFlow.js";
 import { PhoneMovementPresentationWait, PhoneTvPresentationWait } from "./PhoneTvPresentationWait.js";
-import { PhoneRequiredActionShell, type RequiredActionStatus } from "./PhoneRequiredActionShell.js";
-import type { MovementNavigationTarget } from "./PhoneMovementView.js";
+import { PhoneRequiredActionShell, type ActionRecoveryTone, type RequiredActionStatus } from "./PhoneRequiredActionShell.js";
+import { PhoneTabletopToggle, type MovementNavigationTarget } from "./PhoneMovementView.js";
 import { isPhoneBattleRelevantToSeat } from "./PhoneBattleView.js";
 import { isPhoneChallengeRelevantToSeat } from "./PhoneHazardChallengePrototype.js";
 import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
@@ -82,7 +80,6 @@ interface PortraitControllerViewProps {
 type PortraitTab = SignalPhoneTab;
 
 const turnActionTabs: TurnActionTab[] = ["move", "battle", "shop", "action"];
-const gearSlots: GearSlot[] = ["weapon", "armor", "utility"];
 const aiRivalScenarioIds = new Set([
   "scenario_throne_of_ash",
   "scenario_mirror_of_false_heroes",
@@ -208,26 +205,6 @@ function getCompactStatSummary(self: PhoneSelfState, stat: Stat, suppressedInsta
   const status = statusTotal !== 0 ? [`Status ${formatSignedStatBonus(statusTotal)}`] : [];
 
   return [`Base ${breakdown.base}`, ...additions, ...status].join(" ");
-}
-
-function formatEquippedPassiveBonus(item: GearItem): string {
-  const amount = formatSignedStatBonus(item.statBonus.amount);
-  const stat = statLabelById[item.statBonus.stat].toUpperCase();
-  return item.effectModel === "conditional" && item.conditionType === "battle"
-    ? `${amount} ${stat} IN BATTLES`
-    : `${amount} ${stat} · ALWAYS ACTIVE`;
-}
-
-function getEquipmentAbilityState(item: GearItem): string | null {
-  if (item.useLimit === "charge" || item.effectModel === "charged") {
-    const current = item.currentCharges ?? item.charges ?? item.startingCharges ?? 0;
-    const maximum = item.maxCharges ?? item.charges ?? item.startingCharges ?? current;
-    return `${current} / ${maximum} CHARGES${current <= 0 ? " · DEPLETED" : ""}`;
-  }
-  if (item.effectModel === "exhaust") {
-    return `${item.exhausted ? "EXHAUSTED" : "READY"} · REFRESHES NEXT ROUND`;
-  }
-  return null;
 }
 
 function PortraitStatCard({
@@ -686,6 +663,56 @@ function PhoneMissionReplacementView({
   );
 }
 
+function NextContractObjectives({
+  activeContracts,
+  cards
+}: {
+  activeContracts: NonNullable<PhoneSelfState["character"]["activeContract"]>[];
+  cards: ContractCard[];
+}): ReactElement | null {
+  if (activeContracts.length === 0) return null;
+
+  return (
+    <section className="phone-next-contracts" aria-labelledby="phone-next-contracts-heading">
+      <h2 id="phone-next-contracts-heading">Next Contract objectives</h2>
+      <ul>
+        {activeContracts.map((activeContract) => {
+          const contract = cards.find((card) => card.id === activeContract.contractId);
+          if (!contract) {
+            return <li key={activeContract.contractId}><strong>Contract syncing</strong></li>;
+          }
+
+          const presentation = buildOwnerContractPresentation(contract, activeContract);
+          const objective = contract.objective;
+          const unorderedRoute = objective.type === "multiStopRoute" && !objective.ordered;
+          const step = unorderedRoute
+            ? objective.targets.find((target) => !activeContract.completedTargetIds?.includes(target.id))?.label
+            : presentation.conditions.find((condition) => condition.state === "current")?.label;
+          const targetClue = objective.type === "spaceTextResolved" || objective.type === "tileChallengeResolved"
+            ? getMissionTargetClue(contract)
+            : null;
+
+          return (
+            <li key={contract.id}>
+              <div className="phone-next-contracts__heading">
+                <strong>{presentation.title}</strong>
+                <small>{presentation.progressText}</small>
+              </div>
+              <p>
+                {presentation.progress.complete
+                  ? "Objective complete"
+                  : unorderedRoute && step
+                    ? <>Remaining stop: {step}<small>Any remaining stop counts.</small></>
+                    : targetClue ?? step ?? presentation.instruction}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function ActiveMissionQuestCard({
   activeContract,
   contract
@@ -978,7 +1005,7 @@ export function PortraitControllerView({
     sequence: number;
     label: string;
   } | null>(null);
-  const [actionRecovery, setActionRecovery] = useState<{ message: string; sequence: number } | null>(null);
+  const [actionRecovery, setActionRecovery] = useState<{ message: string; sequence: number; tone: ActionRecoveryTone } | null>(null);
   const [awaitingRequiredActionResynchronization, setAwaitingRequiredActionResynchronization] = useState(false);
   const [requiredActionDisconnectObserved, setRequiredActionDisconnectObserved] = useState(false);
   const [qaRequiredActionState, setQaRequiredActionState] = useState<{ status: RequiredActionStatus; label: string } | null>(null);
@@ -1181,6 +1208,7 @@ export function PortraitControllerView({
       if (!connectionSynchronized) setRequiredActionDisconnectObserved(true);
     }
     setActionRecovery({
+      tone: transportFailure ? "restoring" : "rejected",
       message: transportFailure
         ? "Restoring latest state. The action will not be sent again automatically."
         : stale
@@ -1204,6 +1232,7 @@ export function PortraitControllerView({
     if (!pendingRequiredIntent || awaitingRequiredActionResynchronization) return;
     const timer = window.setTimeout(() => {
       setActionRecovery({
+        tone: "restoring",
         message: "Restoring latest state. The action will not be sent again automatically.",
         sequence: patchSequence ?? pendingRequiredIntent.sequence
       });
@@ -1231,6 +1260,7 @@ export function PortraitControllerView({
     setAwaitingRequiredActionResynchronization(false);
     setRequiredActionDisconnectObserved(false);
     setActionRecovery({
+      tone: "restored",
       message: "Latest authoritative action restored.",
       sequence: patchSequence ?? 0
     });
@@ -1782,7 +1812,6 @@ export function PortraitControllerView({
   ]
     .filter(Boolean)
     .join(" ");
-  const scarCount = self.character.scars.length;
   const scarCards = self.character.scarCards ?? [];
   const afflictions = self.character.afflictions ?? { faceup: [], facedownCount: 0 };
   const pendingTestModifiers = patch?.pendingTestModifiers ?? [];
@@ -1829,6 +1858,7 @@ export function PortraitControllerView({
     const sent = sendControllerIntent(intent);
     if (sent === false && commitsRequiredAction) {
       setActionRecovery({
+        tone: "restoring",
         message: "Restoring latest state. The action will not be sent again automatically.",
         sequence: patchSequence ?? 0
       });
@@ -1838,6 +1868,9 @@ export function PortraitControllerView({
   };
   const renderRequiredAction = (content?: ReactElement, compact = false): ReactElement | null => {
     if (!requiredAction) return content ?? null;
+    const waitingSector = requiredAction.waiting && patch?.status === "active"
+      ? patch.sectors.find((sector) => sector.id === self.sectorId)
+      : undefined;
     return (
       <PhoneRequiredActionShell
         projection={requiredAction}
@@ -1846,12 +1879,27 @@ export function PortraitControllerView({
         atRequiredTab={requiredAction.requiredTab === activeTab}
         compact={compact}
         recoveryMessage={actionRecovery?.message}
+        recoveryTone={actionRecovery?.tone}
+        respondingToAssistance={requiredAction.kind === "assistance" && Boolean(activeSeatId && activeSeatId !== self.seatId)}
+        waitingContent={waitingSector && patch ? (
+          <div className="phone-required-action-shell__waiting-tools">
+            <PhoneTabletopToggle
+              publicState={{ players: patch.players, seats: patch.seats, sectors: patch.sectors }}
+              currentSectorId={waitingSector.id}
+              currentSectorName={waitingSector.name}
+            />
+          </div>
+        ) : null}
         onReturnToAction={requiredAction.requiredTab ? () => navigateToTab(requiredAction.requiredTab!, "required") : undefined}
       >
         {content}
       </PhoneRequiredActionShell>
     );
   };
+
+  const connectionReady = connectionStatus === "open" && connectionSynchronized;
+  const contentBlocked = !connectionReady || bottomDockExpanded ||
+    Boolean(patch?.tvPresentationGate) || Boolean(patch?.movementPresentationGate);
 
   return (
     <section
@@ -1868,7 +1916,7 @@ export function PortraitControllerView({
           wounds={self.character.wounds}
           salvage={self.character.salvage ?? 0}
           sectorId={self.sectorId}
-          connectionStatus={connectionStatus}
+          connectionReady={connectionReady}
         />
 
         <div className="phone-portrait-content-stage">
@@ -1876,8 +1924,8 @@ export function PortraitControllerView({
             ref={phoneScrollRef}
             className={contentClassName}
             aria-label="Phone content"
-            aria-hidden={bottomDockExpanded || patch?.tvPresentationGate || patch?.movementPresentationGate ? "true" : undefined}
-            inert={bottomDockExpanded || Boolean(patch?.tvPresentationGate) || Boolean(patch?.movementPresentationGate) ? true : undefined}
+            aria-hidden={contentBlocked ? "true" : undefined}
+            inert={contentBlocked ? true : undefined}
           >
           {focusedResolutionActive && patch && onIntent ? (
             <div className="phone-portrait-screen phone-portrait-screen-command phone-portrait-screen-battle" data-testid="phone-action-screen">
@@ -1911,34 +1959,30 @@ export function PortraitControllerView({
           ) : null}
 
           {!focusedResolutionActive && activeTab === "player" && (
-            <div className="phone-portrait-screen">
+            <div className="phone-portrait-screen phone-portrait-screen--field-reference">
               {renderRequiredAction(undefined, true)}
               <section className="phone-portrait-hero-card">
                 <div className="phone-portrait-art">
                   <PhoneOptimizedImage src={getCharacterPortraitPath(self.character.id)} alt={self.character.name} />
                 </div>
                 <div className="phone-portrait-hero-copy">
-                  <p className="phone-panel-kicker">{activeSeatId === self.seatId ? "Active turn" : "Standby"}</p>
+                  <p className="phone-panel-kicker">{self.character.status === "recalled" ? "Recalled" : activeSeatId === self.seatId ? "Active turn" : "Standby"}</p>
                   <h2>{self.character.name}</h2>
                   {onInspectOperative ? <button type="button" className="phone-button" onClick={onInspectOperative}>Inspect operative</button> : null}
                   <p>{self.character.archetype}</p>
                 </div>
               </section>
 
-              <section className={`phone-player-essential-state${requiredAction && (!requiredAction.canAct || requiredAction.waiting) ? " is-waiting-summary" : ""}`} aria-label="Essential operative state">
-                {!requiredAction ? (
+              <PhoneOperativeSummary self={self} equipmentSuppressions={patch?.equipmentSuppressions} />
+
+              {!requiredAction ? (
+                <section className="phone-player-essential-state" aria-label="Current context">
                   <div>
-                    <span>Current context</span>
                     <strong>{actionGuidance?.title ?? "Operative ready"}</strong>
                     <small>{actionGuidance?.detail ?? `Holding at ${self.sectorId}`}</small>
                   </div>
-                ) : null}
-                <dl className="phone-portrait-vitals phone-portrait-vitals--compact">
-                  <span className="visually-hidden">Scars {scarCount} · Status {self.character.status}</span>
-                  <div><dt>Scars</dt><dd>{scarCount}</dd></div>
-                  <div><dt>Status</dt><dd>{self.character.status}</dd></div>
-                </dl>
-              </section>
+                </section>
+              ) : null}
 
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">{relevantStat ? `${statLabelById[relevantStat]} test` : "Stats"}</div>
@@ -1954,27 +1998,6 @@ export function PortraitControllerView({
                       relevant={stat === relevantStat}
                     />
                   ))}
-                </div>
-              </section>
-
-              <section className="phone-portrait-section" aria-label="Equipped gear bonuses">
-                <div className="phone-sheet-section-heading">Equipped Gear</div>
-                <div className="phone-player-equipped-grid">
-                  {gearSlots.map((slot) => {
-                    const item = getEquippedGearItem(self.character, slot);
-                    const suppressed = Boolean(item?.instanceId && suppressedEquipmentInstanceIds.has(item.instanceId));
-                    const abilityState = item ? getEquipmentAbilityState(item) : null;
-                    return (
-                      <article key={slot} className={`phone-player-equipped-card${suppressed ? " is-suppressed" : ""}`}>
-                        <span>{gearSlotLabelById[slot]}</span>
-                        <strong>{item?.name ?? "Empty"}</strong>
-                        {item ? (
-                          <small>{suppressed ? `${formatEquippedPassiveBonus(item)} · SUPPRESSED` : formatEquippedPassiveBonus(item)}</small>
-                        ) : null}
-                        {abilityState ? <em aria-label={abilityState.toLowerCase()}>{abilityState}</em> : null}
-                      </article>
-                    );
-                  })}
                 </div>
               </section>
 
@@ -2072,7 +2095,7 @@ export function PortraitControllerView({
           )}
 
           {!focusedResolutionActive && activeTab === "inventory" && (
-            <div className="phone-portrait-screen">
+            <div className="phone-portrait-screen phone-portrait-screen--field-reference">
               {renderRequiredAction(undefined, true)}
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Inventory</div>
@@ -2089,8 +2112,9 @@ export function PortraitControllerView({
           )}
 
           {!focusedResolutionActive && activeTab === "quests" && (
-            <div className="phone-portrait-screen phone-objectives-screen">
+            <div className="phone-portrait-screen phone-portrait-screen--field-reference phone-objectives-screen">
               {renderRequiredAction(undefined, true)}
+              <NextContractObjectives activeContracts={activeMissionStates} cards={activeMissionCards} />
               <div className="phone-objective-groups" aria-label="Objective categories">
                 <ObjectiveDisclosure
                   label="Shared Mission"

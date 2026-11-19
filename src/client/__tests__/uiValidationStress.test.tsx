@@ -407,7 +407,8 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(screen.getByTestId("phone-battle-cinematic-stage")).toHaveTextContent(/difficulty\s*18/i);
     expect(screen.queryByText(/base grit/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /view details/i }));
-    expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/15 \+ 11 \+ 5 = 31/i);
+    expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/11 \+ 20 = 31/i);
+    expect(screen.getByRole("group", { name: "Operative roll" })).toHaveTextContent(/Dice116 \+ 5Skill \+ effects\+20Total31/);
     expect(screen.getByText(/modifier sources/i).parentElement).toHaveTextContent(/Void-Cleaver \+3.*Command protocol \+2/i);
     expect(screen.queryByTestId("phone-battle-total-comparison")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /reroll.*spend 1 charge/i })).toHaveTextContent(/1 charge remaining/i);

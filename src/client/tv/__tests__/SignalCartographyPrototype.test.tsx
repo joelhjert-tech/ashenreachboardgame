@@ -3,6 +3,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { RIFTFALL_BOARD_NODES } from "../../../data/riftfallBoardNodes.js";
 import { BOARD_SPACES } from "../../../game/data/boardSpaces.js";
 import type { PublicPatchPayload, StatePatch } from "../../shared/types.js";
 import {
@@ -75,6 +76,24 @@ describe("SignalCartographyPrototype", () => {
     expect(screen.getByLabelText("Focused sector: Ashen Chapel")).toHaveTextContent(/Rift Whispers/i);
     expect(screen.getByText("Public information only")).toBeVisible();
     expect(view.container.querySelector("canvas")).not.toBeInTheDocument();
+  });
+
+  it("prints every canonical connection once and highlights the selected route", () => {
+    const { container } = render(<SignalCartographyPrototype patch={null} fixture="route" design="board-tiles" />);
+    const edgeKey = (from: string, to: string) => [from, to].sort().join("|");
+    const canonicalEdges = new Set(RIFTFALL_BOARD_NODES.flatMap((node) =>
+      node.connections.map((neighbor) => edgeKey(node.id, neighbor))
+    ));
+    const printedEdges = Array.from(container.querySelectorAll<SVGPathElement>(".signal-cartography__board-track-print"));
+    const printedEdgeKey = (path: SVGPathElement) =>
+      edgeKey(path.dataset.fromSectorId!, path.dataset.toSectorId!);
+
+    expect(printedEdges).toHaveLength(canonicalEdges.size);
+    expect(new Set(printedEdges.map(printedEdgeKey))).toEqual(canonicalEdges);
+    expect(printedEdges.filter((path) => path.parentElement?.classList.contains("is-route")).map(printedEdgeKey)).toEqual([
+      edgeKey("north-dock-bastion", "outer_waymarket"),
+      edgeKey("outer_waymarket", "coldwind-wharf")
+    ]);
   });
 
   it("highlights only the active operative's current public mission destination", () => {
@@ -167,6 +186,9 @@ describe("SignalCartographyPrototype", () => {
 
     expect(playerCoins).toHaveLength(6);
     expect(new Set(playerCoins.map((coin) => coin.getAttribute("data-player-coin"))).size).toBe(6);
+    const pieceRows = Array.from(view.container.querySelectorAll("[data-piece-row]"));
+    expect(pieceRows.map((row) => row.querySelectorAll("[data-player-coin]").length)).toEqual([3, 3]);
+    expect(view.container.querySelector(".signal-cartography__board-occupancy")).toHaveTextContent("6");
     expect(view.container.querySelector('.signal-cartography__board-mission-coin[data-objective-coin="service"]'))
       .toHaveAttribute("href", "/assets/riftfall/ui/signal-cartography/markers/objectives/service.png");
     expect(view.container.querySelector(".signal-cartography__board-tile.is-active")).toBeInTheDocument();

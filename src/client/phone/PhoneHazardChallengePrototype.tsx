@@ -209,16 +209,15 @@ export function PhoneHazardChallengeView({
     presentation?.operative.name
     ?? patch.seats.find((seat) => seat.seatId === self.seatId)?.displayName
     ?? self.character.name;
-  const operativeBase = presentation?.operative.baseValue ?? self.character.stats[stat] ?? 0;
   const roll = resultStage ? resolution?.roll ?? null : null;
   const rollDice = resultStage ? presentation?.operative.rawDice ?? roll?.dice ?? [] : [];
   const rollTotal = resultStage
-    ? presentation?.operative.diceTotal ?? (roll ? roll.dice.reduce((sum, die) => sum + die, 0) : null)
+    ? presentation?.operative.diceTotal ?? roll?.baseTotal ?? null
     : null;
   const modifiers = resultStage
     ? presentation?.operative.modifiers ?? resolution?.battle?.modifiers ?? []
     : [];
-  const modifierTotal = modifiers.reduce((sum, modifier) => sum + modifier.value, 0);
+  const modifierTotal = roll?.modifierTotal ?? presentation?.test.fixedValue ?? null;
   const finalTotal = resultStage ? presentation?.operative.finalTotal ?? roll?.finalTotal ?? null : null;
   const result =
     !resultStage
@@ -321,9 +320,9 @@ export function PhoneHazardChallengeView({
     [resultDeltas]
   );
   const compactResult = resultStage;
-  const fullFormula = finalTotal === null
-    ? "Test not yet rolled"
-    : `${operativeBase} + ${rollTotal ?? 0} ${modifierTotal >= 0 ? "+" : "−"} ${Math.abs(modifierTotal)} = ${finalTotal}`;
+  const fullFormula = finalTotal === null || rollTotal === null || modifierTotal === null
+    ? "Roll breakdown unavailable"
+    : `${rollTotal} ${modifierTotal >= 0 ? "+" : "−"} ${Math.abs(modifierTotal)} = ${finalTotal}`;
 
   if (loadoutOpen && loadoutWindow) {
     return (
@@ -375,7 +374,7 @@ export function PhoneHazardChallengeView({
             targetTotal={difficulty}
             resolutionId={resolution?.id ?? identity}
             dice={rollDice}
-            modifierTotal={modifierTotal}
+            modifierTotal={modifierTotal ?? undefined}
             outcomeTitle={outcome?.title ?? resultLabel}
             outcomeText={outcome?.text ?? consequenceCopy(patch, resolution, result === "success")}
             outcomeEffects={visibleOutcomeEffects}
@@ -427,9 +426,22 @@ export function PhoneHazardChallengeView({
       <div className="phone-trial-shell__scroll" data-testid="phone-battle-panel">
         <header className="phone-trial-state" aria-live="polite">
           <span>{categoryLabel} trial</span>
-          <strong>{resultLabel}</strong>
-          <small className="sr-only" data-testid="phone-battle-subject-details">{statLabel} test · Target {difficulty}</small>
+          <strong>{title}</strong>
+          <small className="phone-trial-state__target" data-testid="phone-battle-subject-details">{statLabel} test · Target {difficulty}</small>
         </header>
+
+        {!result ? <TrialStakes patch={patch} resolution={resolution} /> : null}
+
+        {loadoutWindow && loadoutCardCount > 0 ? (
+          <button
+            type="button"
+            className="phone-battle-equipment-alert phone-trial-loadout-alert"
+            onClick={() => setLoadoutOpen(true)}
+          >
+            <span>Adjust loadout</span>
+            <strong>{loadoutCardCount} Gear or follower card{loadoutCardCount === 1 ? "" : "s"} available before this {statLabel} test</strong>
+          </button>
+        ) : null}
 
         <section
           className="phone-trial-arena"
@@ -504,19 +516,6 @@ export function PhoneHazardChallengeView({
           </button>
           <AuthoritativeDicePresentation model={diceModel} compact />
         </div>
-
-        {!result ? <TrialStakes patch={patch} resolution={resolution} /> : null}
-
-        {loadoutWindow && loadoutCardCount > 0 ? (
-          <button
-            type="button"
-            className="phone-battle-equipment-alert phone-trial-loadout-alert"
-            onClick={() => setLoadoutOpen(true)}
-          >
-            <span>Adjust loadout</span>
-            <strong>{loadoutCardCount} Gear or follower card{loadoutCardCount === 1 ? "" : "s"} available before this {statLabel} test</strong>
-          </button>
-        ) : null}
 
         {result || outcome ? (
           <section className={`phone-trial-outcome phone-trial-outcome--${result ?? "neutral"}`} data-testid="phone-resolution-card">

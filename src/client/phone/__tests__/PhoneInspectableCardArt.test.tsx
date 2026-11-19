@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhoneInspectableCardArt } from "../PhoneInspectableCardArt.js";
 
@@ -30,9 +30,14 @@ describe("PhoneInspectableCardArt", () => {
 
   it("opens threat artwork and closes with Escape", () => {
     render(<PhoneInspectableCardArt cardType="threat" cardId="glass-chime-swarm" title="Glass Chime Swarm" rules="Signal test against the projected difficulty." />);
-    fireEvent.click(screen.getByRole("button", { name: /inspect glass chime swarm/i }));
-    expect(screen.getByRole("dialog", { name: /glass chime swarm/i })).toBeInTheDocument();
-    fireEvent.keyDown(window, { key: "Escape" });
+    const inspect = screen.getByRole("button", { name: /inspect glass chime swarm/i });
+    inspect.focus();
+    fireEvent.click(inspect);
+    const dialog = screen.getByRole("dialog", { name: /glass chime swarm/i });
+    expect(dialog).toHaveAttribute("open");
+    expect(within(dialog).getByRole("button", { name: /^Close$/ })).toHaveFocus();
+    fireEvent(dialog, new Event("cancel", { cancelable: true }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(inspect).toHaveFocus();
   });
 });

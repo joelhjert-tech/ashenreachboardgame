@@ -52,6 +52,22 @@ export function PhoneBattleDuelStage({
       <header className="phone-battle-duel__header">
         <span>Battle · {statLabel}</span>
       </header>
+      {victoryReward || failureStakes ? (
+        <div className="phone-battle-duel__stakes">
+          {victoryReward ? (
+            <aside className="phone-battle-duel__intent" role="note" aria-label="Victory reward">
+              <span>Victory reward</span>
+              <strong>On victory: {victoryReward}</strong>
+            </aside>
+          ) : null}
+          {failureStakes ? (
+            <aside className="phone-battle-duel__intent" role="note" aria-label="Enemy intent">
+              <span>Enemy intent</span>
+              <strong>On defeat: {failureStakes}</strong>
+            </aside>
+          ) : null}
+        </div>
+      ) : null}
       <div className="phone-battle-duel-stage">
         <figure className="phone-battle-duel-card phone-battle-duel-card--operative">
           <div className="phone-battle-duel-card__art">
@@ -82,18 +98,6 @@ export function PhoneBattleDuelStage({
           </div>
         </figure>
       </div>
-      {victoryReward ? (
-        <aside className="phone-battle-duel__intent" role="note" aria-label="Victory reward">
-          <span>Victory reward</span>
-          <strong>On victory: {victoryReward}</strong>
-        </aside>
-      ) : null}
-      {failureStakes ? (
-        <aside className="phone-battle-duel__intent" role="note" aria-label="Enemy intent">
-          <span>Enemy intent</span>
-          <strong>On defeat: {failureStakes}</strong>
-        </aside>
-      ) : null}
     </section>
   );
 }

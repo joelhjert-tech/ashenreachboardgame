@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties, type ReactElement } from "react";
+import { useId, useMemo, type CSSProperties, type ReactElement } from "react";
 import {
   BOARD_SPACES,
   type BoardSpaceDefinition,
@@ -49,12 +49,6 @@ export interface SignalCartographyTilePosition {
   column: number;
 }
 
-interface BoardConnection {
-  fromSectorId: string;
-  toSectorId: string;
-  special: boolean;
-}
-
 interface CartographyChallengeSummary {
   name: string;
   challengeType: "hazard" | "anomaly";
@@ -79,6 +73,11 @@ const BOARD_CELL_HEIGHT = 100;
 const BOARD_WIDTH = BOARD_CELL_WIDTH * 7;
 const BOARD_HEIGHT = BOARD_CELL_HEIGHT * 7;
 const BOARD_TILE_CENTER_X = BOARD_CELL_WIDTH / 2;
+const TABLETOP_ART = "/assets/riftfall/ui/signal-cartography/tabletop-";
+const SECTOR_FRAME = "M 8 3 H 122 L 127 8 V 92 L 122 97 H 8 L 3 92 V 8 Z";
+const CORE_FRAME = "M 15 2 H 47 L 52 1 H 78 L 83 2 H 115 L 129 15 V 85 L 115 98 H 84 L 79 99 H 51 L 46 98 H 15 L 1 85 V 15 Z";
+const SECTOR_ILLUSTRATION = "M 10 7 H 120 L 123 10 V 59 H 7 V 10 Z";
+const INNER_TILE_FRAME = "M 11 7 H 119 L 123 11 V 89 L 119 93 H 11 L 7 89 V 11 Z";
 const playerColors = ["#df5a43", "#54a7dd", "#d5ad55", "#65bb89", "#a985d6", "#e18ab1"];
 const threatColors: Record<ThreatIcon, string> = {
   red: "#e0523d",
@@ -104,17 +103,11 @@ const tierNumbers: Record<BoardTier, string> = {
   inner: "III",
   center: "IV"
 };
-const boardTierMarkers: Array<{
-  tier: BoardTier;
-  label: string;
-  count: number;
-  x: number;
-  y: number;
-}> = [
-  { tier: "outer", label: "OUTER REACH", count: 24, x: 22, y: 5 },
-  { tier: "middle", label: "MIDDLE REACH", count: 16, x: BOARD_CELL_WIDTH + 22, y: BOARD_CELL_HEIGHT + 5 },
-  { tier: "inner", label: "INNER REACH", count: 8, x: BOARD_CELL_WIDTH * 2 + 22, y: BOARD_CELL_HEIGHT * 2 + 5 },
-  { tier: "center", label: "CORE", count: 1, x: BOARD_CELL_WIDTH * 3 + 22, y: BOARD_CELL_HEIGHT * 3 + 5 }
+const boardTierMarkers = [
+  { tier: "outer", label: "Outer Reach", count: 24 },
+  { tier: "middle", label: "Middle Reach", count: 16 },
+  { tier: "inner", label: "Inner Reach", count: 8 },
+  { tier: "center", label: "Core", count: 1 }
 ];
 const statLabels: Record<Stat, string> = {
   command: "Command",
@@ -250,22 +243,17 @@ export function buildSignalCartographyBoardLayout(): SignalCartographyTilePositi
 
 const BOARD_TILE_LAYOUT = buildSignalCartographyBoardLayout();
 const BOARD_TILE_INDEX = new Map(BOARD_TILE_LAYOUT.map((entry) => [entry.sectorId, entry] as const));
-const BOARD_CONNECTIONS: BoardConnection[] = RIFTFALL_BOARD_NODES.flatMap((node) =>
+const BOARD_CONNECTIONS = RIFTFALL_BOARD_NODES.flatMap((node) =>
   node.connections
     .filter((neighborId) => node.id.localeCompare(neighborId) < 0)
     .map((neighborId) => {
-      const from = BOARD_TILE_INDEX.get(node.id);
-      const to = BOARD_TILE_INDEX.get(neighborId);
-      const isAdjacent = Boolean(
-        from &&
-        to &&
-        Math.abs(from.row - to.row) + Math.abs(from.column - to.column) === 1
-      );
-
+      const from = BOARD_TILE_INDEX.get(node.id)!;
+      const to = BOARD_TILE_INDEX.get(neighborId)!;
       return {
         fromSectorId: node.id,
         toSectorId: neighborId,
-        special: !isAdjacent
+        key: [node.id, neighborId].sort().join("|"),
+        ...getBoardConnectionGeometry(from, to)
       };
     })
 );
@@ -291,23 +279,12 @@ function splitLabel(value: string): [string, string?] {
 }
 
 function wrapBoardLabel(value: string): string[] {
-  const words = value.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let current = "";
-
-  words.forEach((word) => {
-    const candidate = `${current} ${word}`.trim();
-    if (candidate.length <= 20 || current.length === 0) {
-      current = candidate;
-      return;
-    }
-    lines.push(current);
-    current = word;
-  });
-  if (current) lines.push(current);
-
-  if (lines.length <= 3) return lines;
-  return [lines[0]!, lines[1]!, `${lines.slice(2).join(" ").slice(0, 14)}…`];
+  if (value.length <= 16) return [value];
+  const spaces = Array.from(value.matchAll(/ /g), (match) => match.index);
+  const midpoint = value.length / 2;
+  const breakAt = spaces.reduce((nearest, index) =>
+    Math.abs(index - midpoint) < Math.abs(nearest - midpoint) ? index : nearest, Infinity);
+  return Number.isFinite(breakAt) ? [value.slice(0, breakAt), value.slice(breakAt + 1)] : [value];
 }
 
 function nodeDimensions(tier: BoardTier): { width: number; height: number } {
@@ -342,10 +319,14 @@ function buildOccupants(
   fixture: SignalCartographyFixture
 ): Map<string, MapOccupant[]> {
   if (fixture !== "live" || !patch?.payload.players.length) return buildFixtureOccupants(fixture);
+  return buildPublicOccupants(patch.payload);
+}
+
+function buildPublicOccupants({ players, seats }: Pick<PublicPatchPayload, "players" | "seats">): Map<string, MapOccupant[]> {
   const bySector = new Map<string, MapOccupant[]>();
-  patch.payload.players.forEach((player, index) => {
-    const seatIndex = patch.payload.seats.findIndex((seat) => seat.seatId === player.seatId);
-    const seat = seatIndex >= 0 ? patch.payload.seats[seatIndex] : undefined;
+  players.forEach((player, index) => {
+    const seatIndex = seats.findIndex((seat) => seat.seatId === player.seatId);
+    const seat = seats[seatIndex];
     const displayName =
       seat?.displayName ??
       player.character.name;
@@ -388,7 +369,7 @@ function PieceCluster({
 }
 
 function getCartographyChallenge(
-  patch: StatePatch<PublicPatchPayload> | null,
+  sectors: PublicPatchPayload["sectors"] | undefined,
   fixture: SignalCartographyFixture,
   space: BoardSpaceDefinition
 ): CartographyChallengeSummary | null {
@@ -396,8 +377,8 @@ function getCartographyChallenge(
     return fixtureChallenge;
   }
 
-  const publicChallenge: PublicTileChallenge | undefined = patch?.payload.sectors
-    .find((sector) => sector.id === space.id)
+  const publicChallenge: PublicTileChallenge | undefined = sectors
+    ?.find((sector) => sector.id === space.id)
     ?.tileChallenges?.[0];
 
   if (publicChallenge) {
@@ -554,25 +535,38 @@ function cartographyStatusText(
   return "Six-operative density";
 }
 
-function boardConnectionPath(from: SignalCartographyTilePosition, to: SignalCartographyTilePosition): string {
-  const x1 = from.column * BOARD_CELL_WIDTH + BOARD_TILE_CENTER_X;
-  const y1 = from.row * BOARD_CELL_HEIGHT + BOARD_CELL_HEIGHT / 2;
-  const x2 = to.column * BOARD_CELL_WIDTH + BOARD_TILE_CENTER_X;
-  const y2 = to.row * BOARD_CELL_HEIGHT + BOARD_CELL_HEIGHT / 2;
-  const distance = Math.hypot(x2 - x1, y2 - y1);
-  const isAdjacent =
-    Math.abs(from.row - to.row) + Math.abs(from.column - to.column) === 1;
+function getBoardConnectionGeometry(from: SignalCartographyTilePosition, to: SignalCartographyTilePosition) {
+  const columns = to.column - from.column;
+  const rows = to.row - from.row;
+  const adjacent = Math.abs(columns) + Math.abs(rows) === 1;
+  const crossing = from.tier !== to.tier;
+  const midpointX = (from.column + to.column + 1) * BOARD_CELL_WIDTH / 2;
+  const midpointY = (from.row + to.row + 1) * BOARD_CELL_HEIGHT / 2;
 
-  if (isAdjacent) {
-    return `M ${x1} ${y1} L ${x2} ${y2}`;
+  if (adjacent) {
+    // Offset the crossing into the art or side gutter, clear of the title and Threat strip.
+    const span = crossing ? 15 : 11;
+    const x = columns ? midpointX : midpointX + 57;
+    const y = rows ? midpointY : midpointY - 20;
+    return {
+      kind: crossing ? "crossing" : "track",
+      path: columns ? `M ${x - span} ${y} H ${x + span}` : `M ${x} ${y - span} V ${y + span}`
+    };
   }
 
-  const midpointX = (x1 + x2) / 2;
-  const midpointY = (y1 + y2) / 2;
-  const normalX = distance === 0 ? 0 : -(y2 - y1) / distance;
-  const normalY = distance === 0 ? 0 : (x2 - x1) / distance;
+  const x1 = from.column * BOARD_CELL_WIDTH + BOARD_TILE_CENTER_X;
+  const y1 = from.row * BOARD_CELL_HEIGHT + 24;
+  const x2 = to.column * BOARD_CELL_WIDTH + BOARD_TILE_CENTER_X;
+  const y2 = to.row * BOARD_CELL_HEIGHT + 24;
+  const distance = Math.hypot(x2 - x1, y2 - y1);
   const bend = Math.min(34, distance * 0.08);
-  return `M ${x1} ${y1} Q ${midpointX + normalX * bend} ${midpointY + normalY * bend} ${x2} ${y2}`;
+  const controlX = midpointX - (y2 - y1) / distance * bend;
+  const controlY = (y1 + y2) / 2 + (x2 - x1) / distance * bend;
+  return { kind: "shortcut", path: `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}` };
+}
+
+function getTabletopSectorArtPath(space: BoardSpaceDefinition): string {
+  return space.tier === "center" ? `${TABLETOP_ART}core.webp` : getSignalCartographySectorArtPath(space.id);
 }
 
 function BoardThreatGlyph({
@@ -617,68 +611,88 @@ function BoardHazardGlyph(): ReactElement {
   );
 }
 
-function BoardPieceCluster({
-  occupants
-}: {
-  occupants: MapOccupant[];
-}): ReactElement {
-  const count = Math.min(occupants.length, 6);
-  const spacing = count > 1 ? Math.min(14, 68 / (count - 1)) : 0;
-  const startX = BOARD_TILE_CENTER_X - (spacing * (count - 1)) / 2;
+function BoardPieceCluster({ occupants }: { occupants: MapOccupant[] }): ReactElement {
+  const visibleOccupants = occupants.slice(0, 6);
+  const crowded = visibleOccupants.length > 3;
+  const rows = crowded ? [visibleOccupants.slice(0, 3), visibleOccupants.slice(3)] : [visibleOccupants];
+  const radius = crowded ? 6.8 : 9.8;
+  const artRadius = radius - 1.3;
+  const spacing = crowded ? 17 : 23;
 
   return (
     <g
       className="signal-cartography__board-pieces"
       aria-label={`Operatives: ${occupants.map((entry) => entry.initials).join(", ")}`}
     >
-      {occupants.slice(0, 6).map((occupant, index) => (
-        <g key={occupant.seatId} transform={`translate(${startX + index * spacing} 68.5)`}>
-          <circle className="signal-cartography__board-player-coin-ring" r="11.2" fill="#080b0d" stroke={occupant.color} strokeWidth="2.2" />
-          <image
-            className="signal-cartography__board-player-coin"
-            href={getCartographyPlayerCoinPath(occupant.markerId)}
-            x="-10"
-            y="-10"
-            width="20"
-            height="20"
-            preserveAspectRatio="xMidYMid meet"
-            data-player-coin={occupant.markerId}
-          />
+      {rows.map((row, rowIndex) => {
+        const startX = BOARD_TILE_CENTER_X - (spacing * (row.length - 1)) / 2;
+        const y = crowded ? 33 + rowIndex * 15 : 43;
+        return (
+          <g key={row[0]!.seatId} data-piece-row={rowIndex}>
+            {row.map((occupant, index) => (
+              <g key={occupant.seatId} transform={`translate(${startX + index * spacing} ${y})`}>
+                <ellipse className="signal-cartography__board-coin-shadow" cy="2.5" rx={radius + 2} ry={radius + 1} />
+                <circle className="signal-cartography__board-coin-rim" r={radius + 1.2} />
+                <circle className="signal-cartography__board-player-coin-ring" r={radius} stroke={occupant.color} />
+                <image
+                  className="signal-cartography__board-player-coin"
+                  href={getCartographyPlayerCoinPath(occupant.markerId)}
+                  x={-artRadius}
+                  y={-artRadius}
+                  width={artRadius * 2}
+                  height={artRadius * 2}
+                  preserveAspectRatio="xMidYMid meet"
+                  data-player-coin={occupant.markerId}
+                />
+              </g>
+            ))}
+          </g>
+        );
+      })}
+      {crowded ? (
+        <g className="signal-cartography__board-occupancy" transform="translate(106 41)" aria-label={`${occupants.length} operatives`}>
+          <rect x="-9" y="-8" width="18" height="16" rx="3" />
+          <text textAnchor="middle" y="4">{occupants.length}</text>
         </g>
-      ))}
+      ) : null}
     </g>
   );
 }
 
-function BoardTileBase({
-  position,
-  space,
-  stateClass
-}: {
+function BoardTileBase({ position, space }: {
   position: SignalCartographyTilePosition;
   space: BoardSpaceDefinition;
-  stateClass: string;
 }): ReactElement {
+  const core = space.tier === "center";
+  const frame = core ? CORE_FRAME : SECTOR_FRAME;
   return (
     <g
-      className={`signal-cartography__board-tile-base ${stateClass}`}
+      className="signal-cartography__board-tile-base"
       data-surface="neutral"
       data-tier={space.tier}
       transform={`translate(${position.column * BOARD_CELL_WIDTH} ${position.row * BOARD_CELL_HEIGHT})`}
       aria-hidden="true"
     >
+      <path className="signal-cartography__board-tile-stock" d={frame} />
+      <path
+        className="signal-cartography__board-tile-material"
+        fill={`url(#signal-board-stock-${core ? "inner" : space.tier})`}
+        d={frame}
+      />
       <image
         className="signal-cartography__board-tile-art"
-        href={getSignalCartographySectorArtPath(space.id)}
-        x="2"
+        href={getTabletopSectorArtPath(space)}
+        x={core ? 1 : 2}
         y="2"
-        width={BOARD_CELL_WIDTH - 4}
-        height="96"
-        preserveAspectRatio="xMidYMid slice"
-        clipPath="url(#signal-board-tile-clip)"
+        width={core ? BOARD_CELL_WIDTH - 2 : BOARD_CELL_WIDTH - 4}
+        height={core ? 96 : 61}
+        preserveAspectRatio={core ? "xMidYMin slice" : "xMidYMid slice"}
+        clipPath={core ? "url(#signal-board-core-clip)" : "url(#signal-board-illustration-clip)"}
       />
-      <path className="signal-cartography__board-tile-tint" d="M 8 2 H 122 L 128 8 V 92 L 122 98 H 8 L 2 92 V 8 Z" />
-      <path className="signal-cartography__board-tile-vignette" d="M 8 2 H 122 L 128 8 V 92 L 122 98 H 8 L 2 92 V 8 Z" />
+      {space.tier === "middle" ? (
+        <path className="signal-cartography__board-rivets" d="M 9 8 h 1 M 120 8 h 1 M 9 92 h 1 M 120 92 h 1" />
+      ) : null}
+      {core ? <path className="signal-cartography__board-core-bevel" d={frame} /> : null}
     </g>
   );
 }
@@ -691,7 +705,9 @@ function BoardTileOverlay({
   persistent,
   missionTarget,
   missionObjectiveCoinId,
-  stateClass
+  stateClass,
+  selected,
+  onSelect
 }: {
   position: SignalCartographyTilePosition;
   space: BoardSpaceDefinition;
@@ -701,11 +717,17 @@ function BoardTileOverlay({
   missionTarget: boolean;
   missionObjectiveCoinId?: CartographyObjectiveCoinId;
   stateClass: string;
+  selected: boolean;
+  onSelect?: (sectorId: string) => void;
 }): ReactElement {
   const lines = wrapBoardLabel(space.name);
   const lineHeight = 11;
-  const firstLineY = 49 - ((lines.length - 1) * lineHeight) / 2;
-  const threatWidth = space.threatIcons.length > 0 ? (BOARD_CELL_WIDTH - 4) / space.threatIcons.length : BOARD_CELL_WIDTH - 4;
+  const firstLineY = 73 - ((lines.length - 1) * lineHeight) / 2;
+  const threatBandX = 12;
+  const threatBandWidth = BOARD_CELL_WIDTH - threatBandX * 2;
+  const threatWidth = threatBandWidth / Math.max(space.threatIcons.length, 1);
+  const core = space.tier === "center";
+  const frame = core ? CORE_FRAME : SECTOR_FRAME;
   const isGate =
     Boolean(space.movementBox) ||
     Boolean(space.movementRequirements?.length) ||
@@ -726,14 +748,27 @@ function BoardTileOverlay({
       data-column={position.column}
       data-mission-target={missionTarget}
       transform={`translate(${position.column * BOARD_CELL_WIDTH} ${position.row * BOARD_CELL_HEIGHT})`}
-      role="group"
-      aria-label={accessibleDetails}
+      role={onSelect ? "button" : "group"}
+      aria-label={onSelect ? `Preview ${accessibleDetails}` : accessibleDetails}
+      aria-pressed={onSelect ? selected : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onClick={onSelect ? () => onSelect(space.id) : undefined}
+      onKeyDown={onSelect ? (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(space.id);
+        }
+      } : undefined}
     >
-      <path className="signal-cartography__board-tile-frame" d="M 8 2 H 122 L 128 8 V 92 L 122 98 H 8 L 2 92 V 8 Z" />
+      {onSelect ? <path d={frame} fill="transparent" /> : null}
+      <path className="signal-cartography__board-tile-frame" d={frame} />
+      <path className="signal-cartography__board-route-border" d={frame} />
+      <path className="signal-cartography__board-legal-border" d={INNER_TILE_FRAME} />
+      <path className="signal-cartography__board-active-corners" d="M 4 23 V 9 L 10 3 H 26 M 104 3 H 120 L 126 9 V 23 M 126 77 V 91 L 120 97 H 104 M 26 97 H 10 L 4 91 V 77" />
       {isGate ? (
         <>
-          <path className="signal-cartography__board-gate-frame" d="M 10 6 H 120 L 124 10 V 90 L 120 94 H 10 L 6 90 V 10 Z" />
-          <path className="signal-cartography__board-gate-diamond" d="M 121 4 L 126 9 L 121 14 L 116 9 Z" aria-label="Route or gate" />
+          <path className="signal-cartography__board-gate-frame" d="M 9 26 V 13 L 13 9 H 26 M 104 9 H 117 L 121 13 V 26" />
+          <path className="signal-cartography__board-gate-diamond" d="M 12 21 L 17 26 L 12 31 L 7 26 Z" aria-label="Route or gate" />
         </>
       ) : null}
       {missionTarget ? (
@@ -751,7 +786,7 @@ function BoardTileOverlay({
           />
         </g>
       ) : null}
-      <rect className="signal-cartography__board-name-plate" x="7" y="30" width={BOARD_CELL_WIDTH - 14} height="38" />
+      <rect className="signal-cartography__board-name-plate" x="7" y="58" width={BOARD_CELL_WIDTH - 14} height="23" />
       <text className="signal-cartography__board-name" textAnchor="middle">
         {lines.map((line, index) => (
           <tspan key={`${space.id}-label-${index}`} x={BOARD_TILE_CENTER_X} y={firstLineY + index * lineHeight}>{line}</tspan>
@@ -761,7 +796,7 @@ function BoardTileOverlay({
       {challenge ? (
         <g
           className="signal-cartography__board-challenge"
-          transform={`translate(${BOARD_CELL_WIDTH - 18} 15)`}
+          transform="translate(110 16)"
           aria-label={`${statLabels[challenge.testStat]} ${challenge.difficulty}`}
         >
           <circle r="11" fill={statColors[challenge.testStat]} />
@@ -772,7 +807,7 @@ function BoardTileOverlay({
         </g>
       ) : null}
       {persistent ? (
-        <g className="signal-cartography__board-persistent" transform={`translate(${BOARD_CELL_WIDTH - 16} 67)`} aria-label="Revealed encounter">
+        <g className="signal-cartography__board-persistent" transform="translate(88 17)" aria-label="Revealed encounter">
           <circle r="9" />
           <path d="M -4 0 H 4 M 0 -4 V 4" />
         </g>
@@ -782,18 +817,18 @@ function BoardTileOverlay({
         {space.threatIcons.length > 0 ? space.threatIcons.map((icon, index) => (
           <g key={`${space.id}-board-threat-${icon}-${index}`}>
             <rect
-              x={2 + index * threatWidth}
-              y="80"
+              x={threatBandX + index * threatWidth}
+              y="84"
               width={threatWidth}
-              height="18"
+              height="12"
               fill={threatColors[icon]}
               data-threat-lane={icon}
             />
-            <BoardThreatGlyph icon={icon} x={2 + index * threatWidth + threatWidth / 2} y={89} />
+            <BoardThreatGlyph icon={icon} x={threatBandX + index * threatWidth + threatWidth / 2} y={90} />
           </g>
         )) : (
           <>
-            <rect x="2" y="80" width={BOARD_CELL_WIDTH - 4} height="18" className="signal-cartography__board-no-threat" />
+            <rect x={threatBandX} y="84" width={threatBandWidth} height="12" className="signal-cartography__board-no-threat" />
             <text x={BOARD_TILE_CENTER_X} y="92.5" textAnchor="middle" className="signal-cartography__board-no-threat-label">
               NO DRAW
             </text>
@@ -818,6 +853,210 @@ interface BoardTilesViewProps {
   selectedDestination?: { name: string };
 }
 
+interface TabletopBoardProps extends Pick<BoardTilesViewProps,
+  "occupants" | "route" | "routeEdges" | "activeSectorId" | "focusedSectorId" |
+  "legalDestinationIds" | "persistentSectorIds" | "innerApproach"
+> {
+  missionTargets?: ActiveMissionTargets | null;
+  getChallenge?: (space: BoardSpaceDefinition) => CartographyChallengeSummary | null;
+  selectableDestinationIds?: Set<string>;
+  onSelectSector?: (sectorId: string) => void;
+}
+
+const tabletopSpacesById = new Map(BOARD_SPACES.map((space) => [space.id, space] as const));
+
+function TabletopBoard({
+  occupants,
+  route,
+  routeEdges,
+  activeSectorId,
+  focusedSectorId,
+  legalDestinationIds,
+  persistentSectorIds,
+  innerApproach,
+  missionTargets,
+  getChallenge,
+  selectableDestinationIds,
+  onSelectSector
+}: TabletopBoardProps): ReactElement {
+  const titleId = useId();
+  const descriptionId = useId();
+  const innerSteps = innerApproach?.steps ?? [];
+  const innerEdges = new Set(
+    innerSteps.slice(1).map((step, index) => [innerSteps[index]!.sectorId, step.sectorId].sort().join("|"))
+  );
+
+  function tileStateClass(space: BoardSpaceDefinition): string {
+    const innerStep = innerApproach?.steps.find((step) => step.sectorId === space.id);
+    return [
+      `is-tier-${space.tier}`,
+      space.id === activeSectorId ? "is-active" : "",
+      space.id === focusedSectorId ? "is-focused" : "",
+      legalDestinationIds.has(space.id) ? "is-legal" : "",
+      route.includes(space.id) ? "is-route" : "",
+      missionTargets?.sectorIds.has(space.id) ? "is-mission-target" : "",
+      innerStep?.status === "cleared" ? "is-inner-cleared" : "",
+      innerStep?.status === "current" ? "is-inner-current" : "",
+      innerStep?.status === "boss" ? "is-inner-boss" : "",
+      persistentSectorIds.has(space.id) ? "has-persistent" : ""
+    ].filter(Boolean).join(" ");
+  }
+
+  return (
+    <svg
+      className="signal-cartography__board-svg"
+      viewBox={`0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}`}
+      role={onSelectSector ? "group" : "img"}
+      aria-labelledby={`${titleId} ${descriptionId}`}
+    >
+      <title id={titleId}>Ashen Reach nested public sector board</title>
+      <desc id={descriptionId}>
+        Forty-nine illustrated sector tiles in three nested reaches around the Ashen Reach Core. Printed tracks show playable connections. Threat bands, public markers, operative pieces, and movement highlights sit on the printed board.
+      </desc>
+      <defs>
+        <clipPath id="signal-board-illustration-clip"><path d={SECTOR_ILLUSTRATION} /></clipPath>
+        <clipPath id="signal-board-core-clip"><path d={CORE_FRAME} /></clipPath>
+        {(["outer", "middle", "inner"] as const).map((tier) => (
+          <pattern key={tier} id={`signal-board-stock-${tier}`} patternUnits="userSpaceOnUse" width={BOARD_CELL_WIDTH} height={BOARD_CELL_HEIGHT}>
+            <image href={`${TABLETOP_ART}${tier}.webp`} width={BOARD_CELL_WIDTH} height={BOARD_CELL_HEIGHT} preserveAspectRatio="xMidYMid slice" />
+          </pattern>
+        ))}
+        <linearGradient id="signal-board-core-brass" x2="0.78" y2="1">
+          <stop stopColor="#fff0c2" />
+          <stop offset=".32" stopColor="#a17b49" />
+          <stop offset=".66" stopColor="#eed1a1" />
+          <stop offset="1" stopColor="#6b3a21" />
+        </linearGradient>
+        <marker id="signal-board-link-terminal" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="4" refY="4">
+          <path d="M 4 0.75 L 7.25 4 L 4 7.25 L 0.75 4 Z" />
+        </marker>
+      </defs>
+      <rect className="signal-cartography__board-stock-edge" x="-8" y="-8" width={BOARD_WIDTH + 16} height={BOARD_HEIGHT + 19} rx="9" />
+      <rect className="signal-cartography__board-bed" x="-5" y="-5" width={BOARD_WIDTH + 10} height={BOARD_HEIGHT + 10} rx="5" />
+      <g className="signal-cartography__board-tier-beds" aria-hidden="true">
+        <rect width={BOARD_WIDTH} height={BOARD_HEIGHT} className="is-outer" />
+        <rect x={BOARD_CELL_WIDTH} y={BOARD_CELL_HEIGHT} width={BOARD_CELL_WIDTH * 5} height={BOARD_CELL_HEIGHT * 5} className="is-middle" />
+        <rect x={BOARD_CELL_WIDTH * 2} y={BOARD_CELL_HEIGHT * 2} width={BOARD_CELL_WIDTH * 3} height={BOARD_CELL_HEIGHT * 3} className="is-inner" />
+        <rect x={BOARD_CELL_WIDTH * 3} y={BOARD_CELL_HEIGHT * 3} width={BOARD_CELL_WIDTH} height={BOARD_CELL_HEIGHT} className="is-core" />
+      </g>
+
+      <g className="signal-cartography__board-tile-bases">
+        {BOARD_TILE_LAYOUT.map((position) => {
+          const space = tabletopSpacesById.get(position.sectorId);
+          if (!space) return null;
+          return (
+            <BoardTileBase
+              key={`${space.id}-base`}
+              position={position}
+              space={space}
+            />
+          );
+        })}
+      </g>
+
+      <g className="signal-cartography__board-tier-frames" aria-hidden="true">
+        <rect x="1.5" y="1.5" width={BOARD_WIDTH - 3} height={BOARD_HEIGHT - 3} className="is-outer" data-tier="outer" />
+        <rect x={BOARD_CELL_WIDTH} y={BOARD_CELL_HEIGHT} width={BOARD_CELL_WIDTH * 5} height={BOARD_CELL_HEIGHT * 5} className="is-middle" data-tier="middle" />
+        <rect x={BOARD_CELL_WIDTH * 2} y={BOARD_CELL_HEIGHT * 2} width={BOARD_CELL_WIDTH * 3} height={BOARD_CELL_HEIGHT * 3} className="is-inner" data-tier="inner" />
+        <rect x={BOARD_CELL_WIDTH * 3} y={BOARD_CELL_HEIGHT * 3} width={BOARD_CELL_WIDTH} height={BOARD_CELL_HEIGHT} className="is-core" data-tier="center" />
+      </g>
+
+      <g className="signal-cartography__board-connections" aria-hidden="true">
+        {BOARD_CONNECTIONS.map((connection) => {
+          const selected = routeEdges.has(connection.key);
+          const inner = innerEdges.has(connection.key);
+          const className = [
+            connection.kind === "track" ? "signal-cartography__board-track" : "signal-cartography__board-special-links",
+            `is-${connection.kind}`,
+            selected ? "is-route" : "",
+            inner ? "is-inner-link" : ""
+          ].filter(Boolean).join(" ");
+          return (
+            <g key={connection.key} className={className}>
+              <path className="signal-cartography__board-track-bed" d={connection.path} />
+              <path
+                className="signal-cartography__board-track-print"
+                data-from-sector-id={connection.fromSectorId}
+                data-to-sector-id={connection.toSectorId}
+                d={connection.path}
+              />
+              {selected || inner ? <path className="signal-cartography__board-track-inlay" d={connection.path} /> : null}
+            </g>
+          );
+        })}
+      </g>
+
+      <g className="signal-cartography__board-tile-overlays">
+        {BOARD_TILE_LAYOUT.map((position) => {
+          const space = tabletopSpacesById.get(position.sectorId);
+          if (!space) return null;
+          return (
+            <BoardTileOverlay
+              key={space.id}
+              position={position}
+              space={space}
+              occupants={occupants.get(space.id) ?? []}
+              challenge={getChallenge?.(space) ?? null}
+              persistent={persistentSectorIds.has(space.id)}
+              missionTarget={missionTargets?.sectorIds.has(space.id) ?? false}
+              missionObjectiveCoinId={missionTargets?.objectiveCoinId}
+              stateClass={tileStateClass(space)}
+          selected={space.id === focusedSectorId}
+          onSelect={selectableDestinationIds?.has(space.id) ? onSelectSector : undefined}
+            />
+          );
+        })}
+      </g>
+
+    </svg>
+  );
+}
+
+interface PhoneTabletopMapProps {
+  publicState?: Pick<PublicPatchPayload, "players" | "seats" | "sectors">;
+  currentSectorId: string;
+  selectedSectorId: string | null;
+  legalDestinationIds: Set<string>;
+  selectableDestinationIds: Set<string>;
+  persistentSectorIds: Set<string>;
+  route: string[];
+  innerApproach: PublicInnerApproachState | null;
+  onSelectSector?: (sectorId: string) => void;
+}
+
+export function PhoneTabletopMap({
+  publicState,
+  currentSectorId,
+  selectedSectorId,
+  legalDestinationIds,
+  selectableDestinationIds,
+  persistentSectorIds,
+  route,
+  innerApproach,
+  onSelectSector
+}: PhoneTabletopMapProps): ReactElement {
+  const occupants = useMemo(() => publicState ? buildPublicOccupants(publicState) : new Map<string, MapOccupant[]>(), [publicState]);
+  return (
+    <TabletopBoard
+      occupants={occupants}
+      route={route}
+      routeEdges={getRouteEdges(route)}
+      activeSectorId={currentSectorId}
+      focusedSectorId={selectedSectorId ?? ""}
+      legalDestinationIds={legalDestinationIds}
+      selectableDestinationIds={selectableDestinationIds}
+      persistentSectorIds={persistentSectorIds}
+      innerApproach={innerApproach}
+      getChallenge={(space) => getCartographyChallenge(publicState?.sectors, "live", space)}
+      onSelectSector={onSelectSector}
+    />
+  );
+}
+
+function getRouteEdges(route: string[]): Set<string> {
+  return new Set(route.slice(1).map((id, index) => [route[index]!, id].sort().join("|")));
+}
+
 function BoardTilesView({
   patch,
   fixture,
@@ -834,31 +1073,14 @@ function BoardTilesView({
   const spaceById = new Map(BOARD_SPACES.map((space) => [space.id, space] as const));
   const missionTargets = buildActiveMissionTargets(patch, fixture);
   const focusSpace = spaceById.get(focusedSectorId) ?? spaceById.get(activeSectorId) ?? BOARD_SPACES[0]!;
-  const focusChallenge = getCartographyChallenge(patch, fixture, focusSpace);
+  const focusChallenge = getCartographyChallenge(patch?.payload.sectors, fixture, focusSpace);
   const focusPersistent =
     persistentSectorIds.has(focusSpace.id) ||
     (fixture === "challenge" && focusSpace.id === "black-relay-spire");
   const focusOccupants = occupants.get(focusSpace.id) ?? [];
-
-  function isPersistentSector(sectorId: string): boolean {
-    return persistentSectorIds.has(sectorId) || (fixture === "challenge" && sectorId === "black-relay-spire");
-  }
-
-  function tileStateClass(space: BoardSpaceDefinition): string {
-    const innerStep = innerApproach?.steps.find((step) => step.sectorId === space.id);
-    return [
-      `is-tier-${space.tier}`,
-      space.id === activeSectorId ? "is-active" : "",
-      space.id === focusedSectorId ? "is-focused" : "",
-      legalDestinationIds.has(space.id) ? "is-legal" : "",
-      route.includes(space.id) ? "is-route" : "",
-      missionTargets?.sectorIds.has(space.id) ? "is-mission-target" : "",
-      innerStep?.status === "cleared" ? "is-inner-cleared" : "",
-      innerStep?.status === "current" ? "is-inner-current" : "",
-      innerStep?.status === "boss" ? "is-inner-boss" : "",
-      isPersistentSector(space.id) ? "has-persistent" : ""
-    ].filter(Boolean).join(" ");
-  }
+  const visiblePersistentSectorIds = fixture === "challenge"
+    ? new Set([...persistentSectorIds, "black-relay-spire"])
+    : persistentSectorIds;
 
   return (
     <main
@@ -870,8 +1092,7 @@ function BoardTilesView({
     >
       <header className="signal-cartography__header signal-cartography__board-header">
         <div>
-          <span>Signal Cartography · board-tile prototype</span>
-          <h1>The Reach, laid out for the table</h1>
+          <h1>Signal Cartography</h1>
         </div>
         <div className="signal-cartography__status">
           <span className="signal-cartography__pulse" aria-hidden="true" />
@@ -883,134 +1104,23 @@ function BoardTilesView({
       <section className="signal-cartography__frame signal-cartography__frame--board-tiles" aria-label="49-sector nested public game board">
         <div className="signal-cartography__board-layout">
           <div className="signal-cartography__board-stage">
-            <svg
-              className="signal-cartography__board-svg"
-              viewBox={`0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}`}
-              role="img"
-              aria-labelledby="signal-board-title signal-board-desc"
-            >
-              <title id="signal-board-title">Ashen Reach nested public sector board</title>
-              <desc id="signal-board-desc">
-                Forty-nine neutral material sector tiles arranged across four clearly framed nested reaches. Red, Blue, and Yellow are confined to the printed Threat bands; hazards, challenges, routes, and public operative positions remain visible above the board.
-              </desc>
-              <defs>
-                <clipPath id="signal-board-tile-clip">
-                  <path d="M 8 2 H 122 L 128 8 V 92 L 122 98 H 8 L 2 92 V 8 Z" />
-                </clipPath>
-                <filter id="signal-board-active-glow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                </filter>
-                <filter id="signal-board-route-glow" x="-30%" y="-30%" width="160%" height="160%">
-                  <feGaussianBlur stdDeviation="2" result="blur" />
-                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                </filter>
-              </defs>
-              <rect className="signal-cartography__board-bed" width={BOARD_WIDTH} height={BOARD_HEIGHT} />
-              <g className="signal-cartography__board-tier-beds" aria-hidden="true">
-                <rect width={BOARD_WIDTH} height={BOARD_HEIGHT} className="is-outer" />
-                <rect x={BOARD_CELL_WIDTH} y={BOARD_CELL_HEIGHT} width={BOARD_CELL_WIDTH * 5} height={BOARD_CELL_HEIGHT * 5} className="is-middle" />
-                <rect x={BOARD_CELL_WIDTH * 2} y={BOARD_CELL_HEIGHT * 2} width={BOARD_CELL_WIDTH * 3} height={BOARD_CELL_HEIGHT * 3} className="is-inner" />
-                <rect x={BOARD_CELL_WIDTH * 3} y={BOARD_CELL_HEIGHT * 3} width={BOARD_CELL_WIDTH} height={BOARD_CELL_HEIGHT} className="is-core" />
-              </g>
-
-              <g className="signal-cartography__board-tile-bases">
-                {BOARD_TILE_LAYOUT.map((position) => {
-                  const space = spaceById.get(position.sectorId);
-                  if (!space) return null;
-                  return (
-                    <BoardTileBase
-                      key={`${space.id}-base`}
-                      position={position}
-                      space={space}
-                      stateClass={tileStateClass(space)}
-                    />
-                  );
-                })}
-              </g>
-
-              <g className="signal-cartography__board-tier-frames" aria-hidden="true">
-                <rect x="1.5" y="1.5" width={BOARD_WIDTH - 3} height={BOARD_HEIGHT - 3} className="is-outer" data-tier="outer" />
-                <rect x={BOARD_CELL_WIDTH} y={BOARD_CELL_HEIGHT} width={BOARD_CELL_WIDTH * 5} height={BOARD_CELL_HEIGHT * 5} className="is-middle" data-tier="middle" />
-                <rect x={BOARD_CELL_WIDTH * 2} y={BOARD_CELL_HEIGHT * 2} width={BOARD_CELL_WIDTH * 3} height={BOARD_CELL_HEIGHT * 3} className="is-inner" data-tier="inner" />
-                <rect x={BOARD_CELL_WIDTH * 3} y={BOARD_CELL_HEIGHT * 3} width={BOARD_CELL_WIDTH} height={BOARD_CELL_HEIGHT} className="is-core" data-tier="center" />
-              </g>
-
-              <g className="signal-cartography__board-special-links" aria-hidden="true">
-                {BOARD_CONNECTIONS.filter((connection) => connection.special).map((connection) => {
-                  const from = BOARD_TILE_INDEX.get(connection.fromSectorId);
-                  const to = BOARD_TILE_INDEX.get(connection.toSectorId);
-                  if (!from || !to) return null;
-                  const key = [connection.fromSectorId, connection.toSectorId].sort().join("|");
-                  return (
-                    <path
-                      key={`special-${key}`}
-                      className={routeEdges.has(key) ? "is-route" : ""}
-                      data-from-sector-id={connection.fromSectorId}
-                      data-to-sector-id={connection.toSectorId}
-                      d={boardConnectionPath(from, to)}
-                    />
-                  );
-                })}
-              </g>
-
-              <g className="signal-cartography__board-route-links" aria-hidden="true">
-                {route.slice(1).map((sectorId, index) => {
-                  const from = BOARD_TILE_INDEX.get(route[index]!);
-                  const to = BOARD_TILE_INDEX.get(sectorId);
-                  if (!from || !to) return null;
-                  return (
-                    <path
-                      key={`route-${route[index]}-${sectorId}`}
-                      d={boardConnectionPath(from, to)}
-                    />
-                  );
-                })}
-              </g>
-
-              <g className="signal-cartography__board-tile-overlays">
-                {BOARD_TILE_LAYOUT.map((position) => {
-                  const space = spaceById.get(position.sectorId);
-                  if (!space) return null;
-                  return (
-                    <BoardTileOverlay
-                      key={space.id}
-                      position={position}
-                      space={space}
-                      occupants={occupants.get(space.id) ?? []}
-                      challenge={getCartographyChallenge(patch, fixture, space)}
-                      persistent={isPersistentSector(space.id)}
-                      missionTarget={missionTargets?.sectorIds.has(space.id) ?? false}
-                      missionObjectiveCoinId={missionTargets?.objectiveCoinId}
-                      stateClass={tileStateClass(space)}
-                    />
-                  );
-                })}
-              </g>
-
-              <g className="signal-cartography__board-tier-markers">
-                {boardTierMarkers.map((marker) => (
-                  <g
-                    key={marker.tier}
-                    className={`signal-cartography__board-tier-marker is-${marker.tier}`}
-                    transform={`translate(${marker.x} ${marker.y})`}
-                    role="group"
-                    aria-label={`${marker.label}, ${marker.count} ${marker.count === 1 ? "tile" : "tiles"}`}
-                  >
-                    <rect width="86" height="15" />
-                    <path d="M 0 15 H 79 L 86 8 V 0" />
-                    <text x="43" y="10.5" textAnchor="middle">
-                      {tierNumbers[marker.tier]} · {marker.label}
-                    </text>
-                  </g>
-                ))}
-              </g>
-            </svg>
+            <TabletopBoard
+              occupants={occupants}
+              route={route}
+              routeEdges={routeEdges}
+              activeSectorId={activeSectorId}
+              focusedSectorId={focusedSectorId}
+              legalDestinationIds={legalDestinationIds}
+              persistentSectorIds={visiblePersistentSectorIds}
+              innerApproach={innerApproach}
+              missionTargets={missionTargets}
+              getChallenge={(space) => getCartographyChallenge(patch?.payload.sectors, fixture, space)}
+            />
           </div>
 
           <aside className="signal-cartography__focus-panel" aria-label={`Focused sector: ${focusSpace.name}`}>
             <div className="signal-cartography__focus-art">
-              <img src={getSignalCartographySectorArtPath(focusSpace.id)} alt="" />
+              <img src={getTabletopSectorArtPath(focusSpace)} alt="" />
               <div>
                 <span>Reach {tierNumbers[focusSpace.tier]} · {tierLabels[focusSpace.tier]}</span>
                 <h2>{focusSpace.name}</h2>
@@ -1087,8 +1197,10 @@ function BoardTilesView({
               <span><i className="is-hazard" />Hazard</span>
               <span><i className="is-challenge" />Test + difficulty</span>
               <span><i className="is-gate" />Route / gate</span>
+              <span><i className="is-active" />Active sector</span>
               <span><i className="is-legal" />Legal destination</span>
               <span><i className="is-route" />Selected route</span>
+              {innerApproach ? <span><i className="is-inner-path" />Inner approach</span> : null}
               <span><i className="is-mission" />Mission target</span>
               <span><i className="is-encounter" />Revealed encounter</span>
             </div>
@@ -1102,7 +1214,13 @@ function BoardTilesView({
             ? `Requested by ${patch.payload.hostView.requester.displayName}`
             : "Approval prototype · Movement screen view"}
         </span>
-        <strong>Outer 24 · Middle 16 · Inner 8 · Core 1</strong>
+        <div className="signal-cartography__board-tier-markers" aria-label="Board reaches">
+          {boardTierMarkers.map(({ tier, label, count }) => (
+            <span key={tier} className={`signal-cartography__board-tier-marker is-${tier}`} aria-label={`${label.toUpperCase()}, ${count} ${count === 1 ? "tile" : "tiles"}`}>
+              {label} <strong>{count}</strong>
+            </span>
+          ))}
+        </div>
         <span>{innerApproach ? "Inner trials charted publicly" : "49 sectors · authoritative routes"}</span>
       </footer>
     </main>
@@ -1157,9 +1275,7 @@ export function SignalCartographyPrototype({
         .map((destination) => destination.sectorId) ?? []
       : []
   );
-  const routeEdges = new Set(
-    route.slice(1).map((id, index) => [route[index]!, id].sort().join("|"))
-  );
+  const routeEdges = getRouteEdges(route);
   const fixtureActiveSectorId =
     fixture === "dense"
       ? "ashen-chapel"

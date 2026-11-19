@@ -12,7 +12,7 @@ interface SignalPhoneIdentityRailProps {
   wounds: number;
   salvage: number;
   sectorId: string;
-  connectionStatus?: string;
+  connectionReady?: boolean;
 }
 
 function titleCase(value: string): string {
@@ -28,17 +28,16 @@ export function SignalPhoneIdentityRail({
   wounds,
   salvage,
   sectorId,
-  connectionStatus = "Connected"
+  connectionReady = true
 }: SignalPhoneIdentityRailProps): ReactElement {
   const environment = getSignalTheatreEnvironment(sectorId);
   const sectorName = environment?.sectorName ?? titleCase(sectorId);
-  const connected = !/disconnected|offline|error/i.test(connectionStatus);
 
   return (
     <header
       className="signal-phone-identity phone-topbar"
       data-testid="signal-phone-identity"
-      data-connection={connected ? "online" : "offline"}
+      data-connection={connectionReady ? "online" : "offline"}
     >
       <div className="signal-phone-identity__rail">
         <div className="signal-phone-identity__portrait">
@@ -71,6 +70,9 @@ export function SignalPhoneIdentityRail({
           </div>
         </dl>
       </div>
+      <p className="signal-phone-identity__connection" aria-live="polite">
+        {connectionReady ? null : "Reconnecting… Your controls will resume when the room syncs."}
+      </p>
     </header>
   );
 }

@@ -1117,6 +1117,86 @@
   text-transform: uppercase;
 }
 
+.signal-phone-shell .phone-move-prototype__tabletop-toggle {
+  border-color: #ab8454;
+  background: linear-gradient(90deg, #3a2a1c, #101316 62%);
+}
+
+.signal-phone-shell .phone-move-prototype__tabletop-toggle > svg {
+  color: #e1b664;
+}
+
+.phone-tabletop-board {
+  min-width: 0;
+  border: 1px solid #725a40;
+  background: #121110;
+  color: #f3e5cb;
+}
+
+.phone-tabletop-board__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .35rem .55rem .15rem;
+  font-size: .78rem;
+}
+
+.phone-tabletop-board__toolbar strong {
+  display: block;
+}
+
+.phone-tabletop-board__toolbar button {
+  min-height: 44px;
+  flex: none;
+}
+
+.phone-tabletop-board__hint {
+  margin: 0;
+  padding: 0 .55rem .45rem;
+  color: #d8c5ab;
+  font-size: .75rem;
+}
+
+.phone-tabletop-board__viewport {
+  max-height: min(46dvh, 30rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: #0b0a09;
+}
+
+.phone-tabletop-board__viewport .signal-cartography__board-svg {
+  display: block;
+  width: min(100%, calc(59.8dvh - 4px), calc(39rem - 4px));
+  height: auto;
+  margin-inline: auto;
+  padding: 6px;
+}
+
+.phone-tabletop-board__viewport[data-zoomed="true"] .signal-cartography__board-svg {
+  width: max(100%, 44rem);
+  max-width: none;
+}
+
+.phone-tabletop-board .signal-cartography__board-tile[role="button"] {
+  cursor: pointer;
+}
+
+.phone-tabletop-board .signal-cartography__board-tile[role="button"]:focus-visible .signal-cartography__board-legal-border {
+  stroke: #fff3d2;
+  stroke-width: 4;
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .phone-move-prototype:has(.phone-tabletop-board) .phone-move-prototype__content {
+    flex-shrink: 0;
+  }
+
+  .phone-move-prototype:has(.phone-tabletop-board) .phone-move-prototype__docks {
+    position: static;
+  }
+}
+
 .signal-phone-shell .phone-tier-transition {
   display: grid;
   gap: 0.48rem;
@@ -1807,4 +1887,737 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+.phone-move-tactical .phone-move-prototype__primary:disabled {
+  color: #a1aeb5;
+  opacity: 1;
+}
+
+.phone-required-action-shell__waiting-tools {
+  padding: .55rem .7rem;
+}
+
+.phone-required-action-shell__recovery.is-restoring {
+  border-color: #6294ab;
+  background: #132330;
+  color: #cde7ef;
+}
+
+.phone-required-action-shell__recovery.is-restored {
+  border-color: #608e7b;
+  background: #142720;
+  color: #c7efdd;
+}
+
+@media (orientation: landscape) and (max-height: 699px) {
+  .phone-page-controller:has(.signal-phone-shell) {
+    padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+  }
+
+  .signal-phone-shell .signal-phone-nav,
+  .signal-phone-shell .signal-phone-nav__primary,
+  .signal-phone-shell .signal-phone-nav__primary > button {
+    min-height: 3.5rem;
+  }
+
+  .signal-phone-shell .phone-battle-duel-stage {
+    min-height: 0;
+  }
+
+  .signal-phone-shell .phone-battle-duel-card {
+    grid-template: auto / 3.25rem minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .signal-phone-shell .phone-battle-duel-card__art {
+    height: 3.75rem;
+  }
+
+  .signal-phone-shell .phone-battle-duel-card figcaption {
+    min-height: 0;
+    padding: .25rem .35rem;
+    border: 0;
+    text-align: left;
+  }
+
+  .signal-phone-shell .phone-battle-duel-card__seal {
+    position: static;
+    min-width: 2.65rem;
+    min-height: 2.65rem;
+    margin-inline-end: .3rem;
+  }
+
+  .signal-phone-shell .phone-battle-duel-card__seal strong {
+    font-size: 1.2rem;
+  }
+
+  .phone-page-join {
+    overflow-y: auto;
+  }
+
+  .phone-page-join .phone-join-layout-nameEntry {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 100%;
+    height: auto;
+    overflow: visible;
+    padding-inline: max(.65rem, env(safe-area-inset-left)) max(.65rem, env(safe-area-inset-right));
+  }
+
+  .phone-page-join .phone-join-step {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .phone-page-join .phone-join-step-kicker {
+    grid-column: 1 / -1;
+  }
+}
+
+.signal-phone-shell .phone-battle-result-summary {
+  display: grid;
+  gap: .45rem;
+}
+
+.signal-phone-shell .phone-battle-result-summary h2 {
+  margin: 0;
+  color: #f4e7d0;
+  font-size: 1rem;
+}
+
+.signal-phone-shell .phone-roll-breakdown {
+  margin: 0;
+  padding: .4rem;
+  border: 1px solid #55534c;
+  background: #12171a;
+}
+
+.signal-phone-shell .phone-roll-breakdown h3 {
+  margin: 0 .32rem .2rem;
+  color: #e9e5db;
+  font-size: .82rem;
+}
+
+.signal-phone-shell .phone-roll-breakdown dl {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: .25rem;
+  margin: 0;
+}
+
+.signal-phone-shell .phone-roll-breakdown dl > div {
+  display: grid;
+  align-content: start;
+  gap: .15rem;
+  min-width: 0;
+  padding: .2rem .32rem;
+}
+
+.signal-phone-shell .phone-roll-breakdown dt,
+.signal-phone-shell .phone-roll-breakdown small,
+.signal-phone-shell .phone-trial-state__target {
+  color: #bbc8cd;
+  font-size: .75rem;
+}
+
+.signal-phone-shell .phone-roll-breakdown dd {
+  margin: 0;
+  color: #e9e5db;
+  font-size: 1.12rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.signal-phone-shell .phone-roll-breakdown small {
+  display: block;
+  font-weight: 500;
+}
+
+.signal-phone-shell .phone-roll-breakdown .phone-roll-breakdown__total {
+  border-inline-start: 1px solid #8a744d;
+  background: #282319;
+}
+
+.signal-phone-shell .phone-roll-breakdown__total dd {
+  color: #f4cf8e;
+}
+
+.signal-phone-shell .phone-battle-prep-summary header {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .5rem;
+}
+
+.signal-phone-shell .phone-battle-prep-summary header h2 {
+  margin: 0 0 .12rem;
+  color: #f4e7d0;
+  font-size: 1rem;
+}
+
+.signal-phone-shell .phone-battle-prep-summary header strong {
+  color: #d7cbaf;
+  font-size: .78rem;
+}
+
+.signal-phone-shell .phone-battle-prep-summary header > button {
+  min-height: 44px;
+  padding: .4rem .65rem;
+  border: 1px solid #897552;
+  background: #1c2024;
+  color: #f4e7d0;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.signal-phone-shell .phone-battle-prep-summary header > button[aria-expanded="true"] {
+  background: #332919;
+  border-color: #d6a95f;
+}
+
+.signal-phone-shell .phone-battle-prep-summary header > button:focus-visible {
+  outline: 2px solid #98dbe2;
+  outline-offset: 2px;
+}
+
+.signal-phone-shell .phone-battle-duel__stakes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: .35rem;
+}
+
+.signal-phone-shell .phone-battle-duel__stakes .phone-battle-duel__intent {
+  align-content: start;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .18rem;
+}
+
+.signal-phone-shell .phone-battle-role {
+  margin: 0;
+  padding: .52rem .65rem;
+  border-inline-start: 3px solid #82c5cf;
+  background: #192529;
+  color: #deecee;
+  font-size: .85rem;
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .signal-phone-shell .phone-battle-prep-summary {
+    padding-block: .28rem;
+  }
+
+  .signal-phone-shell .phone-battle-prep-summary + .phone-battle-duel .phone-battle-duel__header {
+    display: none;
+  }
+
+  .signal-phone-shell .phone-battle-prep-summary + .phone-battle-duel .phone-battle-duel__stakes {
+    order: 1;
+  }
+}
+
+.phone-operative-summary {
+  display: grid;
+  gap: .55rem;
+  min-width: 0;
+}
+
+.phone-operative-summary__vitals,
+.phone-operative-summary__gear {
+  min-width: 0;
+  padding: .55rem;
+  border: 1px solid #424148;
+  background: linear-gradient(155deg, #191c20, #0b0f13 66%);
+}
+
+.phone-operative-summary__vitals dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.phone-operative-summary__vitals dl > div {
+  display: grid;
+  justify-items: center;
+  gap: .15rem;
+  min-width: 0;
+  padding: .15rem .12rem;
+}
+
+.phone-operative-summary__vitals dl > div + div:not(.phone-operative-summary__vow) {
+  border-inline-start: 1px solid #3f4247;
+}
+
+.phone-operative-summary__vitals dt {
+  color: #c2c7cb;
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.phone-operative-summary__vitals dd {
+  margin: 0;
+  color: #f0e5d0;
+  font-size: 1.22rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.12;
+}
+
+.phone-operative-summary__vitals [data-tone="wound"] dd { color: #ff9280; }
+.phone-operative-summary__vitals [data-tone="scar"] dd { color: #dcc0f3; }
+.phone-operative-summary__vitals [data-tone="salvage"] dd { color: #9de4da; }
+
+.phone-operative-summary__vitals dl > .phone-operative-summary__vow {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: .4rem;
+  padding-block-start: .4rem;
+  border-top: 1px solid #3f4247;
+}
+
+.phone-operative-summary__scars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem .35rem;
+  margin: .4rem 0 0;
+  padding: .35rem 0 0;
+  border-top: 1px solid #3f4247;
+  list-style: none;
+}
+
+.phone-operative-summary__scars li {
+  padding: .16rem .36rem;
+  border: 1px solid #634a74;
+  background: #231b2b;
+  color: #e8d2f6;
+  font-size: .74rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.phone-operative-summary__gear h3 {
+  margin: 0 0 .35rem;
+  color: #eedab5;
+  font-size: .82rem;
+  line-height: 1.2;
+}
+
+.phone-operative-summary .phone-player-equipped-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .28rem;
+}
+
+.phone-operative-summary .phone-player-equipped-card {
+  padding: .36rem;
+  gap: .22rem;
+}
+
+.phone-operative-summary .phone-player-equipped-card > span {
+  font-size: .63rem;
+  letter-spacing: .05em;
+}
+
+.phone-operative-summary .phone-player-equipped-card > strong {
+  font-size: .82rem;
+}
+
+.phone-operative-summary .phone-player-equipped-card > small,
+.phone-operative-summary .phone-player-equipped-card > em {
+  font-size: .66rem;
+}
+
+.signal-phone-shell .phone-portrait-screen--field-reference .phone-required-action-shell--compact:not(.is-waiting):not(.is-busy):has(> .phone-required-action-shell__return) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7rem;
+  align-items: center;
+  gap: .4rem .55rem;
+}
+
+.signal-phone-shell .phone-portrait-screen--field-reference .phone-required-action-shell__return {
+  min-width: 0;
+  min-height: 44px;
+  padding-inline: .5rem;
+  text-wrap: balance;
+}
+
+.signal-phone-shell .phone-portrait-screen--field-reference .phone-required-action-shell__header p {
+  display: block;
+}
+
+.signal-phone-shell .phone-portrait-screen--field-reference .phone-required-action-shell__recovery,
+.signal-phone-shell .phone-portrait-screen--field-reference .phone-required-action-shell__handoff {
+  grid-column: 1 / -1;
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .signal-phone-shell .phone-portrait-screen--field-reference > .phone-required-action-shell {
+    order: -2;
+  }
+
+  .signal-phone-shell .phone-portrait-screen--field-reference > .phone-operative-summary {
+    order: -1;
+  }
+
+  .signal-phone-shell .phone-portrait-screen--field-reference .phone-portrait-art {
+    flex-basis: 3.45rem;
+    max-height: 4.6rem;
+  }
+
+  .signal-phone-shell .phone-portrait-screen--field-reference .phone-portrait-hero-copy {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .signal-phone-shell .phone-portrait-screen--field-reference .phone-portrait-hero-copy > p {
+    grid-column: 1 / -1;
+  }
+
+  .signal-phone-shell .phone-operative-summary {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    align-items: start;
+  }
+
+  .signal-phone-shell .phone-operative-summary__vitals dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: .35rem;
+  }
+
+  .signal-phone-shell .phone-operative-summary__vitals dl > div:nth-child(3) {
+    border-inline-start: 0;
+  }
+}
+
+.phone-setup-step--operative .phone-setup-progress {
+  margin-block: .25rem .55rem;
+}
+
+.phone-character-tools {
+  display: grid;
+  gap: .6rem;
+}
+
+.phone-character-search {
+  display: grid;
+  gap: .28rem;
+  color: #e7d6b4;
+  font-size: .8rem;
+  font-weight: 700;
+}
+
+.phone-character-search input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: .48rem .68rem;
+  border: 1px solid #505862;
+  border-radius: 5px;
+  background: #111820;
+  color: #f0e8d8;
+  font: inherit;
+  font-size: 1rem;
+}
+
+.phone-character-search input::placeholder {
+  color: #9eacb8;
+}
+
+.phone-character-roster-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .25rem .7rem;
+  color: #bcc6cb;
+  font-size: .78rem;
+}
+
+.phone-character-roster-line > p {
+  margin: 0;
+}
+
+.phone-character-reactions {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.phone-character-reactions[open] {
+  flex-basis: 100%;
+}
+
+.phone-character-reactions > summary {
+  min-height: 44px;
+  align-content: center;
+  padding-inline: .3rem;
+  color: #e6c890;
+  cursor: pointer;
+}
+
+.phone-character-reactions[open] > summary {
+  margin-bottom: .3rem;
+}
+
+.phone-character-select-surface .phone-character-snap-list {
+  gap: .48rem;
+  padding-inline-end: 0;
+}
+
+.phone-setup-step--operative .phone-character-option {
+  min-height: 0;
+  grid-template-columns: 4.3rem minmax(0, 1fr);
+  align-items: stretch;
+  gap: .56rem;
+  padding: .4rem;
+  background: linear-gradient(120deg, #192027, #0c1116 66%);
+  cursor: default;
+}
+
+.phone-setup-step--operative .phone-character-option::after {
+  content: none;
+}
+
+.phone-setup-step--operative .phone-character-option > img {
+  position: static;
+  width: 100%;
+  height: auto;
+  max-height: 7rem;
+  aspect-ratio: 3 / 4;
+  align-self: start;
+  object-fit: cover;
+  border: 1px solid #665946;
+  border-radius: 3px;
+}
+
+.phone-setup-step--operative .phone-character-option > span {
+  padding: .1rem 0;
+  gap: .2rem;
+  text-shadow: none;
+  min-width: 0;
+}
+
+.phone-setup-step--operative .phone-character-option > span > strong,
+.phone-setup-step--operative .phone-character-option > span > small {
+  display: block;
+  text-transform: none;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.phone-setup-step--operative .phone-character-option > span > strong {
+  color: #f4e7cc;
+  font-size: 1.04rem;
+  text-shadow: none;
+}
+
+.phone-setup-step--operative .phone-character-option > span > small {
+  font-size: .76rem;
+  font-weight: 600;
+}
+
+.phone-setup-step--operative .phone-character-presentation,
+.phone-setup-step--operative .phone-character-card-actions {
+  margin-top: .12rem;
+}
+
+.phone-setup-step--operative .phone-character-card-actions {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: .35rem;
+}
+
+.phone-character-search input:focus-visible,
+.phone-character-reactions > summary:focus-visible,
+.phone-shop-price-list summary:focus-visible,
+.phone-shop-price-list button:focus-visible {
+  outline: 2px solid #a3dbe3;
+  outline-offset: 2px;
+}
+
+.phone-shop-focused-offer .phone-wrap-card__title-block {
+  min-width: 0;
+}
+
+.phone-shop-focused-offer .phone-wrap-card__cost {
+  flex: 0 0 auto;
+  max-width: min(8rem, 48%);
+}
+
+.phone-shop-price {
+  display: grid;
+  gap: .13rem;
+  max-width: 8rem;
+  padding: .32rem .42rem;
+  border: 1px solid #8e7145;
+  border-radius: 4px;
+  background: #241c12;
+  color: #f3d59d;
+  font-size: .78rem;
+  line-height: 1.2;
+  text-align: left;
+  overflow-wrap: normal;
+}
+
+.phone-shop-price > small {
+  color: #e4c384;
+  font-size: .65rem;
+  font-weight: 700;
+}
+
+.phone-shop-price > strong {
+  color: #ffe0a7;
+}
+
+.phone-shop-focused-offer .phone-wrap-card__description .phone-shop-offer-limit {
+  margin-bottom: .35rem;
+  color: #f2b7a6;
+  font-weight: 700;
+}
+
+.phone-shop-panel .phone-shop-stock-card-disabled {
+  opacity: 1;
+  border-color: #70564a;
+}
+
+.phone-shop-price-list {
+  border: 1px solid #695333;
+  background: #15130f;
+  color: #edd3a7;
+}
+
+.phone-shop-price-list summary {
+  min-height: 44px;
+  align-content: center;
+  padding-inline: .6rem;
+  font-size: .83rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.phone-shop-price-list ul {
+  margin: 0;
+  padding: 0 .4rem .4rem;
+  list-style: none;
+}
+
+.phone-shop-price-list button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+  align-items: center;
+  min-height: 44px;
+  width: 100%;
+  gap: .5rem;
+  padding: .38rem .5rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #e8dccb;
+  font: inherit;
+  font-size: .79rem;
+  text-align: left;
+}
+
+.phone-shop-price-list button[aria-pressed="true"] {
+  border-color: #8e7145;
+  background: #2b2318;
+}
+
+.phone-shop-price-list button > strong {
+  color: #f4d295;
+  text-align: right;
+}
+
+.phone-next-contracts {
+  min-width: 0;
+  padding: .7rem;
+  border: 1px solid #64516c;
+  border-inline-start: 3px solid #a689b3;
+  background: linear-gradient(135deg, #211a27, #0d1117 76%);
+}
+
+.phone-next-contracts h2 {
+  margin: 0 0 .35rem;
+  color: #ead3f0;
+  font-size: .86rem;
+}
+
+.phone-next-contracts ul {
+  display: grid;
+  gap: .4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phone-next-contracts li {
+  display: grid;
+  gap: .28rem;
+  padding: .48rem .55rem;
+  border: 1px solid #4f4458;
+  background: #11131a;
+}
+
+.phone-next-contracts__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .2rem .55rem;
+  color: #f2e5cf;
+}
+
+.phone-next-contracts small {
+  color: #dcc1e7;
+  font-size: .73rem;
+  font-weight: 700;
+}
+
+.phone-next-contracts p {
+  margin: 0;
+  color: #e2e3e7;
+  font-size: .86rem;
+  line-height: 1.35;
+}
+
+.phone-next-contracts p small {
+  display: block;
+  margin-top: .15rem;
+}
+
+@media (orientation: landscape) and (min-width: 680px) {
+  .phone-setup-step--operative {
+    gap: .45rem;
+  }
+
+  .phone-setup-step--operative .phone-setup-progress {
+    margin-block: 0;
+  }
+
+  .phone-setup-step--operative .phone-setup-progress li {
+    padding-block: .25rem;
+  }
+
+  .phone-character-tools {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 4fr);
+    align-items: end;
+  }
+
+  .phone-setup-step--operative .phone-character-snap-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.signal-phone-identity__connection {
+  margin: 0;
+}
+
+.signal-phone-identity__connection:not(:empty) {
+  padding: .35rem .6rem;
+  border-top: 1px solid #875745;
+  background: #281b17;
+  color: #ffe0c9;
+  font-size: .78rem;
+  line-height: 1.3;
+}
+
+.signal-phone-identity[data-connection="offline"] + .phone-portrait-content-stage {
+  opacity: .56;
 }

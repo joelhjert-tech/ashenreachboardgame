@@ -18,6 +18,7 @@ import { getBattleAssistViewModel } from "./inventoryPresentation.js";
 import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
 import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
 import { PhoneBattleDuelStage } from "./PhoneBattleDuelStage.js";
+import { PhoneRollBreakdown } from "./PhoneRollBreakdown.js";
 import { PhoneEdgeCardHand } from "./PhoneEdgeCardHand.js";
 import { getPhoneLoadoutWindow } from "./loadoutWindow.js";
 
@@ -264,6 +265,7 @@ export function PhoneBattleView({
   const identity = getPhoneBattleIdentity(patch);
   const [context, setContext] = useState<BattleContext>("battle");
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [restored, setRestored] = useState(() => wasPhoneBattleSeen(identity));
   const [rollSubmitting, setRollSubmitting] = useState(false);
   const resolution = patch.activeResolution ?? null;
@@ -284,7 +286,9 @@ export function PhoneBattleView({
   const assist = getBattleAssistViewModel(patch);
   const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
   const isActiveSeat = activeSeatId === self.seatId;
-  const playerName = presentation?.operative.name ?? patch.seats.find((seat) => seat.seatId === self.seatId)?.displayName ?? self.character.name;
+  const fighterSeatId = presentation?.actorSeatId ?? pendingRoll?.fighterSeatId ?? resolution?.playerId ?? self.seatId;
+  const fighter = patch.players.find((player) => player.seatId === fighterSeatId)?.character ?? self.character;
+  const playerName = presentation?.operative.name ?? patch.seats.find((seat) => seat.seatId === fighterSeatId)?.displayName ?? fighter.name;
   const isAssignedEnemyRoller = pendingRoll?.assignedRollerSeatId === self.seatId;
   const assignedRollerName =
     patch.seats.find((seat) => seat.seatId === pendingRoll?.assignedRollerSeatId)?.displayName ??
@@ -302,11 +306,11 @@ export function PhoneBattleView({
     "Unknown threat";
   const enemyId = resolution?.card?.id ?? pendingRoll?.encounterCardId ?? encounter?.id ?? "";
   const opponentTotal = presentation?.opponent.finalTotal ?? roll?.target ?? battle?.difficulty ?? encounter?.difficulty ?? assist?.enemyBattleValue ?? 0;
-  const operativeValue = presentation?.operative.baseValue ?? assist?.playerBattleValue ?? self.character.stats[stat] ?? 0;
+  const operativeValue = presentation?.operative.baseValue ?? assist?.playerBattleValue ?? fighter.stats[stat] ?? 0;
   const rollValue = resultStage
-    ? presentation?.operative.diceTotal ?? (roll ? roll.dice.reduce((sum, value) => sum + value, 0) : null)
+    ? presentation?.operative.diceTotal ?? roll?.baseTotal ?? null
     : null;
-  const modifierTotal = presentation?.operative.modifiers.reduce((sum, modifier) => sum + modifier.value, 0) ?? roll?.modifierTotal ?? 0;
+  const rollFixedValue = roll?.modifierTotal ?? presentation?.test.fixedValue ?? null;
   const finalTotal = resultStage ? presentation?.operative.finalTotal ?? roll?.finalTotal ?? null : null;
   const result = !resultStage
     ? null
@@ -320,8 +324,8 @@ export function PhoneBattleView({
             ? (roll.success ? "success" : "defeat")
             : null;
   const resultLabel = result === "success" ? "Success" : result === "defeat" ? "Failure" : result === "draw" ? "Draw" : pendingRoll ? "Enemy roll" : resolution?.stage === "battle_setup" ? "Roll required" : "Battle";
-  const detailsFormula = finalTotal !== null
-    ? `${operativeValue} + ${rollValue ?? 0} ${modifierTotal >= 0 ? "+" : "−"} ${Math.abs(modifierTotal)} = ${finalTotal}`
+  const detailsFormula = finalTotal !== null && rollValue !== null && rollFixedValue !== null
+    ? `${rollValue} ${rollFixedValue < 0 ? "−" : "+"} ${Math.abs(rollFixedValue)} = ${finalTotal}`
     : null;
   const outcomeFlavor = resultStage ? presentation?.publicConsequence ?? outcome?.text ?? null : null;
   const loadoutWindow = getPhoneLoadoutWindow(patch, self.seatId);
@@ -344,6 +348,7 @@ export function PhoneBattleView({
   useEffect(() => {
     setContext("battle");
     setDetailsOpen(false);
+    setSupportOpen(false);
     const alreadySeen = wasPhoneBattleSeen(identity);
     setRestored(alreadySeen);
     setRollSubmitting(false);
@@ -364,13 +369,17 @@ export function PhoneBattleView({
     if (!loadoutWindow && context === "loadout") setContext("battle");
   }, [context, loadoutWindow]);
 
-  usePhoneBackDismissal(context !== "battle" || detailsOpen, () => {
+  usePhoneBackDismissal(context !== "battle" || detailsOpen || supportOpen, () => {
     if (context !== "battle") {
       setContext("battle");
       return true;
     }
     if (detailsOpen) {
       setDetailsOpen(false);
+      return true;
+    }
+    if (supportOpen) {
+      setSupportOpen(false);
       return true;
     }
     return false;
@@ -469,8 +478,9 @@ export function PhoneBattleView({
     statLabel
   ]);
 
+  const rollUnderReview = resolution?.stage === "roll_result";
   const transientRollResult =
-    resolution?.stage === "roll_result"
+    rollUnderReview
     && choiceActions.length === 0
     && optionalActions.length === 0;
 
@@ -504,6 +514,18 @@ export function PhoneBattleView({
     );
   }
 
+  const preparingRoll = !result && !pendingRoll && !patch.edgeHand?.reaction && resolution?.stage === "battle_setup";
+  const loadoutAction = loadoutWindow && loadoutCardCount > 0 ? (
+    <button type="button" className="phone-battle-equipment-alert" onClick={() => setContext("loadout")}>
+      <span>Adjust loadout</span>
+      <strong>{loadoutCardCount} Gear or follower card{loadoutCardCount === 1 ? "" : "s"} available before this {statLabel} roll</strong>
+    </button>
+  ) : null;
+  const edgeReactionInChoices = choiceActions.some((action) => action.key === "edge-reaction-decline");
+  const edgeHand = !edgeReactionInChoices && (resolution?.stage === "battle_setup" || patch.edgeHand?.reaction) && patch.edgeHand
+    ? <PhoneEdgeCardHand hand={patch.edgeHand} seatId={self.seatId} onIntent={onIntent} />
+    : null;
+
   return (
     <section
       className={`phone-battle-shell phone-battle-shell--cinematic phone-battle-shell--${result ?? "active"}`}
@@ -520,57 +542,32 @@ export function PhoneBattleView({
       <div className="phone-battle-shell__scroll" data-testid="phone-battle-scroll-region">
         {context === "battle" ? (
           <>
-            <PhoneBattleDuelStage
-              operativeId={self.character.id}
-              operativeName={self.character.name}
-              playerName={playerName}
-              enemyArtType={enemyArtType(patch)}
-              enemyId={enemyId}
-              enemyName={enemyName}
-              statLabel={statLabel}
-              operativeValue={operativeValue}
-              opponentTotal={opponentTotal}
-              finalTotal={finalTotal}
-              victoryReward={victoryReward}
-              failureStakes={failureStakes}
-            />
-            {!result && resolution?.stage === "battle_setup" ? (
-              <section className="phone-battle-prep-summary" aria-label="Battle preparation" data-testid="phone-battle-prep-summary">
-                <header>
-                  <span>Before you roll</span>
-                  <strong>
-                    {statLabel} {fixedValue ?? operativeValue}
-                    {requiredDiceTotal !== null && requiredDiceTotal !== undefined
-                      ? ` · Need ${requiredDiceTotal}+ on dice`
-                      : " · Opposed roll"}
-                  </strong>
-                </header>
-                <div>
-                  <span><strong>{relevantItemCount}</strong> usable items</span>
-                  <span><strong>{edgeCardCount}</strong> Edge</span>
-                  <span><strong>{helperCount}</strong> helpers</span>
-                  <span><strong>{conditionCount}</strong> conditions</span>
-                </div>
+            {result && finalTotal !== null ? (
+              <section className="phone-battle-result-summary" aria-label="Battle result">
+                <h2>{enemyName}</h2>
+                <PhoneRollBreakdown
+                  label="Operative roll"
+                  dice={presentation?.operative.rawDice ?? roll?.dice ?? []}
+                  diceTotal={rollValue}
+                  fixedValue={rollFixedValue}
+                  total={finalTotal}
+                  target={opponentTotal}
+                  targetLabel={presentation?.test.opposed ? "Enemy total" : "Target"}
+                />
+                {presentation && presentation.opponent.rawDice.length > 0 && presentation.opponent.finalTotal !== null ? (
+                  <PhoneRollBreakdown
+                    label="Enemy roll"
+                    dice={presentation.opponent.rawDice}
+                    diceTotal={presentation.opponent.diceTotal}
+                    total={presentation.opponent.finalTotal}
+                  />
+                ) : null}
               </section>
-            ) : null}
-            {loadoutWindow && loadoutCardCount > 0 ? (
-              <button
-                type="button"
-                className="phone-battle-equipment-alert"
-                onClick={() => setContext("loadout")}
-              >
-                <span>Adjust loadout</span>
-                <strong>{loadoutCardCount} Gear or follower card{loadoutCardCount === 1 ? "" : "s"} available before this {statLabel} roll</strong>
-              </button>
-            ) : null}
-            <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
-            {(resolution?.stage === "battle_setup" || patch.edgeHand?.reaction) && patch.edgeHand ? (
-              <PhoneEdgeCardHand hand={patch.edgeHand} seatId={self.seatId} onIntent={onIntent} />
             ) : null}
             {result ? (
               <section className={`phone-battle-outcome phone-battle-outcome--${result}`} data-testid="phone-battle-outcome">
-                <span>{result === "success" ? "Threat defeated" : result === "draw" ? "Totals tied" : "Test failed"}</span>
-                <BattleConsequences patch={patch} />
+                <span>{rollUnderReview ? "Roll under review" : result === "success" ? "Threat defeated" : result === "draw" ? "Totals tied" : "Test failed"}</span>
+                {rollUnderReview ? null : <BattleConsequences patch={patch} />}
                 {outcomeFlavor ? <blockquote>“{outcomeFlavor}”</blockquote> : null}
               </section>
             ) : null}
@@ -592,6 +589,62 @@ export function PhoneBattleView({
                   </GameButton>
                 ))}
               </section>
+            ) : null}
+            {pendingRoll ? (
+              <p className="phone-battle-role">{isAssignedEnemyRoller
+                ? `You roll for ${enemyName}.`
+                : `${assignedRollerName} rolls for ${enemyName}.`}</p>
+            ) : null}
+            {preparingRoll ? (
+              <section className="phone-battle-prep-summary" aria-label="Battle preparation" data-testid="phone-battle-prep-summary">
+                <header>
+                  <div>
+                    <h2>{enemyName}</h2>
+                    <strong>
+                      {statLabel} {fixedValue ?? operativeValue}
+                      {requiredDiceTotal != null ? ` · Need ${requiredDiceTotal}+ on dice` : " · Opposed roll"}
+                    </strong>
+                  </div>
+                  <button type="button" aria-expanded={supportOpen} onClick={() => setSupportOpen((open) => !open)}>
+                    Roll support
+                  </button>
+                </header>
+                {supportOpen ? (
+                  <>
+                    <div>
+                      <span><strong>{relevantItemCount}</strong> usable item{relevantItemCount === 1 ? "" : "s"}</span>
+                      <span><strong>{edgeCardCount}</strong> Edge</span>
+                      <span><strong>{helperCount}</strong> helper{helperCount === 1 ? "" : "s"}</span>
+                      <span><strong>{conditionCount}</strong> condition{conditionCount === 1 ? "" : "s"}</span>
+                    </div>
+                    {loadoutAction}
+                    <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
+                    {edgeHand}
+                  </>
+                ) : null}
+              </section>
+            ) : null}
+            {patch.edgeHand?.reaction ? edgeHand : null}
+            <PhoneBattleDuelStage
+              operativeId={fighter.id}
+              operativeName={fighter.name}
+              playerName={playerName}
+              enemyArtType={enemyArtType(patch)}
+              enemyId={enemyId}
+              enemyName={enemyName}
+              statLabel={statLabel}
+              operativeValue={operativeValue}
+              opponentTotal={opponentTotal}
+              finalTotal={finalTotal}
+              victoryReward={victoryReward}
+              failureStakes={failureStakes}
+            />
+            {!preparingRoll ? (
+              <>
+                {loadoutAction}
+                <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
+                {!patch.edgeHand?.reaction ? edgeHand : null}
+              </>
             ) : null}
             <button
               type="button"

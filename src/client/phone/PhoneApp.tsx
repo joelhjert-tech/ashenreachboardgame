@@ -217,44 +217,6 @@ function formatJoinFailure(joinFailure: unknown): string {
   return "Cannot reach host server. Check that the phone and host are on the same Wi-Fi, then confirm Windows firewall allows the Ashen Reach ports.";
 }
 
-function useLandscapeMode(): boolean {
-  const getIsLandscape = () => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    const orientationMatch =
-      typeof window.matchMedia === "function" ? window.matchMedia("(orientation: landscape)").matches : false;
-    const phoneSizedViewport = Math.min(window.innerWidth, window.innerHeight) < 700 && Math.max(window.innerWidth, window.innerHeight) < 1000;
-
-    return phoneSizedViewport && (orientationMatch || window.innerWidth > window.innerHeight);
-  };
-
-  const [isLandscape, setIsLandscape] = useState(getIsLandscape);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const mediaQuery = typeof window.matchMedia === "function" ? window.matchMedia("(orientation: landscape)") : null;
-    const update = () => setIsLandscape(getIsLandscape());
-
-    update();
-    mediaQuery?.addEventListener?.("change", update);
-    window.addEventListener("resize", update);
-    window.screen.orientation?.addEventListener?.("change", update);
-
-    return () => {
-      mediaQuery?.removeEventListener?.("change", update);
-      window.removeEventListener("resize", update);
-      window.screen.orientation?.removeEventListener?.("change", update);
-    };
-  }, []);
-
-  return isLandscape;
-}
-
 export function PhoneApp(): ReactElement {
   const [characters, setCharacters] = useState<CharacterCatalogEntry[]>([]);
   const [scenarios, setScenarios] = useState<ScenarioCatalogEntry[]>([]);
@@ -265,6 +227,7 @@ export function PhoneApp(): ReactElement {
   const [configuringLobby, setConfiguringLobby] = useState(false);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
   const [characterFilter, setCharacterFilter] = useState<CharacterSelectionFilter>("all");
+  const [characterSearch, setCharacterSearch] = useState("");
   const [inspectedCharacterId, setInspectedCharacterId] = useState<string | null>(null);
   const [joiningRoom, setJoiningRoom] = useState(false);
   const [startingGame, setStartingGame] = useState(false);
@@ -294,7 +257,6 @@ export function PhoneApp(): ReactElement {
   const initializedSignalPieceSeatRef = useRef<string | null>(null);
   const previousCharacterSelectedRef = useRef<boolean | null>(null);
   const joinUnavailable = joinError === "No open seats remain";
-  const isLandscape = useLandscapeMode();
   const { patch, error, sendIntent, resynchronize, status, synchronized, debugEvents, clearDebugEvents, sendLobbyReaction } = useRoomSubscription({
     view: "phone",
     auth
@@ -526,9 +488,14 @@ export function PhoneApp(): ReactElement {
       }),
     [availableCharacterCatalog]
   );
+  const normalizedCharacterSearch = characterSearch.trim().toLocaleLowerCase();
   const displayCharacters = useMemo(
-    () => sortedCharacters.filter((character) => matchesCharacterFilter(character, characterFilter) || characterOptionById.get(character.id)?.developerQa),
-    [characterFilter, characterOptionById, sortedCharacters]
+    () => sortedCharacters.filter((character) => {
+      if (!matchesCharacterFilter(character, characterFilter) && !characterOptionById.get(character.id)?.developerQa) return false;
+      return !normalizedCharacterSearch || [character.name, character.archetype, character.presentation?.role]
+        .some((value) => value?.toLocaleLowerCase().includes(normalizedCharacterSearch));
+    }),
+    [characterFilter, characterOptionById, normalizedCharacterSearch, sortedCharacters]
   );
   const inspectedCharacter = inspectedCharacterId
     ? availableCharacterCatalog.find((character) => character.id === inspectedCharacterId) ?? characters.find((character) => character.id === inspectedCharacterId) ?? null
@@ -830,78 +797,69 @@ export function PhoneApp(): ReactElement {
   if (!auth) {
     return (
       <main className="phone-page phone-page-join" data-keyboard-constrained={visualViewport.keyboardConstrained ? "true" : "false"}>
-        {isLandscape ? (
-          <section className="phone-rotate-warning" aria-live="polite">
-            <div>
-              <span>Portrait required</span>
-              <h1>Rotate your phone to portrait mode.</h1>
+        <div className="phone-join-layout phone-join-layout-nameEntry">
+          <section className="phone-panel phone-join-panel">
+            <div className="phone-panel-header">
+              <div>
+                <p className="phone-panel-kicker">Ashen Reach Controller</p>
+                <h1>Join Room</h1>
+                <p className="phone-muted-copy">Enter the room code and your player name to join the table.</p>
+              </div>
             </div>
+            <form ref={joinFormRef} className="phone-join-form" onSubmit={handleNameSubmit}>
+              <section className="phone-join-step" aria-label="Step 1 enter room code and name">
+                <span className="phone-join-step-kicker">Step 1</span>
+                <label className="field">
+                  <span>Room code</span>
+                  <input
+                    name="roomCode"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="characters"
+                    inputMode="text"
+                    enterKeyHint="next"
+                    spellCheck={false}
+                    value={formState.roomCode}
+                    onChange={(event) => {
+                      setJoinError(null);
+                      setFormState((current) => ({ ...current, roomCode: event.target.value.toUpperCase() }));
+                    }}
+                    placeholder="ABCDE"
+                    required
+                  />
+                </label>
+                <label className="field">
+                  <span>Player name</span>
+                  <input
+                    name="playerName"
+                    autoComplete="nickname"
+                    spellCheck={false}
+                    enterKeyHint="go"
+                    value={formState.displayName}
+                    maxLength={MAX_PLAYER_DISPLAY_NAME_LENGTH}
+                    onChange={(event) => {
+                      setJoinError(null);
+                      setFormState((current) => ({ ...current, displayName: event.target.value }));
+                    }}
+                    placeholder="Seat name"
+                    required
+                  />
+                </label>
+              </section>
+              {(joinError || error) && <p className="error" role="alert">{joinError ?? error}</p>}
+              <div ref={joinActionsRef} className="phone-join-actions">
+                <button
+                  className="phone-button phone-button-primary"
+                  type="submit"
+                  disabled={joiningRoom || joinUnavailable}
+                >
+                  {joiningRoom ? "Joining..." : joinUnavailable ? "Room Full" : "Join Game"}
+                </button>
+                {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
+              </div>
+            </form>
           </section>
-        ) : (
-            <div className="phone-join-layout phone-join-layout-nameEntry">
-            <section className="phone-panel phone-join-panel">
-                <div className="phone-panel-header">
-                  <div>
-                    <p className="phone-panel-kicker">Ashen Reach Controller</p>
-                    <h1>Join Room</h1>
-                    <p className="phone-muted-copy">Enter the room code and your player name to join the table.</p>
-                  </div>
-                </div>
-                <form ref={joinFormRef} className="phone-join-form" onSubmit={handleNameSubmit}>
-                  <section className="phone-join-step" aria-label="Step 1 enter room code and name">
-                    <span className="phone-join-step-kicker">Step 1</span>
-                    <label className="field">
-                      <span>Room code</span>
-                      <input
-                        name="roomCode"
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="characters"
-                        inputMode="text"
-                        enterKeyHint="next"
-                        spellCheck={false}
-                        value={formState.roomCode}
-                        onChange={(event) => {
-                          setJoinError(null);
-                          setFormState((current) => ({ ...current, roomCode: event.target.value.toUpperCase() }));
-                        }}
-                        placeholder="ABCDE"
-                        required
-                      />
-                    </label>
-                    <label className="field">
-                      <span>Player name</span>
-                      <input
-                        name="playerName"
-                        autoComplete="nickname"
-                        spellCheck={false}
-                        enterKeyHint="go"
-                        value={formState.displayName}
-                        maxLength={MAX_PLAYER_DISPLAY_NAME_LENGTH}
-                        onChange={(event) => {
-                          setJoinError(null);
-                          setFormState((current) => ({ ...current, displayName: event.target.value }));
-                        }}
-                        placeholder="Seat name"
-                        required
-                      />
-                    </label>
-                  </section>
-                  {(joinError || error) && <p className="error" role="alert">{joinError ?? error}</p>}
-                  <div ref={joinActionsRef} className="phone-join-actions">
-                    <button
-                      className="phone-button phone-button-primary"
-                      type="submit"
-                      disabled={joiningRoom || joinUnavailable}
-                    >
-                      {joiningRoom ? "Joining..." : joinUnavailable ? "Room Full" : "Join Game"}
-                    </button>
-                    {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
-                  </div>
-                </form>
-            </section>
-          </div>
-        )}
+        </div>
       </main>
     );
   }
@@ -1171,7 +1129,7 @@ export function PhoneApp(): ReactElement {
               className="phone-portrait-scroll phone-lobby-waiting-scroll phone-character-select-scroll"
               aria-label={setupSelectionStep === "piece" ? "Choose piece" : "Choose operative"}
             >
-              {lobbyReactionPanel}
+              {setupSelectionStep === "piece" ? lobbyReactionPanel : null}
               <section
                 ref={operativeSelectionRef}
                 className={`phone-lobby-ready-panel phone-character-waiting-panel phone-character-select-surface phone-setup-step phone-setup-step--${setupSelectionStep}`}
@@ -1187,7 +1145,10 @@ export function PhoneApp(): ReactElement {
                         type="button"
                         className="phone-setup-step__back"
                         disabled={pendingCharacterId !== null}
-                        onClick={() => setSetupSelectionStep("piece")}
+                        onClick={() => {
+                          setCharacterSearch("");
+                          setSetupSelectionStep("piece");
+                        }}
                       >
                         Back to Pieces
                       </button>
@@ -1271,28 +1232,51 @@ export function PhoneApp(): ReactElement {
                 ) : (
                   <>
                     {phonePatch.payload.lateJoinPending ? (
-                      <p className="phone-muted-copy">Choose an available operative, then select a starting Contract before joining the turn order.</p>
-                    ) : (
-                      <p className="phone-muted-copy">Choose the operative you will control.</p>
-                    )}
-                    <div className="phone-character-filter-row" role="tablist" aria-label="Character filters">
-                      {[
-                        ["recommended", "Recommended"],
-                        ["all", "All Operatives"],
-                        ["advanced", "Advanced"]
-                      ].map(([filter, label]) => (
-                        <button
-                          key={filter}
-                          type="button"
-                          role="tab"
-                          aria-selected={characterFilter === filter}
-                          className={`phone-character-filter${characterFilter === filter ? " phone-character-filter-active" : ""}`}
-                          onClick={() => setCharacterFilter(filter as CharacterSelectionFilter)}
-                        >
-                          {label}
-                        </button>
-                      ))}
+                      <p className="phone-muted-copy">Choose an operative and starting Contract before joining the turn order.</p>
+                    ) : null}
+                    <div className="phone-character-tools">
+                      <label className="phone-character-search">
+                        <span>Find an operative</span>
+                        <input
+                          type="text"
+                          value={characterSearch}
+                          placeholder="Name, archetype, or role"
+                          autoComplete="off"
+                          disabled={pendingCharacterId !== null}
+                          onChange={(event) => setCharacterSearch(event.currentTarget.value)}
+                        />
+                      </label>
+                      <div className="phone-character-filter-row" role="tablist" aria-label="Character filters">
+                        {[
+                          ["recommended", "Recommended"],
+                          ["all", "All Operatives"],
+                          ["advanced", "Advanced"]
+                        ].map(([filter, label]) => (
+                          <button
+                            key={filter}
+                            type="button"
+                            role="tab"
+                            aria-selected={characterFilter === filter}
+                            disabled={pendingCharacterId !== null}
+                            className={`phone-character-filter${characterFilter === filter ? " phone-character-filter-active" : ""}`}
+                            onClick={() => setCharacterFilter(filter as CharacterSelectionFilter)}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
+                    <div className="phone-character-roster-line">
+                      <p role="status">{displayCharacters.length} {displayCharacters.length === 1 ? "operative" : "operatives"}</p>
+                      {lobbyReactionPanel ? (
+                        <details className="phone-character-reactions">
+                          <summary>Lobby reactions</summary>
+                          {lobbyReactionPanel}
+                        </details>
+                      ) : null}
+                    </div>
+                    {(joinError || error) && <p className="error" role="alert">{joinError ?? error}</p>}
+                    {displayCharacters.length === 0 ? <p className="phone-muted-copy">No matches. Try a different search or filter.</p> : null}
                     <div className="phone-character-grid phone-character-snap-list" role="list" aria-label="Character">
                       {displayCharacters.map((character) => {
                         const projectedOption = characterOptionById.get(character.id);
@@ -1309,7 +1293,7 @@ export function PhoneApp(): ReactElement {
                           aria-busy={selecting ? "true" : undefined}
                           data-character-id={character.id}
                         >
-                          <PhoneOptimizedImage src={getCharacterPortraitPath(character.id)} alt="" />
+                          <PhoneOptimizedImage src={getCharacterPortraitPath(character.id)} alt="" width={72} height={96} loading="lazy" />
                           <span>
                             <strong>{character.name}</strong>
                             {projectedOption?.developerQa ? <em>Developer QA operative</em> : null}
@@ -1321,7 +1305,6 @@ export function PhoneApp(): ReactElement {
                                   <small>{formatComplexity(character.presentation.complexity)}</small>
                                   {character.presentation.recommendedForFirstGame ? <em>First-game pick</em> : null}
                                 </span>
-                                <small>{character.presentation.playstyleSummary}</small>
                               </span>
                             )}
                             <span className="phone-character-card-actions">
@@ -1344,7 +1327,7 @@ export function PhoneApp(): ReactElement {
                                 aria-label={`Select ${character.name}, ${character.archetype}`}
                                 onClick={() => handleCharacterSelected(character.id)}
                               >
-                                {selecting ? "Selecting…" : unavailableReason ?? "Select operative"}
+                                {selecting ? "Selecting…" : unavailableReason ?? "Select"}
                               </button>
                             </span>
                           </span>
@@ -1352,7 +1335,6 @@ export function PhoneApp(): ReactElement {
                         );
                       })}
                     </div>
-                    {(joinError || error) && <p className="error" role="alert">{joinError ?? error}</p>}
                   </>
                 )}
               </section>
@@ -1378,43 +1360,34 @@ export function PhoneApp(): ReactElement {
 
   return (
     <main className="phone-page phone-page-controller">
-      <div className={`phone-controller-layout${isLandscape ? " phone-controller-layout-landscape" : ""}`} inert={inspectedCharacter ? true : undefined} aria-hidden={inspectedCharacter ? true : undefined}>
-        {isLandscape ? (
-          <section className="phone-rotate-warning" aria-live="polite">
-            <div>
-              <span>Portrait required</span>
-              <h1>Rotate your phone to portrait mode.</h1>
-            </div>
-          </section>
-        ) : (
-          <PortraitControllerView
-            onInspectOperative={() => {
-              operativeInspectTriggerRef.current = document.activeElement instanceof HTMLButtonElement ? document.activeElement : null;
-              setInspectedCharacterId(self?.character.id ?? null);
-            }}
-            lobbyReactions={lobbyReactionPanel}
-            self={self}
-            roomCode={auth.roomCode}
-            displayName={auth.displayName}
-            connectionStatus={status}
-            activeSeatId={activeSeatId}
-            activeContractCard={activeContractCard ?? null}
-            patch={phonePatch?.payload ?? null}
-            patchSequence={phonePatch?.sequence}
-            serverError={error}
-            connectionSynchronized={synchronized}
-            characters={projectedCharacterOptions
-              ? projectedCharacterOptions.filter((option) => option.eligible).map((option) => option.character)
-              : characters}
-            onIntent={canSendLobbyIntent ? sendIntent : null}
-            onRequestResynchronize={resynchronize}
-            onLeave={roomBackGuard.requestLeave}
-            onLobbyBack={() => void backToCharacterSelect()}
-            onStartSession={isSetupHost ? handleStartFromPhone : undefined}
-            onChangeLobbySetup={isSetupHost ? openLobbySetupEditor : undefined}
-            startSubmitting={startingGame}
-          />
-        )}
+      <div className="phone-controller-layout" inert={inspectedCharacter ? true : undefined} aria-hidden={inspectedCharacter ? true : undefined}>
+        <PortraitControllerView
+          onInspectOperative={() => {
+            operativeInspectTriggerRef.current = document.activeElement instanceof HTMLButtonElement ? document.activeElement : null;
+            setInspectedCharacterId(self?.character.id ?? null);
+          }}
+          lobbyReactions={lobbyReactionPanel}
+          self={self}
+          roomCode={auth.roomCode}
+          displayName={auth.displayName}
+          connectionStatus={status}
+          activeSeatId={activeSeatId}
+          activeContractCard={activeContractCard ?? null}
+          patch={phonePatch?.payload ?? null}
+          patchSequence={phonePatch?.sequence}
+          serverError={error}
+          connectionSynchronized={synchronized}
+          characters={projectedCharacterOptions
+            ? projectedCharacterOptions.filter((option) => option.eligible).map((option) => option.character)
+            : characters}
+          onIntent={canSendLobbyIntent ? sendIntent : null}
+          onRequestResynchronize={resynchronize}
+          onLeave={roomBackGuard.requestLeave}
+          onLobbyBack={() => void backToCharacterSelect()}
+          onStartSession={isSetupHost ? handleStartFromPhone : undefined}
+          onChangeLobbySetup={isSetupHost ? openLobbySetupEditor : undefined}
+          startSubmitting={startingGame}
+        />
 
         {roomBackGuard.confirmationOpen ? (
           <section className="phone-leave-dialog" role="dialog" aria-modal="true" aria-labelledby="phone-leave-dialog-title">

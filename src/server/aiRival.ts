@@ -1,3 +1,6 @@
+import { RIFTFALL_BOARD_NODES } from "../data/riftfallBoardNodes.js";
+import { BOARD_RING_TRANSITIONS } from "../game/data/boardTransitions.js";
+import { resolveBoardTextEffect } from "../game/data/boardTextEffects.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../game/data/boardSpaces.js";
 import { advanceContractObjectiveState, canAdvanceContractObjective, isContractObjectiveComplete } from "../game/contracts/objectives.js";
 import type { ClientIntent } from "../game/engine/actions.js";
@@ -74,8 +77,65 @@ function progressesOwnContract(patch: PhonePatchPayload, destination: PublicMove
   });
 }
 
+function holdsArtifact(patch: PhonePatchPayload): boolean {
+  return patch.self?.character.heldGear.some((gear) => gear.tier === "artifact") ?? false;
+}
+
+function hasArtifactCache(sector: PhonePatchPayload["sectors"][number]): boolean {
+  const space = getBoardSpace(sector.id);
+  return Boolean(sector.encounterDecks.artifact.length && space &&
+    resolveBoardTextEffect(space.textBox.effectKey)?.sectorDeck?.kind === "artifact");
+}
+
+const ringTracks = {
+  outer: RIFTFALL_BOARD_NODES.filter((node) => node.ring === "outer").map((node) => node.id),
+  middle: RIFTFALL_BOARD_NODES.filter((node) => node.ring === "middle").map((node) => node.id)
+};
+
+function seeksGate(patch: PhonePatchPayload): boolean {
+  if (patch.scenarioState?.confrontation.repelled) return false;
+  if (holdsArtifact(patch)) return true;
+  // An operative with no Artifact can still win through an objective. Split
+  // opening plans when rivals race at the same table.
+  return patch.turnOrder.indexOf(patch.self?.seatId ?? "") % 2 === 1;
+}
+
+function gateRouteScore(sectorId: string, ring: PublicMoveDestination["ring"], patch: PhonePatchPayload): number {
+  if (!seeksGate(patch)) return 0;
+  if (ring !== "outer" && ring !== "middle") return 0;
+  const track = ringTracks[ring];
+  const index = track.indexOf(sectorId);
+  if (index < 0) return 0;
+
+  const needsArtifact = !holdsArtifact(patch);
+  const caches = needsArtifact ? patch.sectors.filter(hasArtifactCache).map((sector) => sector.id) : [];
+  const crossings = BOARD_RING_TRANSITIONS.filter((edge) => edge.direction === "inward" &&
+    edge.sourceRing === ring && (!edge.allowedFrom.length || edge.allowedFrom.includes(edge.sourceSectorId)));
+  const targets = needsArtifact && caches.some((id) => track.includes(id)) ? caches : crossings.map((edge) => edge.sourceSectorId);
+  // Exact rolls can overshoot. Aim for a landing on the milestone, then use
+  // distance around the circular track to break ties between near misses.
+  if (caches.includes(sectorId)) return 65;
+  if (targets.includes(sectorId)) return 48;
+  let distance = Infinity;
+  for (const target of targets) {
+    const targetIndex = track.indexOf(target);
+    if (targetIndex < 0) continue;
+    const gap = Math.abs(index - targetIndex);
+    distance = Math.min(distance, gap, track.length - gap);
+  }
+  return Math.max(0, 18 - distance * 4);
+}
+
+function bestBoardCheck(effectKey: string, stats: Record<Stat, number>) {
+  const effect = resolveBoardTextEffect(effectKey);
+  const margin = (check: { stat?: Stat; difficulty?: number }) =>
+    check.stat ? stats[check.stat] - (check.difficulty ?? 0) : 0;
+  return effect?.choices?.slice().sort((left, right) => margin(right) - margin(left))[0]
+    ?? (effect ? { stat: effect.stat, difficulty: effect.difficulty, id: undefined } : null);
+}
+
 function scoreDestination(destination: PublicMoveDestination, patch: PhonePatchPayload): number {
-  let score = RING_PROGRESS[destination.ring] - destination.distance;
+  let score = RING_PROGRESS[destination.ring] - destination.distance + gateRouteScore(destination.sectorId, destination.ring, patch);
   if (destination.strategicTags.includes("reward")) score += 9;
   if (destination.strategicTags.includes("shop")) score += 5;
   if (destination.strategicTags.includes("gate")) score += 7;
@@ -87,7 +147,7 @@ function scoreDestination(destination: PublicMoveDestination, patch: PhonePatchP
   const effectKey = getBoardSpace(destination.sectorId)?.textBox.effectKey;
   if (effectKey && matchesScenarioObjective(patch.activeScenario?.id, {
     type: "sectorActionCompleted", effectKey, sectorId: destination.sectorId
-  })) score += 22;
+  })) score += patch.activeScenario && patch.activeScenario.progress + 1 >= patch.activeScenario.threshold ? 90 : 22;
   // A consumable key should buy progress, not an otherwise equivalent route.
   if (destination.voidKeyPrompt) score -= 4;
   return score;
@@ -141,7 +201,7 @@ function chooseTrainingIntent(patch: PhonePatchPayload): ClientIntent | null {
   const agenda = patch.privateRivalry?.objective;
   // Keep the trophies needed by the rival's own objective.
   const reserve = agenda?.id === "claim-trophies" ? agenda.target : 0;
-  const preferred = chooseAiSetupStat(agenda?.id);
+  const preferred = holdsArtifact(patch) ? "signal" : chooseAiSetupStat(agenda?.id);
   const stat = [...STAT_ORDER]
     .filter((skill) => !getStatUpgradeDisabledReason({
       stat: skill,
@@ -250,7 +310,8 @@ function chooseShopIntent(patch: PhonePatchPayload): ClientIntent | null {
 
   const view = shop.browseSelection?.view ?? "categories";
   if (view === "categories") {
-    const preferredViews = ["equipment", "route-aids", "services", "sell", "supplies", "artifacts"] as const;
+    const wantsArtifact = !holdsArtifact(patch) && shop.services.some((service) => service.id === "trade-missions-for-artifact" && service.enabled);
+    const preferredViews = [...(wantsArtifact ? ["artifacts" as const] : []), "equipment", "route-aids", "services", "sell", "supplies", "artifacts"] as const;
     const category = preferredViews
       .map((candidate) => shop.presentation?.categories.find((entry) => entry.view === candidate && entry.available))
       .find(Boolean);
@@ -264,7 +325,8 @@ function chooseShopIntent(patch: PhonePatchPayload): ClientIntent | null {
       .sort((left, right) => {
         const leftCost = left.cost.salvage ?? left.cost.completedContracts ?? 0;
         const rightCost = right.cost.salvage ?? right.cost.completedContracts ?? 0;
-        return rightCost - leftCost || left.cardId.localeCompare(right.cardId);
+        return Number(!holdsArtifact(patch) && right.type === "artifact") - Number(!holdsArtifact(patch) && left.type === "artifact")
+          || rightCost - leftCost || left.cardId.localeCompare(right.cardId);
       })[0];
     return offer
       ? { type: "SHOP_PURCHASE_REQUESTED", seatId: self.seatId, cardId: offer.cardId }
@@ -273,7 +335,7 @@ function chooseShopIntent(patch: PhonePatchPayload): ClientIntent | null {
 
   if (view === "sell") {
     const sale = [...(shop.sellInventory ?? [])]
-      .filter((item) => item.sellable)
+      .filter((item) => item.sellable && item.type !== "artifact")
       .sort((left, right) => right.sellValue - left.sellValue || left.gearId.localeCompare(right.gearId))[0];
     return sale
       ? { type: "SHOP_SELL_REQUESTED", seatId: self.seatId, gearId: sale.gearId, ...(sale.instanceId ? { instanceId: sale.instanceId } : {}) }
@@ -415,11 +477,17 @@ export function chooseAiRivalIntent(patch: PhonePatchPayload, seatId: string): A
   // through the same eligible catalog and intent exposed to a human controller.
   if (self.character.status === "recalled") {
     if (patch.turnOrder[patch.activeSeatIndex] !== seatId) return null;
-    const replacement = chooseAiSetupCharacter(
-      (patch.characterOptions ?? []).filter((option) => option.eligible && !option.developerQa && !option.character.qaOnly)
-        .map((option) => option.character),
-      patch.privateRivalry?.objective?.id
-    );
+    const candidates = (patch.characterOptions ?? []).filter((option) => option.eligible && !option.developerQa && !option.character.qaOnly)
+        .map((option) => option.character);
+    const sector = getBoardSpace(self.sectorId);
+    const trialMargin = (stats: Record<Stat, number>) => {
+      const trial = sector && bestBoardCheck(sector.textBox.effectKey, stats);
+      return trial?.stat ? stats[trial.stat] - (trial.difficulty ?? 0) : 0;
+    };
+    const replacement = sector?.tier === "inner"
+      ? candidates.sort((left, right) => trialMargin(right.stats) - trialMargin(left.stats) ||
+          right.stats.signal - left.stats.signal || left.id.localeCompare(right.id))[0]
+      : chooseAiSetupCharacter(candidates, patch.privateRivalry?.objective?.id);
     return replacement ? decision({ type: "RECRUIT_REPLACEMENT", seatId, replacementCharacterId: replacement.id },
       "recruiting a replacement operative", "recover-recalled-operative") : null;
   }
@@ -475,10 +543,17 @@ export function chooseAiRivalIntent(patch: PhonePatchPayload, seatId: string): A
     }
   }
 
+  const ownCheckStats = patch.players.find((player) => player.seatId === seatId)?.character.effectiveStats ?? self.character.stats;
   if (patch.phase === "navigation" && patch.innerApproach && patch.requiredAction?.actorSeatId === seatId) {
+    if (patch.scenarioState?.confrontation.repelled) {
+      const retreat = patch.innerApproach.options.find((option) => option.direction === "retreat" && !option.disabledReason);
+      if (retreat) return decision({ type: "INNER_APPROACH_MOVE_REQUESTED", seatId,
+        destinationSectorId: retreat.sectorId, movementRevision: patch.innerApproach.revision },
+        "returning to scenario objectives", "retreat-from-repelled-finale");
+    }
     if (!patch.innerApproach.challengeCleared) {
       const boardSpace = getBoardSpace(self.sectorId);
-      const choiceId = boardSpace?.textBox.choices?.[0]?.id;
+      const choiceId = boardSpace && bestBoardCheck(boardSpace.textBox.effectKey, ownCheckStats)?.id;
       return decision({ type: "RESOLVE_SPACE_TEXT", seatId, ...(choiceId ? { choiceId } : {}) }, "clearing the inner approach", "inner-approach-challenge");
     }
     const option = [...patch.innerApproach.options]
@@ -495,10 +570,25 @@ export function chooseAiRivalIntent(patch: PhonePatchPayload, seatId: string): A
       return decision({ type: "MOVE_REQUESTED", seatId, toSectorId: target.sectorId, routeId: target.defaultRouteId ?? target.routeId, movementRevision: planner.movementRevision, ...(target.voidKeyPrompt ? { voidKeyInstanceId: target.voidKeyPrompt.instanceId } : {}) }, "choosing a route", "movement-destination");
     }
     const tier = [...(patch.tierTransitions?.options ?? [])]
-      .filter((entry) => !entry.disabledReason && (entry.direction === "inward" || isScenarioConfrontationSpace(self.sectorId)))
+      .filter((entry) => !(entry.toRing === "inner" && entry.direction === "inward" && patch.scenarioState?.confrontation.repelled)
+        && (!entry.disabledReason || entry.voidKeyPrompt) && (entry.direction === "inward" || isScenarioConfrontationSpace(self.sectorId)))
       .sort((left, right) => Number(right.direction === "inward") - Number(left.direction === "inward") || left.sectorId.localeCompare(right.sectorId))[0];
-    if (tier && patch.tierTransitions) {
+    const collectingInOuter = seeksGate(patch) && getBoardSpace(self.sectorId)?.tier === "outer" && !holdsArtifact(patch)
+      && patch.sectors.some((sector) => getBoardSpace(sector.id)?.tier === "outer" && hasArtifactCache(sector));
+    if (tier && patch.tierTransitions && !collectingInOuter) {
       return decision({ type: "TIER_TRANSITION_REQUESTED", seatId, destinationSectorId: tier.sectorId, movementRevision: patch.tierTransitions.revision, ...(tier.voidKeyPrompt ? { voidKeyInstanceId: tier.voidKeyPrompt.instanceId } : {}) }, "crossing a tier gate", "tier-transition");
+    }
+    const aid = patch.transitionRouteAid;
+    if (aid && holdsArtifact(patch) && seeksGate(patch) && aid.sources[0]) {
+      const destination = aid.destinations.find((candidate) => BOARD_RING_TRANSITIONS.some((edge) =>
+        edge.sourceSectorId === candidate.sectorId && edge.direction === "inward" &&
+        (!edge.allowedFrom.length || edge.allowedFrom.includes(candidate.sectorId))));
+      if (destination) {
+        const source = aid.sources[0];
+        return decision({ type: "USE_TRANSITION_ROUTE_AID", seatId, sourceKind: source.sourceKind,
+          instanceId: source.instanceId, destinationSectorId: destination.sectorId, movementRevision: aid.revision },
+          "navigating to a tier crossing", "gate-route-aid");
+      }
     }
     return decision({ type: "MOVEMENT_ROLL_REQUESTED", seatId }, "rolling movement", "movement-roll");
   }
@@ -539,19 +629,45 @@ export function chooseAiRivalIntent(patch: PhonePatchPayload, seatId: string): A
         "completing the scenario", "finish-scenario-contract");
     }
 
+    if (isScenarioConfrontationSpace(self.sectorId) && patch.scenarioState?.confrontation.locked === false &&
+        !patch.scenarioState.confrontation.repelled &&
+        !patch.activeResolution && !patch.pendingCooperativeTest && patch.gameMode !== "nemesis_relay") {
+      return decision({ type: "SCENARIO_CONFRONTATION_REQUESTED", seatId }, "confronting the scenario threat", "scenario-confrontation");
+    }
+
     const follower = chooseFollowerSupport(patch);
     if (follower) return decision(follower, "calling on a follower", "follower-support");
     const healing = chooseHealingItem(patch);
     if (healing) return decision(healing, "treating a Wound", "item-heal-wound");
 
+    const boardSpace = getBoardSpace(self.sectorId);
+    const sector = patch.sectors.find((entry) => entry.id === self.sectorId);
+    const mayResolveSpace = boardSpace && (boardSpace.tier === "center" || boardSpace.tier === "inner"
+      || (patch.sectorExplorationSummary ? !patch.sectorExplorationSummary.sectorTextLocked : (sector?.encounterDecks.threat.length ?? 0) === 0));
+    const objectiveAction = boardSpace && matchesScenarioObjective(patch.activeScenario?.id, {
+      type: "sectorActionCompleted", effectKey: boardSpace.textBox.effectKey, sectorId: self.sectorId
+    });
+    const optionalBoardAction = patch.tileArrival?.seatId === seatId && patch.tileArrival.rules.some((rule) =>
+      rule.kind === "board-action" && rule.supported && (rule.status === "optional" || rule.status === "current"));
+    const pursuingGate = boardSpace?.tier === "inner" || (sector && !holdsArtifact(patch) && hasArtifactCache(sector));
     // Leave room for a two-Wound loss and the next round's pressure tick.
-    const safetyMargin = patch.activeSeatIndex === patch.turnOrder.length - 1 ? 3 : 2;
+    const normalMargin = patch.activeSeatIndex === patch.turnOrder.length - 1 ? 3 : 2;
+    const safetyMargin = pursuingGate ? 1 : normalMargin;
     if (patch.escalationLevel > 0 && patch.escalationThreshold - patch.escalationLevel <= safetyMargin) {
       return decision(
         { type: "STABILIZE_REQUESTED", seatId },
         "stabilizing the Reach",
         "prevent-table-defeat"
       );
+    }
+
+    if (boardSpace && !patch.innerApproach?.challengeCleared && boardSpace.textBox.intent !== "scenario-confrontation" && ((mayResolveSpace && patch.requiredAction.allowedCommand === null)
+      || ((objectiveAction || pursuingGate) && optionalBoardAction && !patch.sectorExplorationSummary?.sectorTextLocked))) {
+      const trial = bestBoardCheck(boardSpace.textBox.effectKey, ownCheckStats);
+      const equipment = trial?.stat && bestGearIntent(patch, trial.stat);
+      if (equipment) return decision(equipment, "equipping for the sector trial", "prepare-sector-trial");
+      const choiceId = trial?.id ?? boardSpace.textBox.choices?.[0]?.id;
+      return decision({ type: "RESOLVE_SPACE_TEXT", seatId, ...(choiceId ? { choiceId } : {}) }, "resolving the sector", "sector-action");
     }
 
     const shopIntent = chooseShopIntent(patch);
@@ -577,26 +693,6 @@ export function chooseAiRivalIntent(patch: PhonePatchPayload, seatId: string): A
         "pressuring the leader",
         "bounded-rivalry-pressure"
       );
-    }
-
-    if (isScenarioConfrontationSpace(self.sectorId) && patch.scenarioState?.confrontation.locked === false &&
-        !patch.activeResolution && !patch.pendingCooperativeTest && patch.gameMode !== "nemesis_relay") {
-      return decision({ type: "SCENARIO_CONFRONTATION_REQUESTED", seatId }, "confronting the scenario threat", "scenario-confrontation");
-    }
-
-    const boardSpace = getBoardSpace(self.sectorId);
-    const sector = patch.sectors.find((entry) => entry.id === self.sectorId);
-    const mayResolveSpace = boardSpace && (boardSpace.tier === "center" || boardSpace.tier === "inner"
-      || (patch.sectorExplorationSummary ? !patch.sectorExplorationSummary.sectorTextLocked : (sector?.encounterDecks.threat.length ?? 0) === 0));
-    const objectiveAction = boardSpace && matchesScenarioObjective(patch.activeScenario?.id, {
-      type: "sectorActionCompleted", effectKey: boardSpace.textBox.effectKey, sectorId: self.sectorId
-    });
-    const optionalBoardAction = patch.tileArrival?.seatId === seatId && patch.tileArrival.rules.some((rule) =>
-      rule.kind === "board-action" && rule.supported && (rule.status === "optional" || rule.status === "current"));
-    if (boardSpace && boardSpace.textBox.intent !== "scenario-confrontation" && ((mayResolveSpace && patch.requiredAction.allowedCommand === null)
-      || (objectiveAction && optionalBoardAction && !patch.sectorExplorationSummary?.sectorTextLocked))) {
-      const choiceId = boardSpace.textBox.choices?.[0]?.id;
-      return decision({ type: "RESOLVE_SPACE_TEXT", seatId, ...(choiceId ? { choiceId } : {}) }, "resolving the sector", "sector-action");
     }
 
     if (patch.requiredAction.allowedCommand === "finish-actions") {

@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { PhonePatchPayload } from "../src/client/shared/types.js";
 import type { RandomSource } from "../src/game/engine/dice.js";
+import { getBoardSpace } from "../src/game/data/boardSpaces.js";
 import { loadCharacters } from "../src/game/content/characters.js";
 import { isContractObjectiveComplete } from "../src/game/contracts/objectives.js";
 import { matchesScenarioObjective } from "../src/game/rules/scenarioObjectiveTriggers.js";
@@ -104,10 +105,16 @@ export function runAiRivalGame(scenarioId: string, playerCount: number, seed: nu
   if (state.status !== "ended" && !failure) failure = `Exceeded ${maxActions} actions`;
   const observations = failure ? Object.fromEntries(state.seats.map((seat) => [seat.seatId,
     createPhoneProjection(state, seat.seatId, false, characters)])) : undefined;
+  const arrivals = state.eventLog.flatMap((event) =>
+    event && typeof event === "object" && "type" in event &&
+    (event.type === "TIER_TRANSITION_COMPLETED" || event.type === "INNER_APPROACH_MOVED")
+      && "toSectorId" in event && typeof event.toSectorId === "string" ? [event.toSectorId] : []);
   return { scenarioId, playerCount, seed, status: state.status, failure, actions: trace.length, turns,
     winnerSeatId: state.winnerSeatId, result: state.scenarioResult, escalation: state.escalationLevel,
     scenarioProgress: state.scenarioProgress,
     objectiveEvents: state.eventLog.filter((event) => (event as { type?: string }).type === "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED").length,
+    enteredInnerReach: arrivals.some((id) => getBoardSpace(id)?.tier === "inner"),
+    reachedCinderGate: arrivals.some((id) => getBoardSpace(id)?.tier === "center"),
     confrontations: trace.filter((entry) => entry.reason === "scenario-confrontation").length,
     players: state.players.map((p) => ({ seatId: p.seatId, character: p.character.id, sector: p.sectorId,
       status: p.character.status, wounds: p.character.wounds, trophies: p.character.trophies,

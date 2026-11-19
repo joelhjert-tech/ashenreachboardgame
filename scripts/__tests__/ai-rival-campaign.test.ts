@@ -20,6 +20,16 @@ describe("complete AI rival campaigns", () => {
     expect(result.turns).toBeGreaterThan(0);
   }, 30000);
 
+  it("can win Throne of Ash by reaching the Cinder Gate from normal setup", () => {
+    const game = runAiRivalGame("scenario_throne_of_ash", 3, 62, 1500);
+    expect(game.failure).toBeNull();
+    expect(game.enteredInnerReach).toBe(true);
+    expect(game.reachedCinderGate).toBe(true);
+    expect(game.confrontations).toBeGreaterThan(0);
+    expect(game.result?.sourceType).toBe("confrontation");
+    expect(game.result?.status).toBe("victory");
+  }, 30000);
+
   it("replays setup and game decisions from a seed", () => {
     const first = runAiRivalGame("scenario_devourer_beneath", 2, 9);
     const second = runAiRivalGame("scenario_devourer_beneath", 2, 9);

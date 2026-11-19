@@ -6,9 +6,10 @@ import { SignalPhoneIdentityRail } from "../SignalPhoneIdentityRail.js";
 
 afterEach(cleanup);
 
-function renderIdentity() {
-  return render(
+function identity(connectionReady = true) {
+  return (
     <SignalPhoneIdentityRail
+      connectionReady={connectionReady}
       characterId="bjornis"
       characterName="Bjornis"
       displayName="SigQA"
@@ -19,7 +20,22 @@ function renderIdentity() {
   );
 }
 
+function renderIdentity(connectionReady = true) {
+  return render(identity(connectionReady));
+}
+
 describe("SignalPhoneIdentityRail", () => {
+  it("shows a reconnect message and drops the online indicator until room sync", () => {
+    const view = renderIdentity(false);
+
+    expect(screen.getByTestId("signal-phone-identity")).toHaveAttribute("data-connection", "offline");
+    expect(screen.getByText(/reconnecting/i)).toBeVisible();
+
+    view.rerender(identity(true));
+    expect(screen.getByTestId("signal-phone-identity")).toHaveAttribute("data-connection", "online");
+    expect(screen.queryByText(/reconnecting/i)).not.toBeInTheDocument();
+  });
+
   it("keeps identity, location, and vitals in one compact row", () => {
     renderIdentity();
 

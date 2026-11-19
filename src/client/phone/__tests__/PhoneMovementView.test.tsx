@@ -109,6 +109,30 @@ describe("PhoneMovementView", () => {
     });
   });
 
+  it("opens the tabletop on this phone and previews a board destination through the existing movement flow", async () => {
+    const onIntent = vi.fn();
+    render(<Harness onIntent={onIntent} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /open tabletop board/i }));
+    const tabletop = await screen.findByRole("region", { name: "Tabletop board" });
+    expect(tabletop.querySelectorAll("[data-sector-id]")).toHaveLength(49);
+    expect(tabletop.querySelector(".is-active[data-sector-id]")).toHaveAttribute("data-sector-id", "ashwake-crossing");
+    expect(onIntent).not.toHaveBeenCalled();
+
+    const destination = within(tabletop).getByRole("button", { name: /preview Glass Signal Pier/i });
+    fireEvent.keyDown(destination, { key: "Enter" });
+    expect(destination).toHaveAttribute("aria-pressed", "true");
+    expect(onIntent).toHaveBeenCalledExactlyOnceWith({
+      type: "MOVEMENT_DESTINATION_PREVIEWED",
+      seatId: "seat-1",
+      toSectorId: "glassmere-spindle"
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /close tabletop board/i }));
+    expect(screen.queryByRole("region", { name: "Tabletop board" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /confirm Glass Signal Pier/i })).toBeEnabled();
+  });
+
   it("uses the Signal Theatre command seal and environment system", () => {
     render(<Harness onIntent={vi.fn()} />);
 

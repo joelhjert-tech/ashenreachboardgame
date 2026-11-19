@@ -1406,6 +1406,74 @@ describe("PhoneInventoryPanel", () => {
     await waitFor(() => expect(scrollRoot.scrollTop).toBe(0));
   });
 
+  it("shows the same private vitals, Scars, and exact equipped instances on both tabs", () => {
+    const base = createPatch({ encounter: null, phase: "broadcast" });
+    const self = {
+      ...base.self!,
+      noteResources: { vow: 2 },
+      character: {
+        ...base.self!.character,
+        wounds: 3,
+        salvage: 7,
+        trophies: 4,
+        scars: ["scar-wound-1"],
+        scarCards: [{
+          id: "scar-wound-1",
+          title: "Ash-Lanced",
+          text: "An unhealed furnace wound.",
+          trigger: "When testing Grit.",
+          penalty: "Apply the recorded penalty.",
+          relief: "Apply the recorded relief."
+        }],
+        heldGear: [
+          { ...activeUtility, instanceId: "compass-a", currentCharges: 2 },
+          { ...activeUtility, instanceId: "compass-b", currentCharges: 0 }
+        ],
+        equippedGear: { weapon: null, armor: null, utility: activeUtility.id },
+        equippedGearInstances: { weapon: null, armor: null, utility: "compass-b" }
+      }
+    };
+    const patch: PhonePatchPayload = {
+      ...base,
+      self,
+      equipmentSuppressions: [{
+        sourceThreatId: "relay-husk",
+        itemInstanceId: "compass-b",
+        itemCatalogId: activeUtility.id,
+        mode: "duringNextBattle",
+        active: true
+      }]
+    };
+    const onIntent = vi.fn();
+    render(
+      <PortraitControllerView
+        self={self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId={self.seatId}
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={onIntent}
+        onLeave={vi.fn()}
+      />
+    );
+
+    openPhoneTabs();
+    for (const tabName of [/player card/i, /inventory/i]) {
+      fireEvent.click(screen.getByRole("tab", { name: tabName }));
+      const vitals = screen.getByRole("region", { name: "Vitals and resources" });
+      expect(vitals).toHaveTextContent("Wounds3Scars1Salvage7Trophies4Vow Notes2");
+      expect(within(vitals).getByRole("list", { name: "Active Scars" })).toHaveTextContent("Ash-Lanced");
+      const gear = screen.getByRole("region", { name: "Equipped gear bonuses" });
+      expect(gear).toHaveTextContent(/UtilityAshen Route Compass.*Suppressed.*0\/2 charges/i);
+      expect(within(gear).getAllByText("Empty")).toHaveLength(2);
+      expect(within(gear).queryByRole("button")).not.toBeInTheDocument();
+    }
+    expect(onIntent).not.toHaveBeenCalled();
+  });
+
   it("renders compact expandable player card stats without label value collision", () => {
     const patch = createPatch({ encounter: null, phase: "broadcast" });
     const self = {
@@ -1477,10 +1545,9 @@ describe("PhoneInventoryPanel", () => {
 
     expect(commandStat).toHaveAttribute("aria-expanded", "false");
     expect(within(statsRegion).getByRole("button", { name: /grit current stat 2, details expanded/i })).toHaveAttribute("aria-expanded", "true");
-    expect(document.querySelector(".phone-portrait-vitals")).toHaveTextContent(/scars 0/i);
-    expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/wounds|salvage/i);
-    expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/heat/i);
-    expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/trophies/i);
+    const vitals = screen.getByRole("region", { name: "Vitals and resources" });
+    expect(vitals).toHaveTextContent(/Wounds0Scars0Salvage0Trophies0/i);
+    expect(vitals).not.toHaveTextContent(/heat/i);
     expect(screen.getByRole("tab", { name: /player card/i })).toHaveAttribute("aria-selected", "true");
   });
 
@@ -2139,7 +2206,7 @@ describe("PhoneInventoryPanel", () => {
 
     expect(onIntent).toHaveBeenCalledTimes(1);
     expect(onRequestResynchronize).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("alert")).toHaveTextContent(/will not be sent again automatically/i);
+    expect(screen.getByText(/will not be sent again automatically/i)).toHaveAttribute("role", "status");
     expect(roll).toBeDisabled();
 
     view.rerender(renderView(false));
@@ -2148,7 +2215,7 @@ describe("PhoneInventoryPanel", () => {
 
     expect(onIntent).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("button", { name: /roll movement/i })).toBeEnabled();
-    expect(screen.getByRole("alert")).toHaveTextContent(/latest authoritative action restored/i);
+    expect(screen.getByText(/latest authoritative action restored/i)).toHaveAttribute("role", "status");
   });
 
   it("shows private rivalry agenda details on the Quest tab", () => {
@@ -2483,6 +2550,58 @@ describe("PhoneInventoryPanel", () => {
     expect(within(mission).getByText("Gain 1 Salvage")).toBeInTheDocument();
   });
 
+  it.each([
+    { ordered: true, completed: "span", expected: "Visit Anchor Market" },
+    { ordered: false, completed: "market", expected: "Remaining stop: Cross Guardian Span" }
+  ])("shows the correct outstanding route stop when ordered is $ordered", ({ ordered, completed, expected }) => {
+    const contract = {
+      id: "route-contract",
+      name: "Walk the Rim",
+      factionGiver: "Ashen Relay",
+      text: "Track the route.",
+      reward: { type: "gain_salvage" as const, amount: 1 },
+      objective: {
+        type: "multiStopRoute" as const,
+        ordered,
+        targets: [
+          { id: "span", type: "spaceId" as const, value: "guardian-span", label: "Cross Guardian Span" },
+          { id: "market", type: "spaceId" as const, value: "anchor-market", label: "Visit Anchor Market" },
+          { id: "bridge", type: "spaceId" as const, value: "ashwalk-bridge", label: "Visit Ashwalk Bridge" }
+        ]
+      }
+    };
+    const base = createPatch({ encounter: null });
+    const self = {
+      ...base.self!,
+      character: {
+        ...base.self!.character,
+        activeContract: { contractId: contract.id, progress: 1, completedTargetIds: [completed] }
+      }
+    };
+    render(
+      <PortraitControllerView
+        self={self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId={self.seatId}
+        activeContractCard={contract}
+        patch={{ ...base, self }}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+    openPhoneTabs();
+    fireEvent.click(screen.getByRole("tab", { name: /^objectives$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /my contracts/i }));
+
+    const next = screen.getByRole("region", { name: "Next Contract objectives" });
+    expect(next).toHaveTextContent(expected);
+    expect(next).toHaveTextContent("1/3 stops");
+    expect(screen.queryByTestId("phone-active-mission-card")).not.toBeInTheDocument();
+  });
+
   it("shows up to three active Contracts together on the Objectives tab", () => {
     const basePatch = createPatch({ encounter: null });
     const baseSelf = basePatch.self!;
@@ -2533,9 +2652,10 @@ describe("PhoneInventoryPanel", () => {
 
     expect(screen.getByRole("button", { name: /my contracts.*3\/3 active/i })).toBeInTheDocument();
     expect(screen.getAllByTestId("phone-active-mission-card")).toHaveLength(3);
-    expect(screen.getByText("Choir Hush Census")).toBeInTheDocument();
-    expect(screen.getByText("Ember Courier")).toBeInTheDocument();
-    expect(screen.getByText("Relay Witness")).toBeInTheDocument();
+    const next = screen.getByRole("region", { name: "Next Contract objectives" });
+    expect(within(next).getByText("Choir Hush Census")).toBeInTheDocument();
+    expect(within(next).getByText("Ember Courier")).toBeInTheDocument();
+    expect(within(next).getByText("Relay Witness")).toBeInTheDocument();
   });
 
   it("keeps the main phone header and bottom menu while opening the Inventory Relic exchange", () => {

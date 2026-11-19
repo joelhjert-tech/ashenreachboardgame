@@ -34,6 +34,23 @@ describe("PhoneRequiredActionShell", () => {
     expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 
+  it("labels an off-turn assistance request as a response instead of a new turn", () => {
+    render(
+      <PhoneRequiredActionShell
+        projection={{ ...activeProjection, kind: "assistance", requiredTab: "action" }}
+        status="available"
+        atRequiredTab
+        respondingToAssistance
+      >
+        <button type="button">Accept +4</button>
+      </PhoneRequiredActionShell>
+    );
+
+    expect(screen.getByText("ASSISTANCE REQUESTED")).toBeInTheDocument();
+    expect(screen.queryByText("YOUR TURN")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Accept +4" })).toBeEnabled();
+  });
+
   it("announces result and end-turn stages with semantic state labels", () => {
     const { rerender } = render(
       <PhoneRequiredActionShell projection={{ ...activeProjection, transitionStage: "continue-available", allowedCommand: "continue" }} status="available" atRequiredTab>

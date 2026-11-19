@@ -64,6 +64,20 @@ describe("AI rival contract navigation", () => {
     { id: "last", type: "spaceId", value: "last-stop", label: "Last" }
   ] };
 
+  it("seeks a stocked Artifact cache, then routes its carrier to an inward crossing", () => {
+    const observation = navigationPatch(objective, [
+      destination("middle_relic_cache", { ring: "middle", strategicTags: ["reward"] }),
+      destination("middle_guardian_span", { ring: "middle" })
+    ]);
+    observation.turnOrder = ["seat-2", "seat-1"];
+    observation.activeSeatIndex = 1;
+    observation.activeContractCards = [];
+    observation.self!.character.heldGear = [];
+    expect(chooseAiRivalIntent(observation, "seat-1")?.intent).toMatchObject({ toSectorId: "middle_relic_cache" });
+    observation.self!.character.heldGear.push(gear("test-relic", "utility", 1, { tier: "artifact" }));
+    expect(chooseAiRivalIntent(observation, "seat-1")?.intent).toMatchObject({ toSectorId: "middle_guardian_span" });
+  });
+
   it("prefers the next ordered contract stop over generic rewards and later stops", () => {
     const observation = navigationPatch(objective, [
       destination("reward", { strategicTags: ["reward"] }),
@@ -146,6 +160,23 @@ describe("AI rival tactical progression", () => {
     observation.privateRivalry = null;
     observation.requiredAction = { ...observation.requiredAction!, allowedCommand: "finish-actions", canAct: true };
     expect(chooseAiRivalIntent(observation, "seat-1")?.reasonCode).toBe("setup-training");
+  });
+
+  it("advances to a viable Mirror finale and retreats when Reflection pressure would repel it", () => {
+    const state = trainingState();
+    state.phase = "navigation";
+    state.activeScenarioId = "scenario_mirror_of_false_heroes";
+    state.reflectionPressureThreshold = 4;
+    const player = state.players[0]!;
+    player.sectorId = player.character.currentSpaceId = "inner_gate_of_cinders";
+    player.innerApproachProgress = { pathId: "breach-road", clearedSectorIds: ["inner_gate_of_cinders"] };
+    function nextDestination(pressure: number) {
+      state.scenarioProgress.mirrorPressure = pressure;
+      const observation = createPhoneProjection(state, player.seatId) as unknown as PhonePatchPayload;
+      return chooseAiRivalIntent(observation, player.seatId)?.intent;
+    }
+    expect(nextDestination(3)).toMatchObject({ type: "INNER_APPROACH_MOVE_REQUESTED", destinationSectorId: "center_cinder_gate" });
+    expect(nextDestination(4)).toMatchObject({ type: "INNER_APPROACH_MOVE_REQUESTED", destinationSectorId: "the-bone-meridian" });
   });
 
   it("explores its current tier instead of bouncing back through an outward gate", () => {

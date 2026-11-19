@@ -790,11 +790,12 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByRole("button", { name: /use grave medic korr/i })).not.toBeInTheDocument();
   });
 
-  it("hides action buttons when this seat is not active", () => {
+  it("lets a waiting seat browse the tabletop without offering move actions", async () => {
+    const onIntent = vi.fn();
     render(
       <PhoneActionPanel
         characters={characters}
-        onIntent={vi.fn()}
+        onIntent={onIntent}
         patch={createPatch({ activeSeatIndex: 1 })}
       />
     );
@@ -803,6 +804,11 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/waiting for mira/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/watch the tv command table/i);
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/watch the tv/i);
+    fireEvent.click(screen.getByRole("button", { name: /open tabletop board/i }));
+    const tabletop = await screen.findByRole("region", { name: "Tabletop board" });
+    expect(tabletop.querySelectorAll("[data-sector-id]")).toHaveLength(49);
+    expect(within(tabletop).queryByRole("button", { name: /preview/i })).not.toBeInTheDocument();
+    expect(onIntent).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
   });
@@ -1831,7 +1837,7 @@ describe("PhoneActionPanel", () => {
     expect(buyCard?.querySelector(".phone-shop-build-comparison")).toHaveTextContent(/utility: empty → coffin rig/i);
     expect(buyCard?.querySelector(".phone-shop-build-comparison")).toHaveTextContent(/forge: 1 → 2 \(\+1\)/i);
     expect(buyCard?.querySelector(".phone-shop-build-comparison")).toHaveTextContent(/salvage: 6 → 3/i);
-    expect(buyCard?.querySelector(".phone-wrap-card__details")).toHaveTextContent(/cost: 3 salvage/i);
+    expect(within(buyCard as HTMLElement).getByRole("group", { name: "Offer price" })).toHaveTextContent(/price3 salvage/i);
     expect(screen.getAllByRole("button", { name: /^buy /i })).toHaveLength(1);
     expect(buyCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
       within(buyCard as HTMLElement).getByRole("button", { name: /buy coffin rig/i })
@@ -1853,6 +1859,17 @@ describe("PhoneActionPanel", () => {
     );
     expect(within(unaffordableCard as HTMLElement).getByRole("button", { name: /buy/i })).toBeDisabled();
     expect(unaffordableCard).toHaveTextContent(/ignore until you can pay or free the slot/i);
+    expect(within(unaffordableCard as HTMLElement).getByRole("group", { name: "Offer price" })).toHaveTextContent(/price8 salvage/i);
+    fireEvent.click(screen.getByText("Compare prices (2)"));
+    const compared = screen.getByRole("button", { name: /coffin rig.*3 salvage/i });
+    fireEvent.click(compared);
+    expect(compared).toHaveAttribute("aria-pressed", "true");
+    expect(onIntent).toHaveBeenLastCalledWith({
+      type: "SHOP_BROWSE_SELECTED",
+      seatId: "seat-1",
+      view: "equipment",
+      selectedId: "coffin-rig"
+    });
     fireEvent.click(screen.getByRole("button", { name: /all categories/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "SHOP_BROWSE_SELECTED",
@@ -3474,9 +3491,13 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByRole("img", { name: /cinder-veil stalker/i })).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//));
     expect(screen.getByTestId("phone-battle-cinematic-stage")).toHaveTextContent(/difficulty\s*8/i);
     expect(screen.getByTestId("phone-battle-prep-summary")).toHaveTextContent(/grit 5 · opposed roll/i);
-    expect(screen.getByTestId("phone-battle-prep-summary")).toHaveTextContent(/1 usable items/i);
+    const support = screen.getByRole("button", { name: "Roll support" });
+    expect(support).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(support);
+    expect(support).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByTestId("phone-battle-prep-summary")).toHaveTextContent(/1 usable item(?!s)/i);
     expect(screen.getByTestId("phone-battle-prep-summary")).toHaveTextContent(/1 edge/i);
-    expect(screen.getByTestId("phone-battle-prep-summary")).toHaveTextContent(/1 helpers/i);
+    expect(screen.getByTestId("phone-battle-prep-summary")).toHaveTextContent(/1 helper(?!s)/i);
     expect(screen.queryByLabelText(/^battle totals$/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /view details/i }));
     expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/black route fuse \+3/i);
@@ -3814,6 +3835,18 @@ describe("PhoneActionPanel", () => {
             roll: { dice: [1, 2], baseTotal: 3, modifierTotal: 2, finalTotal: 5, target: 9, success: false },
             outcome: { title: "Edge reaction available", text: "Use one eligible Edge ability or continue without Edge.", effects: [] }
           },
+          playerResultDeltas: [{
+            id: "transient-threat-defeated",
+            type: "threatDefeated",
+            label: "Threat defeated",
+            value: "Ash-Lane Cutters",
+            sign: "gain",
+            targetScope: "table",
+            visibility: "public",
+            source: "combat",
+            publicText: "Ash-Lane Cutters defeated.",
+            severity: "reward"
+          }],
           requiredAction: {
             id: "battle:edge-reaction-resolution:roll_result",
             kind: "battle",
@@ -3860,6 +3893,9 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.queryByText(/Applying battle consequence/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-outcome")).toHaveTextContent("Roll under review");
+    expect(screen.queryByLabelText("Battle consequences")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /continue without.*edge/i })).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: /Continue without Edge/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "DECLINE_EDGE_CARD_REACTION",
@@ -4013,6 +4049,8 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByTestId("phone-resolution-card")).not.toBeInTheDocument();
     expect(screen.getByTestId("phone-battle-outcome")).toHaveTextContent(/threat defeated/i);
     expect(screen.getByTestId("phone-battle-outcome")).toHaveTextContent(/trophy added/i);
+    const operativeRoll = screen.getByRole("group", { name: "Operative roll" });
+    expect(operativeRoll).toHaveTextContent(/Dice106 \+ 4Skill \+ effects\+2Total12Target12/);
     expect(screen.queryByText(/BattleThreatGrit/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-current-prompt")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();

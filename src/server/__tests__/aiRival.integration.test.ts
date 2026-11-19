@@ -199,8 +199,13 @@ describe("AI Rival prototype", () => {
     vi.advanceTimersByTime(1);
 
     expect(server.getState().sequence).toBeGreaterThan(before);
-    expect(server.getState().activeResolution?.playerId).toBe(aiSeatId);
-    expect(server.getState().activeResolution).toBeTruthy();
+    expect(server.getState().eventLog).toContainEqual(expect.objectContaining({
+      type: "MOVEMENT_ROLLED", seatId: aiSeatId
+    }));
+    vi.advanceTimersByTime(AI_RIVAL_THINK_MS);
+    expect(server.getState().eventLog).toContainEqual(expect.objectContaining({
+      type: "MOVED", seatId: aiSeatId
+    }));
 
     server.resetSession(createInitialSessionState("ai-rival-cleanup"));
   });

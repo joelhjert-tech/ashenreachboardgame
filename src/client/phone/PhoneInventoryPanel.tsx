@@ -22,6 +22,7 @@ import {
   type InventoryCardViewModel
 } from "./inventoryPresentation.js";
 import { PhoneMissionRelicExchange } from "./PhoneMissionRelicExchange.js";
+import { PhoneOperativeSummary } from "./PhoneOperativeSummary.js";
 import { getPhoneLoadoutDisabledReason, getPhoneLoadoutWindow } from "./loadoutWindow.js";
 
 interface PhoneInventoryPanelProps {
@@ -793,6 +794,7 @@ export function PhoneInventoryPanel({
     ? categories.filter((category) => category.id === "equipment" || category.id === "artifacts" || category.id === "followers")
     : categories;
   const defaultOpenCategory = visibleCategories.find((category) => category.actionAvailable)?.id
+    ?? (!compact && !loadoutOnly && equipmentCards.length > 0 ? "equipment" : undefined)
     ?? visibleCategories.find((category) => category.count > 0)?.id
     ?? "equipment";
   const panelClassName = [
@@ -805,6 +807,9 @@ export function PhoneInventoryPanel({
 
   return (
     <section className={panelClassName} aria-label="Inventory" data-item-count={visibleItemCount}>
+      {!compact && !onlyUsable && !loadoutOnly ? (
+        <PhoneOperativeSummary self={self} equipmentSuppressions={patch.equipmentSuppressions} />
+      ) : null}
       {loadoutOnly ? (
         <section className="phone-inventory-loadout-window" aria-label="Pre-roll loadout" data-window-open={canManageEquipment ? "true" : "false"}>
           <span>Pre-roll loadout</span>
@@ -825,7 +830,7 @@ export function PhoneInventoryPanel({
           ) : <p>Nothing you own changes this decision. Continue with the required action.</p>}
         </section>
       ) : null}
-      {!onlyUsable ? <div className="phone-inventory-collection-heading"><span>{loadoutOnly ? "Gear & followers" : "Inventory categories"}</span><small>Expand a reliquary drawer</small></div> : null}
+      {!onlyUsable ? <div className="phone-inventory-collection-heading"><span>{loadoutOnly ? "Gear & followers" : "Inventory categories"}</span></div> : null}
       {onlyUsable && relevantCards.length === 0 ? (
         <p className="phone-sheet-action-empty">
           No combat cards are usable in this timing window.

@@ -3,6 +3,7 @@ import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js
 import { AuthoritativeDicePresentation, buildDice } from "../shared/AuthoritativeDicePresentation.js";
 import { GameButton } from "../shared/GameButton.js";
 import type { ResultDelta } from "../shared/types.js";
+import { PhoneRollBreakdown } from "./PhoneRollBreakdown.js";
 
 export interface PhoneResultReadyGateProps {
   actorName: string;
@@ -47,7 +48,7 @@ export function PhoneResultReadyGate({
   targetTotal,
   resolutionId,
   dice = [],
-  modifierTotal = 0,
+  modifierTotal,
   modifierLabel = "Modifiers",
   actionLabel = "Continue",
   actionDetail,
@@ -71,6 +72,7 @@ export function PhoneResultReadyGate({
     }
   }, [diceSeenKey]);
 
+  const diceTotal = dice.reduce((total, die) => total + die, 0);
   const outcomeTone = success === true ? "success" : success === false ? "defeat" : "neutral";
 
   return (
@@ -102,12 +104,24 @@ export function PhoneResultReadyGate({
             actorName,
             purpose: challengeTitle,
             dice: buildDice(dice),
-            rawTotal: dice.reduce((total, die) => total + die, 0),
-            modifiers: modifierTotal !== 0 ? [{ label: modifierLabel, value: modifierTotal }] : [],
+            rawTotal: diceTotal,
+            modifiers: modifierTotal != null && modifierTotal !== 0 ? [{ label: modifierLabel, value: modifierTotal }] : [],
             finalValue: playerTotal,
             target: targetTotal,
             outcome: success === null ? null : success ? "Success" : "Failure"
           }}
+        />
+      ) : null}
+
+      {diceRevealId && playerTotal !== null ? (
+        <PhoneRollBreakdown
+          label="Roll breakdown"
+          dice={dice}
+          diceTotal={diceTotal}
+          fixedValue={modifierTotal}
+          total={playerTotal}
+          target={targetTotal}
+          targetLabel={targetTotalLabel}
         />
       ) : null}
 

@@ -11661,7 +11661,7 @@ export class GameRoomServer {
     const mirrorPressure = this.state.scenarioProgress.mirrorPressure ?? player.character.scars.length;
 
     const reflectionPressureThreshold = getReflectionPressureThreshold(this.state);
-    const mirrorRepelled = scenario.id === "scenario_mirror_of_false_heroes" && mirrorPressure >= reflectionPressureThreshold;
+    const mirrorRepelled = isMirrorConfrontationRepelled(this.state, player);
     const gateBlockReason = getScenarioGateBlockReason(this.state, player, scenario);
     if (!mirrorRepelled && gateBlockReason) throw new IntentRejectedError(intent.type, gateBlockReason);
     const stage = getBrokenConcordanceStage(this.state.scenarioConfrontation.progress.concordanceStages ?? 0);
@@ -13732,6 +13732,11 @@ function getPublicConfrontationSteps(scenario: ScenarioDefinition, nemesis: Neme
     return [...BROKEN_CONCORDANCE_STAGES.map(describeCheck), ...scenario.confrontationSteps.slice(-1)];
   }
   return scenario.confrontationSteps;
+}
+
+function isMirrorConfrontationRepelled(state: GameState, player: PlayerState): boolean {
+  return state.activeScenarioId === "scenario_mirror_of_false_heroes" &&
+    (state.scenarioProgress.mirrorPressure ?? player.character.scars.length) >= getReflectionPressureThreshold(state);
 }
 
 function getScenarioGateBlockReason(state: GameState, player: PlayerState, scenario: ScenarioDefinition): string | null {
@@ -17541,7 +17546,8 @@ export function createTvProjection(
       stage: state.scenarioConfrontation.stage,
       locationSectorId: "center_cinder_gate",
       locked: activePlayer && activeScenario ? state.gameMode === "nemesis_relay" || Boolean(gateBlockReason) : null,
-      blockedReason: gateBlockReason
+      blockedReason: gateBlockReason,
+      repelled: Boolean(activePlayer && isMirrorConfrontationRepelled(state, activePlayer))
     },
     result: {
       status: state.scenarioResult.status,

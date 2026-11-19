@@ -77,6 +77,7 @@ import { buildUsefulNowViewModel, type UsefulNowViewModel } from "./usefulNowPre
 import { getMissionRelevanceForSector, type MissionRelevance } from "../shared/missionRelevance.js";
 import {
   PhoneMovementView,
+  PhoneTabletopToggle,
   useRouteStarDestinationChange,
   type MovementNavigationTarget
 } from "./PhoneMovementView.js";
@@ -336,7 +337,7 @@ export function CooperativeAssistancePanel({
   return (
     <section className="phone-assistance-shell" aria-label="Cooperative assistance" data-testid="cooperative-assistance-panel">
       <header className="phone-assistance-header">
-        <p className="phone-panel-kicker">Ask for help</p>
+        <p className="phone-panel-kicker">{requestedSelf ? "Help request" : "Ask for help"}</p>
         <h2>{sourceTitle}</h2>
         <p>{testedStat} test · helpers add base skill only · no helper dice</p>
         {activeSelf ? <CinderWattleAbilityPanel patch={patch} seatId={seatId} onIntent={onIntent} /> : null}
@@ -630,12 +631,21 @@ function formatShopCost(cost: PublicShopCost): string {
   const parts = [
     cost.salvage ? `${cost.salvage} Salvage` : null,
     cost.wounds ? `${cost.wounds} Wound${cost.wounds === 1 ? "" : "s"}` : null,
-    cost.trophies ? `${cost.trophies} Trophies` : null,
+    cost.trophies ? `${cost.trophies} ${cost.trophies === 1 ? "Trophy" : "Trophies"}` : null,
     cost.completedContracts ? `${cost.completedContracts} Contract${cost.completedContracts === 1 ? "" : "s"}` : null,
     cost.scars ? `${cost.scars} Scar${cost.scars === 1 ? "" : "s"}` : null
   ].filter(Boolean);
 
   return parts.length > 0 ? parts.join(" / ") : "No cost";
+}
+
+function ShopPrice({ label, value, name }: { label: string; value: string; name: string }): ReactElement {
+  return (
+    <span className="phone-shop-price" role="group" aria-label={name}>
+      <small>{label}</small>
+      <strong>{value}</strong>
+    </span>
+  );
 }
 
 function ShopItemMedia({ cardId, label, itemType, rules }: { cardId: string; label: string; itemType?: string; rules?: string | null }): ReactElement {
@@ -1945,6 +1955,12 @@ function PhoneShopPanel({
     onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view, selectedId: null });
   }
 
+  function focusStockOffer(cardId: string): void {
+    if (shopView !== "equipment" && shopView !== "supplies" && shopView !== "artifacts" && shopView !== "route-aids") return;
+    setFocusedOfferId(cardId);
+    onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view: shopView, selectedId: cardId });
+  }
+
   function confirmPurchase(cardId: string): void {
     setPendingActionId(`buy:${cardId}`);
     onIntent({
@@ -2077,6 +2093,7 @@ function PhoneShopPanel({
               </div>
               {serviceActions.map((service) => {
                 const disabledReason = formatShopDisabledReason(service.disabledReason);
+                const servicePrice = formatShopCost(service.cost);
                 const completedMissionProgress = service.cost.completedContracts !== undefined
                   ? `${shopEncounter.activePlayer.completedContracts ?? 0}/${service.cost.completedContracts} completed Contracts`
                   : null;
@@ -2129,15 +2146,16 @@ function PhoneShopPanel({
                         serviceId: service.id
                       })
                     }
-                    sublabel={completedMissionProgress ?? disabledReason ?? formatShopCost(service.cost)}
                   >
                     <ShopCategoryIcon category={service.shopCategory ?? shopEncounter.stockCategory ?? shopEncounter.shopCategory} label={service.label} />
                     <span className="phone-shop-service-card-copy">
                       <strong>{service.label}</strong>
                       {service.shopCategory ? <span>{formatShopCategory(service.shopCategory)}</span> : <span>{categoryLabel}</span>}
                       {completedMissionProgress ? <small>{completedMissionProgress}</small> : null}
+                      {!service.enabled && disabledReason ? <small>{disabledReason}</small> : null}
                       {service.risk ? <small>{service.risk}</small> : null}
                     </span>
+                    {servicePrice !== "No cost" ? <ShopPrice label="Price" value={servicePrice} name="Service price" /> : null}
                   </GameButton>
                 );
               })}
@@ -2153,6 +2171,25 @@ function PhoneShopPanel({
                   : "Review one offer. The server confirms price and availability."
                 : "Choose Browse Equipment above to reveal this shop's stock."}</small>
             </div>
+            {revealedStock.length > 1 ? (
+              <details className="phone-shop-price-list">
+                <summary>Compare prices ({revealedStock.length})</summary>
+                <ul>
+                  {revealedStock.map((item) => (
+                    <li key={item.cardId}>
+                      <button
+                        type="button"
+                        aria-pressed={selectedStock?.cardId === item.cardId}
+                        onClick={() => focusStockOffer(item.cardId)}
+                      >
+                        <span>{item.name}</span>
+                        <strong>{formatShopCost(item.cost)}</strong>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
             {revealedStock.length > 0 ? (
               <div className="phone-shop-focused-offer">
                 {[selectedStock].map((item) => {
@@ -2171,14 +2208,16 @@ function PhoneShopPanel({
                       variant="shop"
                       className={`phone-shop-stock-card phone-shop-panel__stock-card${item.affordable ? "" : " phone-shop-stock-card-disabled"}`}
                       media={<ShopItemMedia cardId={item.cardId} label={item.name} itemType={item.type} rules={item.summary} />}
+                      mediaInteractive
                       title={item.name}
                       eyebrow={itemCategory}
-                      status={<span className="phone-shop-card-status">{itemCategory}</span>}
+                      costValue={<ShopPrice label="Price" value={formatShopCost(item.cost)} name="Offer price" />}
                       description={<>
+                        {disabledReason ? <p className="phone-shop-offer-limit">{disabledReason}. Ignore until you can pay or free the slot.</p> : null}
                         <p className="phone-wrap-card__consequence">{item.summary}</p>
                         {comparison ? (
                           <section className="phone-shop-build-comparison" aria-label="Build comparison">
-                            <span>After purchase</span>
+                            <span>{item.affordable ? "After purchase" : "Gear comparison"}</span>
                             {comparison.slot ? <p><strong>{toTitleCase(comparison.slot)}:</strong> {comparison.currentItemName ?? "Empty"} → {item.name}</p> : null}
                             {comparison.offeredStat && comparison.currentStatValue !== undefined && comparison.projectedStatValue !== undefined ? (
                               <p>
@@ -2190,13 +2229,11 @@ function PhoneShopPanel({
                               <p><strong>Replaces:</strong> +{comparison.currentItemBonus ?? 0} {statLabelById[comparison.currentItemStat]}</p>
                             ) : null}
                             {comparison.timingSummary ? <p><strong>Timing:</strong> {comparison.timingSummary}</p> : null}
-                            {comparison.salvageAfterPurchase !== undefined ? <p><strong>Salvage:</strong> {ownerSalvage ?? "Private"} → {comparison.salvageAfterPurchase}</p> : null}
+                            {item.affordable && comparison.salvageAfterPurchase !== undefined ? <p><strong>Salvage:</strong> {ownerSalvage ?? "Private"} → {comparison.salvageAfterPurchase}</p> : null}
                           </section>
                         ) : null}
                         {item.lore ? <details className="phone-shop-lore"><summary>View lore</summary><p>{item.lore}</p></details> : null}
                       </>}
-                      disabledReason={disabledReason ? <small>{disabledReason}. Ignore until you can pay or free the slot.</small> : null}
-                      meta={<span>Cost: {formatShopCost(item.cost)}</span>}
                       actions={
                         <GameButton
                           type="button"
@@ -2215,14 +2252,12 @@ function PhoneShopPanel({
                 {revealedStock.length > 1 ? <div className="phone-shop-offer-navigation" aria-label="Offer navigation">
                   <GameButton type="button" tone="secondary" aria-label="Previous offer" onClick={() => {
                     const item = revealedStock[(selectedStockIndex - 1 + revealedStock.length) % revealedStock.length]!;
-                    setFocusedOfferId(item.cardId);
-                    onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view: shopView as "equipment" | "supplies" | "artifacts", selectedId: item.cardId });
+                    focusStockOffer(item.cardId);
                   }}>Previous</GameButton>
                   <span>{selectedStockIndex + 1} / {revealedStock.length}</span>
                   <GameButton type="button" tone="secondary" aria-label="Next offer" onClick={() => {
                     const item = revealedStock[(selectedStockIndex + 1) % revealedStock.length]!;
-                    setFocusedOfferId(item.cardId);
-                    onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view: shopView as "equipment" | "supplies" | "artifacts", selectedId: item.cardId });
+                    focusStockOffer(item.cardId);
                   }}>Next</GameButton>
                 </div> : null}
               </div>
@@ -2252,12 +2287,12 @@ function PhoneShopPanel({
                         item.sellable ? "" : " phone-shop-stock-card-disabled"
                       }`}
                       media={<ShopItemMedia cardId={item.gearId} label={item.name} itemType={item.type} rules={item.summary} />}
+                      mediaInteractive
                       title={item.name}
                       eyebrow={item.category ? toTitleCase(item.category) : toTitleCase(item.type)}
-                      status={<span className="phone-shop-card-status">{item.sellable ? "Sell value" : "Cannot sell"}</span>}
+                      costValue={<ShopPrice label="You receive" value={item.sellable ? `${item.sellValue} Salvage` : "Cannot sell"} name="Sale value" />}
                       description={<p className="phone-wrap-card__consequence">{item.summary}</p>}
                       disabledReason={disabledReason ? <small>{disabledReason}. Ignore this item for selling.</small> : null}
-                      meta={<span>{item.sellable ? `Sell value: ${item.sellValue} Salvage` : "Cannot sell this item"}</span>}
                       actions={
                         <GameButton
                           type="button"
@@ -2925,7 +2960,8 @@ function PhoneMovePanel({
   hostView,
   tierTransitions,
   innerApproach,
-  transitionRouteAid
+  transitionRouteAid,
+  tabletopPublicState
 }: {
   movementPlanner: PublicMovementPlannerState | null | undefined;
   currentTile: CurrentTileViewModel;
@@ -2950,6 +2986,7 @@ function PhoneMovePanel({
   tierTransitions?: PhonePatchPayload["tierTransitions"];
   innerApproach?: PhonePatchPayload["innerApproach"];
   transitionRouteAid?: PhonePatchPayload["transitionRouteAid"];
+  tabletopPublicState: Pick<PhonePatchPayload, "players" | "seats" | "sectors">;
 }): ReactElement {
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(() => movementPlanner?.selectedDestinationId ?? null);
   const [routeAidSourceId, setRouteAidSourceId] = useState<string | null>(null);
@@ -3085,6 +3122,7 @@ function PhoneMovePanel({
         seatId={seatId}
         activeContract={activeContract}
         currentSectorId={currentTile.sectorId}
+        tabletopPublicState={tabletopPublicState}
         currentSectorName={currentTile.name}
         canRoll={canRollMovement}
         movementResolving={movementResolving}
@@ -3651,6 +3689,13 @@ export function PhoneActionPanel({
         {battleAssistPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
         <p className="phone-sheet-action-copy">Waiting for another seat. You will be able to move when it's your turn.</p>
+        {currentTile.sectorId ? (
+          <PhoneTabletopToggle
+            currentSectorId={currentTile.sectorId}
+            currentSectorName={currentTile.name}
+            publicState={{ players: patch.players, seats: patch.seats, sectors: patch.sectors }}
+          />
+        ) : null}
       </section>
     );
   }
@@ -4936,6 +4981,7 @@ export function PhoneActionPanel({
         hostView={patch.hostView}
         tierTransitions={patch.tierTransitions}
         innerApproach={patch.innerApproach}
+        tabletopPublicState={{ players: patch.players, seats: patch.seats, sectors: patch.sectors }}
         transitionRouteAid={patch.transitionRouteAid}
       />
     ) : activeTurnTab === "battle" ? (

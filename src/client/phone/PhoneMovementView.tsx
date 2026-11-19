@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { lazy, Suspense, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { MapTrifoldIcon } from "@phosphor-icons/react/dist/csr/MapTrifold";
 import type {
   ClientIntent,
@@ -7,6 +7,7 @@ import type {
   PublicInnerApproachState,
   PublicMoveDestination,
   PublicMovementPlannerState,
+  PublicPatchPayload,
   PhoneTierTransitionOption
 } from "../shared/types.js";
 import { getMissionRelevanceForSector } from "../shared/missionRelevance.js";
@@ -17,6 +18,36 @@ import { PhoneOptimizedImage } from "../shared/PhoneOptimizedImage.js";
 import { useAuthoritativeResultCollapse } from "../shared/useAuthoritativeResultCollapse.js";
 import { getSignalTheatreEnvironment } from "../tv/signalTheatreEnvironmentManifest.js";
 import { usePhoneBackDismissal } from "./useActiveRoomBackGuard.js";
+import type { PhoneTabletopBoardProps } from "./PhoneTabletopBoard.js";
+
+const PhoneTabletopBoard = lazy(() => import("./PhoneTabletopBoard.js").then((module) => ({ default: module.PhoneTabletopBoard })));
+
+export function PhoneTabletopToggle(props: Omit<PhoneTabletopBoardProps, "id">): ReactElement {
+  const [open, setOpen] = useState(false);
+  const boardId = useId();
+  return (
+    <>
+      <button
+        type="button"
+        className="phone-move-prototype__map-request phone-move-prototype__tabletop-toggle"
+        aria-expanded={open}
+        aria-controls={open ? boardId : undefined}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <MapTrifoldIcon size={24} weight={open ? "fill" : "duotone"} aria-hidden="true" />
+        <span>
+          <strong>{open ? "Close tabletop board" : "Open tabletop board"}</strong>
+          <small>On this phone</small>
+        </span>
+      </button>
+      {open ? (
+        <Suspense fallback={<p id={boardId} role="status">Loading tabletop board…</p>}>
+          <PhoneTabletopBoard {...props} id={boardId} />
+        </Suspense>
+      ) : null}
+    </>
+  );
+}
 
 export type MovementNavigationTarget = "player" | "inventory" | "more";
 
@@ -102,6 +133,7 @@ interface PhoneMovementViewProps {
   seatId: string;
   activeContract: ContractCard | null;
   currentSectorId?: string;
+  tabletopPublicState?: Pick<PublicPatchPayload, "players" | "seats" | "sectors">;
   currentSectorName: string;
   canRoll: boolean;
   movementResolving: boolean;
@@ -500,6 +532,8 @@ export function PhoneMovementView({
   planner,
   seatId,
   activeContract,
+  currentSectorId,
+  tabletopPublicState,
   currentSectorName,
   canRoll,
   movementResolving,
@@ -675,6 +709,8 @@ export function PhoneMovementView({
     confirm();
   };
 
+  const tabletopSectorId = planner?.currentSectorId ?? currentSectorId;
+
   const changeDestination = (): void => {
     routeStarChange.requestChange(null);
   };
@@ -698,6 +734,19 @@ export function PhoneMovementView({
       <div className="phone-move-prototype__content">
         {planner?.routeStarCommitted ? <p role="status" data-testid="route-star-confirmation">Route selected · 1 charge spent</p> : null}
         {routeStarChange.confirmation}
+        {tabletopSectorId && !travel && !movementResolving ? (
+          <PhoneTabletopToggle
+            publicState={tabletopPublicState}
+            currentSectorId={tabletopSectorId}
+            currentSectorName={currentSectorName}
+            destinations={planner?.active ? planner.destinations : undefined}
+            selectedDestination={selectedModel?.destination}
+            selectionDisabled={submitted || routeStarChange.confirming || Boolean(innerApproach)}
+            innerApproach={innerApproach}
+            tierTransitions={canRoll ? tierTransitions?.options : undefined}
+            onSelectSector={selectDestination}
+          />
+        ) : null}
         {hostView ? (
           <button
             type="button"
@@ -784,23 +833,6 @@ export function PhoneMovementView({
             </div>
           </section>
         ) : null}
-        {!innerApproach && !travel && !movementResolving ? (
-          <div
-            className={`phone-auto-collapse-dice${diceDisclosure.collapsed ? " is-collapsed" : ""}`}
-            data-testid="phone-movement-dice-disclosure"
-          >
-            <button
-              type="button"
-              className="phone-auto-collapse-dice__summary"
-              aria-expanded={!diceDisclosure.collapsed}
-              onClick={diceDisclosure.collapsed ? diceDisclosure.expand : diceDisclosure.collapse}
-            >
-              <span>Movement roll</span>
-              <strong>{planner?.movementValue ?? "Ready"}</strong>
-            </button>
-            <AuthoritativeDicePresentation model={diceModel} compact />
-          </div>
-        ) : null}
         {travel ? (
           <div className="phone-move-prototype__travel" role="status">
             <span>Moving to</span>
@@ -825,6 +857,23 @@ export function PhoneMovementView({
               <p className="phone-move-prototype__empty">No legal destinations are available.</p>
             )}
           </>
+        ) : null}
+        {!innerApproach && !travel && !movementResolving ? (
+          <div
+            className={`phone-auto-collapse-dice${diceDisclosure.collapsed ? " is-collapsed" : ""}`}
+            data-testid="phone-movement-dice-disclosure"
+          >
+            <button
+              type="button"
+              className="phone-auto-collapse-dice__summary"
+              aria-expanded={!diceDisclosure.collapsed}
+              onClick={diceDisclosure.collapsed ? diceDisclosure.expand : diceDisclosure.collapse}
+            >
+              <span>Movement roll</span>
+              <strong>{planner?.movementValue ?? "Ready"}</strong>
+            </button>
+            <AuthoritativeDicePresentation model={diceModel} compact />
+          </div>
         ) : null}
       </div>
       <div className="phone-move-prototype__docks">

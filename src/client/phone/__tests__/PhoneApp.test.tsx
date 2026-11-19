@@ -445,6 +445,16 @@ describe("PhoneApp", () => {
     });
     expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
     expect(document.body.scrollWidth).toBeLessThanOrEqual(390);
+
+    const search = screen.getByRole("textbox", { name: "Find an operative" });
+    fireEvent.change(search, { target: { value: "  VOID MARSHAL  " } });
+    expect(within(picker).getAllByRole("listitem")).toHaveLength(1);
+    expect(within(picker).getByRole("listitem", { name: /tarek voss/i })).toBeInTheDocument();
+    fireEvent.change(search, { target: { value: "no matching operative" } });
+    expect(screen.getByText(/no matches/i)).toBeVisible();
+    expect(within(picker).queryAllByRole("listitem")).toHaveLength(0);
+    fireEvent.change(search, { target: { value: "" } });
+    expect(within(picker).getAllByRole("listitem")).toHaveLength(11);
   });
 
   it("lets the Host Phone add and remove clearly labelled AI rivals in supported Rivalry scenarios", async () => {
@@ -1441,13 +1451,13 @@ describe("PhoneApp", () => {
     expect(networkMocks.joinSession).not.toHaveBeenCalled();
   });
 
-  it("shows only the portrait warning when the phone is landscape", async () => {
+  it("keeps room entry available on a landscape phone", async () => {
     setViewport(844, 390);
 
     render(<PhoneApp />);
 
-    expect(await screen.findByText(/rotate your phone to portrait mode/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /join game/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /join room/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /join game/i })).toBeEnabled();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
   });
 

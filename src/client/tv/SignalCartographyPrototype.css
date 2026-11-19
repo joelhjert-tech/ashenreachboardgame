@@ -335,7 +335,8 @@
    Board-tile approval prototype
    ------------------------------------------------------------------------- */
 
-.signal-cartography--board-tiles {
+.signal-cartography--board-tiles,
+.phone-tabletop-board {
   --board-abyss: #050708;
   --board-basalt: #15191b;
   --board-bone: #f0e3c6;
@@ -344,6 +345,9 @@
   --board-legal: #58b9e8;
   --board-mission: #91d6aa;
   --board-violet: #b77bd2;
+}
+
+.signal-cartography--board-tiles {
   background:
     radial-gradient(circle at 34% 45%, rgba(70, 92, 88, .18), transparent 33%),
     linear-gradient(112deg, #0c1011 0%, #050708 68%, #11100e 100%);
@@ -387,62 +391,35 @@
 }
 
 .signal-cartography__board-stage {
-  position: relative;
   display: grid;
   min-width: 0;
   min-height: 0;
   place-items: center;
+  container-type: size;
   overflow: hidden;
-  border: 1px solid rgba(188, 138, 67, .48);
-  background:
-    radial-gradient(circle at 50% 48%, rgba(67, 82, 77, .24), transparent 50%),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, .015) 0 1px, transparent 1px 7px),
-    #090c0d;
-  box-shadow:
-    inset 0 0 0 3px rgba(0, 0, 0, .68),
-    inset 0 0 70px #000;
-}
-
-.signal-cartography__board-stage::before,
-.signal-cartography__board-stage::after {
-  position: absolute;
-  z-index: 2;
-  width: 2.6rem;
-  height: 2.6rem;
-  pointer-events: none;
-  content: "";
-  border-color: rgba(230, 207, 158, .5);
-}
-
-.signal-cartography__board-stage::before {
-  top: .45rem;
-  left: .45rem;
-  border-top: 2px solid;
-  border-left: 2px solid;
-}
-
-.signal-cartography__board-stage::after {
-  right: .45rem;
-  bottom: .45rem;
-  border-right: 2px solid;
-  border-bottom: 2px solid;
+  background: radial-gradient(ellipse at 50% 48%, #252423, #0c0d0e 76%);
 }
 
 .signal-cartography__frame--board-tiles .signal-cartography__board-svg {
   display: block;
-  width: min(100%, calc(130vh - 16.9rem));
-  max-width: 100%;
+  width: min(calc(100cqw - 26px), calc((100cqh - 28px) * 1.3));
   height: auto;
   max-height: none;
   aspect-ratio: 13 / 10;
   overflow: visible;
-  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, .58));
+  filter: drop-shadow(0 10px 10px #000);
+}
+
+.signal-cartography__board-stock-edge {
+  fill: #3c2c20;
+  stroke: #130e0a;
+  stroke-width: 2;
 }
 
 .signal-cartography__board-bed {
   fill: #171511;
-  stroke: #695236;
-  stroke-width: 5;
+  stroke: #a48c6d;
+  stroke-width: 3;
 }
 
 .signal-cartography__board-tier-beds rect {
@@ -465,145 +442,211 @@
   fill: #40331e;
 }
 
+.signal-cartography__board-tile-base,
+.signal-cartography__board-tile {
+  --tile-edge: #ab9580;
+  --tile-stock: #211f1e;
+  --tile-art-filter: brightness(1.05) saturate(.68);
+}
+
+.signal-cartography__board-tile-base[data-tier="middle"],
+.signal-cartography__board-tile.is-tier-middle {
+  --tile-edge: #879aa2;
+  --tile-stock: #191f22;
+  --tile-art-filter: brightness(.97) saturate(.66);
+}
+
+.signal-cartography__board-tile-base[data-tier="inner"],
+.signal-cartography__board-tile.is-tier-inner {
+  --tile-edge: #9c6d55;
+  --tile-stock: #211917;
+  --tile-art-filter: brightness(.92) saturate(.85);
+}
+
+.signal-cartography__board-tile.is-tier-center {
+  --tile-edge: #f7d9a8;
+}
+
+.signal-cartography__board-tile-stock {
+  fill: var(--tile-stock);
+  stroke: #080706;
+  stroke-width: 2;
+  filter: drop-shadow(0 1.5px .7px #000);
+}
+
+.signal-cartography__board-tile-material {
+  opacity: .64;
+}
+
+.signal-cartography__board-tile-base[data-tier="outer"] .signal-cartography__board-tile-material {
+  filter: brightness(.62) saturate(.7);
+}
+
 .signal-cartography__board-tile-art {
-  opacity: .76;
-  filter: saturate(.34) contrast(1.12) brightness(.7);
+  filter: var(--tile-art-filter);
 }
 
-.signal-cartography__board-tile-tint {
-  fill: #171b1b;
-  opacity: .48;
+.signal-cartography__board-tile-base[data-tier="center"] .signal-cartography__board-tile-art {
+  filter: none;
 }
 
-.signal-cartography__board-tile-vignette {
+.signal-cartography__board-core-bevel {
   fill: none;
-  stroke: rgba(4, 6, 7, .9);
-  stroke-width: 12;
-}
-
-.signal-cartography__board-special-links path {
-  fill: none;
-  stroke: rgba(227, 194, 125, .25);
-  stroke-width: 1.4;
-  stroke-dasharray: 2 8;
-  stroke-linecap: round;
-}
-
-.signal-cartography__board-special-links path.is-route {
-  stroke: var(--board-route);
-  stroke-width: 5;
-  stroke-dasharray: 8 6;
-  filter: url("#signal-board-route-glow");
-}
-
-.signal-cartography__board-route-links path {
-  fill: none;
-  stroke: var(--board-route);
-  stroke-width: 6;
-  stroke-linecap: round;
-  stroke-dasharray: 10 8;
-  opacity: .88;
-  filter: url("#signal-board-route-glow");
-  animation: signal-board-route-flow 1.5s linear infinite;
+  stroke: url("#signal-board-core-brass");
+  stroke-width: 4;
 }
 
 .signal-cartography__board-tier-frames rect {
   fill: none;
   pointer-events: none;
   stroke-linejoin: bevel;
-  vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 0 3px rgba(0, 0, 0, .95));
 }
 
 .signal-cartography__board-tier-frames .is-outer {
-  stroke: #8a6745;
-  stroke-width: 6;
+  stroke: #ad8d71;
+  stroke-width: 3;
 }
 
 .signal-cartography__board-tier-frames .is-middle {
-  stroke: #718183;
-  stroke-width: 8;
+  stroke: #708890;
+  stroke-width: 4;
 }
 
 .signal-cartography__board-tier-frames .is-inner {
-  stroke: #827c87;
-  stroke-width: 9;
+  stroke: #985b42;
+  stroke-width: 4;
 }
 
 .signal-cartography__board-tier-frames .is-core {
-  stroke: #c4a15c;
-  stroke-width: 11;
-  filter:
-    drop-shadow(0 0 3px rgba(227, 191, 111, .52))
-    drop-shadow(0 7px 6px rgba(0, 0, 0, .96));
-}
-
-.signal-cartography__board-tier-marker {
-  pointer-events: none;
-}
-
-.signal-cartography__board-tier-marker rect {
-  fill: rgba(8, 10, 10, .94);
-  stroke-width: 1.2;
-}
-
-.signal-cartography__board-tier-marker path {
-  fill: none;
-  stroke-width: .8;
-}
-
-.signal-cartography__board-tier-marker text {
-  fill: #efe2c6;
-  font: 800 6.6px/1 "Inter", "Segoe UI", sans-serif;
-  letter-spacing: .085em;
-  paint-order: stroke;
-  stroke: #050707;
-  stroke-width: 1.2px;
-}
-
-.signal-cartography__board-tier-marker.is-outer rect,
-.signal-cartography__board-tier-marker.is-outer path {
-  stroke: #a47c51;
-}
-
-.signal-cartography__board-tier-marker.is-middle rect,
-.signal-cartography__board-tier-marker.is-middle path {
-  stroke: #8fa0a1;
-}
-
-.signal-cartography__board-tier-marker.is-inner rect,
-.signal-cartography__board-tier-marker.is-inner path {
-  stroke: #a29aa8;
-}
-
-.signal-cartography__board-tier-marker.is-center rect,
-.signal-cartography__board-tier-marker.is-center path {
-  stroke: #dfbb70;
+  stroke: #1b0c07;
+  stroke-width: 1;
 }
 
 .signal-cartography__board-tile-frame {
   fill: none;
-  stroke: rgba(221, 204, 165, .52);
+  stroke: var(--tile-edge);
   stroke-width: 1.4;
-  vector-effect: non-scaling-stroke;
-}
-
-.signal-cartography__board-tile.is-tier-outer .signal-cartography__board-tile-frame {
-  stroke: rgba(185, 151, 104, .58);
 }
 
 .signal-cartography__board-tile.is-tier-middle .signal-cartography__board-tile-frame {
-  stroke: rgba(163, 178, 178, .55);
+  stroke-width: 2.2;
+}
+
+.signal-cartography__board-rivets {
+  fill: none;
+  stroke: #b9c5c5;
+  stroke-width: 2.7;
+  stroke-linecap: round;
+  filter: drop-shadow(0 1px .5px #0b0c0e);
 }
 
 .signal-cartography__board-tile.is-tier-inner .signal-cartography__board-tile-frame {
-  stroke: rgba(190, 182, 198, .6);
+  stroke-width: 2.6;
 }
 
 .signal-cartography__board-tile.is-tier-center .signal-cartography__board-tile-frame {
-  stroke: rgba(231, 195, 116, .9);
-  stroke-width: 2.5;
+  stroke-width: 1;
 }
+
+.signal-cartography__board-connections path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.signal-cartography__board-track-bed {
+  stroke: #17120f;
+  stroke-width: 6;
+}
+
+.signal-cartography__board-track-print {
+  stroke: #c3ad87;
+  stroke-width: 3;
+  stroke-dasharray: 1 3;
+}
+
+.signal-cartography__board-special-links .signal-cartography__board-track-print {
+  stroke: #c6b89e;
+  stroke-width: 2.2;
+  stroke-dasharray: 4 3;
+  marker-start: url("#signal-board-link-terminal");
+  marker-end: url("#signal-board-link-terminal");
+}
+
+.signal-cartography__board-special-links.is-shortcut .signal-cartography__board-track-bed {
+  stroke-width: 4;
+  opacity: .65;
+}
+
+.signal-cartography__board-special-links.is-shortcut .signal-cartography__board-track-print {
+  opacity: .66;
+}
+
+.signal-cartography__board-connections .is-inner-link .signal-cartography__board-track-bed {
+  stroke: #2a1208;
+  stroke-width: 7;
+}
+
+.signal-cartography__board-connections .is-inner-link .signal-cartography__board-track-inlay {
+  stroke: #ffc784;
+  stroke-width: 3.4;
+  stroke-dasharray: 10 4;
+}
+
+#signal-board-link-terminal path {
+  fill: #d5c09d;
+  stroke: #241910;
+  stroke-width: 1.2;
+}
+
+.signal-cartography__board-track-inlay {
+  stroke: #ffd997;
+  stroke-width: 3;
+  stroke-dasharray: 6 5;
+}
+
+.signal-cartography__board-connections .is-route .signal-cartography__board-track-bed {
+  stroke: #653718;
+  stroke-width: 8;
+}
+
+.signal-cartography__board-connections .is-route .signal-cartography__board-track-inlay {
+  stroke: #fff2b5;
+  stroke-width: 4;
+  stroke-dasharray: 6 5;
+  animation: signal-board-route-flow 1.25s linear infinite;
+}
+
+.signal-cartography__board-tier-markers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .3rem clamp(.45rem, 1.1vw, 1rem);
+}
+
+.signal-cartography__board-tier-marker {
+  --reach-swatch: #c5a58c;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  color: #e6d7bd;
+  white-space: nowrap;
+}
+
+.signal-cartography__board-tier-marker::before {
+  width: .6rem;
+  height: .6rem;
+  content: "";
+  border: 2px solid var(--reach-swatch);
+  background: color-mix(in srgb, var(--reach-swatch) 35%, #131012);
+}
+
+.signal-cartography__board-tier-marker.is-middle { --reach-swatch: #a1b7c4; }
+.signal-cartography__board-tier-marker.is-middle::before { border-style: double; }
+.signal-cartography__board-tier-marker.is-inner { --reach-swatch: #c6896d; }
+.signal-cartography__board-tier-marker.is-inner::before { transform: rotate(45deg) scale(.85); }
+.signal-cartography__board-tier-marker.is-center { --reach-swatch: #f2cea0; }
+.signal-cartography__board-tier-marker.is-center::before { border-radius: 50%; }
 
 .signal-cartography__board-gate-frame {
   fill: none;
@@ -618,46 +661,46 @@
 }
 
 .signal-cartography__board-name-plate {
-  fill: rgba(7, 9, 10, .7);
-  stroke: rgba(240, 227, 198, .12);
-  stroke-width: .8;
+  fill: rgba(14, 13, 12, .94);
+  stroke: var(--tile-edge);
+  stroke-width: .65;
 }
 
 .signal-cartography__board-name {
-  fill: var(--board-bone);
-  font: 750 10.2px/1 "Inter", "Segoe UI", sans-serif;
-  letter-spacing: .005em;
+  fill: #fff0d5;
+  font: 800 11.5px/1 "Inter", "Segoe UI", sans-serif;
   paint-order: stroke;
-  stroke: rgba(0, 0, 0, .86);
-  stroke-width: 2.2px;
+  stroke: #100f0d;
+  stroke-width: 1.2;
   stroke-linejoin: round;
 }
 
-.signal-cartography__board-tile.is-legal .signal-cartography__board-tile-frame {
-  stroke: var(--board-legal);
-  stroke-width: 3;
-  stroke-dasharray: 15 4;
+.signal-cartography__board-route-border,
+.signal-cartography__board-legal-border,
+.signal-cartography__board-active-corners {
+  display: none;
+  fill: none;
+  stroke-linejoin: bevel;
 }
 
-.signal-cartography__board-tile.is-route .signal-cartography__board-tile-frame {
+.signal-cartography__board-tile.is-route .signal-cartography__board-route-border {
+  display: inline;
   stroke: var(--board-route);
-  stroke-width: 3;
+  stroke-width: 3.2;
 }
 
-.signal-cartography__board-tile.is-mission-target .signal-cartography__board-tile-frame {
-  stroke: var(--board-mission);
-  stroke-width: 3.6;
-  filter: drop-shadow(0 0 5px rgba(145, 214, 170, .72));
+.signal-cartography__board-tile.is-legal .signal-cartography__board-legal-border {
+  display: inline;
+  stroke: #9ce2ff;
+  stroke-width: 2.2;
+  stroke-dasharray: 4 4;
 }
 
-.signal-cartography__board-tile.is-focused .signal-cartography__board-tile-frame {
+.signal-cartography__board-tile.is-active .signal-cartography__board-active-corners {
+  display: inline;
+  stroke: #fff3d2;
   stroke-width: 4;
-}
-
-.signal-cartography__board-tile.is-active .signal-cartography__board-tile-frame {
-  stroke: var(--board-bone);
-  stroke-width: 4.8;
-  filter: url("#signal-board-active-glow");
+  filter: drop-shadow(0 0 2px #110b06);
 }
 
 .signal-cartography__board-tile.is-inner-cleared .signal-cartography__board-gate-frame {
@@ -732,15 +775,34 @@
     drop-shadow(0 2px 2px rgba(0, 0, 0, .9));
 }
 
+.signal-cartography__board-coin-shadow {
+  fill: #070606;
+  opacity: .8;
+}
+
+.signal-cartography__board-coin-rim {
+  fill: #bca890;
+  stroke: #100d0b;
+  stroke-width: 1.1;
+}
+
 .signal-cartography__board-player-coin-ring {
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .95));
+  fill: #151314;
+  stroke-width: 1.4;
 }
 
 .signal-cartography__board-player-coin {
-  filter:
-    brightness(1.28)
-    contrast(1.08)
-    drop-shadow(0 1px 1px rgba(0, 0, 0, .9));
+  filter: brightness(1.3) contrast(1.1);
+}
+
+.signal-cartography__board-occupancy rect {
+  fill: #161310;
+  stroke: #a89470;
+}
+
+.signal-cartography__board-occupancy text {
+  fill: #fff0d5;
+  font: 800 11px "Inter", "Segoe UI", sans-serif;
 }
 
 .signal-cartography__board-threat-band rect {
@@ -1040,6 +1102,17 @@
   border-color: #ead8a9;
 }
 
+.signal-cartography__board-legend i.is-inner-path {
+  height: .3rem;
+  border: 0;
+  border-top: 2px dashed #ffc784;
+}
+
+.signal-cartography__board-legend i.is-active {
+  border-color: #fff3d2;
+  border-style: double;
+}
+
 .signal-cartography__board-legend i.is-legal { border-color: var(--board-legal); }
 .signal-cartography__board-legend i.is-route { border-color: var(--board-route); }
 .signal-cartography__board-legend i.is-mission {
@@ -1053,7 +1126,7 @@
 }
 
 @keyframes signal-board-route-flow {
-  to { stroke-dashoffset: -36; }
+  to { stroke-dashoffset: -11; }
 }
 
 @keyframes signal-board-mission-beacon {
@@ -1119,7 +1192,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .signal-cartography__board-route-links path,
+  .signal-cartography__board-connections .is-route .signal-cartography__board-track-inlay,
   .signal-cartography__board-mission circle {
     animation: none;
   }
@@ -1164,3 +1237,31 @@
 .signal-cartography--dead-star .is-core .signal-cartography__node-plate,
 .signal-cartography--dead-star .is-core .signal-cartography__node-name,
 .signal-cartography--dead-star .is-core .signal-cartography__node-edge { transform: translateY(15px); }
+
+@media (max-width: 760px) {
+  .signal-cartography--board-tiles {
+    width: 100%;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+    grid-template-rows: auto auto auto;
+  }
+
+  .signal-cartography__board-header,
+  .signal-cartography--board-tiles .signal-cartography__footer {
+    flex-wrap: wrap;
+    gap: .6rem;
+  }
+
+  .signal-cartography__board-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .signal-cartography__board-stage {
+    aspect-ratio: 1.22;
+  }
+
+  .signal-cartography__focus-panel {
+    overflow: visible;
+  }
+}
